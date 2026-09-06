@@ -135,15 +135,25 @@ export default function GoFishBoard({
         {/* Face down: a hand you may not see stays out of the DOM. The id is a seeded token rather
             than the card or its position, so a card leaving the middle of the hand animates from
             where it sat without its rank ever being in the markup. */}
-        <div className="cardTableHandRow" data-zone="charHand">
+        {/* --handCount drives the overlap: the stylesheet works out how much the cards have to
+            close up to fit the row, and starts scrolling once they cannot. data-noSwipe because a
+            sideways drag on a scrolling row is a scroll, not a pull on the log drawer. */}
+        <div
+          className="cardTableHandRow"
+          data-zone="charHand"
+          data-noSwipe
+          style={{ '--handCount': state.hands.char.length } as CSSProperties}
+        >
           {state.hands.char.map((card) => (
             <Card key={token(card)} id={token(card)} faceDown />
           ))}
         </div>
 
-        {known.length > 0 && (
-          <p className="goFishKnown">They have asked for {known.join(', ')}</p>
-        )}
+        {/* Always rendered, empty until they have asked for something: the line holds its height so
+            the pool below it does not move down the first time it fills. */}
+        <p className="goFishKnown">
+          {known.length > 0 ? `They have asked for ${known.join(', ')}` : ''}
+        </p>
 
         <div className="goFishPool">
           {books.map((book, i) => (
@@ -162,7 +172,12 @@ export default function GoFishBoard({
           </span>
         </div>
 
-        <div className="cardTableHandRow" data-zone="playerHand">
+        <div
+          className="cardTableHandRow"
+          data-zone="playerHand"
+          data-noSwipe
+          style={{ '--handCount': state.hands.player.length } as CSSProperties}
+        >
           {sortHand(state.hands.player).map((card) => (
             <Card
               key={`${card.rank}${card.suit}`}

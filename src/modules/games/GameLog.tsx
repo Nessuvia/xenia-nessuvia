@@ -1,5 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
+import { RiChat3Line } from '@remixicon/react'
 import { CollapseButton, CollapseRail } from '../../app/CollapseButton'
+import '../../app/sideDrawer.css'
 import { describeEvent } from '../../core/games/gameState'
 import { describeEvent as describeBlackjack } from '../../core/games/blackjackState'
 import type { GoFishEvent } from '../../core/games/goFish'
@@ -51,6 +53,9 @@ export default function GameLog({
   open,
   width,
   onToggle,
+  phone = false,
+  drawerClassName = '',
+  drawerStyle,
 }: {
   kind: GameKind
   events: GameEvent[]
@@ -60,6 +65,11 @@ export default function GameLog({
   open: boolean
   width: number
   onToggle: () => void
+  /** Phone width: the panel is a drawer rather than a column, and the rail becomes a fixed button. */
+  phone?: boolean
+  /** From useSideDrawer in the view. Empty off a phone. */
+  drawerClassName?: string
+  drawerStyle?: CSSProperties
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const items = rows(kind, events, characterName)
@@ -70,28 +80,48 @@ export default function GameLog({
     if (node) node.scrollTop = node.scrollHeight
   }, [items.length, streamingText, open])
 
-  if (!open) return <CollapseRail label="Game log" onToggle={onToggle} className="gameLogRail" />
+  // Off a phone a closed log collapses to its rail. On a phone the panel stays mounted whatever the
+  // open state, because the drawer slides and tracks a finger, and an unmounted panel cannot.
+  if (!open && !phone) return <CollapseRail label="Game log" onToggle={onToggle} className="gameLogRail" />
 
   return (
-    // A var rather than `width` directly: an inline width would beat the phone media query, which
-    // has to widen the panel once it sits under the board.
-    <div className="panel gameLog" style={{ '--gameLogWidth': `${width}px` } as CSSProperties}>
-      <div className="gameLogHeader">
-        <CollapseButton label="Game log" collapsed={false} onToggle={onToggle} />
-        <span className="gameLogTitle">Log</span>
+    <>
+      {phone && !open && (
+        <div className="drawerOpenButtons">
+          <button
+            type="button"
+            className="drawerOpenButton"
+            title="Open game log"
+            aria-label="Open game log"
+            onClick={onToggle}
+          >
+            <RiChat3Line size={20} />
+          </button>
+        </div>
+      )}
+      <div
+        className={`panel gameLog ${drawerClassName}`.trim()}
+        // A var rather than `width` directly: an inline width would beat the phone media query,
+        // which has to widen the panel once it covers the screen.
+        style={{ ...drawerStyle, '--gameLogWidth': `${width}px` } as CSSProperties}
+      >
+        <div className="gameLogHeader">
+          <CollapseButton label="Game log" collapsed={false} onToggle={onToggle} />
+          <span className="gameLogTitle">Log</span>
+        </div>
+        <div className="gameLogScroll" ref={scroller}>
+          {items.map((row) => (
+            <div key={row.key} className={`gameLogRow gameLogRow${row.side}`}>
+              <span className={`gameLogBubble gameLogBubble${row.side}`}>{row.text}</span>
+            </div>
+          ))}
+          {streamingText ? (
+            <div className="gameLogRow gameLogRowchar">
+              <span className="gameLogBubble gameLogBubblechar">{streamingText}</span>
+            </div>
+          ) : null}
+        </div>
       </div>
-      <div className="gameLogScroll" ref={scroller}>
-        {items.map((row) => (
-          <div key={row.key} className={`gameLogRow gameLogRow${row.side}`}>
-            <span className={`gameLogBubble gameLogBubble${row.side}`}>{row.text}</span>
-          </div>
-        ))}
-        {streamingText ? (
-          <div className="gameLogRow gameLogRowchar">
-            <span className="gameLogBubble gameLogBubblechar">{streamingText}</span>
-          </div>
-        ) : null}
-      </div>
-    </div>
+    </>
   )
 }

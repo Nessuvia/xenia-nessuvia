@@ -83,25 +83,36 @@ export default function BlackjackBoard({
       </div>
 
       <div className="cardTableField">
-        <div className="cardTableHandRow" data-zone="charHand">
-          {state.hands.char.map((card, i) =>
-            // The hole card is face down until the dealer plays, so its rank is not in the DOM. Its
-            // motion id stays 'charHole' either way: identity is not the face, and changing it on
-            // the reveal made the card look like a new one landing rather than one turning over.
-            state.holeDown && i === 1 ? (
-              <Card key="hole" id="charHole" faceDown />
-            ) : (
-              <Card
-                key={i === 1 ? 'hole' : `${card.rank}${card.suit}`}
-                id={i === 1 ? 'charHole' : `${card.rank}${card.suit}`}
-                card={card}
-              />
-            ),
-          )}
+        {/* Hand and its count as one unit: stacked on a desktop, side by side on a phone, where six
+            full-width rows in the field is more vertical than a short screen has. */}
+        <div className="blackjackHandLine">
+          {/* --handCount and data-noSwipe: see the note on the Go Fish hand rows. */}
+          <div
+            className="cardTableHandRow"
+            data-zone="charHand"
+            data-noSwipe
+            style={{ '--handCount': state.hands.char.length } as CSSProperties}
+          >
+            {state.hands.char.map((card, i) =>
+              // The hole card is face down until the dealer plays, so its rank is not in the DOM.
+              // Its motion id stays 'charHole' either way: identity is not the face, and changing
+              // it on the reveal made the card look like a new one landing rather than one turning
+              // over.
+              state.holeDown && i === 1 ? (
+                <Card key="hole" id="charHole" faceDown />
+              ) : (
+                <Card
+                  key={i === 1 ? 'hole' : `${card.rank}${card.suit}`}
+                  id={i === 1 ? 'charHole' : `${card.rank}${card.suit}`}
+                  card={card}
+                />
+              ),
+            )}
+          </div>
+          <p className="blackjackCount">
+            {state.hands.char.length > 0 && `${characterName}: ${dealerCount}${state.holeDown ? ' showing' : ''}`}
+          </p>
         </div>
-        <p className="blackjackCount">
-          {state.hands.char.length > 0 && `${characterName}: ${dealerCount}${state.holeDown ? ' showing' : ''}`}
-        </p>
 
         <div className="blackjackShoe">
           <span className="cardTableDeck" data-zone="deck">
@@ -113,26 +124,37 @@ export default function BlackjackBoard({
           </span>
         </div>
 
-        <p className="blackjackCount">
-          {state.hands.player.length > 0 &&
-            `You: ${playerHand.soft ? 'soft ' : ''}${playerHand.total}${isBust(state.hands.player) ? ' — bust' : ''}`}
-        </p>
-        <div className="cardTableHandRow" data-zone="playerHand">
-          {state.hands.player.map((card) => (
-            <Card key={`${card.rank}${card.suit}`} id={`${card.rank}${card.suit}`} card={card} />
-          ))}
+        <div className="blackjackHandLine blackjackHandLinePlayer">
+          <p className="blackjackCount">
+            {state.hands.player.length > 0 &&
+              `You: ${playerHand.soft ? 'soft ' : ''}${playerHand.total}${isBust(state.hands.player) ? ' — bust' : ''}`}
+          </p>
+          <div
+            className="cardTableHandRow"
+            data-zone="playerHand"
+            data-noSwipe
+            style={{ '--handCount': state.hands.player.length } as CSSProperties}
+          >
+            {state.hands.player.map((card) => (
+              <Card key={`${card.rank}${card.suit}`} id={`${card.rank}${card.suit}`} card={card} />
+            ))}
+          </div>
         </div>
 
-        {canAct && (
-          <div className="blackjackActions">
-            <button type="button" className="blackjackButton" onClick={() => onSubmit?.('hit')}>
-              Hit
-            </button>
-            <button type="button" className="blackjackButton" onClick={() => onSubmit?.('stand')}>
-              Stand
-            </button>
-          </div>
-        )}
+        {/* Always rendered, empty between turns: the row holds its height so the input and your
+            avatar underneath do not jump every time it becomes your move. */}
+        <div className="blackjackActions">
+          {canAct && (
+            <>
+              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('hit')}>
+                Hit
+              </button>
+              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('stand')}>
+                Stand
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="cardTableSpeakerRow cardTableSpeakerRowPlayer">

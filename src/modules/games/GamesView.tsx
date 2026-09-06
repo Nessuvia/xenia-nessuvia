@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import EntityPicker from '../../app/EntityPicker'
 import { useHashTab } from '../../app/useHashTab'
+import { useMediaQuery } from '../../app/useMediaQuery'
+import { useSideDrawer } from '../../app/useSideDrawer'
 import { displayName, useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
 import { useSettings } from '../../core/stores/settingsStore'
@@ -170,6 +172,8 @@ function Replay({ game }: { game: Game }) {
   const state = boardState(game, upTo)
   const events = game.events.slice(0, upTo)
   const lastSay = [...events].reverse().find((e) => e.kind === 'say')
+  const phone = useMediaQuery('(max-width: 700px)')
+  const drawer = useSideDrawer({ side: 'right', enabled: phone, open: logOpen, setOpen: setLogOpen })
 
   return (
     <div className="gamesReplay">
@@ -208,6 +212,9 @@ function Replay({ game }: { game: Game }) {
           open={logOpen}
           width={logWidth}
           onToggle={() => setLogOpen(!logOpen)}
+          phone={phone}
+          drawerClassName={drawer.className}
+          drawerStyle={drawer.style}
         />
       </div>
     </div>
@@ -225,6 +232,8 @@ function LiveGame() {
   const characters = useCharacters((s) => s.characters)
   const loadCharacters = useCharacters((s) => s.load)
   const personas = usePersonas((s) => s.personas)
+  const phone = useMediaQuery('(max-width: 700px)')
+  const drawer = useSideDrawer({ side: 'right', enabled: phone, open: logOpen, setOpen: setLogOpen })
 
   useEffect(() => {
     loadCharacters()
@@ -247,7 +256,7 @@ function LiveGame() {
   const lastSay = [...game.events].reverse().find((e) => e.kind === 'say')
 
   return (
-    <div className="gamesPage">
+    <div className="gamesPage screenFrame gamesLive">
       {/* No back button here: the rail's "Go back" is the way out, the same as a chat or a story. */}
       <div className="gamesTable">
         <GameBoard
@@ -277,6 +286,9 @@ function LiveGame() {
           open={logOpen}
           width={logWidth}
           onToggle={() => setLogOpen(!logOpen)}
+          phone={phone}
+          drawerClassName={drawer.className}
+          drawerStyle={drawer.style}
         />
       </div>
     </div>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx pnpm build)",
+      "Bash(npx tsc -b)",
+      "Bash(bash scripts/agent-test.sh)",
+      "Bash(bash scripts/agent-test.sh *)",
+      "Bash(ffprobe *)"
+    ]
+  }
+}
