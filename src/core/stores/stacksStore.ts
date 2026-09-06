@@ -104,12 +104,30 @@ export function defaultGameStack(name = 'Game'): PromptStack {
     active: [
       newBlock({
         label: 'Main prompt',
-        // {{game}} is the game's title, filled by the games module. One stack covers every game.
+        // {{game}} is the game's title, filled by the games module. One stack covers every game,
+        // so the per-game half is a branch: [if blackjack] and [if goFish] are the game's own
+        // `kind`, set by the games module and false everywhere else.
         content: [
-          'You are playing {{game}} against {{user}}. React to the move that just happened as',
-          '{{char}}. Reply in one to three sentences. Do not decide moves, and do not mention',
-          'cards you were not told about.',
-        ].join(' '),
+          [
+            'You are playing {{game}} against {{user}}. React to the move that just happened as',
+            '{{char}}. Reply in one to three sentences. Do not decide moves, and do not mention',
+            'cards you were not told about.',
+          ].join(' '),
+          '[if blackjack]',
+          [
+            'You are the dealer. The gameState block is the table as it stands and the round it',
+            'belongs to. Read the result off it: a hand is marked bust or blackjack, and a settled',
+            'round says who took it. Never say a hand went bust unless that hand is marked bust, and',
+            'do not take a result from an earlier round in the history.',
+          ].join(' '),
+          '[endif]',
+          '[if goFish]',
+          [
+            'The gameState block is your hand, both sets of books and whose turn it is. Their hand is',
+            'not in it, so anything you say about what they hold is a guess.',
+          ].join(' '),
+          '[endif]',
+        ].join('\n'),
       }),
       newBlock({ label: 'Character description', source: 'characterDescription' }),
       newBlock({ label: 'Persona description', source: 'personaDescription' }),

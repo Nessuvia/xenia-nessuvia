@@ -4,6 +4,7 @@ import { currentOwnerId } from '../../core/storage/storageInterface'
 import type { StoredRecord } from '../../core/storage/storageInterface'
 import type { Character, Chat, Game, Message, Persona, PromptStack } from '../../core/storage/types'
 import type { GoFishEvent, GoFishState, MoveQuality, Side } from '../../core/games/goFish'
+import type { SideNames } from '../../core/games/sides'
 import { initialState, legalAsks, reduce, resolveAsk } from '../../core/games/goFish'
 import type { BlackjackEvent, BlackjackState } from '../../core/games/blackjack'
 import * as blackjack from '../../core/games/blackjack'
@@ -93,23 +94,30 @@ interface GameRules {
   reduce(state: AnyGameState, event: GameEvent): AnyGameState
   /** The `<gameState>` block, from the character's side of the table. `before` is the board as it
    *  stood when the move being described began, where a game has something to say about it. */
-  block(state: AnyGameState, tag: string, before?: AnyGameState): string
-  describe(events: GameEvent[]): string
+  block(state: AnyGameState, tag: string, names: SideNames, before?: AnyGameState): string
+  describe(events: GameEvent[], names: SideNames): string
 }
 
 const rules: Record<GameKind, GameRules> = {
   goFish: {
     initial: (seed) => initialState(seed),
     reduce: (state, event) => reduce(state as GoFishState, event as GoFishEvent),
-    block: (state, tag, before) => buildStateBlock(state as GoFishState, { tag, before: before as GoFishState | undefined }),
-    describe: (events) => describeEvent(events as GoFishEvent[]),
+    block: (state, tag, names, before) =>
+      buildStateBlock(state as GoFishState, { tag, names, before: before as GoFishState | undefined }),
+    describe: (events, names) => describeEvent(events as GoFishEvent[], 'char', names),
   },
   blackjack: {
     initial: (seed) => blackjack.initialState(seed),
     reduce: (state, event) => blackjack.reduce(state as BlackjackState, event as BlackjackEvent),
-    block: (state, tag) => blackjackState.buildStateBlock(state as BlackjackState, { tag }),
-    describe: (events) => blackjackState.describeEvent(events as BlackjackEvent[]),
+    block: (state, tag, names) => blackjackState.buildStateBlock(state as BlackjackState, { tag, names }),
+    describe: (events, names) => blackjackState.describeEvent(events as BlackjackEvent[], 'char', names),
   },
+}
+
+/** What the two sides are called in this game's lines. The names are on the record, so a persona
+ *  renamed since is still the one who was at the table. */
+export function sideNames(game: Game): SideNames {
+  return { player: game.personaName, char: game.characterName }
 }
 
 /** The board a log adds up to. The only way state is ever produced. */
@@ -153,6 +161,10 @@ function newGame(
  */
 function gameMessages(game: Game, tag: string): Message[] {
   const kind = rules[game.kind]
+  const names = sideNames(game)
+  // Who the quoted lines belong to. The player is named where the persona has one, for the same
+  // reason the fact lines name them: "they" is both people at a table of two.
+  const speaking = names.player?.trim() || 'They'
   const messages: Message[] = []
   let current = kind.initial(game.seed)
   // The board as it stood when the current batch started, so the block can name what left the hand.
@@ -161,9 +173,9 @@ function gameMessages(game: Game, tag: string): Message[] {
   let clock = game.createdAt
 
   const pushMove = (state: AnyGameState, events: GameEvent[], withBlock: boolean, from: AnyGameState) => {
-    const line = kind.describe(events)
+    const line = kind.describe(events, names)
     if (!line) return
-    const block = withBlock ? `${kind.block(state, tag, from)}\n\n` : ''
+    const block = withBlock ? `${kind.block(state, tag, names, from)}\n\n` : ''
     // What the player typed, verbatim, on every turn they typed on. The event line is the
     // unambiguous fact; their words are the turn, and a character that only ever saw the fact
     // could not answer what was actually said to it.
@@ -171,7 +183,7 @@ function gameMessages(game: Game, tag: string): Message[] {
     // Before the fact line, never after. The line already reports the ask and how it resolved, so a
     // quote of the ask sitting after it reads as a second ask that nothing has answered yet, and the
     // character replies to that instead of to the move. Speech first, then what it caused.
-    const quote = said?.kind === 'ask' && said.text ? `They said: "${said.text}"\n\n` : ''
+    const quote = said?.kind === 'ask' && said.text ? `${speaking} said: "${said.text}"\n\n` : ''
     messages.push({
       ownerId: game.ownerId,
       chatId: 0,
@@ -192,7 +204,7 @@ function gameMessages(game: Game, tag: string): Message[] {
         ownerId: game.ownerId,
         chatId: 0,
         role: event.by === 'char' ? 'assistant' : 'user',
-        content: event.by === 'char' ? event.text : `They said: "${event.text}"`,
+        content: event.by === 'char' ? event.text : `${speaking} said: "${event.text}"`,
         createdAt: clock++,
       })
       continue
@@ -207,7 +219,7 @@ function gameMessages(game: Game, tag: string): Message[] {
     pushMove(current, batch, true, opening)
   } else {
     const last = [...messages].reverse().find((m) => m.role === 'user')
-    if (last) last.content = `${kind.block(current, tag)}\n\n${last.content}`
+    if (last) last.content = `${kind.block(current, tag, names)}\n\n${last.content}`
   }
   return messages
 }
@@ -464,16 +476,37 @@ async function playMove(get: Get, set: Set, move: Rank | blackjack.Action, text:
   const game = get().game
   if (!game) return
 
+  let batch: GameEvent[]
   if (game.kind === 'blackjack') {
     // The words the player typed ride on their own turn, the way an ask carries them in Go Fish.
     await appendEvents(get, set, [{ kind: 'say', by: playerSide, text }])
-    await pace(get, set, blackjack.resolveAction(get().state as BlackjackState, move as blackjack.Action))
+    batch = blackjack.resolveAction(get().state as BlackjackState, move as blackjack.Action)
   } else {
-    await pace(get, set, resolveAsk(get().state as GoFishState, playerSide, move as Rank, text))
+    batch = resolveAsk(get().state as GoFishState, playerSide, move as Rank, text)
   }
-  await react(get, set)
+  await pace(get, set, batch)
+  if (worthReacting(game.kind, batch)) await react(get, set)
 
   await drive(get, set)
+}
+
+/**
+ * Whether a batch is worth a line from the character.
+ *
+ * Every batch used to get one, which put three replies between one click and the next: the move,
+ * the dealer's runout, and the round that opened after it. Two of those have nothing to say. A card
+ * that leaves the turn where it already was is not an event, and neither is dealing: the character
+ * can greet the new hand in the line they say about the result, which lands first anyway.
+ *
+ * Go Fish is untouched. Its batches are all asks, and every one of them is a move by somebody.
+ */
+function worthReacting(kind: GameKind, events: GameEvent[]): boolean {
+  if (events.length === 0) return false
+  if (kind !== 'blackjack') return true
+  // A round opening on its own. A deal that settled itself, on a natural, is not on its own.
+  if (events.every((e) => e.kind === 'deal')) return false
+  // Cards the player took that left the table waiting on them again: no bust, no twenty-one.
+  return !events.every((e) => e.kind === 'hit' && e.by === 'player')
 }
 
 /**
@@ -509,7 +542,7 @@ async function drive(get: Get, set: Set) {
         // A beat before they move again, so a run of turns reads as several moves.
         await beat()
         await pace(get, set, batch)
-        await react(get, set)
+        if (worthReacting(game.kind, batch)) await react(get, set)
       }
     } while (wanted)
   } finally {
@@ -612,6 +645,7 @@ async function react(get: Get, set: Set) {
         chat: syntheticChat(game),
         messages: gameMessages(game, 'gameState'),
         game: gameLabels[game.kind],
+        gameKind: game.kind,
         tagRules: useSettings.getState().appearance.tagRules,
       },
       budgetOf(connection),

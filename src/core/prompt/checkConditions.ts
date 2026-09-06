@@ -174,4 +174,26 @@ const speaking: PromptConditions = { narrator: false, char1: true, char2: false 
   assert.strictEqual(resolveConditions(text, speaking), '{{charDescription}}')
 }
 
+// --- the game flags ------------------------------------------------------
+{
+  const off = promptConditions(damien)
+  assert.strictEqual(off.game, false)
+  assert.strictEqual(off.blackjack, undefined)
+
+  const dealing = promptConditions(damien, undefined, 'blackjack')
+  assert.strictEqual(dealing.game, true)
+  assert.strictEqual(dealing.blackjack, true)
+  // The other game is absent, not false, which reads the same to render().
+  assert.strictEqual(dealing.gofish, undefined)
+
+  // The name is written as it is in GameKind and folded on the way in.
+  const fishing = promptConditions(damien, undefined, 'goFish')
+  assert.strictEqual(fishing.gofish, true)
+
+  const text = ['[if blackjack]', 'deal', '[elseif goFish]', 'ask', '[else]', 'chat', '[endif]'].join('\n')
+  assert.strictEqual(resolveConditions(text, dealing), 'deal')
+  assert.strictEqual(resolveConditions(text, fishing), 'ask')
+  assert.strictEqual(resolveConditions(text, off), 'chat')
+}
+
 console.log('ok')

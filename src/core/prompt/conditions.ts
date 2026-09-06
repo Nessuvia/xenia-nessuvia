@@ -10,17 +10,26 @@ import { castSlots } from './swapTokens.ts'
  *
  * `narrator`: the speaker this turn is the Narrator.
  * `char1`…`char4`: that cast slot is filled. Matches the {{charN}} tokens one for one.
+ * `game`: this send is a game's commentary rather than a chat turn.
+ * The game's own kind, as written in `GameKind`: `goFish`, `blackjack`. One stack covers every
+ * game, so the per-game half of the prompt is a branch in it rather than a stack each.
  */
 export interface PromptConditions {
   [name: string]: boolean
 }
 
-/** The flags for one send. Names are lowercase; `resolveConditions` folds before it looks up. */
-export function promptConditions(speaker: Character, cast?: Character[]): PromptConditions {
-  const flags: PromptConditions = { narrator: isNarrator(speaker.id) }
+/**
+ * The flags for one send. Names are lowercase; `resolveConditions` folds before it looks up.
+ *
+ * `game` is the `GameKind` string, taken as a plain string rather than the type: an unknown name is
+ * false like any other, so this file stays free of core/games and a new game needs no edit here.
+ */
+export function promptConditions(speaker: Character, cast?: Character[], game?: string): PromptConditions {
+  const flags: PromptConditions = { narrator: isNarrator(speaker.id), game: Boolean(game) }
   for (let i = 0; i < castSlots; i++) {
     flags[`char${i + 1}`] = Boolean(cast?.[i])
   }
+  if (game) flags[game.toLowerCase()] = true
   return flags
 }
 

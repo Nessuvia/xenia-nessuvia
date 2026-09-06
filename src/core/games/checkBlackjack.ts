@@ -2,6 +2,7 @@
 import assert from 'node:assert'
 import type { Card, Rank, Suit } from './deck.ts'
 import type { BlackjackEvent, BlackjackState } from './blackjack.ts'
+import { buildStateBlock, describeEvent } from './blackjackState.ts'
 import {
   dealRound, dealerStands, handValue, initialState, isBlackjack, isBust, legalActions, nextEvents,
   reduce, replay, resolveAction, roundOutcome, shoeFloor, visibleHand, winner,
@@ -253,6 +254,69 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
     // No card is ever created: dealt hands plus what is left has to account for the shoe.
     assert.ok(current.deck.length >= 0 && current.deck.length < shoeFloor)
   }
+}
+
+// --- the state block says the reading, not just the total ----------------
+{
+  // A bust is a word in the block. Left as `(24)` the model had to compare it to 21 itself, and
+  // the round it got wrong was the one where it told the player they had gone bust.
+  const busted = buildStateBlock(state({ hands: { player: hand('KS 9H 5D'), char: hand('7S 8H') }, turn: 'char' }))
+  assert.ok(busted.includes('Their hand: K, 9, 5 (24, bust)'), busted)
+  assert.ok(!busted.includes('Your hand: 7, 8 (15, bust)'), busted)
+
+  const natural = buildStateBlock(state({ hands: { player: hand('AS KH'), char: hand('7S 8H') } }))
+  assert.ok(natural.includes('(soft 21, blackjack)'), natural)
+
+  // Between rounds the hands on the table are the settled round's, and the block says so.
+  const settled = state({
+    hands: { player: hand('KS 9H 5D'), char: hand('7S 8H') },
+    holeDown: false,
+    turn: null,
+    round: 2,
+    outcome: 'char',
+    score: { player: 1, char: 2 },
+  })
+  const after = buildStateBlock(settled)
+  assert.ok(after.includes('Round 2.'), after)
+  assert.ok(after.includes('You took the last round, the other hand went bust.'), after)
+
+  // Mid-round there is no result to report and the round is the one being played.
+  const live = buildStateBlock(state({ hands: { player: hand('KS 9H'), char: hand('7S 8H') }, round: 2 }))
+  assert.ok(live.includes('Round 3.'), live)
+  assert.ok(!live.includes('last round'), live)
+}
+
+// --- the far side is named, the near side is 'you' ------------------------
+{
+  const names = { player: 'Ivy', char: 'Damien' }
+  const settled = state({
+    hands: { player: hand('KS 9H 5D'), char: hand('7S 8H') },
+    holeDown: false,
+    turn: null,
+    round: 1,
+    outcome: 'char',
+  })
+  const block = buildStateBlock(settled, { names })
+  assert.ok(block.includes("Ivy's hand: K, 9, 5 (24, bust)"), block)
+  assert.ok(block.includes('Rounds won: you 0, Ivy 0'), block)
+  assert.ok(block.includes('Ivy took the last round') === false, block)
+  assert.ok(block.includes('You took the last round, the other hand went bust.'), block)
+  assert.ok(!block.includes('Their'), block)
+
+  const events: BlackjackEvent[] = [
+    { kind: 'hit', by: 'player', rank: '5' },
+    { kind: 'bust', by: 'player' },
+  ]
+  // To the character: they are 'you', the player is named.
+  assert.strictEqual(describeEvent(events, 'char', names), 'Ivy drew a 5. Ivy went bust.')
+  // To the player, in the log: the same events from the other seat.
+  assert.strictEqual(describeEvent(events, 'player', names), 'You drew a 5. You went bust.')
+  assert.strictEqual(
+    describeEvent([{ kind: 'reveal' }, { kind: 'settle', outcome: 'char' }], 'player', names),
+    'Damien turned the hole card over. Damien took the round.',
+  )
+  // No names is the pronoun the boards used before, unchanged.
+  assert.strictEqual(describeEvent(events, 'char'), 'They drew a 5. They went bust.')
 }
 
 console.log('ok')

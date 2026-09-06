@@ -19,10 +19,13 @@ type Row = { key: number; side: 'char' | 'player' | 'system'; text: string }
  * centred "it is their turn" after every single ask doubles the length of the log for nothing.
  */
 function rows(kind: GameKind, events: GameEvent[], characterName: string): Row[] {
+  // Read from your seat: you are "you", and the far side is the character by name rather than
+  // "they", which is what the board already calls them everywhere else.
+  const names = { char: characterName }
   const line = (event: GameEvent) =>
     kind === 'goFish'
-      ? describeEvent([event as GoFishEvent], 'player')
-      : describeBlackjack([event as BlackjackEvent], 'player')
+      ? describeEvent([event as GoFishEvent], 'player', names)
+      : describeBlackjack([event as BlackjackEvent], 'player', names)
   const out: Row[] = []
   events.forEach((event, i) => {
     if (event.kind === 'turn') return

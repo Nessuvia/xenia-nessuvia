@@ -215,6 +215,9 @@ export interface BuildPromptArgs {
   /** The game's title, filling {{game}}. Absent outside the games module, which leaves the token
    *  in place rather than blanking it in an ordinary chat. */
   game?: string
+  /** The game's `GameKind`, behind `[if blackjack]` and `[if goFish]`. Absent outside a game, which
+   *  is also what makes `[if game]` false in an ordinary chat. */
+  gameKind?: string
 }
 
 /** A block that contributed nothing, and the reason. The preview lists these. */
@@ -259,6 +262,7 @@ export function buildPrompt(
     cast,
     personas,
     game,
+    gameKind,
   }: BuildPromptArgs,
   budget?: Budget,
 ): BuiltPrompt {
@@ -297,7 +301,7 @@ export function buildPrompt(
   // branch never gets swapped, and no token's value can be read back as a condition name. A
   // conditional cannot span two blocks: each block's text is parsed on its own, so an [if] in one
   // block and its [endif] in the next are both literal text.
-  const conditions = promptConditions(who, cast)
+  const conditions = promptConditions(who, cast, gameKind)
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
