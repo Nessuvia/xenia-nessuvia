@@ -219,7 +219,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
     books: { player: ['2'], char: ['9'] },
     deck: hand('4H 5S'),
   })
-  const block = buildStateBlock(board, { seedMove: true })
+  const block = buildStateBlock(board)
   assert.ok(block.startsWith('<gameState>\n') && block.endsWith('\n</gameState>'), block)
   assert.ok(block.includes('You are playing Go Fish.'), 'the block has to name the game')
   assert.ok(block.includes('Your hand: 3, 3, 7, K'), block)
@@ -227,11 +227,28 @@ function state(patch: Partial<GoFishState>): GoFishState {
   assert.ok(block.includes('Their books: 2'), block)
   assert.ok(block.includes('Cards left in the deck: 2'), block)
   assert.ok(block.includes('Your turn.'), block)
-  assert.ok(block.includes('A good ask would be 3.'), block)
+  // No rank suggestion may reach the model: the only ask it sees is the one the code already made.
+  assert.ok(!block.includes('would be'), block)
   // The player's hand is never in the block: the character cannot see it.
   assert.ok(!block.includes('2H'), block)
 
   assert.strictEqual(buildStateBlock(board, { tag: '' }).startsWith('You are playing Go Fish.'), true)
+
+  // The block is built after the move landed, so cards handed over are already out of the hand.
+  // Without `before` the character reads its own hand and denies holding what it just gave away.
+  const after = state({
+    turn: 'player',
+    hands: { player: hand('2H'), char: hand('7D KC 5S') },
+    books: { player: ['2'], char: ['9'] },
+    deck: hand('4H'),
+  })
+  const moved = buildStateBlock(after, { before: board })
+  assert.ok(moved.includes('Your hand: 5, 7, K'), moved)
+  assert.ok(moved.includes('You held 3, 3 a moment ago and no longer do.'), moved)
+  assert.ok(moved.includes('You just picked up 5.'), moved)
+  // Nothing changed hands: neither line appears.
+  const still = buildStateBlock(board, { before: board })
+  assert.ok(!still.includes('a moment ago') && !still.includes('picked up'), still)
 
   const line = describeEvent([
     { kind: 'ask', by: 'player', rank: '7' },

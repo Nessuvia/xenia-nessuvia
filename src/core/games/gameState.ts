@@ -4,31 +4,58 @@
 // tag rule can collapse it.
 
 import { rankPlural, sortHand } from './deck.ts'
+import type { Card, Rank } from './deck.ts'
 import type { GoFishEvent, GoFishState, Side } from './goFish.ts'
-import { chooseMove } from './goFish.ts'
 
 export interface StateBlockContext {
   /** Wrapper tag. Empty means the lines go in bare. */
   tag?: string
-  /** Add the line naming a sharp and a careless ask. The model still never chooses. */
-  seedMove?: boolean
+  /**
+   * The board as it stood when the move being described began.
+   *
+   * The block is built from the state *after* the move, so a card handed over is already gone from
+   * `Your hand` while the fact line under the block says it was handed over. The model read the
+   * hand and denied holding what it had just given away. When this is passed, the ranks that left
+   * and joined the hand are named in the block itself, next to the hand they changed.
+   */
+  before?: GoFishState
 }
+
+/** Ranks in `from` that are no longer in `to`, counting duplicates: "3, 3" and not "3". */
+function missing(from: Card[], to: Card[]): Rank[] {
+  const left = to.slice()
+  const out: Rank[] = []
+  for (const card of sortHand(from)) {
+    const i = left.findIndex((c) => c.rank === card.rank && c.suit === card.suit)
+    if (i === -1) out.push(card.rank)
+    else left.splice(i, 1)
+  }
+  return out
+}
+
+// There used to be a `seedMove` line here: "A good ask would be 3. A poor ask would be K." It was
+// the bug behind the character announcing one rank while the board tracked another. Two reasons it
+// could not be right. The block is built from the state *after* the move landed, so `chooseMove`
+// ran on the next ask, not the one just made; and it named the 'best' rank while the driver plays
+// the game's own difficulty, which defaults to 'average'. The model read a rank, said it, and the
+// log said something else. The ask the code actually chose is already in the fact line under the
+// block, and that is the only rank the model should ever see.
 
 export function buildStateBlock(state: GoFishState, ctx: StateBlockContext = {}): string {
   // Which game this is comes from the block, so the prompt stack does not have to name one.
   const lines: string[] = ['You are playing Go Fish.']
   const hand = sortHand(state.hands.char).map((c) => c.rank)
   lines.push(`Your hand: ${hand.length ? hand.join(', ') : 'empty'}`)
+  if (ctx.before) {
+    const gone = missing(ctx.before.hands.char, state.hands.char)
+    const got = missing(state.hands.char, ctx.before.hands.char)
+    if (gone.length) lines.push(`You held ${gone.join(', ')} a moment ago and no longer do.`)
+    if (got.length) lines.push(`You just picked up ${got.join(', ')}.`)
+  }
   lines.push(`Your books: ${state.books.char.length ? state.books.char.join(', ') : 'none'}`)
   lines.push(`Their books: ${state.books.player.length ? state.books.player.join(', ') : 'none'}`)
   lines.push(`Cards left in the deck: ${state.deck.length}`)
   lines.push(state.over ? 'The game is over.' : state.turn === 'char' ? 'Your turn.' : 'Their turn.')
-
-  if (ctx.seedMove && !state.over) {
-    const best = chooseMove(state, 'char', 'best')
-    const worst = chooseMove(state, 'char', 'worst')
-    if (best && worst && best !== worst) lines.push(`A good ask would be ${best}. A poor ask would be ${worst}.`)
-  }
 
   const body = lines.join('\n')
   const tag = (ctx.tag ?? 'gameState').trim()

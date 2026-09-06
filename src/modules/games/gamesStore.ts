@@ -91,8 +91,9 @@ export type { AnyGameState }
 interface GameRules {
   initial(seed: number): AnyGameState
   reduce(state: AnyGameState, event: GameEvent): AnyGameState
-  /** The `<gameState>` block, from the character's side of the table. */
-  block(state: AnyGameState, tag: string): string
+  /** The `<gameState>` block, from the character's side of the table. `before` is the board as it
+   *  stood when the move being described began, where a game has something to say about it. */
+  block(state: AnyGameState, tag: string, before?: AnyGameState): string
   describe(events: GameEvent[]): string
 }
 
@@ -100,7 +101,7 @@ const rules: Record<GameKind, GameRules> = {
   goFish: {
     initial: (seed) => initialState(seed),
     reduce: (state, event) => reduce(state as GoFishState, event as GoFishEvent),
-    block: (state, tag) => buildStateBlock(state as GoFishState, { tag, seedMove: true }),
+    block: (state, tag, before) => buildStateBlock(state as GoFishState, { tag, before: before as GoFishState | undefined }),
     describe: (events) => describeEvent(events as GoFishEvent[]),
   },
   blackjack: {
@@ -154,13 +155,15 @@ function gameMessages(game: Game, tag: string): Message[] {
   const kind = rules[game.kind]
   const messages: Message[] = []
   let current = kind.initial(game.seed)
+  // The board as it stood when the current batch started, so the block can name what left the hand.
+  let opening = current
   let batch: GameEvent[] = []
   let clock = game.createdAt
 
-  const pushMove = (state: AnyGameState, events: GameEvent[], withBlock: boolean) => {
+  const pushMove = (state: AnyGameState, events: GameEvent[], withBlock: boolean, from: AnyGameState) => {
     const line = kind.describe(events)
     if (!line) return
-    const block = withBlock ? `${kind.block(state, tag)}\n\n` : ''
+    const block = withBlock ? `${kind.block(state, tag, from)}\n\n` : ''
     // What the player typed, verbatim, on every turn they typed on. The event line is the
     // unambiguous fact; their words are the turn, and a character that only ever saw the fact
     // could not answer what was actually said to it.
@@ -180,8 +183,9 @@ function gameMessages(game: Game, tag: string): Message[] {
 
   for (const event of game.events) {
     if (event.kind === 'say') {
-      pushMove(current, batch, false)
+      pushMove(current, batch, false, opening)
       batch = []
+      opening = current
       // The player's own line is a user turn, quoted the same way an ask is, so the character
       // reads it as something said to them rather than as another fact about the table.
       messages.push({
@@ -200,7 +204,7 @@ function gameMessages(game: Game, tag: string): Message[] {
   // ends on something the player said there is no trailing batch, and the block goes on that line
   // instead: a reply with no board in the prompt is the character guessing.
   if (batch.length > 0) {
-    pushMove(current, batch, true)
+    pushMove(current, batch, true, opening)
   } else {
     const last = [...messages].reverse().find((m) => m.role === 'user')
     if (last) last.content = `${kind.block(current, tag)}\n\n${last.content}`
