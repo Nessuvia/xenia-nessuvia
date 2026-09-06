@@ -218,7 +218,7 @@ function LiveGame() {
   const { gameId } = useParams()
   const {
     game, state, streaming, streamingText, error, notice, open, close, submit, clearNotice,
-    boardScale, logOpen, logWidth, setLogOpen,
+    boardScale, logOpen, logWidth, setLogOpen, awaitingNext, next,
   } = useGames()
   const chatBack = useSettings((s) => s.gameChatBack)
   const autoSend = useSettings((s) => s.gameAutoSend)
@@ -265,7 +265,9 @@ function LiveGame() {
           autoSend={autoSend}
           error={error}
           notice={notice}
+          awaitingNext={awaitingNext}
           onSubmit={submit}
+          onNext={next}
         />
         <GameLog
           kind={game.kind}

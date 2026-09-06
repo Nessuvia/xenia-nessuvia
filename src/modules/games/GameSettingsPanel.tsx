@@ -23,6 +23,8 @@ export default function GameSettingsPanel() {
   const setSoundOff = useSettings((s) => s.setGameSoundOff)
   const autoSend = useSettings((s) => s.gameAutoSend)
   const setAutoSend = useSettings((s) => s.setGameAutoSend)
+  const stepMode = useSettings((s) => s.gameStepMode)
+  const setStepMode = useSettings((s) => s.setGameStepMode)
   // Difficulty is per game, not a user setting: it is a property of this match, and changing it
   // halfway through a game you are losing should not rewrite the ones you already played.
   const setDifficulty = useGames((s) => s.setDifficulty)
@@ -118,6 +120,14 @@ export default function GameSettingsPanel() {
       <p className="gamesRailRow">
         Clicking a card fills the box and sends it after a second and a half. Typing in the box
         stops it.
+      </p>
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={stepMode} onChange={(e) => setStepMode(e.target.checked)} />
+        <span className="gamesRailRow">Wait for Next</span>
+      </label>
+      <p className="gamesRailRow">
+        After {game.characterName} speaks, the table stops until you click Next on their line.
       </p>
 
       <label className="gamesRailField">

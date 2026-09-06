@@ -5,9 +5,9 @@ import type { GoFishState } from '../../core/games/goFish'
 import { winner } from '../../core/games/goFish'
 import { cardTokens, rankPlural, sortHand } from '../../core/games/deck'
 import { Card } from './Card'
+import CharacterLine from './CharacterLine'
 import { useCardMotion } from './useCardMotion'
 import { useDiffOrigin } from './useDiffOrigin'
-import { useStickToBottom } from './useStickToBottom'
 
 /**
  * How long the box counts down before it sends itself. The bar reads the same number as a CSS var,
@@ -37,7 +37,9 @@ export default function GoFishBoard({
   error,
   notice,
   readOnly = false,
+  awaitingNext = false,
   onSubmit,
+  onNext,
 }: {
   state: GoFishState
   /** Names the character's face-down cards without putting their ranks in the DOM. */
@@ -59,11 +61,15 @@ export default function GoFishBoard({
   error?: string
   notice?: string
   readOnly?: boolean
+  /** The table is parked on the step gate. Shows Next, and holds the box until it is clicked. */
+  awaitingNext?: boolean
   onSubmit?: (text: string) => void
+  onNext?: () => void
 }) {
   const [text, setText] = useState('')
   // With chat back on the box stays live off your turn: what you type there is speech, not a move.
-  const locked = readOnly || streaming || state.over || (state.turn !== 'player' && !chatBack)
+  const locked =
+    readOnly || streaming || state.over || awaitingNext || (state.turn !== 'player' && !chatBack)
   const myTurn = state.turn === 'player'
   const books = [
     ...state.books.char.map((rank) => ({ rank, by: 'char' as const })),
@@ -88,8 +94,6 @@ export default function GoFishBoard({
 
   /** What the character has shown it holds and has not since given up or booked away. */
   const known = state.known.player
-
-  const lineRef = useStickToBottom(line)
 
   const send = () => {
     if (locked || !text.trim() || !onSubmit) return
@@ -124,9 +128,7 @@ export default function GoFishBoard({
           className={`avatar cardTableAvatar${state.turn === 'char' && !state.over ? ' cardTableAvatarActive' : ''}`}
           title={characterName}
         />
-        <p className="cardTableLine" ref={lineRef}>
-          {line || (streaming ? '…' : '')}
-        </p>
+        <CharacterLine line={line} streaming={streaming} awaitingNext={awaitingNext} onNext={onNext} />
       </div>
 
       <div className="cardTableField">

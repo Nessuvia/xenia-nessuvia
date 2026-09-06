@@ -175,6 +175,15 @@
   outline-offset: 2px;
 }
 
+/* Holds the Next button over the line. The button is a sibling of the paragraph, not a child:
+   inside it, it would scroll away with the text it is asking you to finish reading. */
+.cardTableLineWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 /* Grows with the text as it streams. */
 .cardTableLine {
   margin: 0;
@@ -184,6 +193,31 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
+}
+
+/* Room under the last line for the button that sits on top of it. */
+.cardTableLineGated {
+  padding-bottom: 36px;
+}
+
+.cardTableNext {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  background: var(--surfaceRaised);
+  border: 1px solid var(--borderAccent);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cardTableNext:hover {
+  background: var(--surfaceHover);
 }
 
 .cardTableInput {

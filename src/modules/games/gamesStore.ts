@@ -59,6 +59,19 @@ let driving = false
 let wanted = false
 
 /**
+ * The step gate: the resolve of the promise the driver is parked on, or null when it is running.
+ * With `gameStepMode` on the table stops after the character has spoken and only moves again when
+ * Next is clicked, so a line can be read before the next card lands on top of it.
+ */
+let stepGate: (() => void) | null = null
+
+function releaseStep() {
+  const resume = stepGate
+  stepGate = null
+  resume?.()
+}
+
+/**
  * The wait before the next event lands: the cards finish moving, then the beat. An arrival takes
  * seconds, and writing the next event while one is still in the air replaces the card in flight
  * with the same card in its final place.
@@ -152,12 +165,15 @@ function gameMessages(game: Game, tag: string): Message[] {
     // unambiguous fact; their words are the turn, and a character that only ever saw the fact
     // could not answer what was actually said to it.
     const said = events.find((e) => e.kind === 'ask' && e.by === 'player' && e.text)
-    const quote = said?.kind === 'ask' && said.text ? `\n\nThey said: "${said.text}"` : ''
+    // Before the fact line, never after. The line already reports the ask and how it resolved, so a
+    // quote of the ask sitting after it reads as a second ask that nothing has answered yet, and the
+    // character replies to that instead of to the move. Speech first, then what it caused.
+    const quote = said?.kind === 'ask' && said.text ? `They said: "${said.text}"\n\n` : ''
     messages.push({
       ownerId: game.ownerId,
       chatId: 0,
       role: 'user',
-      content: block + line + quote,
+      content: block + quote + line,
       createdAt: clock++,
     })
   }
@@ -219,6 +235,8 @@ interface GamesState {
   error: string
   /** Unparsable input: shown briefly, nothing is logged. */
   notice: string
+  /** The table is parked on the step gate, waiting for Next. */
+  awaitingNext: boolean
 
   /** 1 to 4. A 4k monitor renders the board at a fraction of the screen otherwise. */
   boardScale: number
@@ -237,6 +255,7 @@ interface GamesState {
   setDifficulty(quality: MoveQuality): Promise<void>
   setAuthorNote(note: string): Promise<void>
   abandon(): Promise<void>
+  next(): void
   remove(id: number): Promise<void>
   clearNotice(): void
 }
@@ -277,6 +296,7 @@ export const useGames = create<GamesState>()((set, get) => ({
   streamingText: '',
   error: '',
   notice: '',
+  awaitingNext: false,
 
   boardScale: readNumber(scaleKey, 1),
   logWidth: readNumber(widthKey, 320),
@@ -340,8 +360,13 @@ export const useGames = create<GamesState>()((set, get) => ({
   close: () => {
     live?.abort()
     live = null
-    set({ game: null, error: '', notice: '', streaming: false, streamingText: '' })
+    // Let the parked driver run on: its next check sees a different game and stops the run. Left
+    // parked it would hold `driving` forever and the next game would never move.
+    releaseStep()
+    set({ game: null, error: '', notice: '', streaming: false, streamingText: '', awaitingNext: false })
   },
+
+  next: () => releaseStep(),
 
   submit: async (text) => {
     const game = get().game
@@ -460,7 +485,11 @@ async function drive(get: Get, set: Set) {
         // The board was closed, or another game was opened, while a beat was in the air.
         if (!game || game.id !== id) break
         const batch = drivers[game.kind](get().state, { difficulty: game.difficulty })
+        // Nothing left to do here: the table is waiting on the player, who can read at their own
+        // pace anyway. The gate goes after this check so it never sits in front of your own turn.
         if (!batch || batch.length === 0) break
+        await waitForNext(get, set)
+        if (get().game?.id !== id) break
         // A beat before they move again, so a run of turns reads as several moves.
         await beat()
         await pace(get, set, batch)
@@ -470,6 +499,25 @@ async function drive(get: Get, set: Set) {
   } finally {
     driving = false
   }
+}
+
+/**
+ * Park the table until Next is clicked.
+ *
+ * Only where there is something to read: the gate exists for the character's line, so a log that
+ * has not ended on one since the last gate goes on without stopping. `driving` is still set here,
+ * which is what holds the player's move off until they let the table go.
+ */
+async function waitForNext(get: Get, set: Set) {
+  if (!useSettings.getState().gameStepMode) return
+  const events = get().game?.events
+  const last = events?.[events.length - 1]
+  if (last?.kind !== 'say' || last.by !== 'char') return
+  set({ awaitingNext: true })
+  await new Promise<void>((resolve) => {
+    stepGate = resolve
+  })
+  set({ awaitingNext: false })
 }
 
 /**

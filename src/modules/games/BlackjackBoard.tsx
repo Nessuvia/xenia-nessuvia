@@ -4,9 +4,9 @@ import type { AvatarSource } from '../../core/storage/types'
 import type { BlackjackState } from '../../core/games/blackjack'
 import { handValue, isBust, legalActions, winner } from '../../core/games/blackjack'
 import { Card } from './Card'
+import CharacterLine from './CharacterLine'
 import { useCardMotion } from './useCardMotion'
 import { useDiffOrigin } from './useDiffOrigin'
-import { useStickToBottom } from './useStickToBottom'
 
 /**
  * The Blackjack table. Same column as Go Fish, and the same shared `cardTable*` chrome: the
@@ -29,7 +29,9 @@ export default function BlackjackBoard({
   error,
   notice,
   readOnly = false,
+  awaitingNext = false,
   onSubmit,
+  onNext,
 }: {
   state: BlackjackState
   scale?: number
@@ -43,20 +45,21 @@ export default function BlackjackBoard({
   error?: string
   notice?: string
   readOnly?: boolean
+  /** The table is parked on the step gate. Shows Next, and holds the controls until it is clicked. */
+  awaitingNext?: boolean
   onSubmit?: (text: string) => void
+  onNext?: () => void
 }) {
   const [text, setText] = useState('')
   const actions = legalActions(state)
-  const canAct = !readOnly && !streaming && actions.length > 0
+  const canAct = !readOnly && !streaming && !awaitingNext && actions.length > 0
   // With chat back on the box stays live between rounds: what you type there is speech, not a move.
-  const locked = readOnly || streaming || (!canAct && !chatBack)
+  const locked = readOnly || streaming || awaitingNext || (!canAct && !chatBack)
 
   const table = useRef<HTMLDivElement>(null)
   // Every card on this table comes off the shoe, so the origin never has to be worked out.
   const origin = useDiffOrigin(state, (previous, next) => (previous.deck.length > next.deck.length ? 'deck' : null))
   useCardMotion(table, origin, state, !readOnly)
-
-  const lineRef = useStickToBottom(line)
 
   const send = () => {
     if (locked || !text.trim() || !onSubmit) return
@@ -76,9 +79,7 @@ export default function BlackjackBoard({
           className={`avatar cardTableAvatar${state.turn === 'char' && !state.over ? ' cardTableAvatarActive' : ''}`}
           title={characterName}
         />
-        <p className="cardTableLine" ref={lineRef}>
-          {line || (streaming ? '…' : '')}
-        </p>
+        <CharacterLine line={line} streaming={streaming} awaitingNext={awaitingNext} onNext={onNext} />
       </div>
 
       <div className="cardTableField">

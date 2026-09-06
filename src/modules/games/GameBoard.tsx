@@ -26,7 +26,10 @@ export interface BoardProps {
   error?: string
   notice?: string
   readOnly?: boolean
+  /** The table is parked on the step gate, waiting for Next. */
+  awaitingNext?: boolean
   onSubmit?: (text: string) => void
+  onNext?: () => void
 }
 
 /**
