@@ -7,6 +7,7 @@ import { cardTokens, rankPlural, sortHand } from '../../core/games/deck'
 import { Card } from './Card'
 import CharacterLine from './CharacterLine'
 import { useCardMotion } from './useCardMotion'
+import type { HandFit } from './gamesStore'
 import { useDiffOrigin } from './useDiffOrigin'
 
 /**
@@ -34,6 +35,8 @@ export default function GoFishBoard({
   streaming,
   chatBack = false,
   autoSend = false,
+  handFit = 'stack',
+  onHandFit,
   error,
   notice,
   readOnly = false,
@@ -58,6 +61,11 @@ export default function GoFishBoard({
   chatBack?: boolean
   /** Clicking a card sends it on its own after `autoSendMs`. */
   autoSend?: boolean
+  /** 'stack' overlaps the cards until the whole hand fits the row. 'layout' leaves them at their
+   *  own width and lets the row scroll sideways. */
+  handFit?: HandFit
+  /** Missing means no toggle: History's replay draws the hands, it does not set the preference. */
+  onHandFit?: (fit: HandFit) => void
   error?: string
   notice?: string
   readOnly?: boolean
@@ -120,7 +128,11 @@ export default function GoFishBoard({
   return (
     // The scale is a var the stylesheet multiplies the card metrics by. Nothing here is zoomed:
     // zoom on a container scales its layout box too, which left a hand wrapping after three cards.
-    <div className="cardTableBoard" ref={table} style={{ '--cardTableScale': scale } as CSSProperties}>
+    <div
+      className={`cardTableBoard ${handFit === 'layout' ? 'cardTableHandFitLayout' : 'cardTableHandFitStack'}`}
+      ref={table}
+      style={{ '--cardTableScale': scale } as CSSProperties}
+    >
       <div className="cardTableSpeakerRow">
         <Avatar
           of={character}
@@ -195,6 +207,27 @@ export default function GoFishBoard({
           ))}
         </div>
       </div>
+
+      {/* Sits under your hand, so the control that changes how the cards are drawn is next to the
+          cards it changes. */}
+      {onHandFit && (
+        <div className="goFishFitToggle">
+          <button
+            type="button"
+            className={`goFishFitButton${handFit === 'stack' ? ' goFishFitButtonOn' : ''}`}
+            onClick={() => onHandFit('stack')}
+          >
+            Stack
+          </button>
+          <button
+            type="button"
+            className={`goFishFitButton${handFit === 'layout' ? ' goFishFitButtonOn' : ''}`}
+            onClick={() => onHandFit('layout')}
+          >
+            Layout
+          </button>
+        </div>
+      )}
 
       <div className="cardTableSpeakerRow cardTableSpeakerRowPlayer">
         {readOnly ? (

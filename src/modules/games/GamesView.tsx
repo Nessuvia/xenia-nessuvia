@@ -164,7 +164,7 @@ function History() {
 
 function Replay({ game }: { game: Game }) {
   const [upTo, setUpTo] = useState(game.events.length)
-  const { boardScale, logOpen, logWidth, setLogOpen } = useGames()
+  const { boardScale, handFit, logOpen, logWidth, setLogOpen } = useGames()
   const characters = useCharacters((s) => s.characters)
   const personas = usePersonas((s) => s.personas)
   const character = characters.find((c) => c.id === game.characterId)
@@ -198,6 +198,7 @@ function Replay({ game }: { game: Game }) {
           readOnly
           state={state}
           scale={boardScale}
+          handFit={handFit}
           character={character}
           characterName={game.characterName}
           persona={persona}
@@ -225,7 +226,7 @@ function LiveGame() {
   const { gameId } = useParams()
   const {
     game, state, streaming, streamingText, error, notice, open, close, submit, clearNotice,
-    boardScale, logOpen, logWidth, setLogOpen, awaitingNext, next,
+    boardScale, handFit, setHandFit, logOpen, logWidth, setLogOpen, awaitingNext, next,
   } = useGames()
   const chatBack = useSettings((s) => s.gameChatBack)
   const autoSend = useSettings((s) => s.gameAutoSend)
@@ -272,6 +273,8 @@ function LiveGame() {
           streaming={streaming}
           chatBack={chatBack}
           autoSend={autoSend}
+          handFit={handFit}
+          onHandFit={setHandFit}
           error={error}
           notice={notice}
           awaitingNext={awaitingNext}

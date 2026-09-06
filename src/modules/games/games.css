@@ -315,6 +315,79 @@
   width: 100%;
 }
 
+/* Stack: one row, however many cards. The percentage margin resolves against the row's own width,
+   so `(100% - what the cards need) / the gaps between them` is the space each card gives back for
+   the hand to fit, with no measuring in JS. min() rather than clamp(): there is no floor on the
+   overlap, because fitting is the whole point of this mode. The -0.9 guard only stops a card from
+   sliding behind the one before it and reversing the order on screen. */
+.cardTableHandFitStack .cardTableHandRow {
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  overflow: hidden;
+  gap: 0;
+}
+
+.cardTableHandFitStack .cardTableHandRow .cardTableCard {
+  flex: none;
+  margin-left: max(
+    calc(var(--cardTableCardWidth) * var(--cardTableScale, 1) * -0.9),
+    min(
+      calc(
+        (100% - var(--cardTableCardWidth) * var(--cardTableScale, 1) * var(--handCount, 1)) /
+          max(var(--handCount, 1) - 1, 1)
+      ),
+      4px
+    )
+  );
+}
+
+.cardTableHandFitStack .cardTableHandRow .cardTableCard:first-child {
+  margin-left: 0;
+}
+
+/* Layout: cards at their own width, the row scrolls sideways under a thumb. */
+.cardTableHandFitLayout .cardTableHandRow {
+  flex-wrap: nowrap;
+  /* `safe` so a hand wider than the row starts at its left edge instead of centring its overflow
+     out of reach of a scroll. */
+  justify-content: safe center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 4px;
+  scroll-padding-inline: 8px;
+}
+
+.cardTableHandFitLayout .cardTableHandRow .cardTableCard {
+  flex: none;
+  margin-left: 0;
+}
+
+/* The Stack / Layout pair, under your hand. */
+.goFishFitToggle {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  max-width: var(--cardTableWidth);
+}
+
+.goFishFitButton {
+  padding: 4px 12px;
+  min-height: 28px;
+  background: var(--surfaceSunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--textMuted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.goFishFitButtonOn {
+  background: var(--surfaceSelected);
+  border-color: var(--borderAccent);
+  color: var(--textBright);
+}
+
 .goFishPool {
   display: flex;
   align-items: center;
@@ -674,39 +747,6 @@
     font-size: calc(12px * var(--cardTableScale, 1));
   }
 
-  /* The hand fans, then scrolls. One row that never wraps: the cards close up as the hand grows,
-     and once they have closed up as far as they may the row runs off the side and scrolls.
-
-     The margin is the whole mechanism. A percentage margin resolves against the row's own width, so
-     `(100% - what the cards need) / the gaps between them` is exactly the space each card has to
-     give back for the hand to fit, with no measuring in JS. clamp holds it between the ordinary 4px
-     gap and an overlap that still leaves the rank corner of every card showing. */
-  .cardTableHandRow {
-    flex-wrap: nowrap;
-    /* `safe` so a hand that outgrows the row aligns to its start instead of centring and putting
-       the first cards past the left edge, where a scroll cannot reach them. */
-    justify-content: safe center;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 0;
-  }
-
-  .cardTableHandRow .cardTableCard {
-    flex: none;
-    margin-left: clamp(
-      calc(var(--cardTableCardWidth) * var(--cardTableScale, 1) * -0.62),
-      calc(
-        (100% - var(--cardTableCardWidth) * var(--cardTableScale, 1) * var(--handCount, 1)) /
-          max(var(--handCount, 1) - 1, 1)
-      ),
-      4px
-    );
-  }
-
-  .cardTableHandRow .cardTableCard:first-child {
-    margin-left: 0;
-  }
-
   /* Count beside its hand rather than on a row of its own. row-reverse on the player's line because
      its count comes first in the DOM: both lines end up hand on the left, count on the right. */
   .blackjackHandLine {
@@ -726,6 +766,12 @@
 
   .blackjackHandLine .blackjackCount {
     flex: none;
+  }
+
+  /* A thumb target rather than a mouse one. */
+  .goFishFitButton {
+    flex: 1;
+    min-height: 44px;
   }
 
   /* Hit and Stand are how the game is played and they are the only real targets on this board, so

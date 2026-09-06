@@ -2,7 +2,7 @@ import type { AvatarSource } from '../../core/storage/types'
 import type { GameKind } from '../../core/games/gameEvent'
 import type { GoFishState } from '../../core/games/goFish'
 import type { BlackjackState } from '../../core/games/blackjack'
-import type { AnyGameState } from './gamesStore'
+import type { AnyGameState, HandFit } from './gamesStore'
 import GoFishBoard from './GoFishBoard'
 import BlackjackBoard from './BlackjackBoard'
 
@@ -23,6 +23,9 @@ export interface BoardProps {
   /** Go Fish only: clicking a card sends it on its own a beat later. Blackjack is buttons, and a
    *  button that fires itself is a different question. */
   autoSend?: boolean
+  /** Go Fish only: how the hands are drawn, and the setter behind the toggle above the input. */
+  handFit?: HandFit
+  onHandFit?: (fit: HandFit) => void
   error?: string
   notice?: string
   readOnly?: boolean

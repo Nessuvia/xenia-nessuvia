@@ -71,7 +71,13 @@ export default function BlackjackBoard({
   const playerHand = handValue(state.hands.player)
 
   return (
-    <div className="cardTableBoard" ref={table} style={{ '--cardTableScale': scale } as CSSProperties}>
+    // Blackjack has no fit toggle: a hand here is a few cards, and stacking them to fit is the only
+    // behaviour it ever wanted.
+    <div
+      className="cardTableBoard cardTableHandFitStack"
+      ref={table}
+      style={{ '--cardTableScale': scale } as CSSProperties}
+    >
       <div className="cardTableSpeakerRow">
         <Avatar
           of={character}

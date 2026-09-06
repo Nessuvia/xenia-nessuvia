@@ -217,6 +217,7 @@ function gameMessages(game: Game, tag: string): Message[] {
  * monitor, not to the user's data. Straight to localStorage, no store table, out of the export.
  */
 const scaleKey = 'nessuTavern.gamesBoardScale'
+const handFitKey = 'nessuTavern.gamesHandFit'
 const widthKey = 'nessuTavern.gamesLogWidth'
 const openKey = 'nessuTavern.gamesLogOpen'
 
@@ -224,6 +225,8 @@ function readNumber(key: string, fallback: number): number {
   const value = Number(localStorage.getItem(key))
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
+
+export type HandFit = 'stack' | 'layout'
 
 interface GamesState {
   games: Game[]
@@ -244,10 +247,14 @@ interface GamesState {
 
   /** 1 to 4. A 4k monitor renders the board at a fraction of the screen otherwise. */
   boardScale: number
+  /** How a hand is drawn: 'stack' overlaps the cards as far as it takes to fit the row, 'layout'
+   *  leaves them at their own width and scrolls sideways. */
+  handFit: HandFit
   /** Width of the log panel in px. */
   logWidth: number
   logOpen: boolean
   setBoardScale(scale: number): void
+  setHandFit(fit: HandFit): void
   setLogWidth(width: number): void
   setLogOpen(open: boolean): void
 
@@ -303,12 +310,17 @@ export const useGames = create<GamesState>()((set, get) => ({
   awaitingNext: false,
 
   boardScale: readNumber(scaleKey, 1),
+  handFit: localStorage.getItem(handFitKey) === 'layout' ? 'layout' : 'stack',
   logWidth: readNumber(widthKey, 320),
   logOpen: localStorage.getItem(openKey) !== '0',
 
   setBoardScale: (scale) => {
     localStorage.setItem(scaleKey, String(scale))
     set({ boardScale: scale })
+  },
+  setHandFit: (fit) => {
+    localStorage.setItem(handFitKey, fit)
+    set({ handFit: fit })
   },
   setLogWidth: (width) => {
     localStorage.setItem(widthKey, String(width))
