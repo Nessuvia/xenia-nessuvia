@@ -1,0 +1,219 @@
+{
+  "format": "nessuTavern.rules",
+  "name": "Nessu's rules",
+  "hammer": [
+    {
+      "label": "with a [adj] [noun]",
+      "pattern": "with a [adj] [noun]",
+      "action": "strip",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "in a [adj] [noun]",
+      "pattern": "in a [adj] [noun]",
+      "action": "flag",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "adverb on an adjective",
+      "pattern": "[adv] [adj]",
+      "action": "flag",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "paired adjectives",
+      "pattern": "[adj] and [adj]",
+      "action": "flag",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "not just X, but Y",
+      "pattern": "not just [noun], but [noun]",
+      "action": "flag",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "verb + a little",
+      "pattern": "[verb] a little",
+      "action": "replace",
+      "replacement": "$1",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "verb + slightly",
+      "pattern": "[verb] slightly",
+      "action": "replace",
+      "replacement": "$1",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "just + verb",
+      "pattern": "just [verb]",
+      "action": "replace",
+      "replacement": "$2",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "slightly + adjective",
+      "pattern": "slightly [adj]",
+      "action": "replace",
+      "replacement": "$2",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    },
+    {
+      "label": "a bit + adjective",
+      "pattern": "a bit [adj]",
+      "action": "replace",
+      "replacement": "$3",
+      "scope": "assistant",
+      "caseSensitive": false,
+      "enabled": true
+    }
+  ],
+  "rules": [
+    {
+      "label": "Staccato chain",
+      "find": "(?:(?:^|[.!?]\\s+)[^.!?\\n]{1,28}[.!?])\\s+[^.!?\\n]{1,28}[.!?]\\s+[^.!?\\n]{1,28}[.!?]",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Three short sentences in a row, used as rhythm rather than as content. Rewrite the run as one or two sentences of ordinary length. \"He looked at her. Then at the bag. Then back at her.\" is the exact failure."
+    },
+    {
+      "label": "Then-chain",
+      "find": "[.!?]\\s+Then\\b(?![^.!?]{25,})",
+      "regex": true,
+      "scope": "assistant",
+      "note": "A short sentence opening on \"Then\", continuing the sentence before it. Join them or cut one."
+    },
+    {
+      "label": "Anaphoric fragments",
+      "find": "\\b(Not|No|Never|Just) [^.!?\\n]{1,25}[.!?]\\s+\\1\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Two fragments in a row opening on the same word. Delete one and write the sentence out."
+    },
+    {
+      "label": "Litotes",
+      "find": "\\b(?:did ?n[o']t|was ?n[o']t|were ?n[o']t|could ?n[o']t|would ?n[o']t|had ?n[o']t) (?:smile|smiling|answer|reply|look|looking|move|moving|speak|say|saying|flinch|blink)\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Describing a person by what they did not do. Write what they did instead. If they did nothing worth reporting, cut the sentence."
+    },
+    {
+      "label": "Negated pair",
+      "find": "\\b(?:not|no) [^.!?\\n]{1,30}(?:,| but|\\.) (?:just|but|it'?s|it was)\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "The \"not X, just Y\" shape. Keep the positive half and delete the negation. If the positive half cannot stand alone, the sentence carried nothing."
+    },
+    {
+      "label": "Simile",
+      "find": "\\b(?:like|as if|as though) (?:a|an|the|he|she|it|they|someone|somebody|something)\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "A comparison standing in for a description. Cut it and describe the thing itself. Comparisons in dialogue are allowed; this is about narration."
+    },
+    {
+      "label": "Model vocabulary",
+      "find": "\\b(palpable|unspoken|ministrations|testament|tapestry|symphony|unreadable|unwavering|glinted|impossibly|achingly|devastating|crackled)\\w*\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "A word this model reaches for by habit. Replace it with the plain word for what is actually happening."
+    },
+    {
+      "label": "Model phrasing",
+      "find": "(a mix(ture)? of [^.!?\\n]{1,20} and\\b|something unreadable|the air (was|hung) thick|a beat passed|the silence stretched|ghost of a smile|the words hung between)",
+      "regex": true,
+      "scope": "assistant",
+      "note": "A stock phrase. Say what is in the room instead: what a person did with their hands, where they looked, what they said next."
+    },
+    {
+      "label": "Therapyspeak",
+      "find": "\\b(boundaries|holding space|processing (this|that|it)|is valid|feel safe|unpack (this|that|it)|sitting with (this|that|it))\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Clinical vocabulary in a scene that is not clinical. Say the ordinary thing the character would say."
+    },
+    {
+      "label": "Withholding announced",
+      "find": "(I'?m not going to tell you|that'?s not my story to tell|I'?ll only say this|let'?s just say)",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Announcing what will not be said. A character who withholds changes the subject, answers narrowly, or says nothing."
+    },
+    {
+      "label": "Self-diagnosis",
+      "find": "(does that make me|I know that'?s my|is that (weird|crazy|too much)\\?)",
+      "regex": true,
+      "scope": "assistant",
+      "note": "The character asking to be judged. Cut the question. Let the other person decide what to make of it."
+    },
+    {
+      "label": "Adverb on a speech tag",
+      "find": "\\b(said|asked|replied|answered|added|murmured) \\w+ly\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Cut the adverb. If the line needs the adverb to land, the line is wrong."
+    },
+    {
+      "label": "Exotic speech tags",
+      "find": "\\b(purred|husked|breathed|smirked|chuckled|grinned|hissed|drawled|ground out|bit out)\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "Use said or asked. Anything else needs a reason, and a face cannot smirk a sentence."
+    },
+    {
+      "label": "Em dash",
+      "find": "[\\u2014\\u2013]",
+      "regex": true,
+      "scope": "assistant",
+      "note": "One em dash per reply at most. Use a full stop, a comma, or brackets."
+    },
+    {
+      "label": "Named emotion",
+      "find": "",
+      "regex": false,
+      "scope": "assistant",
+      "note": "Find any sentence that names what a person feels rather than showing it. Replace it with what they did, or delete it."
+    },
+    {
+      "label": "Summarizing closer",
+      "find": "",
+      "regex": false,
+      "scope": "assistant",
+      "note": "Read the last sentence. If it restates the emotional content of the scene rather than being dialogue or a physical action, delete it and end on the sentence before."
+    },
+    {
+      "label": "Sentence length",
+      "find": "",
+      "regex": false,
+      "scope": "assistant",
+      "note": "Any two sentences next to each other should differ in length by at least five words. A page of sentences the same length is the strongest tell there is."
+    },
+    {
+      "label": "Nothing the speaker cannot know",
+      "find": "",
+      "regex": false,
+      "scope": "assistant",
+      "note": "A character knows what they saw, heard, or were told, and nothing past the moment they left. Cut any line stating more than that."
+    }
+  ]
+}

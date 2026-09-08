@@ -8,6 +8,8 @@ import { useSettings } from './settingsStore'
 // bundled file both live with the prompts module.
 import { parseStack } from '../../modules/prompts/stackFile'
 import storyStackFile from '../../modules/prompts/defaultStoryStack.json'
+import glmChatFile from '../../modules/prompts/glmChatStack.json'
+import glmStoryFile from '../../modules/prompts/glmStoryStack.json'
 
 export function newBlock(partial: Partial<PromptBlock> = {}): PromptBlock {
   return {
@@ -146,6 +148,16 @@ export function defaultStoryStack(name = 'Story'): PromptStack {
   return { ...parseStack(JSON.stringify(storyStackFile)), name }
 }
 
+/** Two halves of one preset tuned for GLM 4.7 through 5.3: a chat stack and a story stack that
+ *  carry the same style source, banned list, length tiers and dialogue rules. */
+export function glmChatStack(name = "Nessu's GLM Preset"): PromptStack {
+  return { ...parseStack(JSON.stringify(glmChatFile)), name }
+}
+
+export function glmStoryStack(name = "Nessu's GLM Preset"): PromptStack {
+  return { ...parseStack(JSON.stringify(glmStoryFile)), name }
+}
+
 /** A stack that ships with the build. Seeding uses two of these; the Bundled picker lists them all,
  *  so a deleted one can be added back. */
 export interface BundledStack {
@@ -168,6 +180,8 @@ export const bundledStacks: BundledStack[] = [
   },
   { key: 'game', name: 'Game', kind: 'chat', make: defaultGameStack },
   { key: 'story', name: 'Story', kind: 'story', make: defaultStoryStack },
+  { key: 'glm', name: "Nessu's GLM Preset", kind: 'chat', make: glmChatStack },
+  { key: 'glmStory', name: "Nessu's GLM Preset", kind: 'story', make: glmStoryStack },
 ]
 
 const stackKind = (s: PromptStack): 'chat' | 'story' => s.kind ?? 'chat'

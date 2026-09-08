@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { RiHammerLine } from '@remixicon/react'
 import {
   newGrammarHammerRule,
-  seedGrammarHammerRules,
   useSecondPass,
   useSettings,
   type GrammarHammerRule,
@@ -95,11 +94,6 @@ export default function GrammarHammerPanel() {
         <button type="button" onClick={() => patchGh({ rules: [...gh.rules, newGrammarHammerRule()] })}>
           Add rule
         </button>
-        {gh.rules.length === 0 && (
-          <button type="button" onClick={() => patchGh({ rules: seedGrammarHammerRules() })}>
-            Add example rules
-          </button>
-        )}
         <button type="button" onClick={() => setCheat(!cheat)}>
           {cheat ? 'Hide cheat sheet' : 'Cheat sheet'}
         </button>

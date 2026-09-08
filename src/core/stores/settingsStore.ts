@@ -7,11 +7,6 @@ import { tableNames, type TableName } from '../storage/storageInterface.ts'
 import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
-// The bundled rule set, in its own file: it carries the upstream MIT notice with it.
-import { defaultBundle, defaultSecondPassRules } from '../secondPass/defaultRules.ts'
-
-export { defaultBundle, defaultSecondPassRules }
-
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
@@ -139,9 +134,20 @@ export interface SecondPassSettings {
   passBeats: boolean
   rules: GrammarHammerRule[]
   textRules: SecondPassRule[]
+  punctuation: PunctuationSettings
   repetition: RepetitionSettings
   sprawl: SprawlSettings
   triplet: TripletSettings
+}
+
+/**
+ * The two mechanical sweeps: em dashes to commas, curly quotes and ellipses to their straight
+ * forms. Settings rather than rules because there is no judgment in either one, so there is
+ * nothing for the editing model to be told.
+ */
+export interface PunctuationSettings {
+  dashes: boolean
+  quotes: boolean
 }
 
 /**
@@ -233,13 +239,14 @@ export const defaultSecondPass: SecondPassSettings = {
   skipWhenClean: true,
   userPrompt: '',
   passBeats: false,
-  rules: seedGrammarHammerRules(),
-  // Rules and both built-in checks come from one place, so the shipped state and what Restore
-  // defaults puts back can never drift apart.
-  textRules: defaultBundle().rules,
-  repetition: defaultBundle().repetition,
-  sprawl: defaultBundle().sprawl,
-  triplet: defaultBundle().triplet,
+  // Both lists ship empty. Rules are opinions about prose, and the build has none: a set arrives
+  // as a JSON file, either the bundled one or someone else's. See `core/secondPass/ruleJson.ts`.
+  rules: [],
+  textRules: [],
+  punctuation: { dashes: true, quotes: true },
+  repetition: { enabled: true, phrase: 4, repeats: 2, lookback: 8 },
+  sprawl: { enabled: true, maxWords: 45, maxCommas: 4, maxConjunctions: 3 },
+  triplet: { enabled: true },
 }
 
 /** Display behavior, global. Everything visual, colors, font, widths, lives on the active
@@ -275,31 +282,6 @@ export function newGrammarHammerRule(): GrammarHammerRule {
     scope: 'assistant',
     caseSensitive: false,
   }
-}
-
-/** Seed rules ship disabled so turning the feature on is opt-in per pattern. */
-export function seedGrammarHammerRules(): GrammarHammerRule[] {
-  const mk = (
-    pattern: string,
-    label: string,
-    action: GrammarHammerRule['action'],
-  ): GrammarHammerRule => ({
-    id: crypto.randomUUID(),
-    enabled: false,
-    label,
-    pattern,
-    action,
-    scope: 'assistant',
-    caseSensitive: false,
-  })
-  return [
-    mk('with a [adj] [noun]', 'with-a-adj-noun', 'strip'),
-    // Both of these can take the whole point of the sentence with them, so they report rather
-    // than cut and let the Second Pass rewrite decide.
-    mk('[adj] and [adj]', 'adj-and-adj', 'flag'),
-    mk('not just [noun], but [noun]', 'not-just-but', 'flag'),
-    mk('[adv] [adj]', 'adv-adj', 'flag'),
-  ]
 }
 
 interface SettingsState {

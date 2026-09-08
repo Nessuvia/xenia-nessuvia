@@ -1,5 +1,6 @@
 // Run: node --experimental-strip-types src/modules/prompts/checkStackKinds.ts
 import assert from 'node:assert'
+import { readFileSync } from 'node:fs'
 import type { BlockSource, PromptBlock, PromptStack } from '../../core/storage/types.ts'
 import { boundSources, kindSources, stackKind, validateStack } from './stackKinds.ts'
 
@@ -83,5 +84,14 @@ assert.match(validateStack(stack('story', [b('storyContext'), wrap([b('storyCont
 // a disabled wrapper takes its children out of the prompt
 assert.match(validateStack(stack('story', [wrap([b('storyContext')], true)])), /Story context/)
 assert.strictEqual(validateStack(stack('chat', [wrap([b('chatHistory')])])), '')
+
+// --- the stack files that ship with the build are valid for their own kind ---
+// read rather than imported: node's JSON import needs an attribute Vite doesn't want.
+for (const file of ['defaultStoryStack.json', 'glmChatStack.json', 'glmStoryStack.json']) {
+  const url = new URL(file, import.meta.url)
+  const data = JSON.parse(readFileSync(url, 'utf8')) as PromptStack & { format: string }
+  assert.strictEqual(data.format, 'nessu-prompt-stack', `${file}: wrong format tag`)
+  assert.strictEqual(validateStack(data), '', `${file}: ${validateStack(data)}`)
+}
 
 console.log('ok')

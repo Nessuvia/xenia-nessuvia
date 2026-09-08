@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useSecondPass, useSettings } from '../../core/stores/settingsStore'
 import { standingNotes } from '../../core/secondPass/textRules'
-import { defaultBundle, restoreBundle, staleBundledRules } from '../../core/secondPass/defaultRules'
-import { downloadRules, parseRules } from '../../core/secondPass/ruleJson'
+import { bundledRules } from '../../core/secondPass/bundledRules'
+import { downloadRules, parseRuleFile } from '../../core/secondPass/ruleJson'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import GrammarHammerPanel from './GrammarHammerPanel'
 import SecondPassPreview from './SecondPassPreview'
@@ -36,6 +36,8 @@ export default function SecondPassPanel() {
   // has nothing left to skip while any are on. Say so rather than let it read as broken.
   const alwaysOn = standingNotes(settings.textRules, 'assistant').length
   const rules = settings.textRules
+  const hammer = settings.rules
+  const pun = settings.punctuation
   const rep = settings.repetition
   const patchRep = (over: Partial<typeof rep>) => patch({ repetition: { ...rep, ...over } })
   const spr = settings.sprawl
@@ -47,7 +49,8 @@ export default function SecondPassPanel() {
    *  in it cannot cost you the other forty. */
   const addJson = (text: string) => {
     try {
-      patch({ textRules: [...rules, ...parseRules(text)] })
+      const file = parseRuleFile(text)
+      patch({ textRules: [...rules, ...file.rules], rules: [...hammer, ...file.hammer] })
       setPaste('')
       setImportError('')
     } catch (err) {
@@ -55,12 +58,6 @@ export default function SecondPassPanel() {
     }
   }
 
-  // How many rules a restore would add, so the button can say whether it would do anything. Matched
-  // by id and by content, so a row left from an older bundle counts as already present.
-  const adds = restoreBundle(rules).length - rules.length
-  // Rows from a bundle this build no longer ships. Not duplicates, so a restore leaves them; shown
-  // separately so a list cannot quietly hold two generations of defaults.
-  const stale = staleBundledRules(rules)
 
   return (
     <div className="secondPassPanel">
@@ -145,40 +142,15 @@ export default function SecondPassPanel() {
             </label>
             <p className="hint">Adds one request per generated beat.</p>
 
-            <span className="secondPassSectionTitle">Bundle</span>
+            <span className="secondPassSectionTitle">Bundled rules</span>
             <div className="grammarActions">
-              {/* Puts back the whole shipped state: the missing rules, and the three checks. Rules
-                  already present, by id or by wording, are left exactly as they are. */}
-              <button
-                type="button"
-                onClick={() => {
-                  const bundle = defaultBundle()
-                  patch({
-                    textRules: restoreBundle(rules),
-                    repetition: bundle.repetition,
-                    sprawl: bundle.sprawl,
-                    triplet: bundle.triplet,
-                  })
-                }}
-              >
-                Restore defaults{adds > 0 ? ` (+${adds})` : ''}
+              <button type="button" onClick={() => addJson(JSON.stringify(bundledRules()))}>
+                Add Nessu's rules
               </button>
-              {stale.length > 0 && (
-                <button
-                  type="button"
-                  className="danger"
-                  title="Remove rules left over from an older bundle"
-                  onClick={() =>
-                    patch({ textRules: rules.filter((r) => !stale.some((x) => x.id === r.id)) })
-                  }
-                >
-                  Remove {stale.length} old default{stale.length === 1 ? '' : 's'}
-                </button>
-              )}
             </div>
             <p className="hint">
-              Restore adds the missing default rules and resets sentence sprawl, rule of three and
-              repetition.
+              Both lists start empty. This adds {bundledRules().rules.length} rules and{' '}
+              {bundledRules().hammer.length} Hammer patterns, the same way an imported file does.
             </p>
 
             <div className="grammarActions">
@@ -197,8 +169,8 @@ export default function SecondPassPanel() {
               </label>
               <button
                 type="button"
-                onClick={() => downloadRules(rules)}
-                disabled={rules.length === 0}
+                onClick={() => downloadRules(rules, hammer)}
+                disabled={rules.length === 0 && hammer.length === 0}
               >
                 Export JSON
               </button>
@@ -218,8 +190,9 @@ export default function SecondPassPanel() {
               </div>
               {importError && <p className="hint danger">{importError}</p>}
               <p className="hint">
-                Takes an export, a bare array of rules, or a single rule object. Imported rules are
-                added to the list, not swapped in for it.
+                Takes an export, a bare array of rules, or a single rule object. A file may carry
+                Hammer patterns too, and those go to the Hammer tab. Imported rules are added to the
+                lists, not swapped in for them.
               </p>
             </div>
           </div>
@@ -299,6 +272,28 @@ export default function SecondPassPanel() {
                 Reports sentences built as exactly three comma-separated items. Commas inside quotes
                 are skipped.
               </p>
+            </li>
+
+            <li className="card ruleCard">
+              {/* Not a rule: there is no judgment in either sweep, so there is nothing to tell a
+                  model. Both run on the draft before it is stored. */}
+              <span className="secondPassSectionTitle">Punctuation</span>
+              <label className="checkboxRow">
+                <input
+                  type="checkbox"
+                  checked={pun.dashes}
+                  onChange={(e) => patch({ punctuation: { ...pun, dashes: e.target.checked } })}
+                />
+                Em dashes to commas
+              </label>
+              <label className="checkboxRow">
+                <input
+                  type="checkbox"
+                  checked={pun.quotes}
+                  onChange={(e) => patch({ punctuation: { ...pun, quotes: e.target.checked } })}
+                />
+                Curly quotes and ellipses to straight
+              </label>
             </li>
 
             <li className="card ruleCard">

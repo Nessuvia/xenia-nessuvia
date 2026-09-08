@@ -94,7 +94,7 @@ export async function* editPass(
   // The mechanical edits first, so the checks and the model both see the cleaned text. Showing
   // the model the original slop would ask it to redo work `repairAll` already did correctly, and
   // putting the bad phrasing in front of it is a good way to get the bad phrasing back.
-  const cleaned = normalizePunctuation(stripText(draft, settings.rules, role).text, settings.textRules)
+  const cleaned = normalizePunctuation(stripText(draft, settings.rules, role).text, settings.punctuation)
 
   const notes: Note[] = findFlags(cleaned, settings.rules, role).map((flag) => ({
     source: `hammer:${flag.rule.label || flag.rule.id}`,
@@ -133,7 +133,7 @@ export async function* editPass(
   // The edited text gets the punctuation sweep too. The model is told not to write em dashes and
   // writes them anyway, both by missing one and by introducing a fresh one while fixing something
   // else, and this is the last look anything takes at the text.
-  const sweep = punctuationStream(settings.textRules)
+  const sweep = punctuationStream(settings.punctuation)
 
   let edited = ''
   let editFinish = ''

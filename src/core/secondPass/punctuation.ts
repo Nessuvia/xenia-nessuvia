@@ -1,17 +1,18 @@
 // Extension-ful imports on purpose: checkPunctuation.ts runs this under `node --experimental-strip-types`.
-import type { SecondPassRule } from '../stores/settingsStore.ts'
+import type { PunctuationSettings } from '../stores/settingsStore.ts'
 import { computeExclusions } from '../hammer/exclusions.ts'
 
 /**
  * The mechanical half of two rules the editing model keeps getting wrong.
  *
- * `default:em-dash` and `default:curly-quotes` are note rules: they tell the model what not to
- * write and then trust it. An em dash survives that a good fraction of the time, either because
- * the editor missed it or because the editor put a fresh one in while fixing something else, and
- * nothing downstream looked again. These two characters need no judgment, so they are replaced
+ * A rule telling the model not to write an em dash is trusted to hold, and it holds a good
+ * fraction of the time: the editor misses one, or puts a fresh one in while fixing something else,
+ * and nothing downstream looks again. These two characters need no judgment, so they are replaced
  * here instead of asked for.
  *
- * Only these two. Every other default rule wants a rewrite, which is what the model is for.
+ * Only these two. Anything else wants a rewrite, which is what the model is for. They are settings
+ * rather than rules for the same reason the sprawl counter is: turning them off is a preference
+ * about mechanics, and a rule is prose handed to a model.
  */
 
 const QUOTES: Record<string, string> = {
@@ -37,19 +38,12 @@ function replaceDash(before: string, after: string): string {
   return ', '
 }
 
-/** Which sweeps to run, from whether the rules behind them are on. A user who deleted or disabled
- *  the em-dash rule is saying they want em dashes. */
-function active(rules: SecondPassRule[]) {
-  const on = (id: string) => rules.some((r) => r.id === id && r.enabled)
-  return { dashes: on('default:em-dash'), quotes: on('default:curly-quotes') }
-}
-
 /**
  * Sweep a whole passage. Code spans, URLs and link targets are left alone: the same zones the
  * matchers skip, for the same reason.
  */
-export function normalizePunctuation(text: string, rules: SecondPassRule[]): string {
-  const { dashes, quotes } = active(rules)
+export function normalizePunctuation(text: string, settings: PunctuationSettings): string {
+  const { dashes, quotes } = settings
   if (!dashes && !quotes) return text
 
   const exclusions = computeExclusions(text)
@@ -97,14 +91,14 @@ function contextChar(c: string): string {
  * ponytail: the exclusion scan runs per flush over the held tail only, so a code fence spanning
  * chunks is not seen and its dashes get swept. Buffer the whole reply if that ever matters.
  */
-export function punctuationStream(rules: SecondPassRule[]) {
+export function punctuationStream(settings: PunctuationSettings) {
   let held = ''
   let prev = ''
 
   /** Normalize `text` as though `prev` came before it, then drop the stand-in back off. */
   function run(text: string): string {
     const lead = contextChar(prev)
-    return normalizePunctuation(lead + text, rules).slice(lead.length)
+    return normalizePunctuation(lead + text, settings).slice(lead.length)
   }
 
   return {
