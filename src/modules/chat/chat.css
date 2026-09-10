@@ -1260,6 +1260,11 @@
   font: inherit;
   font-size: 14px;
   resize: vertical;
+  /* Grows with the text instead of a fixed row count, then scrolls at 80% of the viewport.
+     field-sizing is Chrome-only; elsewhere the rows attribute is the fallback height. */
+  field-sizing: content;
+  min-height: calc(3lh + 22px);
+  max-height: 80vh;
 }
 
 .chatView {
