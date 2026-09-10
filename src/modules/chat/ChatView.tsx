@@ -61,6 +61,9 @@ export default function ChatView() {
   const [titleDraft, setTitleDraft] = useState<string | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const stuck = useRef(true)
+  // Our own scroll-to-bottom fires onScroll too. Without this it lands after the user's scroll
+  // event and re-sticks them, so scrolling up mid-stream snaps back.
+  const selfScroll = useRef(false)
   // Which message has the regen modal open. Lives here so an empty composer submit can open it.
   const [rewritingId, setRewritingId] = useState<number | null>(null)
   const [deletingRange, setDeletingRange] = useState(false)
@@ -93,7 +96,10 @@ export default function ChatView() {
   // Follow new content, but never yank you back down while you're reading further up.
   useEffect(() => {
     const el = scroller.current
-    if (el && stuck.current) el.scrollTop = el.scrollHeight
+    if (el && stuck.current && el.scrollTop !== el.scrollHeight) {
+      selfScroll.current = true
+      el.scrollTop = el.scrollHeight
+    }
   })
 
   const character = characters.find((c) => c.id === chat?.characterId)
@@ -150,6 +156,10 @@ export default function ChatView() {
         className="messageList"
         ref={scroller}
         onScroll={(e) => {
+          if (selfScroll.current) {
+            selfScroll.current = false
+            return
+          }
           const el = e.currentTarget
           stuck.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
         }}

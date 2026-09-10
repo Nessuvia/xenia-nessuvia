@@ -10,7 +10,7 @@ import { usePalette } from '../../core/stores/palettesStore'
 import { useStacks } from '../../core/stores/stacksStore'
 import { participants } from '../../core/stores/roster'
 import { chatPanels } from '../../app/moduleRegistry'
-import ParamEditor from '../characters/ParamEditor'
+import ConnectionParams from './ConnectionParams'
 import AppearancePanel from '../appearance/AppearancePanel'
 import PromptPanel from './PromptPanel'
 import SpeakerColors from './SpeakerColors'
@@ -143,15 +143,9 @@ export default function ChatSettingsPanel({
         {connection ? (
           <>
             <p className="hint">
-              Used for this chat only. An empty field uses the character's value, then the
-              connection's.
+              These are the connection's parameters. Changes apply to every chat using it.
             </p>
-            <ParamEditor
-              overrides={value.paramOverrides ?? {}}
-              connection={connection}
-              character={character}
-              onChange={(paramOverrides) => set({ paramOverrides })}
-            />
+            <ConnectionParams connection={connection} />
           </>
         ) : (
           <p className="hint">Pick an active connection in Settings to set parameters.</p>
