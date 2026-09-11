@@ -27,9 +27,26 @@ import BlockModal from './BlockModal'
 import MiscPromptsPanel from './MiscPromptsPanel'
 import { useHashTab } from '../../app/useHashTab'
 import { exportStack, parseStack } from './stackFile'
+import { parseSillyTavern } from '../../core/sillytavern/importSillyTavern'
 import PromptPreview from './PromptPreview'
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
+
+/** The stack out of a SillyTavern export, or the error the user needs to read. */
+function stackFromSt(text: string) {
+  let found
+  try {
+    found = parseSillyTavern(text)
+  } catch {
+    throw new Error('That file is not a prompt stack or a SillyTavern preset.')
+  }
+  if (!found.stack) {
+    throw new Error(
+      'That SillyTavern file holds no prompts. Import it under Settings › Connections.',
+    )
+  }
+  return found.stack
+}
 
 interface Drop {
   parentId: string | null
@@ -164,7 +181,11 @@ export default function StackEditor() {
     if (!file) return
     setImportError('')
     try {
-      const imported = parseStack(await file.text())
+      const text = await file.text()
+      // A SillyTavern export is the other thing anyone drops on this button. Only its stack half
+      // lands here; its samplers and instruct sequences need a connection, which is why the full
+      // import is in Settings › Connections.
+      const imported = text.includes('nessu-prompt-stack') ? parseStack(text) : stackFromSt(text)
       const id = await save(imported)
       const importedKind = stackKind(imported)
       useSettings.setState(

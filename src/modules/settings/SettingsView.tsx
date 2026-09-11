@@ -8,6 +8,7 @@ import FindReplacePanel from './FindReplacePanel'
 import SecondPassPanel from './SecondPassPanel'
 import GoldPassPanel from './GoldPassPanel'
 import RelayPanel from './RelayPanel'
+import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
 import { useHashTab } from '../../app/useHashTab'
@@ -157,6 +158,7 @@ export default function SettingsView() {
                   </li>
                 ))}
               </ul>
+              <StImportPanel />
             </section>
           }
           detail={
