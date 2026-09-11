@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { RiDeleteBinLine } from '@remixicon/react'
+import { RiDeleteBinLine, RiSparkling2Line } from '@remixicon/react'
 import { useParams } from 'react-router-dom'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
@@ -49,6 +49,9 @@ export default function ChatView() {
     deleteMessage,
     deleteMessages,
     deleteSwipes,
+    goldPassing,
+    goldPassMessage,
+    revertGoldPass,
   } = useChats()
   const { characters, load: loadCharacters } = useCharacters()
   const connection = useActiveConnection()
@@ -216,6 +219,9 @@ export default function ChatView() {
             onRewrite={(instruction) => regenerate(character, m.id!, instruction)}
             onSwipe={(index) => swipeTo(m.id!, index)}
             onDeleteSwipes={(indices) => deleteSwipes(m.id!, indices)}
+            onGoldPass={m.role === 'assistant' && !streaming ? () => goldPassMessage(m.id!) : undefined}
+            onGoldRevert={() => revertGoldPass(m.id!)}
+            goldPassing={regeneratingId === m.id && goldPassing}
           />
         ))}
 
@@ -231,6 +237,14 @@ export default function ChatView() {
                 <summary>Reasoning</summary>
                 {renderText(streamingReasoning, { tagRules: appearance.tagRules, order: palette.colorOrder })}
               </details>
+            )}
+            {/* Gold Pass is overwriting the reply that just finished. Said plainly, because what
+                is on screen is being replaced as it arrives. */}
+            {goldPassing && (
+              <p className="goldMarker">
+                <RiSparkling2Line size={14} />
+                Rewriting
+              </p>
             )}
             {/* Second Pass's first take, before the editing pass has produced anything. Dimmed
                 because it is provisional: it either gets replaced by the edited reply or brightens

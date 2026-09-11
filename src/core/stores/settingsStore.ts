@@ -7,6 +7,11 @@ import { tableNames, type TableName } from '../storage/storageInterface.ts'
 import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
+import {
+  defaultGoldPass,
+  resolveGoldPass,
+  type GoldPassSettings,
+} from '../goldPass/goldPassSettings.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
@@ -375,6 +380,9 @@ interface SettingsState {
    *  Per-chat override: add a `secondPass` field to the Chat record and merge it in the wrapper. */
   secondPass: SecondPassSettings
   setSecondPass(patch: Partial<SecondPassSettings>): void
+  /** Gold Pass's global defaults. A chat's own override lives on the Chat record. */
+  goldPass: GoldPassSettings
+  setGoldPass(patch: Partial<GoldPassSettings>): void
   setAsk(patch: {
     askSystemPrompt?: string
     askSuffix?: string
@@ -461,6 +469,7 @@ export const useSettings = create<SettingsState>()(
       askAssistantPrompt: '',
       appearance: defaultAppearance,
       secondPass: defaultSecondPass,
+      goldPass: defaultGoldPass,
 
       setAsk: (patch) => set(patch),
 
@@ -470,6 +479,9 @@ export const useSettings = create<SettingsState>()(
 
       setSecondPass: (patch) =>
         set((s) => ({ secondPass: { ...defaultSecondPass, ...s.secondPass, ...patch } })),
+
+      setGoldPass: (patch) =>
+        set((s) => ({ goldPass: { ...defaultGoldPass, ...s.goldPass, ...patch } })),
 
       setDebugMode: (debugMode) => set({ debugMode }),
 
@@ -587,6 +599,18 @@ export function useSecondPass(): SecondPassSettings {
 /** The non-React read, for the send path. */
 export function secondPassSettings(): SecondPassSettings {
   return { ...defaultSecondPass, ...useSettings.getState().secondPass }
+}
+
+/** Gold Pass's global defaults for a component. A chat's override goes on top of this; see
+ *  `resolveGoldPass`, which is the whole resolution order. */
+export function useGoldPass(): GoldPassSettings {
+  const goldPass = useSettings((s) => s.goldPass)
+  return resolveGoldPass(goldPass, undefined)
+}
+
+/** The non-React read of the global defaults, for the send path. */
+export function goldPassSettings(): GoldPassSettings {
+  return resolveGoldPass(useSettings.getState().goldPass, undefined)
 }
 
 /** Used when the user has not written an assistant prompt of their own. */

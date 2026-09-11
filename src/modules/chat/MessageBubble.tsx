@@ -3,15 +3,24 @@ import {
   RiArrowRightSLine,
   RiCodeSSlashLine,
   RiDeleteBinLine,
+  RiErrorWarningLine,
   RiMoreLine,
   RiPencilLine,
   RiRefreshLine,
   RiSendPlaneLine,
+  RiSparkling2Line,
 } from '@remixicon/react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
-import { reasoningFor, snapshotFor, swipeCount, swipeIndex } from '../../core/stores/swipes'
+import {
+  goldFailedFor,
+  goldOriginalFor,
+  reasoningFor,
+  snapshotFor,
+  swipeCount,
+  swipeIndex,
+} from '../../core/stores/swipes'
 import { useAppearance } from '../../core/stores/settingsStore'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
@@ -55,6 +64,9 @@ export default function MessageBubble({
   onRewrite,
   onSwipe,
   onDeleteSwipes,
+  onGoldPass,
+  onGoldRevert,
+  goldPassing = false,
   readOnly = false,
 }: {
   message: Message
@@ -89,6 +101,13 @@ export default function MessageBubble({
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
+  /** Rewrite this message on the Gold Pass connection, and the retry on a failed one. Omitted by
+   *  views that have no Gold Pass (Ask, and a multiplayer guest). */
+  onGoldPass?: () => void
+  /** Put the pre-rewrite text back. */
+  onGoldRevert?: () => void
+  /** A Gold Pass rewrite is streaming over this message's text right now. */
+  goldPassing?: boolean
   /** No action buttons at all. A guest in a session owns none of the transcript. */
   readOnly?: boolean
 }) {
@@ -110,6 +129,8 @@ export default function MessageBubble({
   // Blur commits the edit, so Escape has to say it meant the other thing.
   const cancelled = useRef(false)
   const [inspecting, setInspecting] = useState(false)
+  // View state only: the rewrite stays the message either way. Reverting is the quick action.
+  const [showOriginal, setShowOriginal] = useState(false)
   const appearance = useAppearance()
   const tagRules = appearance.tagRules
   const replaceRules = appearance.replaceRules
@@ -126,6 +147,8 @@ export default function MessageBubble({
   const modelRegen = canRegenerate && !greeting
   // `who` already resolves the speaker's display name (or the stamped name for a deleted card).
   const name = who
+  const goldOriginal = goldOriginalFor(message)
+  const goldFailure = goldFailedFor(message)
 
   return (
     <div className={`bubble message ${message.role}`} style={colorVars(colors, palette.overwriteCharColor)}>
@@ -173,6 +196,16 @@ export default function MessageBubble({
               onClick={() => setInspecting(!inspecting)}
             >
               <RiCodeSSlashLine size={16} />
+            </button>
+          )}
+          {goldOriginal !== undefined && (
+            <button
+              type="button"
+              title={showOriginal ? 'Show the rewrite' : 'Show the text before the Gold Pass rewrite'}
+              aria-pressed={showOriginal}
+              onClick={() => setShowOriginal(!showOriginal)}
+            >
+              <RiSparkling2Line size={16} />
             </button>
           )}
           <button type="button" title="Edit" onClick={() => setDraft(message.content)}>
@@ -252,6 +285,29 @@ export default function MessageBubble({
                   Delete Swipe
                 </button>
               )}
+              {assistant && onGoldPass && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onGoldPass()
+                    setQuickActions(false)
+                  }}
+                >
+                  {goldOriginal === undefined ? 'Gold Pass' : 'Gold Pass again'}
+                </button>
+              )}
+              {assistant && onGoldRevert && goldOriginal !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOriginal(false)
+                    onGoldRevert()
+                    setQuickActions(false)
+                  }}
+                >
+                  Revert Gold Pass
+                </button>
+              )}
               {assistant && count > 1 && (
                 <button
                   type="button"
@@ -290,7 +346,16 @@ export default function MessageBubble({
           <span className="caret">▌</span>
         </div>
       ) : draft === null ? (
-        <div className="messageBody">{renderText(message.content, { tagRules, replaceRules, order, role: message.role })}</div>
+        // The rewrite is the message; showing the original is a look at what it replaced, and the
+        // class marks it so the two are never confused for each other.
+        <div className={showOriginal && goldOriginal !== undefined ? 'messageBody goldOriginalBody' : 'messageBody'}>
+          {renderText(showOriginal && goldOriginal !== undefined ? goldOriginal : message.content, {
+            tagRules,
+            replaceRules,
+            order,
+            role: message.role,
+          })}
+        </div>
       ) : (
         <textarea
           autoFocus
@@ -320,6 +385,25 @@ export default function MessageBubble({
           }}
         />
       )}
+      {goldPassing && streamingText !== null && (
+        <p className="goldMarker">
+          <RiSparkling2Line size={14} />
+          Rewriting
+        </p>
+      )}
+
+      {goldFailure && streamingText === null && (
+        <p className="goldMarker">
+          <RiErrorWarningLine size={14} />
+          {goldFailure}
+          {onGoldPass && (
+            <button type="button" className="goldMarkerRetry" onClick={onGoldPass}>
+              Retry
+            </button>
+          )}
+        </p>
+      )}
+
       {draft !== null && <p className="editHint">Enter or click out saves · Shift+Enter for a new line · Esc discards</p>}
 
       {inspecting && <PromptInspector json={snapshotFor(message)} />}

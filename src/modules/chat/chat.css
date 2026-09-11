@@ -1157,6 +1157,28 @@
   color: var(--textDim);
 }
 
+/* Gold Pass: a quiet line under the reply saying why the rewrite was not used. The reply itself is
+   untouched, so this is a note rather than an error banner. */
+.goldMarker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--textDim);
+  font-size: 11px;
+}
+
+.goldMarkerRetry {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+/* The pre-rewrite text, shown in place of the message while the header toggle is on. Dimmed so a
+   glance never mistakes it for what is stored. */
+.goldOriginalBody {
+  color: var(--textMuted);
+}
+
 .chatError {
   margin: 0;
   color: var(--danger);

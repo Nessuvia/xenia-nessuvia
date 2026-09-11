@@ -3,6 +3,7 @@ import { lazyView, registerModule } from '../../app/moduleRegistry'
 import { tabs } from './tabs'
 import FindReplacePanel from './FindReplacePanel'
 import TagRulesPanel from './TagRulesPanel'
+import GoldPassChatPanel from './GoldPassChatPanel'
 
 registerModule({
   id: 'settings',
@@ -15,5 +16,6 @@ registerModule({
   chatPanels: [
     { label: 'Find & Replace', component: FindReplacePanel },
     { label: 'Tags', component: TagRulesPanel },
+    { label: 'Gold Pass', component: GoldPassChatPanel },
   ],
 })

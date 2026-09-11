@@ -1,5 +1,6 @@
 import type { MoveQuality } from '../games/goFish'
 import type { GameEvent, GameKind } from '../games/gameEvent'
+import type { GoldPassSettings } from '../goldPass/goldPassSettings.ts'
 
 export interface Character {
   id?: number
@@ -202,6 +203,11 @@ export interface Chat {
   /** Pinned to the sidebar for quick access. Absent = not bookmarked. */
   bookmarked?: boolean
   paramOverrides?: ParamOverrides
+  /** Per-chat Gold Pass override, merged over the global settings. `enabled` is the auto toggle and
+   *  is the field the chat sidebar writes; the rest are set only if the user opens the override.
+   *  The chat toggle writes *this* record, never the stack and never the global default. A chat
+   *  that never touches the override inherits global. */
+  goldPass?: Partial<GoldPassSettings>
   createdAt: number
   updatedAt: number
 }
@@ -242,6 +248,16 @@ export interface Message {
   /** The first-pass text for each swipe, parallel to `swipes`, where Second Pass changed it. Holes
    *  everywhere else. Unindexed, like the other parallel arrays. */
   drafts?: (string | undefined)[]
+  /** The pre-Gold-Pass text for each swipe, where a Gold Pass rewrite replaced it. `content` and
+   *  `swipes[i]` hold the rewrite; this holds what the first connection actually said. Kept so a
+   *  manual re-run always rewrites from the original rather than compounding, and so the user can
+   *  revert. Distinct from `drafts`, which is Second Pass's pre-edit text on the same connection:
+   *  both can be set on one swipe and they mean different things. */
+  goldOriginals?: (string | undefined)[]
+  /** Why a Gold Pass attempt failed or was rejected by the length guard, parallel to `swipes`.
+   *  Drives the marker and the retry action. Cleared on a successful rewrite. A reason rather than
+   *  a boolean so the marker can name which failure it was without a second field. */
+  goldFailed?: (string | undefined)[]
   createdAt: number
 }
 

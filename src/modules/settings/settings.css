@@ -657,6 +657,26 @@
   width: 72px;
 }
 
+/* Gold Pass. The panel reuses the Second Pass frame and controls; a preset row is the one shape it
+   adds, a radio, a name and a delete on one line. */
+.goldPresetRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.goldPresetLabelInput {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The per-chat panel in the chat sidebar: the same stacked column the Settings body uses. */
+.goldChatPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Free-text rules. The cards reuse .ruleCard/.ruleCardHead/.ruleField from the Grammar Hammer; these
    are the two parts that list has and the Hammer's does not. Scoped to .ruleField and carrying
    min-width like .patternInput does, so both fields in a card size the same way. */

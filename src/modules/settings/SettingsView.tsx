@@ -6,6 +6,7 @@ import ConnectionEditor from './ConnectionEditor'
 import TagRulesPanel from './TagRulesPanel'
 import FindReplacePanel from './FindReplacePanel'
 import SecondPassPanel from './SecondPassPanel'
+import GoldPassPanel from './GoldPassPanel'
 import RelayPanel from './RelayPanel'
 import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
@@ -309,6 +310,8 @@ export default function SettingsView() {
         <RelayPanel />
       ) : tab === 'secondPass' ? (
         <SecondPassPanel />
+      ) : tab === 'goldPass' ? (
+        <GoldPassPanel />
       ) : (
         <div className="textRulesCards">
           <TagRulesPanel />

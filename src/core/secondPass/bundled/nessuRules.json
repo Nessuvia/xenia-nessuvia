@@ -111,6 +111,21 @@
       "note": "Two fragments in a row opening on the same word. Delete one and write the sentence out."
     },
     {
+      "label": "Pronoun echo",
+      "find": "(?:^|[.!?][\"')\\]]?\\s+)(He|She|They|It|I)\\b[^.!?\\n]{1,70}[.!?]\\s+\\1\\b",
+      "regex": true,
+      "caseSensitive": true,
+      "scope": "assistant",
+      "note": "Two sentences in a row opening on the same subject. Join them into one sentence, or give the second sentence a different subject. \"He didn't answer. He just stared at the drain.\" is the exact failure, and the negate-then-just version of it (\"He didn't X. He just Y\") should lose the first half entirely."
+    },
+    {
+      "label": "Instead-pivot",
+      "find": "\\b(?:did|does|do|could|would|was|were|had|is|are)\\s?n[o']?t\\b[^.!?\\n]{0,60}[.!?][\"')\\]]?\\s+(?:Instead|Rather)\\b",
+      "regex": true,
+      "scope": "assistant",
+      "note": "A sentence saying what someone did not do, then a second sentence opening on \"Instead\" to say what they did. Delete the negated sentence and the pivot word, and keep only the action. \"Georgia didn't leave. Instead she leaned against the doorframe\" becomes \"Georgia leaned against the doorframe\"."
+    },
+    {
       "label": "Litotes",
       "find": "\\b(?:did ?n[o']t|was ?n[o']t|were ?n[o']t|could ?n[o']t|would ?n[o']t|had ?n[o']t) (?:smile|smiling|answer|reply|look|looking|move|moving|speak|say|saying|flinch|blink)\\b",
       "regex": true,

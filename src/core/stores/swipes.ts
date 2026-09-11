@@ -19,6 +19,11 @@ export interface Swipeable {
    *  was off or nothing was flagged and the draft became the reply unchanged. This is what replaced
    *  the Grammar Hammer's old "show original" toggle, and unlike that toggle it survives a reload. */
   drafts?: (string | undefined)[]
+  /** The pre-Gold-Pass text, parallel to `swipes`. See `Message.goldOriginals`; unlike `drafts`,
+   *  this is text from a different connection, and both can be set on one swipe. */
+  goldOriginals?: (string | undefined)[]
+  /** Why Gold Pass failed or was rejected for a swipe, parallel to `swipes`. */
+  goldFailed?: (string | undefined)[]
 }
 
 /** How many alternates a message has. No swipes array = the one thing it says. */
@@ -129,6 +134,68 @@ export function draftFor(message: Swipeable): string | undefined {
   return message.drafts?.[swipeIndex(message)]
 }
 
+/** The pre-Gold-Pass text for the selected swipe, when a rewrite replaced it. */
+export function goldOriginalFor(message: Swipeable): string | undefined {
+  return message.goldOriginals?.[swipeIndex(message)]
+}
+
+/** Why Gold Pass did not replace the selected swipe, when it tried and could not. */
+export function goldFailedFor(message: Swipeable): string | undefined {
+  return message.goldFailed?.[swipeIndex(message)]
+}
+
+/**
+ * Record a Gold Pass attempt against the selected swipe. `original` set means the rewrite is in
+ * `content` already and this is what it replaced; `failed` set means it isn't and this is why.
+ *
+ * Written after `regenerated` rather than through it: both arrays are padded to the swipe count
+ * here, so an older message whose arrays are shorter than its swipes keeps its holes where they
+ * belong instead of having them shifted.
+ */
+export function withGold<T extends Swipeable>(
+  message: T,
+  original?: string,
+  failed?: string,
+): T {
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  const goldOriginals = [...(message.goldOriginals ?? [])]
+  const goldFailed = [...(message.goldFailed ?? [])]
+  goldOriginals.length = swipes.length
+  goldFailed.length = swipes.length
+  goldOriginals[at] = original
+  goldFailed[at] = failed
+  return { ...message, goldOriginals, goldFailed }
+}
+
+/**
+ * A finished Gold Pass rewrite of an existing message: the rewrite replaces the selected swipe in
+ * place, and `original` is what it replaced. Not a new swipe, a rewrite is the same take in a
+ * different voice, and re-running it a third time still starts from `original`.
+ */
+export function goldRewritten<T extends Swipeable>(message: T, rewrite: string, original: string): T {
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  swipes[at] = rewrite
+  return {
+    ...withGold({ ...message, swipes, swipeIndex: at }, original, undefined),
+    content: rewrite,
+  }
+}
+
+/**
+ * Put the pre-Gold-Pass text back into the selected swipe and forget the rewrite. Returns null when
+ * there is no original, so the caller can leave the record alone.
+ */
+export function revertGold<T extends Swipeable>(message: T): T | null {
+  const original = goldOriginalFor(message)
+  if (original === undefined) return null
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  swipes[at] = original
+  return { ...withGold({ ...message, swipes, swipeIndex: at }, undefined, undefined), content: original }
+}
+
 /**
  * Drop swipes by index. Returns null when nothing would be left, the caller deletes the message.
  * The selection slides back to the nearest surviving swipe at or before where it was.
@@ -150,6 +217,8 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     reasonings: keep(message.reasonings),
     instructions: keep(message.instructions),
     drafts: keep(message.drafts),
+    goldOriginals: keep(message.goldOriginals),
+    goldFailed: keep(message.goldFailed),
   }
 }
 

@@ -17,7 +17,19 @@ import { displayName, useCharacters } from './charactersStore'
 import { usePersonas } from './personasStore'
 import { useStacks } from './stacksStore'
 import { chatTitle } from './chatTitle'
-import { continued, deletedSwipes, regenerated, selectSwipe } from './swipes'
+import {
+  continued,
+  deletedSwipes,
+  goldOriginalFor,
+  goldRewritten,
+  regenerated,
+  revertGold,
+  selectSwipe,
+  swipeIndex,
+  withGold,
+} from './swipes'
+import { runGoldPass } from '../goldPass/runGoldPass'
+import { goldArmed, goldConnection, goldPassFor } from '../goldPass/resolve'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
@@ -65,6 +77,68 @@ function passContext(messages: Message[]): PassContext {
       .filter((m) => m.role === 'assistant')
       .slice(-HISTORY_FOR_NOTES)
       .map((m) => m.content),
+  }
+}
+
+/** What a Gold Pass attempt leaves behind: the text to store, and the two parallel-array fields. */
+interface GoldResult {
+  /** What goes in `content` and the selected swipe. The input text, unchanged, unless a rewrite
+   *  was accepted. */
+  text: string
+  /** The pre-rewrite text, set only when a rewrite was accepted. */
+  original?: string
+  /** Why no rewrite was stored. Set only when the pass ran and did not produce a usable one. */
+  failed?: string
+}
+
+/**
+ * Gold Pass around one finished generation, in one place rather than pasted at each call site.
+ *
+ * The first pass has already streamed and the user has read it. This rewrites it on the second
+ * connection, streaming over what is on screen through `onProgress`, and reports what should be
+ * stored. Not armed means it returns the text untouched and marks nothing: a missing connection or
+ * a deleted preset is a settings problem, not a failed rewrite.
+ *
+ * Abort throws through, so the caller's existing stop handling fires. Nothing else throws: a
+ * rewrite that fails is worth less than the reply that already exists.
+ */
+async function goldPass(
+  chat: Chat,
+  character: Character | undefined,
+  priorMessages: Message[],
+  text: string,
+  userName: string,
+  signal: AbortSignal,
+  onProgress: (partial: string) => void,
+): Promise<GoldResult> {
+  const settings = goldPassFor(chat)
+  const connection = goldConnection(settings)
+  if (!connection || !goldArmed(settings)) return { text }
+
+  const run = runGoldPass(
+    text,
+    character,
+    priorMessages,
+    connection,
+    settings,
+    userName,
+    signal,
+  )
+  let shown = ''
+  // Stepped by hand rather than with `for await`: the outcome is the generator's *return* value,
+  // and a for-await loop discards it. The yielded chunks are the rewrite as it arrives, which is
+  // display only until the guard has had its say.
+  for (;;) {
+    const step = await run.next()
+    if (step.done) {
+      const outcome = step.value
+      if ('reason' in outcome) return { text, failed: outcome.reason }
+      return { text: outcome.text, original: text }
+    }
+    if (step.value.content) {
+      shown += step.value.content
+      onProgress(shown)
+    }
   }
 }
 
@@ -166,6 +240,10 @@ interface ChatState {
    *  Only reset when a stream starts, nothing renders it while `streaming` is false. */
   streamingReasoning: string
   streaming: boolean
+  /** A Gold Pass rewrite is streaming over a reply that already finished. The text in
+   *  `streamingText` is being replaced as it arrives, which is the intended feel; this is what
+   *  lets the bubble say so. */
+  goldPassing: boolean
   /** Which chat the stream belongs to, so opening another chat mid-generation doesn't show its
    *  reply there. Null when idle. */
   streamingChatId: number | null
@@ -225,6 +303,11 @@ interface ChatState {
   swipeTo(messageId: number, index: number): Promise<void>
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
+  /** Run Gold Pass over an assistant message by hand. Always rewrites from the stored original, so
+   *  running it twice does not compound, and replaces the previous rewrite. */
+  goldPassMessage(messageId: number): Promise<void>
+  /** Put the pre-Gold-Pass text back and forget the rewrite. */
+  revertGoldPass(messageId: number): Promise<void>
   stop(): void
   editMessage(id: number, content: string): Promise<void>
   deleteMessage(id: number): Promise<void>
@@ -241,6 +324,7 @@ export const useChats = create<ChatState>()((set, get) => ({
   streamingDraft: '',
   streamingReasoning: '',
   streaming: false,
+  goldPassing: false,
   streamingChatId: null,
   viewingChatId: null,
   setViewing: (chatId) => set({ viewingChatId: chatId }),
@@ -515,6 +599,8 @@ export const useChats = create<ChatState>()((set, get) => ({
       let reasoning = ''
       let finishReason = ''
       let snapshot: string | undefined
+      let goldOriginal: string | undefined
+      let goldFail: string | undefined
       try {
         const stack = await stackFor(chat)
         const persona = await usePersonas.getState().ensureActive()
@@ -558,6 +644,25 @@ export const useChats = create<ChatState>()((set, get) => ({
           }
           if (chunk.finishReason) finishReason = chunk.finishReason
         }
+
+        // Gold Pass. The reply is finished and has been read; the rewrite streams over it on the
+        // second connection, and the guard decides whether it is what gets stored.
+        if (text && !controller.signal.aborted) {
+          set({ goldPassing: true })
+          const gold = await goldPass(
+            chat,
+            speaker,
+            get().messages,
+            text,
+            persona.name,
+            controller.signal,
+            (partial) => set({ streamingText: partial }),
+          )
+          text = gold.text
+          goldOriginal = gold.original
+          goldFail = gold.failed
+          set({ streamingText: text })
+        }
       } catch (err) {
         // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
         if (!controller.signal.aborted) {
@@ -566,6 +671,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         }
       } finally {
         abort = null
+        set({ goldPassing: false })
       }
 
       // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -600,6 +706,10 @@ export const useChats = create<ChatState>()((set, get) => ({
           requestSnapshots: [snapshot],
           reasonings: [reasoning || undefined],
           drafts: [draft && draft !== text ? draft : undefined],
+          // Parallel to swipes as well. `goldOriginals` is not `drafts`: that is Second Pass's
+          // pre-edit text on this connection, this is the pre-rewrite text from the other one.
+          goldOriginals: [goldOriginal],
+          goldFailed: [goldFail],
           createdAt: Date.now(),
         })
         // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
@@ -633,6 +743,8 @@ export const useChats = create<ChatState>()((set, get) => ({
     let draft = ''
     let reasoning = ''
     let finishReason = ''
+    let goldOriginal: string | undefined
+    let goldFail: string | undefined
     let snapshot: string | undefined
     try {
       const stack = await stackFor(chat)
@@ -677,6 +789,25 @@ export const useChats = create<ChatState>()((set, get) => ({
         }
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
+
+      // Gold Pass. The reply is finished and has been read; the rewrite streams over it on the
+      // second connection, and the guard decides whether it is what gets stored.
+      if (text && !controller.signal.aborted) {
+        set({ goldPassing: true })
+        const gold = await goldPass(
+          chat,
+          speaker,
+          get().messages,
+          text,
+          persona.name,
+          controller.signal,
+          (partial) => set({ streamingText: partial }),
+        )
+        text = gold.text
+        goldOriginal = gold.original
+        goldFail = gold.failed
+        set({ streamingText: text })
+      }
     } catch (err) {
       // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
       if (!controller.signal.aborted) {
@@ -685,6 +816,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       }
     } finally {
       abort = null
+      set({ goldPassing: false })
     }
 
     // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -719,6 +851,10 @@ export const useChats = create<ChatState>()((set, get) => ({
         requestSnapshots: [snapshot],
         reasonings: [reasoning || undefined],
         drafts: [draft && draft !== text ? draft : undefined],
+        // Parallel to swipes as well. `goldOriginals` is not `drafts`: that is Second Pass's
+        // pre-edit text on this connection, this is the pre-rewrite text from the other one.
+        goldOriginals: [goldOriginal],
+        goldFailed: [goldFail],
         createdAt: Date.now(),
       })
       // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
@@ -784,6 +920,8 @@ export const useChats = create<ChatState>()((set, get) => ({
     let text = ''
     let draft = ''
     let reasoning = ''
+    let goldOriginal: string | undefined
+    let goldFail: string | undefined
     let finishReason = ''
     let snapshot: string | undefined
     try {
@@ -830,6 +968,25 @@ export const useChats = create<ChatState>()((set, get) => ({
         }
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
+
+      // Gold Pass, same as the send path. A re-roll's history is everything before this message,
+      // which is what the window gets: the turns after it are not context for what it says.
+      if (text && !controller.signal.aborted) {
+        set({ goldPassing: true })
+        const gold = await goldPass(
+          chat,
+          speaker,
+          get().messages.slice(0, at),
+          text,
+          persona.name,
+          controller.signal,
+          (partial) => set({ streamingText: partial }),
+        )
+        text = gold.text
+        goldOriginal = gold.original
+        goldFail = gold.failed
+        set({ streamingText: text })
+      }
     } catch (err) {
       // A deliberate stop keeps the partial as a swipe; a real failure changes nothing.
       if (!controller.signal.aborted) {
@@ -847,6 +1004,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       }
     } finally {
       abort = null
+      set({ goldPassing: false })
     }
 
     set({
@@ -858,7 +1016,10 @@ export const useChats = create<ChatState>()((set, get) => ({
       speakingName: '',
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
-    const updated = regenerated(target, text, snapshot, reasoning, instruction, draft)
+    const regen = regenerated(target, text, snapshot, reasoning, instruction, draft)
+    // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
+    // count itself, so an older message's holes stay where they belong.
+    const updated = regen && withGold(regen, goldOriginal, goldFail)
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
       // Same as retry: don't reload if you've moved to another chat mid-stream, blip instead.
@@ -943,6 +1104,10 @@ export const useChats = create<ChatState>()((set, get) => ({
       // what the model just added, and `continued` writes the whole thing back over the swipe, so a
       // second pass would edit text the user already kept. Wiring it needs the pass to be told which
       // span is new and to leave the rest alone.
+      //
+      // Gold Pass is skipped here for the same reason, and more strongly: it rewrites a whole
+      // passage rather than a flagged span, so it would restate the prefix the user accepted. The
+      // manual action on the message is how a continued reply gets rewritten.
       for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
@@ -993,6 +1158,82 @@ export const useChats = create<ChatState>()((set, get) => ({
         useBlips.getState().mark(target.speakerId ?? chat.characterId)
       }
     }
+  },
+
+  goldPassMessage: async (messageId) => {
+    const chat = get().chat
+    if (!chat) return
+    const at = get().messages.findIndex((m) => m.id === messageId)
+    const target = get().messages[at]
+    if (!target || target.role !== 'assistant') return
+
+    const settings = goldPassFor(chat)
+    if (!goldArmed(settings)) {
+      set({ error: 'Gold Pass has no connection or no preset. Set both in Settings > Gold Pass.' })
+      return
+    }
+
+    // Always from the stored original, so running this twice rewrites the first pass again rather
+    // than rewriting a rewrite.
+    const source = goldOriginalFor(target) ?? target.content
+    if (!source.trim()) return
+
+    // Rewritten in the voice of whoever said it, like a re-roll.
+    const speaker = useCharacters
+      .getState()
+      .characters.find((c) => c.id === target.speakerId)
+    const persona = await usePersonas.getState().ensureActive()
+
+    const controller = new AbortController()
+    abort = controller
+    set({
+      streaming: true,
+      goldPassing: true,
+      streamingChatId: chat.id ?? null,
+      // The bubble renders streamingText in place of the message, so it starts as the source and
+      // is overwritten as the rewrite arrives.
+      streamingText: source,
+      streamingDraft: '',
+      streamingReasoning: '',
+      error: '',
+      regeneratingId: messageId,
+      speakingName: target.speakerName ?? speaker?.name ?? '',
+    })
+
+    let result: GoldResult
+    try {
+      result = await goldPass(
+        chat,
+        speaker,
+        get().messages.slice(0, at),
+        source,
+        persona.name,
+        controller.signal,
+        (partial) => set({ streamingText: partial }),
+      )
+    } catch {
+      // Only an abort reaches here, and a stopped rewrite leaves the message exactly as it was.
+      set({ streaming: false, goldPassing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
+      abort = null
+      return
+    }
+    abort = null
+    set({ streaming: false, goldPassing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
+
+    const updated = result.original
+      ? goldRewritten(target, result.text, result.original)
+      : withGold(selectSwipe(target, swipeIndex(target)), goldOriginalFor(target), result.failed)
+    await storage.put('messages', updated as unknown as StoredRecord)
+    if (get().chat?.id === chat.id) await get().load(chat.id!)
+  },
+
+  revertGoldPass: async (messageId) => {
+    const message = get().messages.find((m) => m.id === messageId)
+    if (!message) return
+    const updated = revertGold(message)
+    if (!updated) return
+    await storage.put('messages', updated as unknown as StoredRecord)
+    await get().load(message.chatId)
   },
 
   swipeTo: async (messageId, index) => {
