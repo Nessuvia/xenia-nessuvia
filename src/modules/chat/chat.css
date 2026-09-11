@@ -1785,3 +1785,34 @@
     padding: 7px 10px;
   }
 }
+
+/* `/break`: a rule across the message list, with its delete button on hover. */
+.chatBreak {
+  position: relative;
+  border-top: 1px solid var(--borderStrong);
+  margin: 12px 0;
+}
+
+.chatBreakDelete {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--textMuted);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.chatBreak:hover .chatBreakDelete,
+.chatBreakDelete:focus-visible {
+  opacity: 1;
+}
+
+.chatBreakDelete:hover {
+  color: var(--danger);
+}

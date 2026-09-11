@@ -113,7 +113,9 @@ async function goldPass(
 ): Promise<GoldResult> {
   const settings = goldPassFor(chat)
   const connection = goldConnection(settings)
-  if (!connection || !goldArmed(settings)) return { text }
+  // `enabled` is checked here rather than in `goldArmed`: this is the automatic path, and the
+  // manual action on a message runs on an armed setup whether or not auto is on.
+  if (!settings.enabled || !connection || !goldArmed(settings)) return { text }
 
   const run = runGoldPass(
     text,
@@ -513,6 +515,21 @@ export const useChats = create<ChatState>()((set, get) => ({
       // Move the cursor as a real reply would, so the round robin picks up after this character
       // rather than handing them the next turn too.
       await get().patchChat({ lastSpeakerIndex: roster.indexOf(speaker.id!) })
+      await get().load(chat.id!)
+      return
+    }
+
+    // A divider row: nothing is sent, nothing is generated. Role is 'user' only because the field
+    // is required; every reader that cares checks `divider` first.
+    if (command?.name === 'break') {
+      await storage.put('messages', {
+        ownerId: currentOwnerId(),
+        chatId: chat.id!,
+        role: 'user',
+        content: '',
+        divider: true,
+        createdAt: Date.now(),
+      })
       await get().load(chat.id!)
       return
     }

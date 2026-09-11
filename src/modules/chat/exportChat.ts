@@ -33,6 +33,8 @@ export interface TranscriptTurn {
   role: 'user' | 'assistant'
   /** The selected swipe. `Message.content` already mirrors it, see core/stores/swipes.ts. */
   content: string
+  /** A `/break` row: no name, no body, just the rule. */
+  divider?: boolean
 }
 
 export interface Transcript {
@@ -89,12 +91,15 @@ export function buildTranscript(
     name: turnName(m, names),
     role: m.role,
     content: m.content,
+    ...(m.divider ? { divider: true as const } : {}),
   }))
   return { title: chat.title.trim() || 'Untitled Chat', turns, tagRules: usedTagRules(turns, tagRules) }
 }
 
 export function buildTxt(t: Transcript): string {
-  const body = t.turns.map((turn) => `${turn.name}: ${turn.content.trim()}`).join('\n\n')
+  const body = t.turns
+    .map((turn) => (turn.divider ? '___' : `${turn.name}: ${turn.content.trim()}`))
+    .join('\n\n')
   return `${t.title}\n\n${body}\n`
 }
 
@@ -191,25 +196,32 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
 }`
     : ''
 
-  const bodies = await Promise.all(t.turns.map((turn) => messageHtml(turn, t.tagRules)))
-  const body = t.turns
-    .map(
-      (turn, i) =>
-        `<article class="bubble" id="m${i + 1}" data-role="${turn.role}">` +
+  const bodies = await Promise.all(
+    t.turns.map((turn) => (turn.divider ? Promise.resolve('') : messageHtml(turn, t.tagRules))),
+  )
+
+  // Dividers are not bubbles, so they take no number and no menu entry: the jump menu's indices
+  // have to line up with the `.bubble` elements the script collects. Hence the separate counter.
+  const body: string[] = []
+  const options: string[] = []
+  let n = 0
+  t.turns.forEach((turn, i) => {
+    if (turn.divider) {
+      body.push('<hr class="chatBreak">')
+      return
+    }
+    n++
+    body.push(
+      `<article class="bubble" id="m${n}" data-role="${turn.role}">` +
         `<header>${escapeHtml(turn.name)}</header>` +
         `<div class="body">${bodies[i]}</div>` +
         `</article>`,
     )
-    .join('\n')
-
-  // One numbered link per message would run to hundreds of entries, so the bar is a jump menu
-  // instead: every turn is an option, and the script keeps it pointed at whatever you're reading.
-  const options = t.turns
-    .map(
-      (turn, i) =>
-        `<option value="m${i + 1}">${escapeHtml(`${i + 1} · ${turn.name}: ${preview(turn, t.tagRules)}`)}</option>`,
+    // One numbered link per message would run to hundreds of entries, so the bar is a jump menu.
+    options.push(
+      `<option value="m${n}">${escapeHtml(`${n} · ${turn.name}: ${preview(turn, t.tagRules)}`)}</option>`,
     )
-    .join('')
+  })
 
   return `<!doctype html>
 <html lang="en">
@@ -285,6 +297,7 @@ nav .at { color: var(--textMuted, inherit); white-space: nowrap; }
   font-weight: 600;
 }
 .bubble .body { white-space: pre-wrap; }
+.chatBreak { margin: 1rem 0; border: 0; border-top: 1px solid var(--border); }
 .boldText { color: var(--msgBoldColor); font-weight: 700; }
 .emphasisText { color: var(--msgEmphasisColor); font-style: italic; }
 .spokenText { color: var(--msgQuoteColor); }
@@ -301,13 +314,13 @@ ${readAloudCss}
 <body>
 <nav>
 <button id="prev" type="button" aria-label="Previous message">◀</button>
-<select id="jump" aria-label="Jump to message">${options}</select>
+<select id="jump" aria-label="Jump to message">${options.join('')}</select>
 <button id="next" type="button" aria-label="Next message">▶</button>
 <span class="at" id="at"></span>
 </nav>
 <h1>${title}</h1>
 ${readAloudBar}
-${body}
+${body.join('\n')}
 <script>
 ${readAloudScript(`nav, .readAloud, .codeBlock${tagCss ? ', .taggedBlock' : ''}`)}
 </script>

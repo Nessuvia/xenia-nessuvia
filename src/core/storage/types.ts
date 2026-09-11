@@ -258,6 +258,9 @@ export interface Message {
    *  Drives the marker and the retry action. Cleared on a successful rewrite. A reason rather than
    *  a boolean so the marker can name which failure it was without a second field. */
   goldFailed?: (string | undefined)[]
+  /** A `/break` row: a rule drawn across the chat, with empty content. Kept in `messages` so it
+   *  holds its place in the order; `buildPrompt` drops it, so the model never sees it. */
+  divider?: boolean
   createdAt: number
 }
 

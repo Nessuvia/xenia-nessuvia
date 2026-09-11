@@ -250,7 +250,7 @@ export function buildPrompt(
     stack,
     character,
     persona,
-    messages,
+    messages: allMessages,
     speaker,
     chat,
     worldInfo,
@@ -266,6 +266,9 @@ export function buildPrompt(
   }: BuildPromptArgs,
   budget?: Budget,
 ): BuiltPrompt {
+  // `/break` rows are display only: they hold a place in the chat and never reach the model.
+  const messages = allMessages.filter((m) => !m.divider)
+
   // In a group chat only the speaker's card goes in the prompt; everyone else is known from the
   // labelled history.
   const who = speaker ?? character

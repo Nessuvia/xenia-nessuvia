@@ -79,6 +79,14 @@ assert.equal(
 // An empty title still names the file's contents.
 assert.ok(buildTxt(buildTranscript({ ...chat, title: '  ' }, messages, names)).startsWith('Untitled Chat'))
 
+// A `/break` row is a rule in the text, with no name and no colon.
+assert.ok(
+  buildTxt({ title: 'T', tagRules: [], turns: [
+    { name: 'Dom', role: 'user', content: 'hi' },
+    { name: 'Dom', role: 'user', content: '', divider: true },
+  ] }).endsWith('Dom: hi\n\n___\n'),
+)
+
 // Jump-menu labels: markers gone, one line, truncated.
 assert.equal(preview({ name: 'a', role: 'user', content: '*He\nsaid* "hi"' }), 'He said hi')
 assert.equal(preview({ name: 'a', role: 'user', content: 'x'.repeat(80) }), 'x'.repeat(50) + '…')

@@ -168,7 +168,18 @@ export default function ChatView() {
         }}
       >
         {/* `who` on a user turn is the name recorded at send time, a deleted persona still gets credited. */}
-        {messages.map((m, i) => (
+        {messages.map((m, i) =>
+          m.divider ? (
+            <div className="chatBreak" key={m.id}>
+              <button
+                className="chatBreakDelete"
+                title="Delete break"
+                onClick={() => deleteMessage(m.id!)}
+              >
+                <RiDeleteBinLine size={16} />
+              </button>
+            </div>
+          ) : (
           <MessageBubble
             key={m.id}
             message={m}
@@ -223,7 +234,8 @@ export default function ChatView() {
             onGoldRevert={() => revertGoldPass(m.id!)}
             goldPassing={regeneratingId === m.id && goldPassing}
           />
-        ))}
+          ),
+        )}
 
         {streaming && streamingChatId === chat.id && regeneratingId === null && (
           // Same per-speaker color vars MessageBubble sets, so the stream is colored while it types

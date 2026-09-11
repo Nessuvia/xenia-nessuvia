@@ -20,6 +20,8 @@ assert.equal(stripEscape('plain'), 'plain')
 assert.deepEqual(parseCommand('/noreply hi there', names), { name: 'noreply', text: 'hi there' })
 assert.deepEqual(parseCommand('/noreply', names), { name: 'noreply', text: '' })
 assert.deepEqual(parseCommand('/NoReply hi', names), { name: 'noreply', text: 'hi' })
+assert.deepEqual(parseCommand('/br', names), { name: 'break', text: '' }, 'an alias reports the canonical name')
+assert.deepEqual(parseCommand('/break', names), { name: 'break', text: '' })
 
 // /continue takes no argument at all: anything typed after it is ignored by the caller, not
 // parsed as a target.
@@ -64,7 +66,7 @@ assert.equal(menuFor('//x', roster), null)
 
 const all = menuFor('/', roster)
 assert.equal(all?.kind, 'commands')
-assert.equal(all?.items.length, 3, 'a bare slash lists everything')
+assert.equal(all?.items.length, 4, 'a bare slash lists everything')
 
 const continues = menuFor('/c', roster)
 assert.deepEqual(

@@ -4,6 +4,8 @@
 /** One command the composer offers and `send` knows how to run. */
 export interface SlashCommand {
   name: string
+  /** A second name that runs the same command. Parsing normalises it to `name`. */
+  alias?: string
   /** One line in the menu. */
   hint: string
   usage: string
@@ -30,6 +32,13 @@ export const slashCommands: SlashCommand[] = [
     usage: '/noreply <text>',
     takesCharacter: false,
   },
+  {
+    name: 'break',
+    alias: 'br',
+    hint: 'Draw a line across the chat.',
+    usage: '/break',
+    takesCharacter: false,
+  },
 ]
 
 export interface ParsedCommand {
@@ -40,7 +49,8 @@ export interface ParsedCommand {
   text: string
 }
 
-const commandBy = (name: string) => slashCommands.find((c) => c.name === name)
+const commandBy = (name: string) =>
+  slashCommands.find((c) => c.name === name || c.alias === name)
 
 /**
  * The longest roster name `rest` starts with, case-insensitive, respecting a word boundary so
@@ -81,11 +91,12 @@ export function parseCommand(raw: string, names: string[]): ParsedCommand | null
   if (!command) return null
 
   const rest = (nameEnd === -1 ? '' : body.slice(nameEnd + 1)).replace(/^\s+/, '')
-  if (!command.takesCharacter) return { name, text: rest }
+  // An alias reports the canonical name, so callers only ever switch on one string.
+  if (!command.takesCharacter) return { name: command.name, text: rest }
 
   const matched = matchName(rest, names)
   const target = matched ?? (rest.split(/\s/)[0] || '')
-  return { name, target, text: rest.slice(target.length).replace(/^\s+/, '') }
+  return { name: command.name, target, text: rest.slice(target.length).replace(/^\s+/, '') }
 }
 
 /** Undo the `//` escape. Applied to text that parsed as an ordinary message. */
@@ -116,7 +127,10 @@ export function menuFor(raw: string, targets: CharacterTarget[]): CommandMenu | 
 
   // Still typing the name: no whitespace yet.
   if (nameEnd === -1) {
-    const items = slashCommands.filter((c) => c.name.startsWith(body.toLowerCase()))
+    const typed = body.toLowerCase()
+    const items = slashCommands.filter(
+      (c) => c.name.startsWith(typed) || !!c.alias?.startsWith(typed),
+    )
     return items.length ? { kind: 'commands', items } : null
   }
 
