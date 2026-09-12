@@ -12,6 +12,18 @@
   width: 100%;
 }
 
+/* The one page in the app that scrolls as a whole: the list and the editor scroll together rather
+   than the editor scrolling inside a rail. A text-completion editor is too tall for a column, and
+   splitting the scroll meant the format fields and their preview could never both be on screen. */
+.connectionsPage {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .connectionList {
   list-style: none;
   margin: 0 0 12px;

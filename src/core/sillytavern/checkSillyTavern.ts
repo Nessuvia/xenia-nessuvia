@@ -78,9 +78,13 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.ok(literal.includes('### Universe Overview'), 'literal text was dropped')
   assert.ok(literal.includes('{{user}}'), '{{user}} should stay, we substitute it')
 
-  const rule = out.tagRule!
-  assert.strictEqual(rule.open, '<|channel>thought')
-  assert.strictEqual(rule.close, '<channel|>')
+  // The bundle has an instruct template, so the think markers go on it and the global tag rules
+  // are left alone.
+  const reasoning = out.connection!.template!.reasoning!
+  assert.strictEqual(reasoning.prefix, '<|channel>thought')
+  assert.strictEqual(reasoning.suffix, '<channel|>')
+  assert.strictEqual(reasoning.sendBack, false, 'past thinking would be sent back by default')
+  assert.strictEqual(out.tagRule, undefined, 'a global tag rule was made as well')
 }
 
 // --- the Frankenstein chat-completion preset ------------------------------
@@ -176,6 +180,46 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.strictEqual(valueOf(dyna.params, 'min_temp'), undefined)
   const off = paramsFromPreset({ dynatemp: false, min_temp: 0.4, max_temp: 1.2 })
   assert.strictEqual(valueOf(off.params, 'max_temp'), undefined)
+}
+
+// --- the instruct keys that used to be dropped ---------------------------
+{
+  const instruct = {
+    name: 'Synthetic',
+    input_sequence: '### Instruction:',
+    output_sequence: '### Response:',
+    system_sequence: '',
+    stop_sequence: '### Instruction:',
+    first_output_sequence: '### First:',
+    last_output_sequence: '### Last:',
+    system_same_as_user: true,
+    wrap: true,
+    macro: false,
+    names_behavior: 'always',
+    sequences_as_stop_strings: true,
+  }
+  const template = parseSillyTavern(JSON.stringify(instruct)).connection!.template!
+  assert.strictEqual(template.firstModelPrefix, '### First:')
+  assert.strictEqual(template.lastModelPrefix, '### Last:')
+  assert.strictEqual(template.systemAsUser, true)
+  assert.strictEqual(template.wrapNewlines, true)
+  assert.strictEqual(template.expandMacros, false)
+  assert.strictEqual(template.sequencesAsStops, true)
+  assert.strictEqual(template.names, 'always')
+
+  // macro absent counts as on, so the field stays unset rather than reading false.
+  const { macro: _macro, ...noMacro } = instruct
+  const onByDefault = parseSillyTavern(JSON.stringify(noMacro)).connection!.template!
+  assert.strictEqual(onByDefault.expandMacros, undefined)
+
+  // ST's names_behavior values map onto our three.
+  const behaviour = (value: string) =>
+    parseSillyTavern(JSON.stringify({ ...instruct, names_behavior: value })).connection!.template!
+      .names
+  assert.strictEqual(behaviour('none'), 'never')
+  assert.strictEqual(behaviour('never'), 'never')
+  // 'force' labels a turn conditionally, which is closest to our group behaviour.
+  assert.strictEqual(behaviour('force'), 'group')
 }
 
 console.log('checkSillyTavern: ok')

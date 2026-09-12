@@ -12,7 +12,6 @@ import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
 import { useHashTab } from '../../app/useHashTab'
-import TwoColumn from '../../app/TwoColumn'
 import '../../app/formPage.css'
 import './settings.css'
 
@@ -81,9 +80,11 @@ export default function SettingsView() {
         ))}
       </nav>
 
+      {/* The one page in the app that scrolls as a whole. A connection editor is a long form and
+          a text-completion one is longer still, and squeezing it into a rail meant a column of
+          single-line inputs next to empty space. The rule holds everywhere else. */}
       {tab === 'connections' ? (
-        <TwoColumn
-          list={
+        <div className="connectionsPage">
             <section>
               <div className="titleContainer">
                 <h3>Connections</h3>
@@ -160,18 +161,15 @@ export default function SettingsView() {
               </ul>
               <StImportPanel />
             </section>
-          }
-          detail={
-            editing && (
+            {editing && (
               <ConnectionEditor
                 key={editing.id}
                 connection={editing}
                 onSave={save}
                 onClose={() => setEditing(null)}
               />
-            )
-          }
-        />
+            )}
+        </div>
       ) : (
       <div className="screenBody">
       {tab === 'debug' ? (

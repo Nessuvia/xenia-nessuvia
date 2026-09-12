@@ -156,19 +156,152 @@
 
 /* Instruct template */
 
+/* rem rather than the px scale throughout this block: the rules around it in this file are in rem
+   and matching the file beats matching the scale, per the conventions. */
+
+/* Sequences on the left, the prompt they produce on the right. */
 .templateEditor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0.75rem;
   padding: 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+.templateColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .templateGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 0.5rem;
+}
+
+.templateField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.templateHint {
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.templateError {
+  color: var(--danger);
+}
+
+.templatePresetRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.templatePresetPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.templateFileInput {
+  display: none;
+}
+
+/* The prompt the template produces, beside the fields that produce it. */
+.formatPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.formatPreviewTitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.formatPreviewBody {
+  margin: 0;
+  padding: 0.5rem;
+  overflow: auto;
+  max-height: 22rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--codeBg);
+  color: var(--codeText);
+  border-radius: var(--radius);
+}
+
+/* The sequences, so the wrapper is readable apart from the text it wraps. */
+.formatPreviewSequence {
+  background: color-mix(in srgb, var(--codeBg) 70%, var(--accent));
+  color: var(--codeText);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.formatPreviewHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+/* Stop strings */
+
+.stopStrings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stopStringsSent {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.stopStringsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stopStringsItem {
+  padding: 0.1rem 0.35rem;
+  background: var(--surfaceSunken);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Reasoning */
+
+.reasoningPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reasoningPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* The preview column has nowhere to go on a phone, so it stacks under the fields. */
+@media (max-width: 700px) {
+  .templateEditor {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (width <= 720px) {

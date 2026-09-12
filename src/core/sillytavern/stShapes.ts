@@ -31,6 +31,15 @@ export interface StInstruct {
   sequences_as_stop_strings?: boolean
   story_string_prefix?: string
   story_string_suffix?: string
+  first_output_sequence?: string
+  last_output_sequence?: string
+  system_same_as_user?: boolean
+  /** Every sequence on its own line. Alpaca-likes need it. */
+  wrap?: boolean
+  /** Expand {{macros}} inside the sequences. Absent counts as on. */
+  macro?: boolean
+  /** 'none' | 'force' | 'always'. Older exports write 'never' for 'none'. */
+  names_behavior?: string
 }
 
 export interface StContext {

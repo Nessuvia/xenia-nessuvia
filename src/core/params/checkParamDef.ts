@@ -2,7 +2,7 @@
 import assert from 'node:assert'
 import type { Connection } from '../stores/settingsStore'
 import type { ParamDef } from './paramDef.ts'
-import { coerceValue, defFromSnippet, inferKind, labelFromKey } from './paramDef.ts'
+import { coerceValue, defFromSnippet, formatList, inferKind, labelFromKey, parseList } from './paramDef.ts'
 import { builtinParamDefs, recommendedKeys } from './builtins.ts'
 import { availableDefs, budgetOf, maxTokensOf, recommendedParams, withParam, withoutParam } from './connectionParams.ts'
 
@@ -119,6 +119,53 @@ const find = (key: string) => defs.find((d) => d.key === key)!
   assert.ok(library.every((d) => d.appliesTo.includes('chat')))
   assert.ok(!availableDefs(connection, defs).some((d) => d.key === 'repetition_penalty')) // text-only
   assert.ok(availableDefs({ ...connection, type: 'text' }, defs).some((d) => d.key === 'repetition_penalty'))
+}
+
+// --- stringList: whitespace entries survive the round trip ---------------
+{
+  // The reported failure: DRY's sequence breakers are mostly whitespace and punctuation, and
+  // split-then-trim deleted the newline. All four gone left an empty list, which meant "omit the
+  // key", and the backend answered 400 dry_sequence_breakers must be a non-empty array.
+  const breakers = ['\n', ':', '"', '*']
+  const line = formatList(breakers)
+  assert.strictEqual(line, '\\n, :, ", *')
+  assert.deepStrictEqual(parseList(line), breakers)
+
+  const def: ParamDef = {
+    ownerId: 'local',
+    key: 'dry_sequence_breakers',
+    label: 'DRY sequence breakers',
+    kind: 'stringList',
+    default: [],
+    appliesTo: ['text'],
+  }
+  assert.deepStrictEqual(coerceValue(def, line), breakers)
+  assert.deepStrictEqual(coerceValue(def, breakers), breakers)
+  // A list of nothing but a newline used to coerce to undefined, dropping the key entirely.
+  assert.deepStrictEqual(coerceValue(def, '\\n'), ['\n'])
+}
+
+// --- the other escapes ----------------------------------------------------
+{
+  const round = (list: string[]) => assert.deepStrictEqual(parseList(formatList(list)), list)
+  round(['\t', '\r', '\n'])
+  round([',', 'a,b'])             // literal commas
+  round(['a b'])                  // a space inside an entry is kept
+  round(['\\', 'back\\slash'])    // literal backslashes
+  round(['a', 'b c', '<|im_end|>'])
+  round(['\\n'])                  // the two characters, not a newline
+  // Spacing around a separator is the user's typing, not part of the value.
+  assert.deepStrictEqual(parseList('a ,  b,c '), ['a', 'b', 'c'])
+  // Blank entries and a trailing comma are dropped; an escaped whitespace entry is not.
+  assert.deepStrictEqual(parseList('a,,b,'), ['a', 'b'])
+  assert.deepStrictEqual(parseList('a,\\n,b'), ['a', '\n', 'b'])
+  assert.deepStrictEqual(parseList(''), [])
+  // A trailing backslash is someone mid-escape, and stands for itself.
+  assert.deepStrictEqual(parseList('a\\'), ['a\\'])
+  // An unknown escape is the character itself, so a quote can be written either way.
+  assert.deepStrictEqual(parseList('\\"'), ['"'])
+  // The documented limit: a space at the edge of an entry is the user's typing and is trimmed.
+  assert.deepStrictEqual(parseList('  a  '), ['a'])
 }
 
 console.log('ok')

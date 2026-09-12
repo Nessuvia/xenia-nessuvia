@@ -4,7 +4,7 @@ import type { ChatMessage } from './connectorInterface'
 import type { Connection } from '../stores/settingsStore'
 import type { ParamDef } from '../params/paramDef.ts'
 import { coerceValue, defaultTemplate } from '../params/paramDef.ts'
-import { flattenPrompt } from '../prompt/flattenPrompt.ts'
+import { flattenPrompt, sequencesOf } from '../prompt/flattenPrompt.ts'
 
 /**
  * The one place a request body is shaped. The preview, the inspector and the send path all call
@@ -29,7 +29,13 @@ export function buildRequestBody(
   if (connection.type === 'text') {
     const template = connection.template ?? defaultTemplate()
     body.prompt = flattenPrompt(messages, template)
-    if (template.stopSequences.length) body.stop = [...template.stopSequences]
+    // The format's own stops, plus every sequence when the template asks for it: without them a
+    // model that ignores its stop token writes the user's next turn as well as its own.
+    const stops = new Set([
+      ...template.stopSequences,
+      ...(template.sequencesAsStops ? sequencesOf(template) : []),
+    ])
+    if (stops.size) body.stop = [...stops]
   } else {
     body.messages = messages
   }

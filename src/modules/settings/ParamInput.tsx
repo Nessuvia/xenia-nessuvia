@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ParamDef } from '../../core/params/paramDef'
+import { formatList, parseList } from '../../core/params/paramDef'
 
 /** A param's value as the input element wants it. */
 export function asText(value: unknown): string {
@@ -85,7 +86,14 @@ export default function ParamInput({
     )
   }
 
-  if (def.kind === 'stringList') return <ListInput def={def} value={text} placeholder={placeholder} onChange={onChange} />
+  // Not `text`: a list is shown escaped, so a newline entry is visible as `\n` in a one-line input
+  // instead of vanishing into it.
+  if (def.kind === 'stringList') {
+    const list = Array.isArray(value) ? value.map(String) : parseList(String(value ?? ''))
+    return (
+      <ListInput def={def} value={formatList(list)} placeholder={placeholder} onChange={onChange} />
+    )
+  }
 
 
   if (def.kind === 'number') {
@@ -136,11 +144,8 @@ function ListInput({
       title={def.hint}
       onChange={(e) => {
         setRaw(e.target.value)
-        const list = e.target.value
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-        setSeed(list.join(', '))
+        const list = parseList(e.target.value)
+        setSeed(formatList(list))
         onChange(list)
       }}
     />

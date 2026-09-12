@@ -89,6 +89,17 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   one counts), `flattenPrompt` (text-completion connections),
   `swapTokens`, `worldInfo`, `conditions`, `chapterGuide`, `rewrite`. Anything changing what the
   model receives goes through one of these.
+- **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`), and
+  `flattenPrompt` is the only thing that reads it: role sequences, first/last turn overrides,
+  newline wrapping, speaker names, `{{char}}`/`{{user}}` in the sequences themselves, and the
+  prefill. `templatePresets` ships the formats (ChatML, Llama 3, Mistral, Alpaca, Gemma, Command R),
+  which is a deliberate exception to "nothing ships": an instruct format is a fact about a model,
+  not the user's taste. `params/templateFile.ts` is the standalone export, carrying no endpoint and
+  no key by construction. The special-token flags (`add_bos_token`, `ban_eos_token`,
+  `skip_special_tokens`) are ordinary `ParamDef` rows, not template fields.
+  `prompt/reasoning.ts` finds a think block's offsets. Nothing splits the stored reply: the text is
+  kept whole, `Message.reasoningEnd` records where the block ends, and `MessageBubble` does the
+  split at render. Only a block at the very front counts, and an unclosed one runs to the end.
 - **Model calls** — `core/connectors`. `openaiCompatible` (streaming), `dummy` (local generator for
   debugging), `buildRequestBody` + `completionUrl`, `listModels` + `modelsUrl`, `snapshot`.
 - **Multiplayer** — `core/multiplayer/channel.ts` is the interface and `centrifugoChannel` is the

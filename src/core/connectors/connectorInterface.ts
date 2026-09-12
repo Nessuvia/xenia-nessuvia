@@ -1,6 +1,12 @@
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  /**
+   * Who said it. Text-completion connections use it to label a turn and to fill `{{char}}` and
+   * `{{user}}` inside the instruct sequences; chat connections ignore it. Absent where the speaker
+   * is not a person, which is every system message.
+   */
+  name?: string
 }
 
 /** One delta from the stream: reply text, reasoning text, or (usually) one of the two. */

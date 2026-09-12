@@ -236,6 +236,16 @@ export interface Message {
   /** The model's reasoning for each swipe, parallel to `swipes` (holes where none/absent). Kept out
    *  of `content` so it's rendered separately and never fed back into history on later turns. */
   reasonings?: (string | undefined)[]
+  /**
+   * Where an inline think block ends in `content`, for a text-completion model that writes its
+   * thinking into the reply rather than on the reasoning channel above. `content.slice(reasoningEnd)`
+   * is the reply proper.
+   *
+   * The text stays whole: this is a marker, not a split. It exists so the second sweep and the
+   * quality scorer can skip the thinking without re-parsing it, and without a change of connection
+   * silently changing where they think the reply starts.
+   */
+  reasoningEnd?: number
   /** Which character said this, in a group chat. Absent = the chat's single character. */
   speakerId?: number
   speakerName?: string

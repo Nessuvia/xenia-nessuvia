@@ -422,6 +422,9 @@ export function buildPrompt(
     return {
       role: m.role,
       content: group ? `${speakerLabel(m, character, persona)}: ${content}` : content,
+      // Carried on every turn, not only in a group: a text-completion template may label turns in
+      // a one-to-one chat too, and it fills {{char}} and {{user}} in the instruct sequences.
+      name: speakerLabel(m, character, persona),
     }
   })
   // Deepest first: each insertion point is counted from the end, so splicing a shallow note before

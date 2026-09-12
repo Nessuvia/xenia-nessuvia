@@ -99,6 +99,20 @@ export function builtinParamDefs(): ParamDef[] {
     def('mirostat_eta', 'Mirostat eta', {
       kind: 'slider', min: 0, max: 1, step: 0.01, default: 0.1, appliesTo: ['text'],
     }),
+    // Special-token handling. Rows rather than template fields: they are ordinary body keys, and a
+    // backend wanting ignore_eos_token or spaces_between_special_tokens instead needs no release.
+    def('add_bos_token', 'Add BOS token', {
+      kind: 'bool', default: true, appliesTo: ['text'],
+      hint: 'Off when the instruct template already writes one.',
+    }),
+    def('ban_eos_token', 'Ban EOS token', {
+      kind: 'bool', default: false, appliesTo: ['text'],
+      hint: 'Forbids the end token, so the reply runs to the token cap.',
+    }),
+    def('skip_special_tokens', 'Skip special tokens', {
+      kind: 'bool', default: true, appliesTo: ['text'],
+      hint: 'Leaves special tokens out of the reply text.',
+    }),
   ]
 }
 

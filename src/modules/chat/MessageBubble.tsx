@@ -23,7 +23,8 @@ import {
   swipeCount,
   swipeIndex,
 } from '../../core/stores/swipes'
-import { useAppearance } from '../../core/stores/settingsStore'
+import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
+import { reasoningSpan } from '../../core/prompt/reasoning'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
@@ -136,6 +137,20 @@ export default function MessageBubble({
   const replaceRules = appearance.replaceRules
   const palette = usePalette()
   const order = palette.colorOrder
+
+  // A text-completion model writes its thinking inline in the reply rather than on the separate
+  // stream channel `message.reasoning` holds. The stored text stays whole; the split happens here,
+  // at render, from the connection's markers. `reasoningEnd` on the message is the same offset
+  // recorded at save time, for the code that reads a reply without rendering it.
+  const reasoningConfig = useActiveConnection()?.template?.reasoning
+  const inline =
+    message.role === 'assistant' && reasoningConfig?.autoParse
+      ? reasoningSpan(message.content, reasoningConfig)
+      : null
+  const inlineReasoning = inline ? message.content.slice(inline.start, inline.end) : ''
+  const bodyText = inline
+    ? message.content.slice(inline.end).replace(/^\s+/, '')
+    : message.content
 
   const assistant = message.role === 'assistant'
   const count = swipeCount(message)
@@ -350,10 +365,16 @@ export default function MessageBubble({
         </details>
       )}
 
-      {appearance.showReasoning && streamingText === null && draft === null && reasoningFor(message) && (
+      {appearance.showReasoning && streamingText === null && draft === null &&
+        (reasoningFor(message) || inlineReasoning) && (
         <details className="taggedBlock reasoningBlock">
           <summary>Reasoning</summary>
-          {renderText(reasoningFor(message)!, { tagRules, replaceRules, order, role: message.role })}
+          {renderText(reasoningFor(message) ?? inlineReasoning, {
+            tagRules,
+            replaceRules,
+            order,
+            role: message.role,
+          })}
         </details>
       )}
 
@@ -366,7 +387,7 @@ export default function MessageBubble({
         // The rewrite is the message; showing the original is a look at what it replaced, and the
         // class marks it so the two are never confused for each other.
         <div className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}>
-          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : message.content, {
+          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
             tagRules,
             replaceRules,
             order,

@@ -7,6 +7,7 @@ import { sendMessage } from '../connectors/openaiCompatible'
 import { snapshotOf } from '../connectors/snapshot'
 import { buildPrompt } from '../prompt/buildPrompt'
 import { loadTokenizer } from '../prompt/budget'
+import { reasoningSpan } from '../prompt/reasoning'
 import { tokenizerFor } from '../prompt/tokenizers'
 import type { Connection } from './settingsStore'
 import { activeConnection, useSettings } from './settingsStore'
@@ -204,6 +205,18 @@ export async function stackFor(chat: Chat | null): Promise<PromptStack> {
 export function resolvedConnection(character: Character, chat: Chat): Connection | undefined {
   const connection = activeConnection()
   return connection && resolveParams(connection, character, chat)
+}
+
+/**
+ * Where an inline think block ends in a finished reply, recorded on the message. The text is stored
+ * whole; this is only the offset, so a reader can skip the thinking without re-parsing it against a
+ * connection that may since have changed. Undefined when there is no block to skip, which keeps the
+ * field off the record entirely for the usual reply.
+ */
+function reasoningEndOf(text: string, connection: Connection): number | undefined {
+  const config = connection.template?.reasoning
+  if (!config?.autoParse) return undefined
+  return reasoningSpan(text, config)?.end
 }
 
 /**
@@ -737,6 +750,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
           requestSnapshots: [snapshot],
           reasonings: [reasoning || undefined],
+          reasoningEnd: reasoningEndOf(text, connection),
           // Parallel to swipes as well: what the writing model said, before the pass.
           passOriginals: [passOriginal],
           passFailed: [passFail],
@@ -874,6 +888,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
         requestSnapshots: [snapshot],
         reasonings: [reasoning || undefined],
+        reasoningEnd: reasoningEndOf(text, connection),
         // Parallel to swipes as well: what the writing model said, before the pass.
         passOriginals: [passOriginal],
         passFailed: [passFail],

@@ -13,6 +13,8 @@ import { useParamDefs } from '../../core/stores/paramDefsStore'
 import { recommendedParams } from '../../core/params/connectionParams'
 import ParamBuilder from './ParamBuilder'
 import TemplateEditor from './TemplateEditor'
+import StopStringsPanel from './StopStringsPanel'
+import ReasoningPanel from './ReasoningPanel'
 import { readContextLimit } from './readContextLimit'
 import TokenizerPicker from './TokenizerPicker'
 
@@ -283,13 +285,31 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
       </details>
 
       {draft.type === 'text' && (
-        <details className="editorSection">
-          <summary>Instruct template</summary>
-          <TemplateEditor
-            template={draft.template ?? defaultTemplate()}
-            onChange={(template) => set('template', template)}
-          />
-        </details>
+        <>
+          <details className="editorSection" open>
+            <summary>Instruct template</summary>
+            <TemplateEditor
+              template={draft.template ?? defaultTemplate()}
+              name={draft.name}
+              onChange={(template) => set('template', template)}
+            />
+          </details>
+          <details className="editorSection">
+            <summary>Stop strings</summary>
+            <StopStringsPanel
+              template={draft.template ?? defaultTemplate()}
+              hasStopParam={draft.params.some((p) => p.key === 'stop')}
+              onChange={(template) => set('template', template)}
+            />
+          </details>
+          <details className="editorSection">
+            <summary>Reasoning</summary>
+            <ReasoningPanel
+              template={draft.template ?? defaultTemplate()}
+              onChange={(template) => set('template', template)}
+            />
+          </details>
+        </>
       )}
 
       <ParamBuilder

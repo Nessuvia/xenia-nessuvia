@@ -56,6 +56,43 @@ export interface InstructTemplate {
   firstPrefix?: string
   stopSequences: string[]
   trimTrailingSpace: boolean
+  /** Replaces `modelPrefix` on the first assistant turn only. Alpaca-likes open differently. */
+  firstModelPrefix?: string
+  /** Replaces `modelPrefix` on the open turn at the end. Where a "stay in character" nudge goes. */
+  lastModelPrefix?: string
+  /** Wrap system turns in the user sequences. Some formats have no system role at all. */
+  systemAsUser?: boolean
+  /** Put each sequence on its own line. Alpaca needs it, ChatML must not have it. */
+  wrapNewlines?: boolean
+  /** Expand `{{char}}` and friends inside the sequences themselves. On unless turned off. */
+  expandMacros?: boolean
+  /** Send every sequence as a stop string too, so the model can't write the next turn itself. */
+  sequencesAsStops?: boolean
+  /** Whether a turn is labelled with its speaker's name. `group` means only in a group chat. */
+  names?: NamesBehavior
+  /** Text the reply is forced to begin with, written after the open model prefix. */
+  prefill?: string
+  /** Think-block handling for this model. Unset falls back to the global tag rules. */
+  reasoning?: ReasoningConfig
+}
+
+/** When a turn is prefixed with who is speaking. */
+export type NamesBehavior = 'never' | 'always' | 'group'
+
+/**
+ * Where a model's thinking starts and ends, and what happens to it afterwards. It belongs to the
+ * model rather than to the app, which is why it sits on the connection: the same chat viewed
+ * through two connections can have two different think markers in its history.
+ */
+export interface ReasoningConfig {
+  prefix: string
+  suffix: string
+  /** Split the block out of the reply as it arrives. Off means the markers are left in the text. */
+  autoParse: boolean
+  /** Send past think blocks back in later prompts. Off is the usual choice: they burn context. */
+  sendBack: boolean
+  /** How many of the most recent turns keep their think block when `sendBack` is on. */
+  maxSendBack?: number
 }
 
 /** ChatML, so a text connection sends something sane before anyone edits the template. */
@@ -73,6 +110,154 @@ export function defaultTemplate(): InstructTemplate {
 }
 
 /**
+ * Instruct formats for the models people actually run locally. These are facts about a model, not
+ * taste, so unlike a Second Sweep pipeline they ship: a user pointing at a Llama 3 build should not
+ * have to retype `<|start_header_id|>` from memory to get a first reply.
+ */
+export const templatePresets: { name: string; template: () => InstructTemplate }[] = [
+  { name: 'ChatML', template: defaultTemplate },
+  {
+    name: 'Llama 3',
+    template: () => ({
+      systemPrefix: '<|start_header_id|>system<|end_header_id|>\n\n',
+      systemSuffix: '<|eot_id|>',
+      userPrefix: '<|start_header_id|>user<|end_header_id|>\n\n',
+      userSuffix: '<|eot_id|>',
+      modelPrefix: '<|start_header_id|>assistant<|end_header_id|>\n\n',
+      modelSuffix: '<|eot_id|>',
+      firstPrefix: '<|begin_of_text|>',
+      stopSequences: ['<|eot_id|>', '<|end_of_text|>'],
+      trimTrailingSpace: true,
+    }),
+  },
+  {
+    name: 'Mistral',
+    template: () => ({
+      // Mistral has no system role: the system text rides in the user turn.
+      systemPrefix: '[INST] ',
+      systemSuffix: '[/INST]',
+      userPrefix: '[INST] ',
+      userSuffix: '[/INST]',
+      modelPrefix: ' ',
+      modelSuffix: '</s>',
+      firstPrefix: '<s>',
+      stopSequences: ['</s>', '[INST]'],
+      trimTrailingSpace: false,
+      systemAsUser: true,
+    }),
+  },
+  {
+    name: 'Alpaca',
+    template: () => ({
+      systemPrefix: '',
+      systemSuffix: '',
+      userPrefix: '### Instruction:',
+      userSuffix: '',
+      modelPrefix: '### Response:',
+      modelSuffix: '',
+      stopSequences: ['### Instruction:'],
+      trimTrailingSpace: true,
+      wrapNewlines: true,
+    }),
+  },
+  {
+    name: 'Gemma 2',
+    template: () => ({
+      // Gemma has no system role either, and its user turn is where system text goes.
+      systemPrefix: '<start_of_turn>user\n',
+      systemSuffix: '<end_of_turn>\n',
+      userPrefix: '<start_of_turn>user\n',
+      userSuffix: '<end_of_turn>\n',
+      modelPrefix: '<start_of_turn>model\n',
+      modelSuffix: '<end_of_turn>\n',
+      firstPrefix: '<bos>',
+      stopSequences: ['<end_of_turn>'],
+      trimTrailingSpace: true,
+      systemAsUser: true,
+    }),
+  },
+  {
+    name: 'Command R',
+    template: () => ({
+      systemPrefix: '<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>',
+      systemSuffix: '<|END_OF_TURN_TOKEN|>',
+      userPrefix: '<|START_OF_TURN_TOKEN|><|USER_TOKEN|>',
+      userSuffix: '<|END_OF_TURN_TOKEN|>',
+      modelPrefix: '<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>',
+      modelSuffix: '<|END_OF_TURN_TOKEN|>',
+      firstPrefix: '<BOS_TOKEN>',
+      stopSequences: ['<|END_OF_TURN_TOKEN|>'],
+      trimTrailingSpace: true,
+    }),
+  },
+]
+
+/**
+ * A `stringList` as one line of comma-separated text, and back.
+ *
+ * The escapes exist because the values that matter most in these lists are whitespace. DRY's
+ * sequence breakers are `["\n", ":", "\"", "*"]` and a stop string is often a bare newline; a
+ * single-line input cannot hold either, and trimming each entry deleted them outright. An empty
+ * list then means "omit the key", and a backend that requires a non-empty array rejects the
+ * request.
+ *
+ * `\n`, `\t` and `\r` are the whitespace entries, `\,` a literal comma, and `\\` a backslash.
+ * Anything else after a backslash is that character, so a lone backslash in a stop string survives
+ * rather than eating the next one.
+ *
+ * The one thing that cannot be written is a plain space at the start or end of an entry: the spaces
+ * after a comma are the user's typing and are trimmed, and no escape survives that trim. Write `\t`
+ * where a real space-like separator is wanted. Nothing a backend takes here needs one.
+ */
+export function formatList(list: string[]): string {
+  return list
+    .map((item) =>
+      item
+        .replace(/\\/g, '\\\\')
+        .replace(/\n/g, '\\n')
+        .replace(/\t/g, '\\t')
+        .replace(/\r/g, '\\r')
+        .replace(/,/g, '\\,'),
+    )
+    .join(', ')
+}
+
+export function parseList(text: string): string[] {
+  // Split on unescaped commas only, keeping the escapes intact. Trimming has to happen on this
+  // raw text and not on the unescaped value: `\n` here is a backslash and an n, which survives a
+  // trim, where the newline it stands for would not.
+  const raw: string[] = []
+  let current = ''
+  let escaped = false
+  for (const ch of text) {
+    if (escaped) {
+      current += ch
+      escaped = false
+    } else if (ch === '\\') {
+      current += ch
+      escaped = true
+    } else if (ch === ',') {
+      raw.push(current)
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+  raw.push(current)
+
+  return raw
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+    .map((item) =>
+      // A trailing backslash is the user mid-escape: it stands for itself rather than eating the
+      // closing quote of the next entry.
+      item.replace(/\\(.|$)/g, (_, ch: string) =>
+        ch === 'n' ? '\n' : ch === 't' ? '\t' : ch === 'r' ? '\r' : ch === '' ? '\\' : ch,
+      ),
+    )
+}
+
+/**
  * A param's value as the request body should carry it. Returns `undefined` when the param has
  * nothing to send, an empty list or a blank json blob, so the caller omits the key rather than
  * sending a null a picky backend will reject.
@@ -87,12 +272,8 @@ export function coerceValue(def: ParamDef, value: unknown): unknown {
     case 'bool':
       return Boolean(value)
     case 'stringList': {
-      const list = Array.isArray(value)
-        ? value.map(String)
-        : String(value ?? '')
-            .split(',')
-            .map((s) => s.trim())
-      const kept = list.filter(Boolean)
+      const list = Array.isArray(value) ? value.map(String) : parseList(String(value ?? ''))
+      const kept = list.filter((s) => s !== '')
       // Some backends reject an empty stop array outright, so an empty list means "don't send".
       return kept.length ? kept : undefined
     }
