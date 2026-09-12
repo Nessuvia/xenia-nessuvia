@@ -1,10 +1,10 @@
 // Run: node --experimental-strip-types src/core/nessuPass/checkCleanPrompt.ts
 import assert from 'node:assert/strict'
 import { buildCleanPrompt, shouldRunClean } from './buildCleanPrompt.ts'
-import type { Note } from './detect/note.ts'
+import type { Note } from './note.ts'
 
 const note = (over: Partial<Note> = {}): Note => ({
-  source: 'repetition',
+  source: 'text:echo',
   message: 'Used before.',
   ...over,
 })

@@ -3,7 +3,7 @@
 import { defaultQuality, type QualitySettings } from '../quality/decide.ts'
 import { defaultCensus, type CensusOptions } from '../quality/census.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
-import { resolveDetect, type DetectSettings } from './detect/types.ts'
+import { resolveDetect, type DetectSettings } from './detectSettings.ts'
 
 /**
  * Nessu's Pass: what happens to an assistant reply between the model finishing it and the app
@@ -124,8 +124,8 @@ export interface Pipeline {
   /** Shared by the gate, the clean stage and the score stage, so the three cannot disagree about
    *  what counts as a problem. */
   detect: DetectSettings
-  /** The user's overlay on the bundled slop list, merged by id. Feeds the banned list and the
-   *  score stage. */
+  /** Worn phrases this pipeline scores against. Nothing is shipped, so an empty list means the
+   *  slop signal is off. Feeds the banned list and the score stage. */
   lexicon: LexiconEntry[]
   /** How the chat's own overused phrasing is counted. */
   census: CensusOptions

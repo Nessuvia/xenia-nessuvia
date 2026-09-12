@@ -5,7 +5,7 @@ import type { GrammarHammerRule } from '../hammer/rule.ts'
 import type { CensusOptions } from '../quality/census.ts'
 import type { QualitySettings } from '../quality/decide.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
-import { resolveDetect, type TextRule } from './detect/types.ts'
+import { resolveDetect, type TextRule } from './detectSettings.ts'
 import {
   newPipeline,
   newStage,
@@ -41,9 +41,6 @@ export interface LegacySecondPass {
   rules?: GrammarHammerRule[]
   textRules?: TextRule[]
   punctuation?: { dashes?: boolean; quotes?: boolean }
-  repetition?: { enabled?: boolean; phrase?: number; repeats?: number; lookback?: number }
-  sprawl?: { enabled?: boolean; maxWords?: number; maxCommas?: number; maxConjunctions?: number }
-  triplet?: { enabled?: boolean }
 }
 
 /** The 0.0.42 `settings.goldPass` blob. */
@@ -163,7 +160,14 @@ export function pipelinesFromLegacy(
   const presets = (gold?.presets ?? []).filter((p) => p?.text?.trim())
   if (!withSecond && !presets.length) return { pipelines: [], activeIndex: -1, byPresetId: {} }
 
-  const detect = resolveDetect(second as never)
+  // Only the three that survive. A 0.0.42 blob also carried repetition, sprawl and triplet
+  // settings; those checks are gone, so the numbers behind them are dropped rather than written
+  // onto a record as fields nothing reads.
+  const detect = resolveDetect({
+    rules: second?.rules ?? [],
+    textRules: second?.textRules ?? [],
+    punctuation: { ...newPipeline().detect.punctuation, ...second?.punctuation },
+  })
   const shared = {
     detect,
     lexicon: gold?.lexicon ?? [],

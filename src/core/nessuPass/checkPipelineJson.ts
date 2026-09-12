@@ -1,6 +1,5 @@
 // Run: node --experimental-strip-types src/core/nessuPass/checkPipelineJson.ts
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { exportPipelines, parsePipelineFile } from './pipelineJson.ts'
 import { newPipeline, newStage, type RewriteStage } from './pipeline.ts'
 
@@ -28,7 +27,7 @@ const minimal = {
   assert.equal(stage.kind === 'clean' && stage.config.skipWhenClean, false) // what the file said
   assert.equal(stage.kind === 'clean' && stage.config.connectionId, null) // what it left out
   // Detectors too: a file with no `detect` block still resolves every check.
-  assert.equal(p.detect.sprawl.maxWords, 45)
+  assert.equal(p.detect.punctuation.dashes, true)
 }
 
 // --- ids are always fresh -------------------------------------------------
@@ -100,27 +99,6 @@ const minimal = {
   // The connection id survives, because it is part of the setup the author wrote. It will not
   // resolve in someone else's install, and `rewriteConnection` treats that as not armed.
   assert.equal(stage.config.connectionId, 'local-1')
-}
-
-// --- the bundled file is a file the import path accepts -------------------
-{
-  const file = readFileSync(new URL('./bundled/pipelines.json', import.meta.url), 'utf8')
-  const out = parsePipelineFile(file)
-  assert.equal(out.length, 2)
-  assert.deepEqual(out.map((p) => p.stages.map((s) => s.kind)), [
-    ['gate', 'clean'],
-    ['clean', 'rewrite', 'score'],
-  ])
-  // Both ship the same rule set, and it is not empty: the pipelines are the only way rules arrive.
-  for (const p of out) {
-    assert.ok(p.detect.textRules.length > 0)
-    assert.ok(p.detect.rules.length > 0)
-    assert.ok(p.description.length > 0)
-  }
-  // The full one ships a preset but no connection: nobody else's connection id would resolve here.
-  const rewrite = out[1].stages[1] as RewriteStage
-  assert.ok(rewrite.config.preset.includes('{{char}}'))
-  assert.equal(rewrite.config.connectionId, '')
 }
 
 console.log('checkPipelineJson ok')

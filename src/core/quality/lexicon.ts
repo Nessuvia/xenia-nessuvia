@@ -1,9 +1,9 @@
 // Extension-ful imports on purpose: checkLexicon.ts runs this under `node --experimental-strip-types`.
-import type { Note } from '../nessuPass/detect/note.ts'
+import type { Note } from '../nessuPass/note.ts'
 import { computeExclusions, type Range } from '../hammer/exclusions.ts'
 
 export interface LexiconEntry {
-  /** Stable across builds, because the user's overlay is keyed by it. */
+  /** Identifies the row for editing and for `slop:<id>` on a hit. */
   id: string
   /** A literal phrase, or a regex source when `regex` is set. */
   phrase: string
@@ -85,22 +85,6 @@ export function findSlop(text: string, entries: LexiconEntry[]): SlopHit[] {
     }
   }
   return hits.sort((a, b) => (a.span?.start ?? 0) - (b.span?.start ?? 0))
-}
-
-/**
- * The bundled list with the user's overlay on top.
- *
- * Merged by id rather than replaced wholesale so that updating the shipped list keeps the user's
- * decisions: an entry they disabled stays disabled, a weight they changed stays changed, and
- * entries they wrote themselves survive at the end. An overlay id that no longer exists in the
- * bundle is treated as one of their own.
- */
-export function mergeLexicon(bundled: LexiconEntry[], overlay: LexiconEntry[]): LexiconEntry[] {
-  const byId = new Map(overlay.map((e) => [e.id, e]))
-  const out = bundled.map((e) => ({ ...e, ...byId.get(e.id) }))
-  const bundledIds = new Set(bundled.map((e) => e.id))
-  for (const e of overlay) if (!bundledIds.has(e.id)) out.push(e)
-  return out
 }
 
 export function newLexiconEntry(): LexiconEntry {

@@ -21,7 +21,6 @@ const second: LegacySecondPass = {
     { id: 't1', enabled: true, find: 'perhaps', regex: false, caseSensitive: false, scope: 'assistant', note: 'no hedging' },
   ],
   punctuation: { dashes: false, quotes: true },
-  sprawl: { enabled: true, maxWords: 30, maxCommas: 3, maxConjunctions: 2 },
 }
 
 const gold: LegacyGoldPass = {
@@ -56,9 +55,7 @@ const gold: LegacyGoldPass = {
   for (const p of pipelines) {
     assert.equal(p.detect.textRules[0].note, 'no hedging')
     assert.equal(p.detect.punctuation.dashes, false)
-    assert.equal(p.detect.sprawl.maxWords, 30)
     // A check the old blob never wrote still resolves, rather than arriving undefined.
-    assert.equal(p.detect.repetition.phrase, 4)
     assert.equal(p.lexicon[0].phrase, 'a beat passed')
   }
   assert.notEqual(pipelines[0].stages[0].id, pipelines[1].stages[0].id)

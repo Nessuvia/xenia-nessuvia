@@ -11,6 +11,7 @@ import {
   RiSparkling2Line,
 } from '@remixicon/react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import {
@@ -28,6 +29,7 @@ import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
 import PromptInspector from '../../app/PromptInspector'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
+import { useSlopSample } from '../../core/stores/slopStore'
 
 
 /** Per-speaker color overrides as CSS vars. Only overridden fields are set: an empty '--textColor'
@@ -120,6 +122,7 @@ export default function MessageBubble({
   // again, it sat open while the pointer went back to the message. Controlled so the standard
   // dropdown dismissal applies: a click anywhere outside, or Escape.
   const [quickActions, setQuickActions] = useState(false)
+  const navigate = useNavigate()
   const quickRef = useCloseOnOutside<HTMLDetailsElement>(quickActions, () =>
     setQuickActions(false),
   )
@@ -277,6 +280,17 @@ export default function MessageBubble({
                 }}
               >
                 Copy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // The store is the handoff buffer; the screen takes it on mount and clears it.
+                  useSlopSample.getState().setSample(message.content)
+                  navigate('/slopdentifier')
+                  setQuickActions(false)
+                }}
+              >
+                Send to Slop-dentifier
               </button>
               {assistant && (
                 <button

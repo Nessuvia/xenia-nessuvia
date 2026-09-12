@@ -61,12 +61,12 @@ export function setSessionCast(cast: Character[] | undefined): void {
 const byTime = (a: Message, b: Message) => a.createdAt - b.createdAt || a.id! - b.id!
 
 /**
- * How much recent chat the pass is shown. Only assistant turns go in: the repetition check and the
- * census are looking for the model repeating itself, and folding the user's own words in would
- * flag the reply for quoting the person it is answering.
+ * How much recent chat the pass is shown. Only assistant turns go in: the census is looking for
+ * the model repeating itself, and folding the user's own words in would count the reply for
+ * quoting the person it is answering.
  *
- * Trimmed generously rather than exactly. The checks apply their own lookback settings, so this
- * only has to be at least as much as the largest a user might set.
+ * Trimmed generously rather than exactly. The census applies its own window, so this only has to
+ * be at least as much as the largest a user might set.
  */
 const HISTORY_FOR_NOTES = 40
 

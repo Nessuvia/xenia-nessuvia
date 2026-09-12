@@ -1,6 +1,5 @@
 import { RiDeleteBinLine } from '@remixicon/react'
-import { mergeLexicon, newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
-import { bundledLexicon } from '../../core/quality/bundledLexicon'
+import { newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
 import type { QualityWeights } from '../../core/quality/score'
 import type { ScoreStage } from '../../core/nessuPass/pipeline'
 import './settings.css'
@@ -11,8 +10,6 @@ const WEIGHTS: Array<[keyof QualityWeights, string]> = [
   ['census', 'Reused in this chat'],
   ['selfRepeat', 'Repeats itself'],
   ['flags', 'Hammer flags'],
-  ['sprawl', 'Run-on sentences'],
-  ['triplet', 'Three-item lists'],
   ['variety', 'Sentence variety'],
 ]
 
@@ -47,17 +44,11 @@ export default function QualitySection({
   const setWeight = (key: keyof QualityWeights, value: number) =>
     setQuality({ weights: { ...quality.weights, [key]: value } })
 
-  const entries = mergeLexicon(bundledLexicon, lexicon)
-  const bundledIds = new Set(bundledLexicon.map((e) => e.id))
-  /** Write an overlay row for an entry, whether it started bundled or not. */
-  const setEntry = (id: string, over: Partial<LexiconEntry>) => {
-    const existing = lexicon.find((e) => e.id === id)
-    patchLexicon(
-      existing
-        ? lexicon.map((e) => (e.id === id ? { ...e, ...over } : e))
-        : [...lexicon, { ...entries.find((e) => e.id === id)!, ...over }],
-    )
-  }
+  // The list is the pipeline's own, all of it. Nothing ships a slop list, so there is no bundled
+  // half to overlay and every row is the user's to edit or delete.
+  const entries = lexicon
+  const setEntry = (id: string, over: Partial<LexiconEntry>) =>
+    patchLexicon(lexicon.map((e) => (e.id === id ? { ...e, ...over } : e)))
   const removeEntry = (id: string) => patchLexicon(lexicon.filter((e) => e.id !== id))
 
   return (
@@ -177,8 +168,7 @@ export default function QualitySection({
 
       <span className="passSectionTitle">Worn phrases</span>
       <p className="hint">
-        The shipped list, plus anything you add. Weight is how much a hit counts against a
-        paragraph.
+        Phrases this pipeline scores against. Weight is how much a hit counts against a paragraph.
       </p>
       <ul className="ruleCards">
         {entries.map((entry) => (
@@ -218,11 +208,9 @@ export default function QualitySection({
                 />
                 Regex
               </label>
-              {!bundledIds.has(entry.id) && (
-                <button type="button" title="Delete phrase" onClick={() => removeEntry(entry.id)}>
-                  <RiDeleteBinLine size={16} />
-                </button>
-              )}
+              <button type="button" title="Delete phrase" onClick={() => removeEntry(entry.id)}>
+                <RiDeleteBinLine size={16} />
+              </button>
             </div>
           </li>
         ))}
@@ -239,7 +227,7 @@ export default function QualitySection({
           disabled={lexicon.length === 0}
           onClick={() => patchLexicon([])}
         >
-          Reset to the shipped list
+          Remove all
         </button>
       </div>
     </>

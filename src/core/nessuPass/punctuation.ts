@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkPunctuation.ts runs this under `node --experimental-strip-types`.
-import type { PunctuationSettings } from './types.ts'
-import { computeExclusions } from '../../hammer/exclusions.ts'
+import type { PunctuationSettings } from './detectSettings.ts'
+import { computeExclusions } from '../hammer/exclusions.ts'
 
 /**
  * The mechanical half of two rules the editing model keeps getting wrong.
@@ -11,7 +11,7 @@ import { computeExclusions } from '../../hammer/exclusions.ts'
  * here instead of asked for.
  *
  * Only these two. Anything else wants a rewrite, which is what the model is for. They are settings
- * rather than rules for the same reason the sprawl counter is: turning them off is a preference
+ * rather than rules because there is no judgment in either sweep: turning them off is a preference
  * about mechanics, and a rule is prose handed to a model.
  */
 

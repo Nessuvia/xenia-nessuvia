@@ -13,9 +13,8 @@ import {
   type Stage,
   type StageKind,
 } from '../../core/nessuPass/pipeline'
-import type { DetectSettings } from '../../core/nessuPass/detect/types'
-import { standingNotes } from '../../core/nessuPass/detect/textRules'
-import { bundledPipelines } from '../../core/nessuPass/bundledPipelines'
+import type { DetectSettings } from '../../core/nessuPass/detectSettings'
+import { standingNotes } from '../../core/nessuPass/textRules'
 import { downloadPipelines, parsePipelineFile } from '../../core/nessuPass/pipelineJson'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import GrammarHammerPanel from './GrammarHammerPanel'
@@ -182,9 +181,6 @@ export default function NessuPassPanel() {
               <button type="button" onClick={() => void create(newPipeline('New pipeline'))}>
                 New pipeline
               </button>
-              <button type="button" onClick={() => void addJson(JSON.stringify({ pipelines: bundledPipelines() }))}>
-                Add the bundled pipelines
-              </button>
               <button
                 type="button"
                 disabled={pipelines.length === 0}
@@ -310,7 +306,7 @@ function swap(stages: Stage[], a: number, b: number): Stage[] {
   return next
 }
 
-/** The detector settings, shared by the gate, the clean stage and the score stage. */
+/** The detector settings, shared by the gate and the clean stage. */
 function ChecksTab({
   pipeline,
   patchDetect,
@@ -318,10 +314,7 @@ function ChecksTab({
   pipeline: Pipeline
   patchDetect: (over: Partial<DetectSettings>) => void
 }) {
-  const d = pipeline.detect
-  const pun = d.punctuation
-  const rep = d.repetition
-  const spr = d.sprawl
+  const pun = pipeline.detect.punctuation
 
   return (
     <section className="textRules screenFrame">
@@ -330,8 +323,8 @@ function ChecksTab({
       </span>
       <div className="passBody">
         <p className="hint">
-          What counts as a problem. The gate counts these, the clean stage reports them, and the
-          score stage measures both texts with them.
+          What counts as a problem. The gate counts these and the clean stage reports them. Rules
+          and hammer patterns are on their own tabs.
         </p>
 
         <span className="passSectionTitle">Punctuation</span>
@@ -352,107 +345,6 @@ function ChecksTab({
           Straighten curly quotes and ellipses
         </label>
 
-        <span className="passSectionTitle">Repetition</span>
-        <label className="checkboxRow">
-          <input
-            type="checkbox"
-            checked={rep.enabled}
-            onChange={(e) => patchDetect({ repetition: { ...rep, enabled: e.target.checked } })}
-          />
-          Report phrases this chat has used before
-        </label>
-        <div className="passNumbers">
-          <label className="passNumber">
-            Words in a phrase
-            <input
-              className="passNumberInput"
-              type="number"
-              min={2}
-              max={12}
-              value={rep.phrase}
-              onChange={(e) => patchDetect({ repetition: { ...rep, phrase: Number(e.target.value) } })}
-            />
-          </label>
-          <label className="passNumber">
-            Earlier uses
-            <input
-              className="passNumberInput"
-              type="number"
-              min={1}
-              max={10}
-              value={rep.repeats}
-              onChange={(e) => patchDetect({ repetition: { ...rep, repeats: Number(e.target.value) } })}
-            />
-          </label>
-          <label className="passNumber">
-            Messages back
-            <input
-              className="passNumberInput"
-              type="number"
-              min={1}
-              max={40}
-              value={rep.lookback}
-              onChange={(e) => patchDetect({ repetition: { ...rep, lookback: Number(e.target.value) } })}
-            />
-          </label>
-        </div>
-
-        <span className="passSectionTitle">Sentence sprawl</span>
-        <label className="checkboxRow">
-          <input
-            type="checkbox"
-            checked={spr.enabled}
-            onChange={(e) => patchDetect({ sprawl: { ...spr, enabled: e.target.checked } })}
-          />
-          Report sentences that keep going
-        </label>
-        <div className="passNumbers">
-          <label className="passNumber">
-            Words
-            <input
-              className="passNumberInput"
-              type="number"
-              min={10}
-              max={120}
-              value={spr.maxWords}
-              onChange={(e) => patchDetect({ sprawl: { ...spr, maxWords: Number(e.target.value) } })}
-            />
-          </label>
-          <label className="passNumber">
-            Commas
-            <input
-              className="passNumberInput"
-              type="number"
-              min={1}
-              max={12}
-              value={spr.maxCommas}
-              onChange={(e) => patchDetect({ sprawl: { ...spr, maxCommas: Number(e.target.value) } })}
-            />
-          </label>
-          <label className="passNumber">
-            Conjunctions
-            <input
-              className="passNumberInput"
-              type="number"
-              min={1}
-              max={12}
-              value={spr.maxConjunctions}
-              onChange={(e) =>
-                patchDetect({ sprawl: { ...spr, maxConjunctions: Number(e.target.value) } })
-              }
-            />
-          </label>
-        </div>
-
-        <span className="passSectionTitle">Three-item lists</span>
-        <label className="checkboxRow">
-          <input
-            type="checkbox"
-            checked={d.triplet.enabled}
-            onChange={(e) => patchDetect({ triplet: { enabled: e.target.checked } })}
-          />
-          Report sentences built as exactly three parts
-        </label>
       </div>
     </section>
   )

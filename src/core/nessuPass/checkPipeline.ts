@@ -46,7 +46,7 @@ import { defaultNessuPass, resolveNessuPass } from './resolve.ts'
   const thin = resolvePipeline({ label: 'Thin' } as Partial<Pipeline>)
   assert.equal(thin.label, 'Thin')
   assert.deepEqual(thin.stages, [])
-  assert.equal(thin.detect.repetition.phrase, 4)
+  assert.equal(thin.detect.punctuation.dashes, true)
   assert.equal(thin.detect.punctuation.dashes, true)
   assert.equal(thin.ownerId, 'local')
 }

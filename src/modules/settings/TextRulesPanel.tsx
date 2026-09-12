@@ -3,7 +3,7 @@ import {
   newTextRule,
   type DetectSettings,
   type TextRule,
-} from '../../core/nessuPass/detect/types'
+} from '../../core/nessuPass/detectSettings'
 import RuleCardHead from './RuleCardHead'
 import './settings.css'
 

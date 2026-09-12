@@ -1,20 +1,18 @@
 import { useMemo, useState } from 'react'
-import { findTextMatches, standingNotes } from '../../core/nessuPass/detect/textRules'
-import { findSprawl } from '../../core/nessuPass/detect/sprawl'
-import { findTriplets } from '../../core/nessuPass/detect/triplet'
-import type { DetectSettings } from '../../core/nessuPass/detect/types'
+import { findTextMatches, standingNotes } from '../../core/nessuPass/textRules'
+import type { DetectSettings } from '../../core/nessuPass/detectSettings'
 import { previewStrips, stripText } from '../../core/hammer/strip'
 import './settings.css'
 
 /**
- * One preview for the whole panel: sample text run through the Hammer, the free-text rules and the
- * enabled checks, in one list labelled by what reported each row.
+ * One preview for the whole panel: sample text run through the Hammer and the free-text rules, in
+ * one list labelled by what reported each row.
  *
  * It sits outside the tab strip so it is reachable from any tab, and it runs whether or not the
  * pass is enabled, since the point of it is deciding what to enable.
  *
- * Repetition is not here: it compares a reply against earlier replies in a chat, so a single
- * pasted sample has nothing to compare against.
+ * The Slop-dentifier is the fuller version of this, with the lexicon and a rule button on each
+ * finding. This one stays because it reads the pipeline being edited, unsaved rules included.
  */
 export default function PassPreview({ detect }: { detect: DetectSettings }) {
   const settings = detect
@@ -46,18 +44,8 @@ export default function PassPreview({ detect }: { detect: DetectSettings }) {
     for (const n of findTextMatches(cleaned, settings.textRules, 'assistant')) {
       out.push({ source: 'Rule', slice: n.slice, message: n.message })
     }
-    if (settings.sprawl.enabled) {
-      for (const n of findSprawl(cleaned, settings.sprawl)) {
-        out.push({ source: 'Sprawl', slice: n.slice, message: n.message })
-      }
-    }
-    if (settings.triplet.enabled) {
-      for (const n of findTriplets(cleaned, settings.triplet)) {
-        out.push({ source: 'Rule of three', slice: n.slice, message: n.message })
-      }
-    }
     return out
-  }, [text, hammer, settings.rules, settings.textRules, settings.sprawl, settings.triplet])
+  }, [text, hammer, settings.rules, settings.textRules])
 
   const standing = standingNotes(settings.textRules, 'assistant')
 

@@ -1,17 +1,12 @@
-// Run: node --experimental-strip-types src/core/nessuPass/detect/checkCollect.ts
+// Run: node --experimental-strip-types src/core/nessuPass/checkCollect.ts
 import assert from 'node:assert/strict'
 import { collectFindings } from './collect.ts'
-import { resolveDetect, type DetectSettings } from './types.ts'
+import { resolveDetect, type DetectSettings } from './detectSettings.ts'
 
 const base = resolveDetect()
 
-/** Detectors off, so a case only sees what it turns on. */
-const quiet: DetectSettings = {
-  ...base,
-  repetition: { ...base.repetition, enabled: false },
-  sprawl: { ...base.sprawl, enabled: false },
-  triplet: { ...base.triplet, enabled: false },
-}
+/** No rules, so a case only sees what it adds. */
+const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
 
 // --- the mechanical edits happen with no request --------------------------
 {
@@ -26,17 +21,6 @@ const quiet: DetectSettings = {
   const clean = collectFindings('She waited, then left.', detect)
   assert.equal(clean.edited, false)
   assert.equal(clean.notes.length, 0)
-}
-
-// --- turning a check off silences it --------------------------------------
-{
-  const sprawler =
-    'She walked to the door, and then she stopped, and then she turned around, and then she looked back at him, and then she said nothing at all, and then she left the room entirely.'
-  assert.equal(collectFindings(sprawler, quiet).notes.length, 0)
-  const on = collectFindings(sprawler, { ...quiet, sprawl: { ...base.sprawl, enabled: true } })
-  assert.equal(on.notes.length, 1)
-  // Every note quotes the slice it is about: that is what makes the edit targeted.
-  assert.ok(on.notes[0].message.length > 0)
 }
 
 // --- a standing rule is not a found problem -------------------------------
@@ -94,13 +78,15 @@ const quiet: DetectSettings = {
   assert.equal(collectFindings('perhaps', detect).notes.length, 1)
 }
 
-// --- repetition needs history, and shrugs without it ----------------------
+// --- nothing counts any more: only a rule can produce a note ---------------
 {
-  const detect = { ...quiet, repetition: { enabled: true, phrase: 4, repeats: 2, lookback: 8 } }
-  const line = 'the air between them thickened'
-  assert.equal(collectFindings(line, detect).notes.length, 0)
-  const repeated = collectFindings(line, detect, { history: [line, line] })
-  assert.equal(repeated.notes.length, 1)
+  const sprawler =
+    'She walked to the door, and then she stopped, and then she turned around, and then she looked back at him, and then she said nothing at all, and then she left the room entirely.'
+  const tricolon = 'She was tired of it, she was cold to the bone, she was done arguing.'
+  assert.equal(collectFindings(sprawler, quiet).notes.length, 0)
+  assert.equal(collectFindings(tricolon, quiet).notes.length, 0)
+  // History is carried for the census, and no detector reads it.
+  assert.equal(collectFindings(sprawler, quiet, { history: [sprawler, sprawler] }).notes.length, 0)
 }
 
 console.log('checkCollect ok')

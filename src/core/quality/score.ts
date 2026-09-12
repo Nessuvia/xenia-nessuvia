@@ -1,9 +1,7 @@
 // Extension-ful imports on purpose: checkScore.ts runs this under `node --experimental-strip-types`.
 import type { GrammarHammerRule } from '../hammer/rule.ts'
-import type { SprawlSettings, TripletSettings } from '../nessuPass/detect/types.ts'
 import { findFlags } from '../hammer/strip.ts'
-import { findSprawl, sentences } from '../nessuPass/detect/sprawl.ts'
-import { findTriplets } from '../nessuPass/detect/triplet.ts'
+import { sentences } from './sentences.ts'
 import { findSlop, type LexiconEntry } from './lexicon.ts'
 import { normalizeWords, proseSegments, type Census } from './census.ts'
 
@@ -13,8 +11,6 @@ export interface QualityWeights {
   census: number
   selfRepeat: number
   flags: number
-  sprawl: number
-  triplet: number
   /** The one credit. Subtracted rather than added. */
   variety: number
 }
@@ -24,8 +20,6 @@ export const defaultWeights: QualityWeights = {
   census: 1.5,
   selfRepeat: 1,
   flags: 0.5,
-  sprawl: 0.75,
-  triplet: 1,
   variety: 1,
 }
 
@@ -34,8 +28,6 @@ export interface ScoreContext {
   lexicon: LexiconEntry[]
   rules: GrammarHammerRule[]
   role: 'user' | 'assistant'
-  sprawl: SprawlSettings
-  triplet: TripletSettings
 }
 
 export interface QualityScore {
@@ -67,7 +59,7 @@ export function scoreText(
   weights: QualityWeights = defaultWeights,
 ): QualityScore {
   const zero: Record<keyof QualityWeights, number> = {
-    slop: 0, census: 0, selfRepeat: 0, flags: 0, sprawl: 0, triplet: 0, variety: 0,
+    slop: 0, census: 0, selfRepeat: 0, flags: 0, variety: 0,
   }
   const words = normalizeWords(text)
   if (words.length < 5) return { total: 0, parts: zero }
@@ -79,17 +71,13 @@ export function scoreText(
   parts.census = countCensusHits(text, ctx.census) * per100
   parts.selfRepeat = countSelfRepeats(text) * per100
   parts.flags = findFlags(text, ctx.rules, ctx.role).length * per100
-  parts.sprawl = findSprawl(text, ctx.sprawl).length * per100
-  parts.triplet = findTriplets(text, ctx.triplet).length * per100
   parts.variety = varietyCredit(text)
 
   const total =
     parts.slop * weights.slop +
     parts.census * weights.census +
     parts.selfRepeat * weights.selfRepeat +
-    parts.flags * weights.flags +
-    parts.sprawl * weights.sprawl +
-    parts.triplet * weights.triplet -
+    parts.flags * weights.flags -
     parts.variety * weights.variety
 
   return { total, parts }
@@ -145,9 +133,8 @@ export function countSelfRepeats(text: string): number {
  *
  * A credit rather than a penalty because flat rhythm is not an error you can point at, it is the
  * absence of something. The cap matters: without it a passage with one sixty-word sentence among
- * five short ones would score as maximally varied, which is the bimodal distribution `findSprawl`
- * exists to catch. Sprawl penalises that sentence separately, so the two pull against each other in
- * the right direction.
+ * five short ones would score as maximally varied, and that distribution is bimodal rather than
+ * varied. The cap is the whole defence against it now that nothing counts run-on sentences.
  */
 export function varietyCredit(text: string): number {
   const lengths = sentences(text).map((s) => (s.text.match(/[\p{L}\p{N}']+/gu) ?? []).length)

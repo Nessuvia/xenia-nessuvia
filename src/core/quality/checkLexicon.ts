@@ -1,6 +1,5 @@
 import assert from 'node:assert'
-import { findSlop, mergeLexicon, compileEntry, type LexiconEntry } from './lexicon.ts'
-import { bundledLexicon } from './bundledLexicon.ts'
+import { findSlop, compileEntry, type LexiconEntry } from './lexicon.ts'
 
 const lit = (id: string, phrase: string, weight = 1): LexiconEntry =>
   ({ id, phrase, regex: false, enabled: true, weight })
@@ -36,30 +35,5 @@ const re: LexiconEntry = { id: 'r', phrase: 'eyes (darkened|darkening)', regex: 
 assert.equal(findSlop('His eyes darkened.', [re]).length, 1)
 assert.equal(compileEntry({ ...re, phrase: '(unclosed' }), null)
 assert.doesNotThrow(() => findSlop('anything at all', [{ ...re, phrase: '(unclosed' }]))
-
-// Every bundled entry compiles. A shipped list that throws would be silent in production.
-for (const e of bundledLexicon) {
-  assert.ok(compileEntry(e), `bundled entry ${e.id} does not compile`)
-  assert.ok(e.weight > 0, `bundled entry ${e.id} has no weight`)
-}
-assert.equal(bundledLexicon.length, new Set(bundledLexicon.map((e) => e.id)).size, 'bundled ids are unique')
-
-// The bundled list actually fires on the prose it is aimed at.
-const slop = 'A shiver ran down her spine. Something unreadable crossed his face. The air was thick with tension.'
-assert.ok(findSlop(slop, bundledLexicon).length >= 3, 'the bundled list should catch stock phrasing')
-assert.equal(findSlop('She set the cup down and waited for him to say it.', bundledLexicon).length, 0)
-
-// Overlay: a disable survives, a user entry survives, the rest of the bundle is untouched.
-const merged = mergeLexicon(bundledLexicon, [
-  { ...bundledLexicon[0], enabled: false },
-  lit('mine', 'my own tired phrase', 2),
-])
-assert.equal(merged.length, bundledLexicon.length + 1)
-assert.equal(merged[0].enabled, false)
-assert.equal(merged[merged.length - 1].id, 'mine')
-assert.equal(merged[1].enabled, true)
-
-// An empty overlay changes nothing.
-assert.deepEqual(mergeLexicon(bundledLexicon, []), bundledLexicon)
 
 console.log('checkLexicon ok')

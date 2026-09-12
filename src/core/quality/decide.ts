@@ -40,7 +40,7 @@ export interface QualityVerdict {
 
 const EMPTY_SCORE: QualityScore = {
   total: 0,
-  parts: { slop: 0, census: 0, selfRepeat: 0, flags: 0, sprawl: 0, triplet: 0, variety: 0 },
+  parts: { slop: 0, census: 0, selfRepeat: 0, flags: 0, variety: 0 },
 }
 
 /**

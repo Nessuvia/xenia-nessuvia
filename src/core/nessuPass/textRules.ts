@@ -1,7 +1,7 @@
 // Extension-ful imports on purpose: checkTextRules.ts runs this under `node --experimental-strip-types`.
 import type { Note } from './note.ts'
-import type { TextRule } from './types.ts'
-import { computeExclusions, type Range } from '../../hammer/exclusions.ts'
+import type { TextRule } from './detectSettings.ts'
+import { computeExclusions, type Range } from '../hammer/exclusions.ts'
 
 /** Matches reported per rule. One rule matching forty times is one problem, not forty notes. */
 const MAX_PER_RULE = 3

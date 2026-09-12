@@ -2,15 +2,20 @@ import assert from 'node:assert'
 import { decideRewrite, defaultQuality, verdictSummary } from './decide.ts'
 import type { ScoreContext } from './score.ts'
 import { buildCensus, defaultCensus } from './census.ts'
-import { bundledLexicon } from './bundledLexicon.ts'
+import type { LexiconEntry } from './lexicon.ts'
+
+// A fixture lexicon, not a shipped one: nothing ships a slop list any more, so a check that needs
+// one writes the two entries it is asserting about.
+const lexicon: LexiconEntry[] = [
+  { id: 'shiver-spine', phrase: 'a shiver (ran|runs) down .{0,12}spine', regex: true, enabled: true, weight: 3 },
+  { id: 'swallowed-hard', phrase: 'swallowed hard', regex: false, enabled: true, weight: 2 },
+]
 
 const ctx: ScoreContext = {
   census: buildCensus([], defaultCensus),
-  lexicon: bundledLexicon,
+  lexicon,
   rules: [],
   role: 'assistant',
-  sprawl: { enabled: true, maxWords: 45, maxCommas: 4, maxConjunctions: 3 },
-  triplet: { enabled: true },
 }
 const settings = { ...defaultQuality }
 

@@ -9,14 +9,13 @@ import { loadTokenizer } from '../prompt/budget'
 import { tokenizerFor } from '../prompt/tokenizers'
 import { buildCensus, type Census } from '../quality/census'
 import { bannedList } from '../quality/bannedStrings'
-import { mergeLexicon, type LexiconEntry } from '../quality/lexicon'
-import { bundledLexicon } from '../quality/bundledLexicon'
+import { type LexiconEntry } from '../quality/lexicon'
 import { decideRewrite, verdictSummary } from '../quality/decide'
 import type { ScoreContext } from '../quality/score'
-import { collectFindings, type Findings } from './detect/collect'
-import { punctuationStream } from './detect/punctuation'
-import type { PassContext } from './detect/passContext'
-import type { DetectSettings } from './detect/types'
+import { collectFindings, type Findings } from './collect'
+import { punctuationStream } from './punctuation'
+import type { PassContext } from './passContext'
+import type { DetectSettings } from './detectSettings'
 import { buildCleanPrompt, shouldRunClean } from './buildCleanPrompt'
 import { buildRewritePrompt } from './buildRewritePrompt'
 import { lengthGuard } from './lengthGuard'
@@ -81,7 +80,7 @@ export async function* runPipeline(
   const summaries: string[] = []
   let failed: string | undefined
 
-  const lexicon = mergeLexicon(bundledLexicon, pipeline.lexicon)
+  const lexicon = pipeline.lexicon
   const census = buildCensus(context.history ?? [], pipeline.census)
   const findings = collectFindings(current, pipeline.detect, context)
   /** Where each rewrite stage's candidate came from, so a score stage after it compares the pair
@@ -310,8 +309,6 @@ function judge(
     lexicon,
     rules: pipeline.detect.rules,
     role: 'assistant',
-    sprawl: pipeline.detect.sprawl,
-    triplet: pipeline.detect.triplet,
   }
   const quality = {
     ...stage.config.quality,

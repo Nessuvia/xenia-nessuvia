@@ -2,16 +2,21 @@ import assert from 'node:assert'
 import { scoreText, defaultWeights, countSelfRepeats, countCensusHits, varietyCredit } from './score.ts'
 import type { ScoreContext } from './score.ts'
 import { buildCensus, defaultCensus } from './census.ts'
-import { bundledLexicon } from './bundledLexicon.ts'
+import type { LexiconEntry } from './lexicon.ts'
 
 // Settings as literals rather than importing the store: a check script must not pull zustand in.
+// A fixture lexicon, not a shipped one: nothing ships a slop list any more, so a check that needs
+// one writes the two entries it is asserting about.
+const lexicon: LexiconEntry[] = [
+  { id: 'shiver-spine', phrase: 'a shiver (ran|runs) down .{0,12}spine', regex: true, enabled: true, weight: 3 },
+  { id: 'swallowed-hard', phrase: 'swallowed hard', regex: false, enabled: true, weight: 2 },
+]
+
 const ctx: ScoreContext = {
   census: buildCensus([], defaultCensus),
-  lexicon: bundledLexicon,
+  lexicon,
   rules: [],
   role: 'assistant',
-  sprawl: { enabled: true, maxWords: 45, maxCommas: 4, maxConjunctions: 3 },
-  triplet: { enabled: true },
 }
 
 // The same passage, once with a stock phrase and once without. The slop part decides it.
@@ -69,7 +74,7 @@ assert.equal(scoreText('Two words', ctx).total, 0)
 // Every part is reported, so the panel can show why a chunk lost.
 assert.deepEqual(
   Object.keys(sloppedScore.parts).sort(),
-  ['census', 'flags', 'selfRepeat', 'slop', 'sprawl', 'triplet', 'variety'],
+  ['census', 'flags', 'selfRepeat', 'slop', 'variety'],
 )
 
 console.log('checkScore ok')

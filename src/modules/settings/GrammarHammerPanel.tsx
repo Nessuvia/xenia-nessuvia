@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RiHammerLine } from '@remixicon/react'
 import { newHammerRule, type GrammarHammerRule } from '../../core/hammer/rule'
-import type { DetectSettings } from '../../core/nessuPass/detect/types'
+import type { DetectSettings } from '../../core/nessuPass/detectSettings'
 import RuleCardHead from './RuleCardHead'
 import { tryCompile, POS_TAGS } from '../../core/hammer/pattern'
 import './settings.css'

@@ -1,13 +1,13 @@
 /**
  * One thing the detectors found wrong. Both producers emit this shape, so the prompt builder renders
- * from a single list: the Grammar Hammer's `flag` rules, and the repetition check.
+ * from a single list: the Grammar Hammer's `flag` rules, the free-text rules, and the lexicon.
  *
  * `span` indexes the *cleaned* text, the string the model will actually be shown, not what the
  * model originally wrote. That is what makes a targeted edit possible: the instruction can quote
  * the exact slice and ask for a replacement for it, rather than asking for a rewrite of everything.
  */
 export interface Note {
-  /** Who found it: 'hammer:<rule label>', or 'repetition'. */
+  /** Who found it: 'hammer:<label>', 'text:<label>', 'rule:<label>' or 'slop:<id>'. */
   source: string
   span?: { start: number; end: number }
   slice?: string

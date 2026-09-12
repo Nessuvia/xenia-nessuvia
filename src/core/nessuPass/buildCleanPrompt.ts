@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: checkPassPrompt.ts runs this under `node --experimental-strip-types`.
-import type { Note } from './detect/note.ts'
+import type { Note } from './note.ts'
 
 /** Kept structural rather than importing `ChatMessage`, so the check script does not pull the
  *  connector in behind it. Same shape. */

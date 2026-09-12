@@ -45,7 +45,7 @@ const STOPWORDS = new Set([
 
 const WORD = /[\p{L}\p{N}']+/gu
 
-/** Normalised words, matching `repetition.ts` so the two checks agree on what a phrase is. */
+/** Normalised words: lowercased, apostrophes dropped, punctuation gone. */
 export function normalizeWords(text: string): string[] {
   return (text.match(WORD) ?? []).map((w) => w.toLowerCase().replace(/'/g, ''))
 }
@@ -88,7 +88,7 @@ export function phrasesOf(text: string): string[] {
 /**
  * The chat's own overused phrasing, counted from what the model already wrote here.
  *
- * This is the half of slop control no fixed list can do. A bundled lexicon knows "a shiver ran down
+ * This is the half of slop control no fixed list can do. A lexicon knows "a shiver ran down
  * her spine" is tired everywhere; only the chat knows this model has reached for "something
  * unreadable in his eyes" four times in the last ten turns. The list it produces is used three
  * ways: told to the rewriting model, pushed into the sampler where the endpoint supports it, and
@@ -104,7 +104,7 @@ export function buildCensus(history: string[], opts: CensusOptions = defaultCens
   const window = Math.max(1, Math.floor(opts.windowSize))
   const minCount = Math.max(2, Math.floor(opts.minCount))
   const maxEntries = Math.max(0, Math.floor(opts.maxEntries))
-  // The recent turns are at the tail, the same slice direction `findRepetition` takes.
+  // The recent turns are at the tail.
   const recent = history.slice(-window)
   if (!recent.length || !maxEntries) return empty
 

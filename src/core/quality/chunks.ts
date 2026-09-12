@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: checkChunks.ts runs this under `node --experimental-strip-types`.
-import { sentences } from '../nessuPass/detect/sprawl.ts'
+import { sentences } from './sentences.ts'
 
 /** A piece of a passage, with char offsets back into the string it came from. */
 export interface Chunk {

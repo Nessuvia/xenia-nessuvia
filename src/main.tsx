@@ -7,6 +7,7 @@ import './modules/chat' // self-registers into moduleRegistry
 import './modules/write'
 import './modules/multiplayer'
 import './modules/ask'
+import './modules/slopdentifier'
 import './modules/characters'
 import './modules/personas'
 import './modules/games'

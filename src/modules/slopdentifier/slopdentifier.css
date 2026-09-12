@@ -1,0 +1,231 @@
+/* Slop-dentifier: paste a passage, read what the detectors make of it. Two columns, each scrolling
+   on its own, the same shape as the other full-page screens. */
+
+.slopBody {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.slopInput {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.slopInput label.grow {
+  display: flex;
+  min-height: 0;
+}
+
+.slopTextarea {
+  flex: 1;
+  min-height: 240px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.slopControls {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.slopPipelinePicker {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.slopHint {
+  margin: 0;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.slopReport {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slopReport h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.slopStats,
+.slopBuckets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.slopBucket {
+  padding: 2px 6px;
+  background: var(--surfaceSunken);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.slopPassage {
+  margin: 0;
+  padding: 12px;
+  background: var(--surfaceSunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.slopMark {
+  background: color-mix(in srgb, var(--surface) 60%, var(--danger));
+  color: var(--textBright);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0 2px;
+}
+
+.slopPhrases {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slopPhraseList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.slopCount {
+  color: var(--textMuted);
+}
+
+.slopFindings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slopFinding {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.slopFindingHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.slopChip {
+  padding: 2px 6px;
+  background: var(--surfaceActive);
+  border-radius: 999px;
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+.slopChiphammer,
+.slopChipslop {
+  color: var(--danger);
+}
+
+.slopQuote {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.slopQuoteContext {
+  color: var(--textMuted);
+}
+
+.slopFindingMessage {
+  margin: 0;
+  color: var(--textSoft);
+  font-size: 12px;
+}
+
+.slopAdd {
+  position: relative;
+}
+
+.slopAdd summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--textMuted);
+  font-size: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.slopAdd summary::-webkit-details-marker {
+  display: none;
+}
+
+.slopAdd summary:hover {
+  background: var(--surfaceHover);
+  color: var(--text);
+}
+
+.slopAddMenu {
+  position: absolute;
+  right: 0;
+  z-index: var(--layer-2);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* #root to beat .formPage button, which gives every button in the page a filled background and a
+   border. A row in a dropdown is a menu item, not a button on the page. */
+#root .slopAddMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+
+@media (max-width: 700px) {
+  .slopBody {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .slopReport {
+    overflow-y: visible;
+  }
+}

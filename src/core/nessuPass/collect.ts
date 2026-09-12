@@ -1,13 +1,10 @@
 // Extension-ful imports on purpose: checkCollect.ts runs this under
 // `node --experimental-strip-types`. Nothing here may reach the store.
-import { findFlags, stripText } from '../../hammer/strip.ts'
+import { findFlags, stripText } from '../hammer/strip.ts'
 import type { Note } from './note.ts'
 import type { PassContext } from './passContext.ts'
-import type { DetectSettings } from './types.ts'
+import type { DetectSettings } from './detectSettings.ts'
 import { normalizePunctuation } from './punctuation.ts'
-import { findRepetition } from './repetition.ts'
-import { findSprawl } from './sprawl.ts'
-import { findTriplets } from './triplet.ts'
 import { findTextMatches, standingNotes } from './textRules.ts'
 
 /** What the detectors made of a passage: the text after the mechanical edits, what is still wrong
@@ -27,9 +24,8 @@ export interface Findings {
  * Run every detector once.
  *
  * Called once per pipeline run and shared by the gate and the clean stage, so the gate can never
- * decide on a different set of findings than the stage it gates. The score stage runs its own
- * pass over both the original and the candidate, because it is measuring two passages rather than
- * reading one.
+ * decide on a different set of findings than the stage it gates. The score stage does not read
+ * this: it measures two passages against each other rather than reading one.
  *
  * The mechanical edits come first so both the checks and the model see the cleaned text. Showing
  * the model the original slop would ask it to redo work `repairAll` already did correctly, and
@@ -53,9 +49,6 @@ export function collectFindings(
     message: `Matches the "${flag.rule.label || flag.rule.pattern}" pattern, which looks like filler. Rewrite it or cut it, whichever keeps the meaning.`,
   }))
   notes.push(...findTextMatches(cleaned, detect.textRules, role))
-  notes.push(...findRepetition(cleaned, context.history ?? [], detect.repetition))
-  notes.push(...findSprawl(cleaned, detect.sprawl))
-  notes.push(...findTriplets(cleaned, detect.triplet))
 
   return { cleaned, edited: cleaned !== text, notes, standing: standingNotes(detect.textRules, role) }
 }

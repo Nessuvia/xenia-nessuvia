@@ -3,7 +3,7 @@
 import { tryCompile } from '../hammer/pattern.ts'
 import type { GrammarHammerRule } from '../hammer/rule.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
-import { resolveDetect, type TextRule } from './detect/types.ts'
+import { resolveDetect, type TextRule } from './detectSettings.ts'
 import {
   newPipeline,
   resolveStage,

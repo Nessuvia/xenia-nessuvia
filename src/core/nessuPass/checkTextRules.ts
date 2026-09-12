@@ -1,7 +1,7 @@
-// Run: node --experimental-strip-types src/core/nessuPass/detect/checkTextRules.ts
+// Run: node --experimental-strip-types src/core/nessuPass/checkTextRules.ts
 import assert from 'node:assert/strict'
 import { compileRule, findTextMatches, standingNotes } from './textRules.ts'
-import type { TextRule } from './types.ts'
+import type { TextRule } from './detectSettings.ts'
 
 const rule = (over: Partial<TextRule> = {}): TextRule => ({
   id: over.find ?? 'r',

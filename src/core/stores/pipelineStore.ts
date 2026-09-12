@@ -14,8 +14,8 @@ import { useSettings } from './settingsStore'
  * duplicated, exported, traded and picked per chat, and none of that is comfortable inside a
  * settings blob that the whole app rewrites on every unrelated toggle.
  *
- * Nothing is seeded. The two bundled pipelines arrive through the import button like any other
- * file, so a deleted one stays deleted.
+ * Nothing is seeded and nothing ships. A pipeline is written here, imported from a file, or built
+ * a rule at a time from the Slop-dentifier.
  */
 interface PipelineState {
   pipelines: Pipeline[]
