@@ -1,5 +1,6 @@
 import type { BlockInput, Character, Persona } from '../storage/types'
 import { activeDescription } from '../storage/types.ts'
+import { stripComments } from './stripComments.ts'
 
 /**
  * Every `{{token}}` the prompt layer understands, and what each one stands for. The card fields
@@ -37,9 +38,13 @@ export const castSlots = 4
 const tokenPattern =
   /\{\{(char|user|charDescription|charPersonality|charScenario|charExampleDialogue|personaDescription|personas|game|char[1-4]|char[1-4]Desc)\}\}/gi
 
-/** Substitutes the known tokens. Unknown {{tokens}} are left exactly as they are. */
+/**
+ * Substitutes the known tokens. Unknown {{tokens}} are left exactly as they are, except for ST's
+ * {{// comments}}, which are dropped: see `stripComments`. Comments go first, so a token inside one
+ * is never swapped.
+ */
 export function swapTokens(text: string, values: TokenValues): string {
-  return text.replace(tokenPattern, (whole, token: string) => {
+  return stripComments(text).replace(tokenPattern, (whole, token: string) => {
     // Tokens match case-insensitively, so look them up folded.
     const value = values[token.toLowerCase() as keyof TokenValues]
     return value ?? whole

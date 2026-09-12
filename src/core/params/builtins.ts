@@ -48,6 +48,10 @@ export function builtinParamDefs(): ParamDef[] {
       kind: 'stringList', default: [], appliesTo: both,
       hint: 'Comma-separated. Generation ends at the first match.',
     }),
+    def('banned_strings', 'Banned strings', {
+      kind: 'stringList', default: [], appliesTo: both,
+      hint: 'Phrases the model may not produce. A rewrite stage fills this in when it is on the connection.',
+    }),
     def('seed', 'Seed', {
       kind: 'number', step: 1, default: -1, appliesTo: both,
       hint: '-1 picks a new one each request.',

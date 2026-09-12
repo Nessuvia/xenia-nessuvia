@@ -796,7 +796,6 @@ function BlockRegion({
   const id = block.id
   const rev = useWrite((s) => s.revs[id] ?? 0)
   const streamingText = useWrite((s) => s.streamingText)
-  const streamingDraft = useWrite((s) => s.streamingDraft)
   const streamingReasoning = useWrite((s) => s.streamingReasoning)
   // One switch for the whole app, shared with chat - there is no per-beat toggle.
   const showReasoning = useSettings((s) => s.appearance.showReasoning)
@@ -886,11 +885,10 @@ function BlockRegion({
     }
   }, [saveBlockText, chapterId, id])
 
-  // The streaming tail isn't editable, so it can be decorated freely as it grows. Second Pass's
-  // draft renders here too, dimmed by the class on the wrapper, until the edited prose replaces it.
+  // The streaming tail isn't editable, so it can be decorated freely as it grows.
   useLayoutEffect(() => {
-    if (tail.current) decorateProse(tail.current, streamingDraft || streamingText, colorOrder)
-  }, [streamingText, streamingDraft, takingStream, orderKey])
+    if (tail.current) decorateProse(tail.current, streamingText, colorOrder)
+  }, [streamingText, takingStream, orderKey])
 
   function onInput() {
     window.clearTimeout(timer.current)
@@ -999,7 +997,7 @@ function BlockRegion({
       {takingStream && (
         // The streaming region: locked (not editable) so only the tail is off-limits while the
         // Author edits other Blocks. Committed onto the Block when generation finishes.
-        <div className={`streamingTail${streamingDraft ? ' secondPassDraft' : ''}`} contentEditable={false}>
+        <div className="streamingTail" contentEditable={false}>
           {/* Filled by decorateProse, so the tail formats as it arrives. */}
           <span ref={tail} />
           <span className="caret">▌</span>

@@ -1,5 +1,5 @@
 /**
- * What Second Pass needs beyond the reply text itself. Every field is optional: a call site that
+ * What the detectors need beyond the reply text itself. Every field is optional: a call site that
  * cannot supply history just produces fewer notes, never an error.
  *
  * Split out of `runSecondPass.ts` so the repetition check and its check script can import it

@@ -33,6 +33,7 @@ export type TableName =
   | 'bodyMaps'
   | 'paramDefs'
   | 'games'
+  | 'pipelines'
 
 /** Every stored record carries an ownerId; id is assigned by Dexie on insert. */
 export interface StoredRecord {

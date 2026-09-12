@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkLengthGuard.ts runs this under
 // `node --experimental-strip-types`.
-import type { GoldPassSettings } from './goldPassSettings.ts'
+import type { ScoreStage } from './pipeline.ts'
 
 /**
  * Whether a rewrite may replace the reply. Returns null when it may, otherwise the reason, which
@@ -12,7 +12,7 @@ import type { GoldPassSettings } from './goldPassSettings.ts'
 export function lengthGuard(
   original: string,
   rewrite: string,
-  { minRatio, maxRatio }: Pick<GoldPassSettings, 'minRatio' | 'maxRatio'>,
+  { minRatio, maxRatio }: Pick<ScoreStage['config'], 'minRatio' | 'maxRatio'>,
 ): string | null {
   const after = rewrite.trim().length
   if (!after) return 'The rewrite came back empty.'

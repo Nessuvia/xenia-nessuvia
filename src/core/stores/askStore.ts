@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { runSecondPass } from '../secondPass/runSecondPass'
 import type { ChatMessage } from '../connectors/connectorInterface'
+import { sendMessage } from '../connectors/openaiCompatible'
 import { snapshotOf } from '../connectors/snapshot'
 import { currentOwnerId } from '../storage/storageInterface'
 import type { Message } from '../storage/types'
@@ -32,8 +32,6 @@ interface AskState {
   turns: AskTurn[]
   streaming: boolean
   streamingText: string
-  /** Second Pass's provisional first take; '' once the edited reply starts. */
-  streamingDraft: string
   /** Reasoning as it arrives. Only reset when a stream starts; nothing renders it while idle. */
   streamingReasoning: string
   /** The turn being re-rolled, so the stream renders in place instead of at the bottom. */
@@ -116,7 +114,6 @@ export const useAsk = create<AskState>()(
       turns: [],
       streaming: false,
       streamingText: '',
-      streamingDraft: '',
       streamingReasoning: '',
       regeneratingId: null,
       error: '',
@@ -135,29 +132,24 @@ export const useAsk = create<AskState>()(
           ...get().turns,
           withId({ ownerId: currentOwnerId(), chatId: 0, role: 'user', content: askSwap(text), createdAt: Date.now() }),
         ]
-        set({ turns, streaming: true, streamingText: '', streamingDraft: '', streamingReasoning: '', error: '' })
+        set({ turns, streaming: true, streamingText: '', streamingReasoning: '', error: '' })
 
         const messages = buildAskMessages(turns)
         const controller = new AbortController()
         abort = controller
         let reply = ''
-        let draft = ''
         let reasoning = ''
         let finishReason = ''
         const snapshot = snapshotOf(messages, connection)
         try {
-          for await (const chunk of runSecondPass(messages, connection, controller.signal)) {
+          for await (const chunk of sendMessage(messages, connection, controller.signal)) {
             if (chunk.reasoning) {
               reasoning += chunk.reasoning
               set({ streamingReasoning: reasoning })
             }
-            if (chunk.draft) {
-              draft += chunk.draft
-              set({ streamingDraft: draft })
-            }
             if (chunk.content) {
               reply += chunk.content
-              set({ streamingText: reply, streamingDraft: '' })
+              set({ streamingText: reply })
             }
             if (chunk.finishReason) finishReason = chunk.finishReason
           }
@@ -169,8 +161,7 @@ export const useAsk = create<AskState>()(
               turns: reply ? [...turns, assistantTurn(reply, snapshot, reasoning)] : turns,
               streaming: false,
               streamingText: '',
-          streamingDraft: '',
-              error: (err as Error).message,
+                  error: (err as Error).message,
             })
             return
           }
@@ -182,8 +173,7 @@ export const useAsk = create<AskState>()(
           turns: reply ? [...turns, assistantTurn(reply, snapshot, reasoning)] : turns,
           streaming: false,
           streamingText: '',
-          streamingDraft: '',
-          error:
+              error:
             finishReason === 'length'
               ? `Response stopped at the ${maxTokensOf(connection)} token limit. Raise Max tokens in the connection.`
               : '',
@@ -201,7 +191,7 @@ export const useAsk = create<AskState>()(
         const target = get().turns[at]
         if (!target || target.role !== 'assistant') return
 
-        set({ streaming: true, streamingText: '', streamingDraft: '', streamingReasoning: '', error: '', regeneratingId: messageId })
+        set({ streaming: true, streamingText: '', streamingReasoning: '', error: '', regeneratingId: messageId })
 
         // Your instruction if you gave one; otherwise, on an old turn, the default that tells the
         // model what came after it. Re-rolling the last turn appends nothing.
@@ -216,23 +206,18 @@ export const useAsk = create<AskState>()(
         const controller = new AbortController()
         abort = controller
         let text = ''
-        let draft = ''
         let reasoning = ''
         let finishReason = ''
         const snapshot = snapshotOf(messages, connection)
         try {
-          for await (const chunk of runSecondPass(messages, connection, controller.signal)) {
+          for await (const chunk of sendMessage(messages, connection, controller.signal)) {
             if (chunk.reasoning) {
               reasoning += chunk.reasoning
               set({ streamingReasoning: reasoning })
             }
-            if (chunk.draft) {
-              draft += chunk.draft
-              set({ streamingDraft: draft })
-            }
             if (chunk.content) {
               text += chunk.content
-              set({ streamingText: text, streamingDraft: '' })
+              set({ streamingText: text })
             }
             if (chunk.finishReason) finishReason = chunk.finishReason
           }
@@ -242,8 +227,7 @@ export const useAsk = create<AskState>()(
             set({
               streaming: false,
               streamingText: '',
-          streamingDraft: '',
-              regeneratingId: null,
+                  regeneratingId: null,
               error: (err as Error).message,
             })
             return
@@ -252,12 +236,11 @@ export const useAsk = create<AskState>()(
           abort = null
         }
 
-        const updated = regenerated(target, text, snapshot, reasoning, undefined, draft)
+        const updated = regenerated(target, text, snapshot, reasoning)
         set((s) => ({
           streaming: false,
           streamingText: '',
-          streamingDraft: '',
-          regeneratingId: null,
+              regeneratingId: null,
           turns: updated ? s.turns.map((t) => (t.id === messageId ? updated : t)) : s.turns,
           error:
             finishReason === 'length'
@@ -289,7 +272,7 @@ export const useAsk = create<AskState>()(
 
       newChat: () => {
         abort?.abort()
-        set({ turns: [], streaming: false, streamingText: '', streamingDraft: '', regeneratingId: null, error: '' })
+        set({ turns: [], streaming: false, streamingText: '', regeneratingId: null, error: '' })
       },
 
       dismissError: () => set({ error: '' }),

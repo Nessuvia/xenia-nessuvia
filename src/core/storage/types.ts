@@ -1,6 +1,6 @@
 import type { MoveQuality } from '../games/goFish'
 import type { GameEvent, GameKind } from '../games/gameEvent'
-import type { GoldPassSettings } from '../goldPass/goldPassSettings.ts'
+import type { NessuPassOverride } from '../nessuPass/resolve.ts'
 
 export interface Character {
   id?: number
@@ -203,11 +203,10 @@ export interface Chat {
   /** Pinned to the sidebar for quick access. Absent = not bookmarked. */
   bookmarked?: boolean
   paramOverrides?: ParamOverrides
-  /** Per-chat Gold Pass override, merged over the global settings. `enabled` is the auto toggle and
-   *  is the field the chat sidebar writes; the rest are set only if the user opens the override.
-   *  The chat toggle writes *this* record, never the stack and never the global default. A chat
-   *  that never touches the override inherits global. */
-  goldPass?: Partial<GoldPassSettings>
+  /** Per-chat Nessu's Pass override: whether the pass runs here, and which pipeline it runs.
+   *  The chat toggle writes *this* record, never the pipeline and never the global default. A
+   *  chat that never touches the override inherits global. */
+  nessuPass?: NessuPassOverride
   createdAt: number
   updatedAt: number
 }
@@ -245,19 +244,20 @@ export interface Message {
    *  snapshot was never taken or was past ~256 KB. The field is unindexed, so its shape can change
    *  without a schema version. */
   requestSnapshots?: (string | undefined)[]
-  /** The first-pass text for each swipe, parallel to `swipes`, where Second Pass changed it. Holes
-   *  everywhere else. Unindexed, like the other parallel arrays. */
-  drafts?: (string | undefined)[]
-  /** The pre-Gold-Pass text for each swipe, where a Gold Pass rewrite replaced it. `content` and
-   *  `swipes[i]` hold the rewrite; this holds what the first connection actually said. Kept so a
-   *  manual re-run always rewrites from the original rather than compounding, and so the user can
-   *  revert. Distinct from `drafts`, which is Second Pass's pre-edit text on the same connection:
-   *  both can be set on one swipe and they mean different things. */
-  goldOriginals?: (string | undefined)[]
-  /** Why a Gold Pass attempt failed or was rejected by the length guard, parallel to `swipes`.
-   *  Drives the marker and the retry action. Cleared on a successful rewrite. A reason rather than
-   *  a boolean so the marker can name which failure it was without a second field. */
-  goldFailed?: (string | undefined)[]
+  /** The text as the writing model produced it, for each swipe Nessu's Pass changed. `content`
+   *  and `swipes[i]` hold what the pass produced; this holds what was said first. Kept so a
+   *  manual re-run always starts from the original rather than compounding, and so the user can
+   *  revert. Holes on swipes the pass left alone. Unindexed, like the other parallel arrays.
+   *
+   *  Original and final only: a pipeline can have any number of stages, and storing every
+   *  intermediate would grow the record with text nobody reads twice. */
+  passOriginals?: (string | undefined)[]
+  /** What the pass did to each swipe, in one line, for the bubble. Absent where it did nothing. */
+  passSummaries?: (string | undefined)[]
+  /** Why a stage's candidate was thrown away, parallel to `swipes`. Drives the marker and the
+   *  retry action, and is cleared on a run that keeps something. A reason rather than a boolean so
+   *  the marker can name which failure it was without a second field. */
+  passFailed?: (string | undefined)[]
   /** A `/break` row: a rule drawn across the chat, with empty content. Kept in `messages` so it
    *  holds its place in the order; `buildPrompt` drops it, so the model never sees it. */
   divider?: boolean
@@ -358,8 +358,6 @@ export interface Block {
    *  leaves a hole. Regenerating sends every instruction up to the selected swipe, so this is the
    *  record of what the current take was asked to be, not decoration. */
   instructions?: (string | undefined)[]
-  /** The first-pass text for each swipe, parallel to `swipes`. See `Message.drafts`. */
-  drafts?: (string | undefined)[]
   context: BlockContext
 }
 

@@ -1,5 +1,5 @@
 /**
- * One thing Second Pass found wrong. Both producers emit this shape, so the prompt builder renders
+ * One thing the detectors found wrong. Both producers emit this shape, so the prompt builder renders
  * from a single list: the Grammar Hammer's `flag` rules, and the repetition check.
  *
  * `span` indexes the *cleaned* text, the string the model will actually be shown, not what the

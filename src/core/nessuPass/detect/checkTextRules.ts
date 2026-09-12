@@ -1,9 +1,9 @@
-// Run: node --experimental-strip-types src/core/secondPass/checkTextRules.ts
+// Run: node --experimental-strip-types src/core/nessuPass/detect/checkTextRules.ts
 import assert from 'node:assert/strict'
 import { compileRule, findTextMatches, standingNotes } from './textRules.ts'
-import type { SecondPassRule } from '../stores/settingsStore.ts'
+import type { TextRule } from './types.ts'
 
-const rule = (over: Partial<SecondPassRule> = {}): SecondPassRule => ({
+const rule = (over: Partial<TextRule> = {}): TextRule => ({
   id: over.find ?? 'r',
   enabled: true,
   find: 'suddenly',

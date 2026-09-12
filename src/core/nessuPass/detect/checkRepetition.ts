@@ -1,7 +1,7 @@
-// Run: node --experimental-strip-types src/core/secondPass/checkRepetition.ts
+// Run: node --experimental-strip-types src/core/nessuPass/detect/checkRepetition.ts
 import assert from 'node:assert/strict'
 import { findRepetition } from './repetition.ts'
-import type { RepetitionSettings } from '../stores/settingsStore.ts'
+import type { RepetitionSettings } from './types.ts'
 
 const on: RepetitionSettings = { enabled: true, phrase: 4, repeats: 2, lookback: 8 }
 const set = (over: Partial<RepetitionSettings> = {}): RepetitionSettings => ({ ...on, ...over })

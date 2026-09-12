@@ -12,16 +12,6 @@ export interface StreamChunk {
    * mid-sentence: without this a truncated reply is indistinguishable from a finished one.
    */
   finishReason?: string
-  /**
-   * Provisional text from Second Pass's first generation, which the editing pass may still change.
-   * `parseSse` never sets it; only the wrapper in `core/secondPass` does.
-   *
-   * Deliberately not `content`. `content` means "text that belongs in the reply", and every call
-   * site accumulates it without asking questions. Putting the draft there would have each of them
-   * store the draft and the edit concatenated, so the draft rides its own field and a call site
-   * that ignores it behaves exactly as it did before the wrapper existed.
-   */
-  draft?: string
 }
 
 // every backend here speaks the OpenAI /chat/completions SSE dialect, so the

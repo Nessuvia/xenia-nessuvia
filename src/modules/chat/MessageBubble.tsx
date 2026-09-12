@@ -14,8 +14,9 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import {
-  goldFailedFor,
-  goldOriginalFor,
+  passFailedFor,
+  passOriginalFor,
+  passSummaryFor,
   reasoningFor,
   snapshotFor,
   swipeCount,
@@ -51,7 +52,6 @@ export default function MessageBubble({
   canRegenerate,
   greeting,
   streamingText,
-  streamingDraft = '',
   streamingReasoning,
   defaultInstruction,
   rewriting,
@@ -64,9 +64,9 @@ export default function MessageBubble({
   onRewrite,
   onSwipe,
   onDeleteSwipes,
-  onGoldPass,
-  onGoldRevert,
-  goldPassing = false,
+  onPass,
+  onPassRevert,
+  passing = false,
   readOnly = false,
 }: {
   message: Message
@@ -80,9 +80,6 @@ export default function MessageBubble({
   greeting: boolean
   /** Non-null while this message is being re-rolled: shown in place of its stored content. */
   streamingText: string | null
-  /** Second Pass's first take while it is still provisional; '' once the edit starts.
-   *  Optional: a view that never streams a draft (multiplayer guests) simply omits it. */
-  streamingDraft?: string
   /** Reasoning so far for that re-roll; empty when there is none. */
   streamingReasoning: string
   /** Called only when the rewrite box opens, building it quotes every later message. */
@@ -101,13 +98,13 @@ export default function MessageBubble({
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
-  /** Rewrite this message on the Gold Pass connection, and the retry on a failed one. Omitted by
-   *  views that have no Gold Pass (Ask, and a multiplayer guest). */
-  onGoldPass?: () => void
+  /** Run Nessu's Pass over this message, and the retry on a failed one. Omitted by views that
+   *  have no pass (Ask, and a multiplayer guest). */
+  onPass?: () => void
   /** Put the pre-rewrite text back. */
-  onGoldRevert?: () => void
-  /** A Gold Pass rewrite is streaming over this message's text right now. */
-  goldPassing?: boolean
+  onPassRevert?: () => void
+  /** A pass stage's candidate is streaming over this message's text right now. */
+  passing?: boolean
   /** No action buttons at all. A guest in a session owns none of the transcript. */
   readOnly?: boolean
 }) {
@@ -147,8 +144,11 @@ export default function MessageBubble({
   const modelRegen = canRegenerate && !greeting
   // `who` already resolves the speaker's display name (or the stamped name for a deleted card).
   const name = who
-  const goldOriginal = goldOriginalFor(message)
-  const goldFailure = goldFailedFor(message)
+  const passOriginal = passOriginalFor(message)
+  const passFailure = passFailedFor(message)
+  // What the pass did, when it ran. Only the hover title uses it: a line of chrome per message
+  // would be louder than the decision deserves.
+  const passSummary = passSummaryFor(message)
 
   return (
     <div className={`bubble message ${message.role}`} style={colorVars(colors, palette.overwriteCharColor)}>
@@ -198,10 +198,14 @@ export default function MessageBubble({
               <RiCodeSSlashLine size={16} />
             </button>
           )}
-          {goldOriginal !== undefined && (
+          {passOriginal !== undefined && (
             <button
               type="button"
-              title={showOriginal ? 'Show the rewrite' : 'Show the text before the Gold Pass rewrite'}
+              title={
+                showOriginal
+                  ? 'Show the passed text'
+                  : passSummary || "Show the text before Nessu's Pass"
+              }
               aria-pressed={showOriginal}
               onClick={() => setShowOriginal(!showOriginal)}
             >
@@ -285,27 +289,27 @@ export default function MessageBubble({
                   Delete Swipe
                 </button>
               )}
-              {assistant && onGoldPass && (
+              {assistant && onPass && (
                 <button
                   type="button"
                   onClick={() => {
-                    onGoldPass()
+                    onPass()
                     setQuickActions(false)
                   }}
                 >
-                  {goldOriginal === undefined ? 'Gold Pass' : 'Gold Pass again'}
+                  {passOriginal === undefined ? "Nessu's Pass" : "Pass again"}
                 </button>
               )}
-              {assistant && onGoldRevert && goldOriginal !== undefined && (
+              {assistant && onPassRevert && passOriginal !== undefined && (
                 <button
                   type="button"
                   onClick={() => {
                     setShowOriginal(false)
-                    onGoldRevert()
+                    onPassRevert()
                     setQuickActions(false)
                   }}
                 >
-                  Revert Gold Pass
+                  Revert the pass
                 </button>
               )}
               {assistant && count > 1 && (
@@ -340,16 +344,15 @@ export default function MessageBubble({
       )}
 
       {streamingText !== null ? (
-        // Second Pass's provisional first take, dimmed, replaced by the edited reply when it starts.
-        <div className={`messageBody${streamingDraft ? ' secondPassDraft' : ''}`}>
-          {renderText(streamingDraft || streamingText, { tagRules, replaceRules, order, role: message.role })}
+        <div className="messageBody">
+          {renderText(streamingText, { tagRules, replaceRules, order, role: message.role })}
           <span className="caret">▌</span>
         </div>
       ) : draft === null ? (
         // The rewrite is the message; showing the original is a look at what it replaced, and the
         // class marks it so the two are never confused for each other.
-        <div className={showOriginal && goldOriginal !== undefined ? 'messageBody goldOriginalBody' : 'messageBody'}>
-          {renderText(showOriginal && goldOriginal !== undefined ? goldOriginal : message.content, {
+        <div className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}>
+          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : message.content, {
             tagRules,
             replaceRules,
             order,
@@ -385,19 +388,19 @@ export default function MessageBubble({
           }}
         />
       )}
-      {goldPassing && streamingText !== null && (
-        <p className="goldMarker">
+      {passing && streamingText !== null && (
+        <p className="passMarker">
           <RiSparkling2Line size={14} />
-          Rewriting
+          Passing
         </p>
       )}
 
-      {goldFailure && streamingText === null && (
-        <p className="goldMarker">
+      {passFailure && streamingText === null && (
+        <p className="passMarker">
           <RiErrorWarningLine size={14} />
-          {goldFailure}
-          {onGoldPass && (
-            <button type="button" className="goldMarkerRetry" onClick={onGoldPass}>
+          {passFailure}
+          {onPass && (
+            <button type="button" className="passMarkerRetry" onClick={onPass}>
               Retry
             </button>
           )}

@@ -122,7 +122,6 @@ export default function AskView() {
     turns,
     streaming,
     streamingText,
-    streamingDraft,
     streamingReasoning,
     regeneratingId,
     error,
@@ -246,7 +245,6 @@ export default function AskView() {
               // Ask has no card greeting: the first turn is whatever you typed.
               greeting={false}
               streamingText={regeneratingId === turn.id ? streamingText : null}
-              streamingDraft={regeneratingId === turn.id ? streamingDraft : ''}
               streamingReasoning={regeneratingId === turn.id ? streamingReasoning : ''}
               defaultInstruction={() => oldMessageInstruction(turns.slice(i + 1), assistantName())}
               rewriting={rewritingId === turn.id}
@@ -270,9 +268,8 @@ export default function AskView() {
                   {renderText(streamingReasoning, { ...renderOpts, role: 'assistant' })}
                 </details>
               )}
-              {/* Second Pass's provisional first take, dimmed until the edited reply starts. */}
-              <div className={`messageBody${streamingDraft ? ' secondPassDraft' : ''}`}>
-                {renderText(streamingDraft || streamingText, { ...renderOpts, role: 'assistant' })}
+              <div className="messageBody">
+                {renderText(streamingText, { ...renderOpts, role: 'assistant' })}
                 <span className="caret">▌</span>
               </div>
             </div>

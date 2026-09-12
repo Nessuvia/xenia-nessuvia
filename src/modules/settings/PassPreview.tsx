@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { useSecondPass } from '../../core/stores/settingsStore'
-import { findTextMatches, standingNotes } from '../../core/secondPass/textRules'
-import { findSprawl } from '../../core/secondPass/sprawl'
-import { findTriplets } from '../../core/secondPass/triplet'
+import { findTextMatches, standingNotes } from '../../core/nessuPass/detect/textRules'
+import { findSprawl } from '../../core/nessuPass/detect/sprawl'
+import { findTriplets } from '../../core/nessuPass/detect/triplet'
+import type { DetectSettings } from '../../core/nessuPass/detect/types'
 import { previewStrips, stripText } from '../../core/hammer/strip'
 import './settings.css'
 
@@ -10,14 +10,14 @@ import './settings.css'
  * One preview for the whole panel: sample text run through the Hammer, the free-text rules and the
  * enabled checks, in one list labelled by what reported each row.
  *
- * It sits outside the tab strip so it is reachable from any tab, and it runs whether or not Second
- * Pass is enabled, since the point of it is deciding what to enable.
+ * It sits outside the tab strip so it is reachable from any tab, and it runs whether or not the
+ * pass is enabled, since the point of it is deciding what to enable.
  *
  * Repetition is not here: it compares a reply against earlier replies in a chat, so a single
  * pasted sample has nothing to compare against.
  */
-export default function SecondPassPreview() {
-  const settings = useSecondPass()
+export default function PassPreview({ detect }: { detect: DetectSettings }) {
+  const settings = detect
   const [text, setText] = useState('')
 
   const hammer = useMemo(() => {
@@ -62,7 +62,7 @@ export default function SecondPassPreview() {
   const standing = standingNotes(settings.textRules, 'assistant')
 
   return (
-    <div className="grammarPreview secondPassPreview">
+    <div className="grammarPreview passPreview">
       <textarea
         value={text}
         placeholder="Paste sample text to see what would be reported…"
@@ -80,7 +80,7 @@ export default function SecondPassPreview() {
         <ul className="textRuleMatches">
           {rows.map((row, i) => (
             <li key={i}>
-              <span className="secondPassPreviewSource">{row.source}</span>{' '}
+              <span className="passPreviewSource">{row.source}</span>{' '}
               {row.slice && <span className="strippedSpan">{row.slice}</span>} {row.message}
             </li>
           ))}

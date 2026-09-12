@@ -1,7 +1,7 @@
-// Run: node --experimental-strip-types src/core/secondPass/checkSprawl.ts
+// Run: node --experimental-strip-types src/core/nessuPass/detect/checkSprawl.ts
 import assert from 'node:assert/strict'
 import { findSprawl } from './sprawl.ts'
-import type { SprawlSettings } from '../stores/settingsStore.ts'
+import type { SprawlSettings } from './types.ts'
 
 const on: SprawlSettings = { enabled: true, maxWords: 45, maxCommas: 4, maxConjunctions: 3 }
 const set = (over: Partial<SprawlSettings> = {}): SprawlSettings => ({ ...on, ...over })

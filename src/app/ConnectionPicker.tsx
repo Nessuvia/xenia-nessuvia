@@ -3,7 +3,7 @@ import './connectionPicker.css'
 
 /**
  * Pick one of the user's connections. Hoisted out of the chat settings sidebar, which had the only
- * copy of this markup, because Second Pass needs the same control to name the model that does the
+ * copy of this markup, because the clean stage needs the same control to name the model that does the
  * editing.
  *
  * Two modes, from `allowActive`. Without it the picker names a connection outright, which is what

@@ -8,10 +8,10 @@ import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import {
-  defaultGoldPass,
-  resolveGoldPass,
-  type GoldPassSettings,
-} from '../goldPass/goldPassSettings.ts'
+  defaultNessuPass,
+  resolveNessuPass,
+  type NessuPassSettings,
+} from '../nessuPass/resolve.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
@@ -96,163 +96,6 @@ export interface ReplaceRule {
   enabled: boolean
 }
 
-/**
- * A Grammar Hammer rule. `strip` deletes the whole match; `replace` swaps it for `replacement`,
- * which may reference capture groups (`$1..$n`, one per pattern token; `$0` = whole match), like
- * Find & Replace but with a part-of-speech find.
- *
- * `flag` edits nothing and hands the match to the Second Pass model as a note instead. The split is
- * whether the fix is mechanical. `with a [adj] [noun]` cuts cleanly and `repairAll` tidies the seam,
- * so no model is wanted. `[adv] [adj]` is a judgment call, and cutting it blind deletes "quietly
- * furious" along with the filler.
- */
-export interface GrammarHammerRule {
-  id: string
-  enabled: boolean
-  label?: string
-  pattern: string // DSL source, e.g. `with a [adj] [noun]`
-  action: 'strip' | 'replace' | 'flag'
-  replacement?: string // used when action === 'replace'; '' collapses to a strip
-  scope: 'assistant' | 'user' | 'both'
-  caseSensitive: boolean
-}
-
-/**
- * Second Pass: every prose generation is buffered, run through the deterministic checks, and
- * sent back to a model for a targeted edit before it is stored.
- *
- * The Grammar Hammer rules live here rather than under `Appearance` because what they produce is
- * stored text, not a display filter. Rendering them was the old behavior and it never told the
- * model anything: storage kept the slop, the prompt is built from storage, and the model read its
- * own worst phrasing back on every turn.
- */
-export interface SecondPassSettings {
-  enabled: boolean
-  /** Which connection edits. null = whatever is active; see `resolveConnection`. */
-  connectionId: string | null
-  /** Nothing flagged means no second request at all, and the draft stands as the reply. */
-  skipWhenClean: boolean
-  /** Appended to the built instruction. Non-empty, the pass runs even with nothing flagged. */
-  userPrompt: string
-  /** Write mode only: send generated chapter summaries and beats through the pass as well. Off by
-   *  default because an outline of twenty beats is up to twenty extra requests. */
-  passBeats: boolean
-  rules: GrammarHammerRule[]
-  textRules: SecondPassRule[]
-  punctuation: PunctuationSettings
-  repetition: RepetitionSettings
-  sprawl: SprawlSettings
-  triplet: TripletSettings
-}
-
-/**
- * The two mechanical sweeps: em dashes to commas, curly quotes and ellipses to their straight
- * forms. Settings rather than rules because there is no judgment in either one, so there is
- * nothing for the editing model to be told.
- */
-export interface PunctuationSettings {
-  dashes: boolean
-  quotes: boolean
-}
-
-/**
- * The tricolon check: sentences built as exactly three comma-separated members.
- *
- * A built-in rather than a rule because the thing that is wrong is a count. There is nothing to
- * match on, which is why the `rule-of-three` note rule keeps failing to stop it.
- */
-export interface TripletSettings {
-  enabled: boolean
-}
-
-/**
- * The sentence-sprawl check: sentences that accrete clauses instead of ending.
- *
- * A built-in for the same reason repetition is one. A rule matches words; this counts joints, and
- * the tell is how many a sentence has rather than which ones they are.
- */
-export interface SprawlSettings {
-  enabled: boolean
-  /** Words in one sentence before it is flagged. */
-  maxWords: number
-  /** Commas in one sentence. */
-  maxCommas: number
-  /** Coordinating conjunctions (and, but, so, or, then) in one sentence. */
-  maxConjunctions: number
-}
-
-/**
- * A free-text check, authored in Second Pass rather than in the Grammar Hammer.
- *
- * The Hammer matches parts of speech and can edit the text; these match words the way Find &
- * Replace does, and only ever report. Two reasons they live apart rather than as another Hammer
- * action: a literal find needs no POS tagging and no cheat sheet, and a Hammer rule can strip or
- * replace while this one has nothing to strip with. What it has instead is `note`, the instruction
- * handed to the model in the author's own words.
- */
-export interface SecondPassRule {
-  id: string
-  enabled: boolean
-  label?: string
-  /**
-   * What to look for. A literal string unless `regex`, in which case a raw JS pattern.
-   *
-   * **Blank means the rule always applies.** Most of what makes prose bad is a judgment rather
-   * than a string: "no sentence whose only content is naming an emotion" has nothing to match on.
-   * Those rules carry their instruction and no find, and go to the model on every pass.
-   */
-  find: string
-  regex: boolean
-  caseSensitive: boolean
-  scope: 'assistant' | 'user' | 'both'
-  /** What the model is told. Blank falls back to a generic line naming the match; a rule with no
-   *  find and no note has nothing to say and is skipped. */
-  note: string
-}
-
-export function newSecondPassRule(): SecondPassRule {
-  return {
-    id: crypto.randomUUID(),
-    enabled: true,
-    find: '',
-    regex: false,
-    caseSensitive: false,
-    scope: 'assistant',
-    note: '',
-  }
-}
-
-/**
- * The repetition check. Not a rule, because it is the one thing a rule cannot express: a Grammar
- * Hammer pattern matches the text in front of it, and this compares the reply against earlier ones.
- */
-export interface RepetitionSettings {
-  enabled: boolean
-  /** Words a shared phrase needs before it counts. Below four, ordinary English ("out of the",
-   *  "she looked at") trips constantly and every note is noise. */
-  phrase: number
-  /** How many earlier messages must carry the phrase. Two means the reply is its third outing. */
-  repeats: number
-  /** How far back to look. */
-  lookback: number
-}
-
-export const defaultSecondPass: SecondPassSettings = {
-  // Off by default: the feature spends a second request on every generation.
-  enabled: false,
-  connectionId: null,
-  skipWhenClean: true,
-  userPrompt: '',
-  passBeats: false,
-  // Both lists ship empty. Rules are opinions about prose, and the build has none: a set arrives
-  // as a JSON file, either the bundled one or someone else's. See `core/secondPass/ruleJson.ts`.
-  rules: [],
-  textRules: [],
-  punctuation: { dashes: true, quotes: true },
-  repetition: { enabled: true, phrase: 4, repeats: 2, lookback: 8 },
-  sprawl: { enabled: true, maxWords: 45, maxCommas: 4, maxConjunctions: 3 },
-  triplet: { enabled: true },
-}
 
 /** Display behavior, global. Everything visual, colors, font, widths, lives on the active
  *  Palette instead; see `core/palette/palette.ts`. */
@@ -278,16 +121,6 @@ export function newReplaceRule(): ReplaceRule {
   return { id: crypto.randomUUID(), find: '', replace: '', regex: false, flags: 'g', target: 'both', enabled: true }
 }
 
-export function newGrammarHammerRule(): GrammarHammerRule {
-  return {
-    id: crypto.randomUUID(),
-    enabled: true,
-    pattern: '',
-    action: 'strip',
-    scope: 'assistant',
-    caseSensitive: false,
-  }
-}
 
 interface SettingsState {
   /** The user's own S3-compatible bucket, or blank fields when sync is not set up. Device-local:
@@ -376,13 +209,10 @@ interface SettingsState {
   askCharacterId: number | null
   askAssistantPrompt: string
   appearance: Appearance
-  /** Global. Which model cleans up a reply is a working setup, not a property of one chat.
-   *  Per-chat override: add a `secondPass` field to the Chat record and merge it in the wrapper. */
-  secondPass: SecondPassSettings
-  setSecondPass(patch: Partial<SecondPassSettings>): void
-  /** Gold Pass's global defaults. A chat's own override lives on the Chat record. */
-  goldPass: GoldPassSettings
-  setGoldPass(patch: Partial<GoldPassSettings>): void
+  /** Nessu's Pass: whether replies are passed, and which pipeline does it. The pipelines
+   *  themselves are Dexie rows; this only names one. A chat's override lives on the Chat record. */
+  nessuPass: NessuPassSettings
+  setNessuPass(patch: Partial<NessuPassSettings>): void
   setAsk(patch: {
     askSystemPrompt?: string
     askSuffix?: string
@@ -468,8 +298,7 @@ export const useSettings = create<SettingsState>()(
       askCharacterId: null,
       askAssistantPrompt: '',
       appearance: defaultAppearance,
-      secondPass: defaultSecondPass,
-      goldPass: defaultGoldPass,
+      nessuPass: defaultNessuPass,
 
       setAsk: (patch) => set(patch),
 
@@ -477,11 +306,8 @@ export const useSettings = create<SettingsState>()(
       setAppearance: (patch) =>
         set((s) => ({ appearance: { ...defaultAppearance, ...s.appearance, ...patch } })),
 
-      setSecondPass: (patch) =>
-        set((s) => ({ secondPass: { ...defaultSecondPass, ...s.secondPass, ...patch } })),
-
-      setGoldPass: (patch) =>
-        set((s) => ({ goldPass: { ...defaultGoldPass, ...s.goldPass, ...patch } })),
+      setNessuPass: (patch) =>
+        set((s) => ({ nessuPass: { ...defaultNessuPass, ...s.nessuPass, ...patch } })),
 
       setDebugMode: (debugMode) => set({ debugMode }),
 
@@ -589,28 +415,11 @@ export function useAppearance(): Appearance {
   return { ...defaultAppearance, ...appearance }
 }
 
-/** Merged over the defaults for the same reason `useAppearance` is: a blob persisted before a field
- *  existed has to still resolve every field. */
-export function useSecondPass(): SecondPassSettings {
-  const secondPass = useSettings((s) => s.secondPass)
-  return { ...defaultSecondPass, ...secondPass }
-}
-
-/** The non-React read, for the send path. */
-export function secondPassSettings(): SecondPassSettings {
-  return { ...defaultSecondPass, ...useSettings.getState().secondPass }
-}
-
-/** Gold Pass's global defaults for a component. A chat's override goes on top of this; see
- *  `resolveGoldPass`, which is the whole resolution order. */
-export function useGoldPass(): GoldPassSettings {
-  const goldPass = useSettings((s) => s.goldPass)
-  return resolveGoldPass(goldPass, undefined)
-}
-
-/** The non-React read of the global defaults, for the send path. */
-export function goldPassSettings(): GoldPassSettings {
-  return resolveGoldPass(useSettings.getState().goldPass, undefined)
+/** Nessu's Pass's global defaults for a component. A chat's override goes on top of this; see
+ *  `nessuPassFor` in `pipelineStore.ts`, which is the whole resolution order. */
+export function useNessuPass(): NessuPassSettings {
+  const nessuPass = useSettings((s) => s.nessuPass)
+  return resolveNessuPass(nessuPass, undefined)
 }
 
 /** Used when the user has not written an assistant prompt of their own. */

@@ -15,15 +15,14 @@ export interface Swipeable {
   /** What the user asked for when producing each swipe. Parallel to `swipes`, holes where a swipe
    *  was a plain re-roll with nothing typed. */
   instructions?: (string | undefined)[]
-  /** The first-pass text, before Second Pass edited it. Parallel to `swipes`, a hole where the pass
-   *  was off or nothing was flagged and the draft became the reply unchanged. This is what replaced
-   *  the Grammar Hammer's old "show original" toggle, and unlike that toggle it survives a reload. */
-  drafts?: (string | undefined)[]
-  /** The pre-Gold-Pass text, parallel to `swipes`. See `Message.goldOriginals`; unlike `drafts`,
-   *  this is text from a different connection, and both can be set on one swipe. */
-  goldOriginals?: (string | undefined)[]
-  /** Why Gold Pass failed or was rejected for a swipe, parallel to `swipes`. */
-  goldFailed?: (string | undefined)[]
+  /** The text as the writing model produced it, before Nessu's Pass worked it over. Parallel to
+   *  `swipes`, a hole where the pass was off or changed nothing. Survives a reload, which the
+   *  Grammar Hammer's old "show original" toggle did not. */
+  passOriginals?: (string | undefined)[]
+  /** What the pass did to a swipe, in one line, parallel to `swipes`. */
+  passSummaries?: (string | undefined)[]
+  /** Why a stage's candidate was thrown away for a swipe, parallel to `swipes`. */
+  passFailed?: (string | undefined)[]
 }
 
 /** How many alternates a message has. No swipes array = the one thing it says. */
@@ -51,7 +50,6 @@ export function regenerated<T extends Swipeable>(
   snapshot?: string,
   reasoning?: string,
   instruction?: string,
-  draft?: string,
 ): T | null {
   if (!text) return null
   // An untouched record (Write's Blocks start empty) has nothing worth keeping as swipe 1, so the
@@ -72,12 +70,10 @@ export function regenerated<T extends Swipeable>(
   const instructions = [...(message.instructions ?? [])]
   instructions.length = swipes.length - 1
   instructions.push(instruction?.trim() || undefined)
-  // drafts pad the same way. A draft identical to the text is not worth keeping: it means the pass
-  // was skipped, and storing both copies would only make the UI offer a comparison with no
-  // difference in it.
-  const drafts = [...(message.drafts ?? [])]
-  drafts.length = swipes.length - 1
-  drafts.push(draft && draft !== text ? draft : undefined)
+  // A fresh take has not been passed yet. The pass runs after this and writes its own arrays, so
+  // padding them here keeps them parallel rather than one short.
+  const passOriginals = [...(message.passOriginals ?? [])]
+  passOriginals.length = swipes.length
   return {
     ...message,
     swipes,
@@ -86,7 +82,7 @@ export function regenerated<T extends Swipeable>(
     requestSnapshots,
     reasonings,
     instructions,
-    drafts,
+    passOriginals,
   }
 }
 
@@ -129,71 +125,87 @@ export function reasoningFor(message: Swipeable): string | undefined {
   return message.reasonings?.[swipeIndex(message)]
 }
 
-/** The pre-Second-Pass text for the currently selected swipe, when the pass actually changed it. */
-export function draftFor(message: Swipeable): string | undefined {
-  return message.drafts?.[swipeIndex(message)]
+/** The text before Nessu's Pass, for the selected swipe, when the pass actually changed it. */
+export function passOriginalFor(message: Swipeable): string | undefined {
+  return message.passOriginals?.[swipeIndex(message)]
 }
 
-/** The pre-Gold-Pass text for the selected swipe, when a rewrite replaced it. */
-export function goldOriginalFor(message: Swipeable): string | undefined {
-  return message.goldOriginals?.[swipeIndex(message)]
+/** Why a stage's candidate was thrown away for the selected swipe, when one was. */
+export function passFailedFor(message: Swipeable): string | undefined {
+  return message.passFailed?.[swipeIndex(message)]
 }
 
-/** Why Gold Pass did not replace the selected swipe, when it tried and could not. */
-export function goldFailedFor(message: Swipeable): string | undefined {
-  return message.goldFailed?.[swipeIndex(message)]
+/** What Nessu's Pass did to the selected swipe, in one line. Absent when it never ran on it. */
+export function passSummaryFor(message: Swipeable): string | undefined {
+  return message.passSummaries?.[swipeIndex(message)]
 }
 
 /**
- * Record a Gold Pass attempt against the selected swipe. `original` set means the rewrite is in
- * `content` already and this is what it replaced; `failed` set means it isn't and this is why.
+ * Record a pass attempt against the selected swipe. `original` set means the passed text is in
+ * `content` already and this is what it replaced; `failed` set means a stage's candidate was
+ * thrown away and this is why.
  *
- * Written after `regenerated` rather than through it: both arrays are padded to the swipe count
- * here, so an older message whose arrays are shorter than its swipes keeps its holes where they
- * belong instead of having them shifted.
+ * Written after `regenerated` rather than through it: all three arrays are padded to the swipe
+ * count here, so an older message whose arrays are shorter than its swipes keeps its holes where
+ * they belong instead of having them shifted.
  */
-export function withGold<T extends Swipeable>(
+export function withPass<T extends Swipeable>(
   message: T,
   original?: string,
+  failed?: string,
+  summary?: string,
+): T {
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  const passOriginals = [...(message.passOriginals ?? [])]
+  const passFailed = [...(message.passFailed ?? [])]
+  const passSummaries = [...(message.passSummaries ?? [])]
+  passOriginals.length = swipes.length
+  passFailed.length = swipes.length
+  passSummaries.length = swipes.length
+  passOriginals[at] = original
+  passFailed[at] = failed
+  passSummaries[at] = summary
+  return { ...message, passOriginals, passFailed, passSummaries }
+}
+
+/**
+ * A finished pass over an existing message: the passed text replaces the selected swipe in place,
+ * and `original` is what it replaced. Not a new swipe, since a pass is the same take worked over,
+ * and re-running it a third time still starts from `original`.
+ */
+export function passed<T extends Swipeable>(
+  message: T,
+  text: string,
+  original: string,
+  summary?: string,
   failed?: string,
 ): T {
   const swipes = seeded(message)
   const at = Math.min(swipeIndex(message), swipes.length - 1)
-  const goldOriginals = [...(message.goldOriginals ?? [])]
-  const goldFailed = [...(message.goldFailed ?? [])]
-  goldOriginals.length = swipes.length
-  goldFailed.length = swipes.length
-  goldOriginals[at] = original
-  goldFailed[at] = failed
-  return { ...message, goldOriginals, goldFailed }
-}
-
-/**
- * A finished Gold Pass rewrite of an existing message: the rewrite replaces the selected swipe in
- * place, and `original` is what it replaced. Not a new swipe, a rewrite is the same take in a
- * different voice, and re-running it a third time still starts from `original`.
- */
-export function goldRewritten<T extends Swipeable>(message: T, rewrite: string, original: string): T {
-  const swipes = seeded(message)
-  const at = Math.min(swipeIndex(message), swipes.length - 1)
-  swipes[at] = rewrite
+  swipes[at] = text
   return {
-    ...withGold({ ...message, swipes, swipeIndex: at }, original, undefined),
-    content: rewrite,
+    ...withPass(
+      { ...message, swipes, swipeIndex: at },
+      text === original ? undefined : original,
+      failed,
+      summary,
+    ),
+    content: text,
   }
 }
 
 /**
- * Put the pre-Gold-Pass text back into the selected swipe and forget the rewrite. Returns null when
- * there is no original, so the caller can leave the record alone.
+ * Put the pre-pass text back into the selected swipe and forget what the pass produced. Returns
+ * null when there is no original, so the caller can leave the record alone.
  */
-export function revertGold<T extends Swipeable>(message: T): T | null {
-  const original = goldOriginalFor(message)
+export function revertPass<T extends Swipeable>(message: T): T | null {
+  const original = passOriginalFor(message)
   if (original === undefined) return null
   const swipes = seeded(message)
   const at = Math.min(swipeIndex(message), swipes.length - 1)
   swipes[at] = original
-  return { ...withGold({ ...message, swipes, swipeIndex: at }, undefined, undefined), content: original }
+  return { ...withPass({ ...message, swipes, swipeIndex: at }), content: original }
 }
 
 /**
@@ -216,9 +228,9 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     requestSnapshots: keep(message.requestSnapshots),
     reasonings: keep(message.reasonings),
     instructions: keep(message.instructions),
-    drafts: keep(message.drafts),
-    goldOriginals: keep(message.goldOriginals),
-    goldFailed: keep(message.goldFailed),
+    passOriginals: keep(message.passOriginals),
+    passSummaries: keep(message.passSummaries),
+    passFailed: keep(message.passFailed),
   }
 }
 

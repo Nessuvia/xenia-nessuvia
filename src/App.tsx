@@ -10,6 +10,7 @@ import TourHost from './app/TourHost'
 import { usePalettes } from './core/stores/palettesStore'
 import { usePersonas } from './core/stores/personasStore'
 import { useParamDefs } from './core/stores/paramDefsStore'
+import { usePipelines } from './core/stores/pipelineStore'
 import { useStacks } from './core/stores/stacksStore'
 import { useApplyPalette } from './core/palette/useApplyPalette'
 import { useApplyWebfont } from './core/palette/useApplyWebfont'
@@ -23,13 +24,17 @@ export default function App() {
   // Seeds the default chat and Story stacks on a fresh install, so they are there before the first
   // visit to Prompts.
   const loadStacks = useStacks((s) => s.load)
+  // Nessu's Pass pipelines load on boot for the same reason the samplers do: the send path reads
+  // the library synchronously after every reply.
+  const loadPipelines = usePipelines((s) => s.load)
   useEffect(() => {
     loadPalettes()
     loadParamDefs()
     loadStacks()
+    loadPipelines()
     // A fresh install gets its "User" persona on boot, not on the first visit to Personas.
     ensurePersona()
-  }, [loadPalettes, loadParamDefs, loadStacks, ensurePersona])
+  }, [loadPalettes, loadParamDefs, loadStacks, loadPipelines, ensurePersona])
   useApplyPalette()
   useApplyWebfont()
 

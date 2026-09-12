@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { RiHammerLine } from '@remixicon/react'
-import {
-  newGrammarHammerRule,
-  useSecondPass,
-  useSettings,
-  type GrammarHammerRule,
-} from '../../core/stores/settingsStore'
+import { newHammerRule, type GrammarHammerRule } from '../../core/hammer/rule'
+import type { DetectSettings } from '../../core/nessuPass/detect/types'
 import RuleCardHead from './RuleCardHead'
 import { tryCompile, POS_TAGS } from '../../core/hammer/pattern'
 import './settings.css'
@@ -17,12 +13,22 @@ function ruleError(rule: GrammarHammerRule): string | null {
   return 'error' in r ? r.error : null
 }
 
-/** Grammar Hammer: slop constructions matched by POS patterns, stripped or flagged inside Second
- *  Pass. No Enable of its own: the rules run when Second Pass is on, and that toggle lives on the
- *  Setup tab. */
-export default function GrammarHammerPanel() {
-  const gh = useSecondPass()
-  const patchGh = useSettings((s) => s.setSecondPass)
+/**
+ * Grammar Hammer: slop constructions matched by POS patterns, stripped or flagged by the pipeline
+ * that carries them.
+ *
+ * Prop-driven rather than store-driven: the rules belong to a pipeline record now, so the panel
+ * edits whichever one the library has open. No Enable of its own; the pass toggle is global.
+ */
+export default function GrammarHammerPanel({
+  detect,
+  patch,
+}: {
+  detect: DetectSettings
+  patch: (over: Partial<DetectSettings>) => void
+}) {
+  const gh = detect
+  const patchGh = patch
   const [cheat, setCheat] = useState(false)
 
   const patchRule = (id: string, patch: Partial<GrammarHammerRule>) =>
@@ -35,8 +41,6 @@ export default function GrammarHammerPanel() {
           <RiHammerLine size={14} className="hammerIcon" /> Grammar Hammer
         </h3>
       </span>
-
-      {!gh.enabled && <p className="hint">Second Pass is off. Turn it on in Setup.</p>}
 
       <ul className="ruleCards screenBody">
         {gh.rules.map((rule) => {
@@ -91,7 +95,7 @@ export default function GrammarHammerPanel() {
       </ul>
 
       <div className="grammarActions">
-        <button type="button" onClick={() => patchGh({ rules: [...gh.rules, newGrammarHammerRule()] })}>
+        <button type="button" onClick={() => patchGh({ rules: [...gh.rules, newHammerRule()] })}>
           Add rule
         </button>
         <button type="button" onClick={() => setCheat(!cheat)}>

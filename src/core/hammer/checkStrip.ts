@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { stripText, stripWith, findFlags } from './strip.ts'
-import type { GrammarHammerRule } from '../stores/settingsStore.ts'
+import type { GrammarHammerRule } from './rule.ts'
 import { CompromiseTagger } from './tagger.ts'
 
 const tagger = new CompromiseTagger()
@@ -94,7 +94,7 @@ const sDefault = stripText('She runs with a graceful elegance.', [r1], 'assistan
 assert.ok(sDefault.text.length < original.length)
 
 // A `flag` rule reports its match and edits nothing, which is the whole point of the action: the
-// text stays exactly as the model wrote it and Second Pass decides what to do about the span.
+// text stays exactly as the model wrote it and the pass decides what to do about the span.
 const rFlag = rule('[adv] [adj]', { action: 'flag' })
 const flagSource = 'She runs very quickly and looks quietly furious.'
 assert.equal(stripWith(flagSource, [rFlag], 'assistant', tagger).text, flagSource)

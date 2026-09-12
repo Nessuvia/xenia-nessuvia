@@ -5,6 +5,7 @@
 // `node --experimental-strip-types`.
 import type { BeatWeight } from '../storage/types.ts'
 import { splitByWeight } from './beatWeights.ts'
+import { stripComments } from './stripComments.ts'
 
 /** The Block fields a token reads. `Block` satisfies this structurally. */
 export interface TokenBlock {
@@ -93,7 +94,8 @@ export function storyTokens(args: StoryTokenArgs): Record<string, string> {
 
 /**
  * Substitutes the known Story tokens. Unknown {{tokens}} are left exactly as they are, same as
- * `swapTokens`. Matching is case-insensitive.
+ * `swapTokens`. ST's {{// comments}} are dropped first, also same as `swapTokens`. Matching is
+ * case-insensitive.
  *
  * A line whose known tokens ALL resolve to '' is dropped whole, sentence and all. Without that,
  * "Aim for about {{beatTargetWords}} words." survives as an instruction with a hole in it every
@@ -107,6 +109,7 @@ export function storyTokens(args: StoryTokenArgs): Record<string, string> {
  */
 export function swapStoryTokens(text: string, values: Record<string, string>): string {
   if (!text) return text
+  text = stripComments(text)
   const folded = new Map(Object.entries(values).map(([k, v]) => [k.toLowerCase(), v]))
   const kept: string[] = []
   for (const line of text.split('\n')) {

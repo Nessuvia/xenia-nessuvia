@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkRepetition.ts runs this under `node --experimental-strip-types`.
 import type { Note } from './note.ts'
-import type { RepetitionSettings } from '../stores/settingsStore.ts'
+import type { RepetitionSettings } from './types.ts'
 
 /** One word, and where it sits in the text it came from. */
 interface Word {

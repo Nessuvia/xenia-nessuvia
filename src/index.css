@@ -227,18 +227,6 @@ body {
   overflow-y: auto;
 }
 
-/* Second Pass's first take, while the editing pass has not produced anything yet. Dimmed because
-   it is provisional: it is either replaced by the edited reply or brightens in place when nothing
-   was flagged. No transition on the swap, per the styling rules.
-
-   Global rather than in chat.css: Chat, Ask and Write all render a draft, and Write never loads
-   chat.css.
-
-   Opacity rather than a muted color: the spoken/emphasis/bold spans inside set their own palette
-   colors, and a color here would leave them at full strength and dim only the narration. */
-.secondPassDraft {
-  opacity: 0.55;
-}
 
 
 /* Baseline dropdown style. Mirrors the per-module select styling (e.g. .prompts select) so an

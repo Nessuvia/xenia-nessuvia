@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { mergeConnections, renameConnections } from './shareable.ts'
+import { isPartialRestore, mergeConnections, renameConnections } from './shareable.ts'
 
 const mine = JSON.stringify({
   state: {
@@ -32,5 +32,24 @@ assert.equal(list[0].name, 'work openrouter')
 assert.equal(list[1].id, 'b')
 assert.equal(mergeConnections(null, theirs), theirs)
 assert.equal(mergeConnections(mine, null), mine)
+
+// --- full or partial, for a file of any age ------------------------------
+{
+  // Said outright, either way: a file written by this build is never guessed about.
+  assert.equal(isPartialRestore({ shareable: false, tables: {} }), false)
+  assert.equal(isPartialRestore({ shareable: true, tables: { characters: [] } }), true)
+  // The flag wins even when the tables would say otherwise, which is what makes it a flag.
+  assert.equal(isPartialRestore({ shareable: true, tables: { chats: [] } }), true)
+
+  // No flag: a full export writes every key, empty or not.
+  assert.equal(isPartialRestore({ tables: { chats: [], characters: [], messages: [] } }), false)
+  // ...and a sanitized one never writes `chats`, whatever else it carries.
+  assert.equal(isPartialRestore({ tables: { characters: [], palettes: [] } }), true)
+
+  // The regression this replaced: a full backup missing a table added after it was written. The
+  // old test counted tables and called this sanitized, so it restored in add mode and kept rows
+  // the user meant to replace. Every 0.0.42 file looks like this now that `pipelines` exists.
+  assert.equal(isPartialRestore({ tables: { chats: [], messages: [], characters: [] } }), false)
+}
 
 console.log('checkShareable ok')

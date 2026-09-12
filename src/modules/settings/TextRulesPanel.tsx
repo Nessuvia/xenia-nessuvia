@@ -1,15 +1,14 @@
 import { RiTextSnippet } from '@remixicon/react'
 import {
-  newSecondPassRule,
-  useSecondPass,
-  useSettings,
-  type SecondPassRule,
-} from '../../core/stores/settingsStore'
+  newTextRule,
+  type DetectSettings,
+  type TextRule,
+} from '../../core/nessuPass/detect/types'
 import RuleCardHead from './RuleCardHead'
 import './settings.css'
 
 /** The syntax error for a rule's find, or null. Only regex rules can fail: a literal is escaped. */
-function ruleError(rule: SecondPassRule): string | null {
+function ruleError(rule: TextRule): string | null {
   if (!rule.regex || !rule.find.trim()) return null
   try {
     new RegExp(rule.find)
@@ -20,19 +19,25 @@ function ruleError(rule: SecondPassRule): string | null {
 }
 
 /**
- * Free-text rules: words and phrases to report to the Second Pass model, with the instruction
+ * Free-text rules: words and phrases to report to the editing model, with the instruction
  * written by the author.
  *
  * Separate from the Grammar Hammer because they are a different kind of thing. A Hammer rule
  * matches parts of speech and can strip or replace the text itself; these match words the way Find
- * & Replace does and only ever report, so they belong to Second Pass and nowhere else.
+ * & Replace does and only ever report.
+ *
+ * Prop-driven, like the Hammer panel: the rules belong to a pipeline record.
  */
-export default function TextRulesPanel() {
-  const settings = useSecondPass()
-  const patch = useSettings((s) => s.setSecondPass)
-  const rules = settings.textRules
+export default function TextRulesPanel({
+  detect,
+  patch,
+}: {
+  detect: DetectSettings
+  patch: (over: Partial<DetectSettings>) => void
+}) {
+  const rules = detect.textRules
 
-  const patchRule = (id: string, over: Partial<SecondPassRule>) =>
+  const patchRule = (id: string, over: Partial<TextRule>) =>
     patch({ textRules: rules.map((r) => (r.id === id ? { ...r, ...over } : r)) })
 
   return (
@@ -111,7 +116,7 @@ export default function TextRulesPanel() {
       </ul>
 
       <div className="grammarActions">
-        <button type="button" onClick={() => patch({ textRules: [...rules, newSecondPassRule()] })}>
+        <button type="button" onClick={() => patch({ textRules: [...rules, newTextRule()] })}>
           Add rule
         </button>
       </div>

@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkTriplet.ts runs this under `node --experimental-strip-types`.
 import type { Note } from './note.ts'
-import type { TripletSettings } from '../stores/settingsStore.ts'
+import type { TripletSettings } from './types.ts'
 import { sentences } from './sprawl.ts'
 
 /** Notes per run. Past a few the passage has one habit, not six. */

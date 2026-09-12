@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkPunctuation.ts runs this under `node --experimental-strip-types`.
-import type { PunctuationSettings } from '../stores/settingsStore.ts'
-import { computeExclusions } from '../hammer/exclusions.ts'
+import type { PunctuationSettings } from './types.ts'
+import { computeExclusions } from '../../hammer/exclusions.ts'
 
 /**
  * The mechanical half of two rules the editing model keeps getting wrong.

@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkSprawl.ts runs this under `node --experimental-strip-types`.
 import type { Note } from './note.ts'
-import type { SprawlSettings } from '../stores/settingsStore.ts'
+import type { SprawlSettings } from './types.ts'
 
 /** Coordinating conjunctions, the joints a sprawling sentence is built from. */
 const CONJUNCTIONS = new Set(['and', 'but', 'so', 'or', 'nor', 'yet', 'then'])

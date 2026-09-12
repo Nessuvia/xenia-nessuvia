@@ -1,7 +1,7 @@
 // Run: node --experimental-strip-types src/core/stores/checkSwipes.ts
 import assert from 'node:assert'
 import type { Message } from '../storage/types'
-import { continued, deletedSwipes, draftFor, instructionChain, reasoningFor, regenerated, selectSwipe, snapshotFor, swipeCount, swipeIndex } from './swipes.ts'
+import { continued, deletedSwipes, instructionChain, passOriginalFor, passed, reasoningFor, regenerated, revertPass, selectSwipe, snapshotFor, swipeCount, swipeIndex, withPass } from './swipes.ts'
 
 const reply = (id: number, content: string): Message => ({
   id,
@@ -233,33 +233,50 @@ function mirrors(m: Message) {
   assert.deepStrictEqual(instructionChain(on), ['less dialogue'])
 }
 
-// --- Second Pass drafts run parallel to swipes ----------------------------
+// --- Nessu's Pass arrays run parallel to swipes ---------------------------
 {
-  // A draft is kept only where it differs from the stored text: an unedited reply means the pass
-  // was skipped, and a draft equal to the text is a comparison with nothing in it.
-  const edited = regenerated(reply(1, 'one'), 'two, tightened', undefined, undefined, undefined, 'two, sloppy')!
-  assert.strictEqual(edited.drafts!.length, edited.swipes!.length)
-  assert.strictEqual(draftFor(edited), 'two, sloppy')
-  assert.strictEqual(draftFor(selectSwipe(edited, 0)), undefined) // swipe 0 predates the pass
+  // A fresh take has not been passed: `regenerated` only pads, and the pass writes its own slot.
+  const fresh = regenerated(reply(1, 'one'), 'two')!
+  assert.strictEqual(fresh.passOriginals!.length, fresh.swipes!.length)
+  assert.strictEqual(passOriginalFor(fresh), undefined)
 
-  const same = regenerated(reply(1, 'one'), 'two', undefined, undefined, undefined, 'two')!
-  assert.strictEqual(draftFor(same), undefined)
+  // A pass that changed the text stores what it replaced and leaves the swipe in place.
+  const done = passed(fresh, 'two, tightened', 'two', 'cleaned, rewritten')
+  assert.deepStrictEqual(done.swipes, ['one', 'two, tightened'])
+  assert.strictEqual(done.content, 'two, tightened')
+  assert.strictEqual(passOriginalFor(done), 'two')
+  assert.strictEqual(passOriginalFor(selectSwipe(done, 0)), undefined) // swipe 0 predates the pass
+
+  // A pass that changed nothing keeps no original: a comparison with nothing in it is noise.
+  assert.strictEqual(passOriginalFor(passed(fresh, 'two', 'two')), undefined)
 
   // Padding: a swipe made with the pass off leaves a hole rather than shifting the array.
-  const mixed = regenerated(edited, 'three')!
-  assert.strictEqual(mixed.drafts!.length, 3)
-  assert.strictEqual(draftFor(mixed), undefined)
-  assert.strictEqual(draftFor(selectSwipe(mixed, 1)), 'two, sloppy')
+  const mixed = regenerated(done, 'three')!
+  assert.strictEqual(mixed.passOriginals!.length, 3)
+  assert.strictEqual(passOriginalFor(mixed), undefined)
+  assert.strictEqual(passOriginalFor(selectSwipe(mixed, 1)), 'two')
 
-  // Deleting a swipe takes its draft with it, so the arrays stay aligned.
+  // Deleting a swipe takes its original with it, so the arrays stay aligned.
   const pruned = deletedSwipes(mixed, [0])!
   assert.deepStrictEqual(pruned.swipes, ['two, tightened', 'three'])
-  assert.strictEqual(draftFor(selectSwipe(pruned, 0)), 'two, sloppy')
-  assert.strictEqual(draftFor(selectSwipe(pruned, 1)), undefined)
+  assert.strictEqual(passOriginalFor(selectSwipe(pruned, 0)), 'two')
+  assert.strictEqual(passOriginalFor(selectSwipe(pruned, 1)), undefined)
 
-  // A continuation writes in place and must not disturb the drafts.
+  // A continuation writes in place and must not disturb what the pass recorded.
   const cont = continued(selectSwipe(mixed, 1), 'two, tightened and more')!
-  assert.strictEqual(draftFor(cont), 'two, sloppy')
+  assert.strictEqual(passOriginalFor(cont), 'two')
+
+  // Reverting puts the original back in the swipe and forgets it.
+  const back = revertPass(selectSwipe(mixed, 1))!
+  assert.strictEqual(back.content, 'two')
+  assert.strictEqual(back.swipes![1], 'two')
+  assert.strictEqual(passOriginalFor(back), undefined)
+  assert.strictEqual(revertPass(fresh), null)
+
+  // A failure records the reason against the selected swipe and leaves the text alone.
+  const failed = withPass(selectSwipe(mixed, 2), undefined, 'The rewrite came back empty.')
+  assert.strictEqual(failed.passFailed![2], 'The rewrite came back empty.')
+  assert.strictEqual(failed.content, mixed.content)
 }
 
 console.log('ok')

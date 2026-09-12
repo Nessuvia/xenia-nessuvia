@@ -44,3 +44,24 @@ export function mergeConnections(mine: string | null, theirs: string | null): st
   ]
   return JSON.stringify(parsed)
 }
+
+/**
+ * Whether a backup file adds to the library or replaces it.
+ *
+ * The flag when the file has one. For a file older than the flag, ask the one question that cannot
+ * go stale: a sanitized export never carries `chats`, and a full one always writes the key even
+ * when it is empty.
+ *
+ * Counting tables was the old test, and it was wrong in a way that got worse with every release.
+ * A table added since the file was written made a full backup look sanitized, so it restored in
+ * add-to-what-is-here mode and kept rows the user expected to be replaced. Adding `pipelines` in
+ * 0.0.43 broke every 0.0.42 file that way.
+ *
+ * Here rather than in backup.ts so checkShareable.ts can run it: backup.ts pulls in Dexie.
+ */
+export function isPartialRestore(backup: {
+  shareable?: boolean
+  tables: Record<string, unknown>
+}): boolean {
+  return backup.shareable ?? !('chats' in backup.tables)
+}

@@ -51,6 +51,8 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
     /params     the sampler library: params as data, not code
     /hammer     grammar rules run over model output
+    /nessuPass  Nessu's Pass: pipelines that work a finished reply over before it is stored
+    /quality    scoring a candidate against the text it would replace
     /multiplayer  relay channels, session protocol, turn order, narrator
     /sync       S3 bucket push/pull and dirty-table tracking
     /settings   settings resolution helpers
@@ -99,14 +101,25 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   the structural layer.
 - **Sampler params** live in `core/params`. A param def is a row, not code, so a new sampler needs
   no release.
+- **Nessu's Pass** lives in `core/nessuPass`. A pipeline is a Dexie row holding an ordered list of
+  stages (`gate`, `clean`, `rewrite`, `score`), each a kind plus a config blob, so a new way of
+  working a reply over is a JSON file rather than a release. `runPipeline` is the only entry point
+  and it is chat-only; `pipeline.ts` holds the shapes, `pipelineJson` imports and exports them,
+  `detect/` holds the checks every stage shares, and `core/quality` scores a candidate against what
+  it would replace. Which pipeline runs is a setting: global in `settingsStore.nessuPass`,
+  overridden per chat on `Chat.nessuPass`.
+  A 0.0.42 install's Second Pass and Gold Pass settings convert through `nessuPass/legacy.ts`
+  (pure) and `stores/importLegacyPass.ts` (the storage side), behind a button in Settings › Misc.
+  It is one-shot by erasing what it read rather than by setting a flag, so restoring an old backup
+  offers it again. That is the one migration in this codebase and it stays opt-in.
 - **Grammar hammer** lives in `core/hammer`. `tagger`, then `pattern`, then `matcher`, then
   `repair`/`strip`, with `exclusions` marking spans a rule may not touch.
 
 ## Data
 
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(14)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `bodyTrackers`, `bodyMaps`, `paramDefs`.
+Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(16)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `bodyTrackers`, `bodyMaps`, `paramDefs`, `games`, `pipelines`.
 
-- One `db.version(N).stores({...})` block, currently 14, holding the **complete** schema. The old
+- One `db.version(N).stores({...})` block, currently 16, holding the **complete** schema. The old
   chain was deleted; no block ever carried an `upgrade()` callback, so an older local DB upgrades
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:

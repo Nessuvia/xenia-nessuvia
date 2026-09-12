@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: checkPassPrompt.ts runs this under `node --experimental-strip-types`.
-import type { Note } from './note.ts'
+import type { Note } from './detect/note.ts'
 
 /** Kept structural rather than importing `ChatMessage`, so the check script does not pull the
  *  connector in behind it. Same shape. */
@@ -34,7 +34,7 @@ function renderNote(note: Note, index: number): string {
  * as the assistant's text. A structured patch would have to be buffered and applied, which is the
  * one thing that would cost the feature its streaming.
  */
-export function buildPassPrompt(
+export function buildCleanPrompt(
   text: string,
   notes: Note[],
   userPrompt?: string,
@@ -76,7 +76,7 @@ export function buildPassPrompt(
  * `skipWhenClean` off forces the request through, which is what a user who wants the model to look
  * at every reply is asking for.
  */
-export function shouldRunPass(
+export function shouldRunClean(
   notes: Note[],
   userPrompt: string,
   skipWhenClean: boolean,

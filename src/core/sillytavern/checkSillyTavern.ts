@@ -14,7 +14,7 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
 
 // --- the Gemma settings bundle -------------------------------------------
 {
-  const out = parseSillyTavern(fixture('Gemma_4_NoThink_SillyTavern_settings.json'))
+  const out = parseSillyTavern(fixture('Gemma_NoThink.json'))
   assert.strictEqual(out.shape, 'bundle')
   assert.strictEqual(out.label, 'Gemma4')
 

@@ -1,7 +1,7 @@
 // Extension-ful imports on purpose: checkTextRules.ts runs this under `node --experimental-strip-types`.
 import type { Note } from './note.ts'
-import type { SecondPassRule } from '../stores/settingsStore.ts'
-import { computeExclusions, type Range } from '../hammer/exclusions.ts'
+import type { TextRule } from './types.ts'
+import { computeExclusions, type Range } from '../../hammer/exclusions.ts'
 
 /** Matches reported per rule. One rule matching forty times is one problem, not forty notes. */
 const MAX_PER_RULE = 3
@@ -17,7 +17,7 @@ function escape(find: string): string {
  * skipped rather than thrown: the panel surfaces the syntax error, and a send must never break
  * because a rule is half-typed.
  */
-export function compileRule(rule: SecondPassRule): RegExp | null {
+export function compileRule(rule: TextRule): RegExp | null {
   if (!rule.find) return null
   try {
     return new RegExp(rule.regex ? rule.find : escape(rule.find), rule.caseSensitive ? 'g' : 'gi')
@@ -31,7 +31,7 @@ function excluded(exclusions: Range[], start: number, end: number): boolean {
   return exclusions.some(([from, to]) => start < to && end > from)
 }
 
-function scopeMatches(scope: SecondPassRule['scope'], role: 'user' | 'assistant'): boolean {
+function scopeMatches(scope: TextRule['scope'], role: 'user' | 'assistant'): boolean {
   return scope === 'both' || scope === role
 }
 
@@ -43,7 +43,7 @@ function scopeMatches(scope: SecondPassRule['scope'], role: 'user' | 'assistant'
  */
 export function findTextMatches(
   text: string,
-  rules: SecondPassRule[],
+  rules: TextRule[],
   role: 'user' | 'assistant',
 ): Note[] {
   // A rule with no find is not a matcher; `standingNotes` handles those.
@@ -89,7 +89,7 @@ export function findTextMatches(
  * make `skipWhenClean` dead the moment a single standing rule is enabled, since the note list would
  * never be empty.
  */
-export function standingNotes(rules: SecondPassRule[], role: 'user' | 'assistant'): Note[] {
+export function standingNotes(rules: TextRule[], role: 'user' | 'assistant'): Note[] {
   return rules
     .filter((r) => r.enabled && !r.find && r.note.trim() && scopeMatches(r.scope, role))
     .map((r) => ({ source: `rule:${r.label || r.id}`, message: r.note.trim() }))

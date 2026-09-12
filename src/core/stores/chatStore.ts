@@ -4,8 +4,6 @@ import { currentOwnerId } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { Character, Chat, Message, PromptStack, SpeakerAs } from '../storage/types'
 import { sendMessage } from '../connectors/openaiCompatible'
-import { runSecondPass } from '../secondPass/runSecondPass'
-import type { PassContext } from '../secondPass/passContext'
 import { snapshotOf } from '../connectors/snapshot'
 import { buildPrompt } from '../prompt/buildPrompt'
 import { loadTokenizer } from '../prompt/budget'
@@ -20,16 +18,17 @@ import { chatTitle } from './chatTitle'
 import {
   continued,
   deletedSwipes,
-  goldOriginalFor,
-  goldRewritten,
+  passOriginalFor,
+  passed,
   regenerated,
-  revertGold,
+  revertPass,
   selectSwipe,
   swipeIndex,
-  withGold,
+  withPass,
 } from './swipes'
-import { runGoldPass } from '../goldPass/runGoldPass'
-import { goldArmed, goldConnection, goldPassFor } from '../goldPass/resolve'
+import { runPipeline, type RunContext } from '../nessuPass/runPipeline'
+import { pipelineArmed } from '../nessuPass/pipeline'
+import { nessuPassFor, pipelineFor } from './pipelineStore'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
@@ -62,47 +61,75 @@ export function setSessionCast(cast: Character[] | undefined): void {
 const byTime = (a: Message, b: Message) => a.createdAt - b.createdAt || a.id! - b.id!
 
 /**
- * What Second Pass's repetition check looks at besides the reply itself. Only assistant turns go
- * in: the thing being detected is the model repeating itself, and folding the user's own words in
- * would flag the reply for quoting the person it is answering.
+ * How much recent chat the pass is shown. Only assistant turns go in: the repetition check and the
+ * census are looking for the model repeating itself, and folding the user's own words in would
+ * flag the reply for quoting the person it is answering.
  *
- * Trimmed generously rather than exactly. The check applies its own `lookback` setting, so this
- * only has to be at least as much as the largest lookback a user might set.
+ * Trimmed generously rather than exactly. The checks apply their own lookback settings, so this
+ * only has to be at least as much as the largest a user might set.
  */
 const HISTORY_FOR_NOTES = 40
-function passContext(messages: Message[]): PassContext {
+
+/** What a pass leaves behind: the text to store, and the three parallel-array fields. */
+interface PassResult {
+  /** What goes in `content` and the selected swipe. The input text, unchanged, unless the pass
+   *  produced something better. */
+  text: string
+  /** The pre-pass text, set only when the pass changed something. */
+  original?: string
+  /** Why a stage's candidate was thrown away. Set only when one was. */
+  failed?: string
+  /** What the pass did, in one line. Set only when it changed something. */
+  summary?: string
+}
+
+/**
+ * What the pipeline needs that the pipeline record does not carry: the chat's own text and the
+ * names a rewrite is allowed to use.
+ *
+ * The history is assistant turns only, the same reasoning `passContext` gives: the census is
+ * looking for the model repeating itself, and the user's own words are not that. `allowNames` is
+ * every name the chat legitimately knows, so the proper-noun invariant rejects an invented
+ * character without rejecting one who simply is not in this paragraph.
+ */
+function runContext(
+  messages: Message[],
+  character: Character | undefined,
+  userName: string,
+): RunContext {
+  const names = new Set<string>([userName])
+  if (character?.name) names.add(character.name)
+  // Every name the chat has actually used, on either side: other speakers in a group chat, and the
+  // persona a user turn was sent as.
+  for (const m of messages) {
+    if (m.speakerName) names.add(m.speakerName)
+    if (m.personaName) names.add(m.personaName)
+  }
   return {
     role: 'assistant',
+    character,
+    userName,
+    priorMessages: messages,
     history: messages
       .filter((m) => m.role === 'assistant')
       .slice(-HISTORY_FOR_NOTES)
       .map((m) => m.content),
+    allowNames: [...names],
   }
 }
 
-/** What a Gold Pass attempt leaves behind: the text to store, and the two parallel-array fields. */
-interface GoldResult {
-  /** What goes in `content` and the selected swipe. The input text, unchanged, unless a rewrite
-   *  was accepted. */
-  text: string
-  /** The pre-rewrite text, set only when a rewrite was accepted. */
-  original?: string
-  /** Why no rewrite was stored. Set only when the pass ran and did not produce a usable one. */
-  failed?: string
-}
-
 /**
- * Gold Pass around one finished generation, in one place rather than pasted at each call site.
+ * Nessu's Pass around one finished generation, in one place rather than pasted at each call site.
  *
- * The first pass has already streamed and the user has read it. This rewrites it on the second
- * connection, streaming over what is on screen through `onProgress`, and reports what should be
- * stored. Not armed means it returns the text untouched and marks nothing: a missing connection or
- * a deleted preset is a settings problem, not a failed rewrite.
+ * The reply has already streamed and the user has read it. This runs the chat's pipeline over it,
+ * streaming a stage's candidate over what is on screen through `onProgress`, and reports what
+ * should be stored. No pipeline, or one that is not armed, returns the text untouched and marks
+ * nothing: a missing connection or a deleted pipeline is a settings problem, not a failed pass.
  *
- * Abort throws through, so the caller's existing stop handling fires. Nothing else throws: a
- * rewrite that fails is worth less than the reply that already exists.
+ * Abort throws through, so the caller's existing stop handling fires. Nothing else throws: a pass
+ * that fails is worth less than the reply that already exists.
  */
-async function goldPass(
+async function nessuPass(
   chat: Chat,
   character: Character | undefined,
   priorMessages: Message[],
@@ -110,33 +137,32 @@ async function goldPass(
   userName: string,
   signal: AbortSignal,
   onProgress: (partial: string) => void,
-): Promise<GoldResult> {
-  const settings = goldPassFor(chat)
-  const connection = goldConnection(settings)
-  // `enabled` is checked here rather than in `goldArmed`: this is the automatic path, and the
-  // manual action on a message runs on an armed setup whether or not auto is on.
-  if (!settings.enabled || !connection || !goldArmed(settings)) return { text }
+  /** Set by the manual action, which runs an armed pipeline whether or not auto is on. */
+  force = false,
+): Promise<PassResult> {
+  const pipeline = pipelineFor(chat)
+  if (!pipeline || !pipelineArmed(pipeline)) return { text }
+  if (!force && !nessuPassFor(chat).enabled) return { text }
 
-  const run = runGoldPass(
-    text,
-    character,
-    priorMessages,
-    connection,
-    settings,
-    userName,
-    signal,
-  )
+  const run = runPipeline(text, pipeline, runContext(priorMessages, character, userName), signal)
   let shown = ''
   // Stepped by hand rather than with `for await`: the outcome is the generator's *return* value,
-  // and a for-await loop discards it. The yielded chunks are the rewrite as it arrives, which is
-  // display only until the guard has had its say.
+  // and a for-await loop discards it. The yielded chunks are a candidate as it arrives, which is
+  // display only until the stages after it have had their say.
   for (;;) {
     const step = await run.next()
     if (step.done) {
       const outcome = step.value
-      if ('reason' in outcome) return { text, failed: outcome.reason }
-      return { text: outcome.text, original: text }
+      return {
+        text: outcome.text,
+        original: outcome.text === text ? undefined : outcome.original,
+        summary: outcome.summary,
+        failed: outcome.failed,
+      }
     }
+    // A new stage starting replaces what the last one was showing: each stage rewrites the whole
+    // passage, so accumulating across them would render one after the other.
+    if (step.value.stage) shown = ''
     if (step.value.content) {
       shown += step.value.content
       onProgress(shown)
@@ -235,17 +261,14 @@ interface ChatState {
   chat: Chat | null
   messages: Message[]
   streamingText: string
-  /** Second Pass's first-pass text as it arrives, rendered provisionally. Cleared when the edited
-   *  reply starts, so the dimmed draft never sits under the final text. */
-  streamingDraft: string
   /** Reasoning as it arrives, so the thinking is visible before any reply text shows up.
    *  Only reset when a stream starts, nothing renders it while `streaming` is false. */
   streamingReasoning: string
   streaming: boolean
-  /** A Gold Pass rewrite is streaming over a reply that already finished. The text in
+  /** A pass stage's candidate is streaming over a reply that already finished. The text in
    *  `streamingText` is being replaced as it arrives, which is the intended feel; this is what
    *  lets the bubble say so. */
-  goldPassing: boolean
+  passing: boolean
   /** Which chat the stream belongs to, so opening another chat mid-generation doesn't show its
    *  reply there. Null when idle. */
   streamingChatId: number | null
@@ -305,11 +328,11 @@ interface ChatState {
   swipeTo(messageId: number, index: number): Promise<void>
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
-  /** Run Gold Pass over an assistant message by hand. Always rewrites from the stored original, so
+  /** Run Nessu's Pass over an assistant message by hand. Always starts from the stored original, so
    *  running it twice does not compound, and replaces the previous rewrite. */
-  goldPassMessage(messageId: number): Promise<void>
+  passMessage(messageId: number): Promise<void>
   /** Put the pre-Gold-Pass text back and forget the rewrite. */
-  revertGoldPass(messageId: number): Promise<void>
+  revertMessagePass(messageId: number): Promise<void>
   stop(): void
   editMessage(id: number, content: string): Promise<void>
   deleteMessage(id: number): Promise<void>
@@ -323,10 +346,9 @@ export const useChats = create<ChatState>()((set, get) => ({
   chat: null,
   messages: [],
   streamingText: '',
-  streamingDraft: '',
   streamingReasoning: '',
   streaming: false,
-  goldPassing: false,
+  passing: false,
   streamingChatId: null,
   viewingChatId: null,
   setViewing: (chatId) => set({ viewingChatId: chatId }),
@@ -609,15 +631,15 @@ export const useChats = create<ChatState>()((set, get) => ({
 
       const controller = new AbortController()
       abort = controller
-      set({ streaming: true, streamingChatId: chat.id ?? null, streamingText: '', streamingDraft: '', streamingReasoning: '', error: '', failed: null, speakingName: speaker.name, speakingId: speaker.id ?? null })
+      set({ streaming: true, streamingChatId: chat.id ?? null, streamingText: '', streamingReasoning: '', error: '', failed: null, speakingName: speaker.name, speakingId: speaker.id ?? null })
 
       let text = ''
-      let draft = ''
-      let reasoning = ''
+        let reasoning = ''
       let finishReason = ''
       let snapshot: string | undefined
-      let goldOriginal: string | undefined
-      let goldFail: string | undefined
+      let passOriginal: string | undefined
+      let passFail: string | undefined
+      let passSummary: string | undefined
       try {
         const stack = await stackFor(chat)
         const persona = await usePersonas.getState().ensureActive()
@@ -639,34 +661,27 @@ export const useChats = create<ChatState>()((set, get) => ({
         )
         set({ trimmedCount: promptMessages.droppedCount })
         snapshot = snapshotOf(promptMessages.messages, connection)
-        for await (const chunk of runSecondPass(
+        for await (const chunk of sendMessage(
           promptMessages.messages,
           connection,
           controller.signal,
-          undefined,
-          passContext(get().messages),
         )) {
           if (chunk.reasoning) {
             reasoning += chunk.reasoning
             set({ streamingReasoning: reasoning })
           }
-          if (chunk.draft) {
-            draft += chunk.draft
-            set({ streamingDraft: draft })
-          }
           if (chunk.content) {
             text += chunk.content
-            // The edited reply is starting: the provisional draft stops being what to look at.
-            set({ streamingText: text, streamingDraft: '' })
+            set({ streamingText: text })
           }
           if (chunk.finishReason) finishReason = chunk.finishReason
         }
 
-        // Gold Pass. The reply is finished and has been read; the rewrite streams over it on the
-        // second connection, and the guard decides whether it is what gets stored.
+        // Nessu's Pass. The reply is finished and has been read; a stage's candidate streams over
+        // it, and the stages after it decide whether that is what gets stored.
         if (text && !controller.signal.aborted) {
-          set({ goldPassing: true })
-          const gold = await goldPass(
+          set({ passing: true })
+          const pass = await nessuPass(
             chat,
             speaker,
             get().messages,
@@ -675,20 +690,21 @@ export const useChats = create<ChatState>()((set, get) => ({
             controller.signal,
             (partial) => set({ streamingText: partial }),
           )
-          text = gold.text
-          goldOriginal = gold.original
-          goldFail = gold.failed
+          text = pass.text
+          passOriginal = pass.original
+          passFail = pass.failed
+          passSummary = pass.summary
           set({ streamingText: text })
         }
       } catch (err) {
         // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
         if (!controller.signal.aborted) {
-          set({ streaming: false, streamingChatId: null, streamingText: '', streamingDraft: '', speakingName: '', speakingId: null, error: (err as Error).message })
+          set({ streaming: false, streamingChatId: null, streamingText: '', speakingName: '', speakingId: null, error: (err as Error).message })
           return
         }
       } finally {
         abort = null
-        set({ goldPassing: false })
+        set({ passing: false })
       }
 
       // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -698,7 +714,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         const message = reasoning
           ? `The model produced ${reasoning.length} characters of reasoning but no reply, it likely hit the token limit while thinking. Raise max tokens, or turn off the model's thinking mode.`
           : 'The model returned an empty response.'
-        set({ streaming: false, streamingChatId: null, streamingText: '', streamingDraft: '', speakingName: '', speakingId: null, error: message })
+        set({ streaming: false, streamingChatId: null, streamingText: '', speakingName: '', speakingId: null, error: message })
         return
       }
 
@@ -706,7 +722,6 @@ export const useChats = create<ChatState>()((set, get) => ({
         streaming: false,
         streamingChatId: null,
         streamingText: '',
-        streamingDraft: '',
         speakingName: '',
         speakingId: null,
         error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
@@ -722,11 +737,10 @@ export const useChats = create<ChatState>()((set, get) => ({
           // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
           requestSnapshots: [snapshot],
           reasonings: [reasoning || undefined],
-          drafts: [draft && draft !== text ? draft : undefined],
-          // Parallel to swipes as well. `goldOriginals` is not `drafts`: that is Second Pass's
-          // pre-edit text on this connection, this is the pre-rewrite text from the other one.
-          goldOriginals: [goldOriginal],
-          goldFailed: [goldFail],
+          // Parallel to swipes as well: what the writing model said, before the pass.
+          passOriginals: [passOriginal],
+          passFailed: [passFail],
+          passSummaries: [passSummary],
           createdAt: Date.now(),
         })
         // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
@@ -754,14 +768,14 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     const controller = new AbortController()
     abort = controller
-    set({ streaming: true, streamingChatId: chat.id ?? null, streamingText: '', streamingDraft: '', streamingReasoning: '', error: '', failed: null, speakingName: speaker.name, speakingId: speaker.id ?? null })
+    set({ streaming: true, streamingChatId: chat.id ?? null, streamingText: '', streamingReasoning: '', error: '', failed: null, speakingName: speaker.name, speakingId: speaker.id ?? null })
 
     let text = ''
-    let draft = ''
     let reasoning = ''
     let finishReason = ''
-    let goldOriginal: string | undefined
-    let goldFail: string | undefined
+    let passOriginal: string | undefined
+    let passFail: string | undefined
+    let passSummary: string | undefined
     let snapshot: string | undefined
     try {
       const stack = await stackFor(chat)
@@ -784,34 +798,27 @@ export const useChats = create<ChatState>()((set, get) => ({
       )
       set({ trimmedCount: promptMessages.droppedCount })
       snapshot = snapshotOf(promptMessages.messages, connection)
-      for await (const chunk of runSecondPass(
+      for await (const chunk of sendMessage(
         promptMessages.messages,
         connection,
         controller.signal,
-        undefined,
-        passContext(get().messages),
       )) {
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
           set({ streamingReasoning: reasoning })
         }
-        if (chunk.draft) {
-          draft += chunk.draft
-          set({ streamingDraft: draft })
-        }
         if (chunk.content) {
           text += chunk.content
-          // The edited reply is starting: the provisional draft stops being what to look at.
-          set({ streamingText: text, streamingDraft: '' })
+          set({ streamingText: text })
         }
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Gold Pass. The reply is finished and has been read; the rewrite streams over it on the
-      // second connection, and the guard decides whether it is what gets stored.
+      // Nessu's Pass. The reply is finished and has been read; a stage's candidate streams over
+      // it, and the stages after it decide whether that is what gets stored.
       if (text && !controller.signal.aborted) {
-        set({ goldPassing: true })
-        const gold = await goldPass(
+        set({ passing: true })
+        const pass = await nessuPass(
           chat,
           speaker,
           get().messages,
@@ -820,20 +827,21 @@ export const useChats = create<ChatState>()((set, get) => ({
           controller.signal,
           (partial) => set({ streamingText: partial }),
         )
-        text = gold.text
-        goldOriginal = gold.original
-        goldFail = gold.failed
+        text = pass.text
+        passOriginal = pass.original
+        passFail = pass.failed
+        passSummary = pass.summary
         set({ streamingText: text })
       }
     } catch (err) {
       // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
       if (!controller.signal.aborted) {
-        set({ streaming: false, streamingChatId: null, streamingText: '', streamingDraft: '', speakingName: '', speakingId: null, error: (err as Error).message })
+        set({ streaming: false, streamingChatId: null, streamingText: '', speakingName: '', speakingId: null, error: (err as Error).message })
         return
       }
     } finally {
       abort = null
-      set({ goldPassing: false })
+      set({ passing: false })
     }
 
     // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -843,7 +851,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       const message = reasoning
         ? `The model produced ${reasoning.length} characters of reasoning but no reply, it likely hit the token limit while thinking. Raise max tokens, or turn off the model's thinking mode.`
         : 'The model returned an empty response.'
-      set({ streaming: false, streamingChatId: null, streamingText: '', streamingDraft: '', speakingName: '', speakingId: null, error: message })
+      set({ streaming: false, streamingChatId: null, streamingText: '', speakingName: '', speakingId: null, error: message })
       return
     }
 
@@ -851,7 +859,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       streaming: false,
       streamingChatId: null,
       streamingText: '',
-      streamingDraft: '',
       speakingName: '',
       speakingId: null,
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
@@ -867,11 +874,10 @@ export const useChats = create<ChatState>()((set, get) => ({
         // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
         requestSnapshots: [snapshot],
         reasonings: [reasoning || undefined],
-        drafts: [draft && draft !== text ? draft : undefined],
-        // Parallel to swipes as well. `goldOriginals` is not `drafts`: that is Second Pass's
-        // pre-edit text on this connection, this is the pre-rewrite text from the other one.
-        goldOriginals: [goldOriginal],
-        goldFailed: [goldFail],
+        // Parallel to swipes as well: what the writing model said, before the pass.
+        passOriginals: [passOriginal],
+        passFailed: [passFail],
+        passSummaries: [passSummary],
         createdAt: Date.now(),
       })
       // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
@@ -935,10 +941,10 @@ export const useChats = create<ChatState>()((set, get) => ({
       : oldMessageInstruction(get().messages.slice(at + 1), speaker.name, stack.miscPrompts)
 
     let text = ''
-    let draft = ''
     let reasoning = ''
-    let goldOriginal: string | undefined
-    let goldFail: string | undefined
+    let passOriginal: string | undefined
+    let passFail: string | undefined
+    let passSummary: string | undefined
     let finishReason = ''
     let snapshot: string | undefined
     try {
@@ -964,33 +970,27 @@ export const useChats = create<ChatState>()((set, get) => ({
       )
       set({ trimmedCount: prompt.droppedCount })
       snapshot = snapshotOf(prompt.messages, connection)
-      for await (const chunk of runSecondPass(
+      for await (const chunk of sendMessage(
         prompt.messages,
         connection,
         controller.signal,
-        undefined,
-        passContext(get().messages.slice(0, at)),
       )) {
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
           set({ streamingReasoning: reasoning })
         }
-        if (chunk.draft) {
-          draft += chunk.draft
-          set({ streamingDraft: draft })
-        }
         if (chunk.content) {
           text += chunk.content
-          set({ streamingText: text, streamingDraft: '' })
+          set({ streamingText: text })
         }
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Gold Pass, same as the send path. A re-roll's history is everything before this message,
+      // Nessu's Pass, same as the send path. A re-roll's history is everything before this message,
       // which is what the window gets: the turns after it are not context for what it says.
       if (text && !controller.signal.aborted) {
-        set({ goldPassing: true })
-        const gold = await goldPass(
+        set({ passing: true })
+        const pass = await nessuPass(
           chat,
           speaker,
           get().messages.slice(0, at),
@@ -999,9 +999,10 @@ export const useChats = create<ChatState>()((set, get) => ({
           controller.signal,
           (partial) => set({ streamingText: partial }),
         )
-        text = gold.text
-        goldOriginal = gold.original
-        goldFail = gold.failed
+        text = pass.text
+        passOriginal = pass.original
+        passFail = pass.failed
+        passSummary = pass.summary
         set({ streamingText: text })
       }
     } catch (err) {
@@ -1021,22 +1022,21 @@ export const useChats = create<ChatState>()((set, get) => ({
       }
     } finally {
       abort = null
-      set({ goldPassing: false })
+      set({ passing: false })
     }
 
     set({
       streaming: false,
       streamingChatId: null,
       streamingText: '',
-      streamingDraft: '',
       regeneratingId: null,
       speakingName: '',
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
-    const regen = regenerated(target, text, snapshot, reasoning, instruction, draft)
+    const regen = regenerated(target, text, snapshot, reasoning, instruction)
     // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
     // count itself, so an older message's holes stay where they belong.
-    const updated = regen && withGold(regen, goldOriginal, goldFail)
+    const updated = regen && withPass(regen, passOriginal, passFail, passSummary)
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
       // Same as retry: don't reload if you've moved to another chat mid-stream, blip instead.
@@ -1117,12 +1117,12 @@ export const useChats = create<ChatState>()((set, get) => ({
       )
       set({ trimmedCount: prompt.droppedCount })
       snapshot = snapshotOf(prompt.messages, connection)
-      // Deliberately not through runSecondPass. A continuation's reply is the accepted prefix plus
+      // Deliberately not passed. A continuation's reply is the accepted prefix plus
       // what the model just added, and `continued` writes the whole thing back over the swipe, so a
       // second pass would edit text the user already kept. Wiring it needs the pass to be told which
       // span is new and to leave the rest alone.
       //
-      // Gold Pass is skipped here for the same reason, and more strongly: it rewrites a whole
+      // The pass is skipped here for the same reason, and more strongly: a rewrite stage remakes a whole
       // passage rather than a flagged span, so it would restate the prefix the user accepted. The
       // manual action on the message is how a continued reply gets rewritten.
       for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
@@ -1159,7 +1159,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       streaming: false,
       streamingChatId: null,
       streamingText: '',
-      streamingDraft: '',
       regeneratingId: null,
       speakingName: '',
       // A continuation can hit the limit as readily as the reply did, and then it can be continued
@@ -1177,25 +1176,25 @@ export const useChats = create<ChatState>()((set, get) => ({
     }
   },
 
-  goldPassMessage: async (messageId) => {
+  passMessage: async (messageId) => {
     const chat = get().chat
     if (!chat) return
     const at = get().messages.findIndex((m) => m.id === messageId)
     const target = get().messages[at]
     if (!target || target.role !== 'assistant') return
 
-    const settings = goldPassFor(chat)
-    if (!goldArmed(settings)) {
-      set({ error: 'Gold Pass has no connection or no preset. Set both in Settings > Gold Pass.' })
+    const pipeline = pipelineFor(chat)
+    if (!pipeline || !pipelineArmed(pipeline)) {
+      set({ error: "No pipeline is set for this chat. Pick one in Settings > Nessu's Pass." })
       return
     }
 
-    // Always from the stored original, so running this twice rewrites the first pass again rather
-    // than rewriting a rewrite.
-    const source = goldOriginalFor(target) ?? target.content
+    // Always from the stored original, so running this twice passes the reply again rather than
+    // passing what the last run produced.
+    const source = passOriginalFor(target) ?? target.content
     if (!source.trim()) return
 
-    // Rewritten in the voice of whoever said it, like a re-roll.
+    // Passed in the voice of whoever said it, like a re-roll.
     const speaker = useCharacters
       .getState()
       .characters.find((c) => c.id === target.speakerId)
@@ -1205,21 +1204,20 @@ export const useChats = create<ChatState>()((set, get) => ({
     abort = controller
     set({
       streaming: true,
-      goldPassing: true,
+      passing: true,
       streamingChatId: chat.id ?? null,
       // The bubble renders streamingText in place of the message, so it starts as the source and
       // is overwritten as the rewrite arrives.
       streamingText: source,
-      streamingDraft: '',
       streamingReasoning: '',
       error: '',
       regeneratingId: messageId,
       speakingName: target.speakerName ?? speaker?.name ?? '',
     })
 
-    let result: GoldResult
+    let result: PassResult
     try {
-      result = await goldPass(
+      result = await nessuPass(
         chat,
         speaker,
         get().messages.slice(0, at),
@@ -1230,24 +1228,24 @@ export const useChats = create<ChatState>()((set, get) => ({
       )
     } catch {
       // Only an abort reaches here, and a stopped rewrite leaves the message exactly as it was.
-      set({ streaming: false, goldPassing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
+      set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
       abort = null
       return
     }
     abort = null
-    set({ streaming: false, goldPassing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
+    set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
 
     const updated = result.original
-      ? goldRewritten(target, result.text, result.original)
-      : withGold(selectSwipe(target, swipeIndex(target)), goldOriginalFor(target), result.failed)
+      ? passed(target, result.text, result.original ?? source, result.summary, result.failed)
+      : withPass(selectSwipe(target, swipeIndex(target)), passOriginalFor(target), result.failed)
     await storage.put('messages', updated as unknown as StoredRecord)
     if (get().chat?.id === chat.id) await get().load(chat.id!)
   },
 
-  revertGoldPass: async (messageId) => {
+  revertMessagePass: async (messageId) => {
     const message = get().messages.find((m) => m.id === messageId)
     if (!message) return
-    const updated = revertGold(message)
+    const updated = revertPass(message)
     if (!updated) return
     await storage.put('messages', updated as unknown as StoredRecord)
     await get().load(message.chatId)

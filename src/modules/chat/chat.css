@@ -1157,9 +1157,9 @@
   color: var(--textDim);
 }
 
-/* Gold Pass: a quiet line under the reply saying why the rewrite was not used. The reply itself is
-   untouched, so this is a note rather than an error banner. */
-.goldMarker {
+/* Nessu's Pass: a quiet line under the reply saying why a stage's candidate was not used. The
+   reply itself is untouched, so this is a note rather than an error banner. */
+.passMarker {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1168,14 +1168,14 @@
   font-size: 11px;
 }
 
-.goldMarkerRetry {
+.passMarkerRetry {
   padding: 2px 6px;
   font-size: 11px;
 }
 
-/* The pre-rewrite text, shown in place of the message while the header toggle is on. Dimmed so a
+/* The pre-pass text, shown in place of the message while the header toggle is on. Dimmed so a
    glance never mistakes it for what is stored. */
-.goldOriginalBody {
+.passOriginalBody {
   color: var(--textMuted);
 }
 

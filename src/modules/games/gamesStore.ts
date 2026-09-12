@@ -17,11 +17,11 @@ import { parseAction, parseAsk } from '../../core/games/parseMove'
 import { buildStateBlock, describeEvent } from '../../core/games/gameState'
 import * as blackjackState from '../../core/games/blackjackState'
 import { resolvedConnection } from '../../core/stores/chatStore'
-import { runSecondPass } from '../../core/secondPass/runSecondPass'
 import { buildPrompt } from '../../core/prompt/buildPrompt'
 import { loadTokenizer } from '../../core/prompt/budget'
 import { tokenizerFor } from '../../core/prompt/tokenizers'
 import { budgetOf } from '../../core/params/connectionParams'
+import { sendMessage } from '../../core/connectors/openaiCompatible'
 import { useSettings } from '../../core/stores/settingsStore'
 import { displayName, useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
@@ -650,7 +650,7 @@ async function react(get: Get, set: Set) {
       },
       budgetOf(connection),
     )
-    for await (const chunk of runSecondPass(built.messages, connection, controller.signal)) {
+    for await (const chunk of sendMessage(built.messages, connection, controller.signal)) {
       if (chunk.content) {
         text += chunk.content
         set({ streamingText: text })

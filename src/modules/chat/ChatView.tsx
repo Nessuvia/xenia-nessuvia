@@ -26,7 +26,6 @@ export default function ChatView() {
     chat,
     messages,
     streamingText,
-    streamingDraft,
     streamingReasoning,
     streaming,
     streamingChatId,
@@ -49,9 +48,9 @@ export default function ChatView() {
     deleteMessage,
     deleteMessages,
     deleteSwipes,
-    goldPassing,
-    goldPassMessage,
-    revertGoldPass,
+    passing,
+    passMessage,
+    revertMessagePass,
   } = useChats()
   const { characters, load: loadCharacters } = useCharacters()
   const connection = useActiveConnection()
@@ -205,7 +204,6 @@ export default function ChatView() {
             canRegenerate={m.role === 'assistant' && !streaming}
             greeting={i === 0 && m.role === 'assistant'}
             streamingText={regeneratingId === m.id ? streamingText : null}
-            streamingDraft={regeneratingId === m.id ? streamingDraft : ''}
             streamingReasoning={regeneratingId === m.id ? streamingReasoning : ''}
             defaultInstruction={() =>
               oldMessageInstruction(
@@ -230,9 +228,9 @@ export default function ChatView() {
             onRewrite={(instruction) => regenerate(character, m.id!, instruction)}
             onSwipe={(index) => swipeTo(m.id!, index)}
             onDeleteSwipes={(indices) => deleteSwipes(m.id!, indices)}
-            onGoldPass={m.role === 'assistant' && !streaming ? () => goldPassMessage(m.id!) : undefined}
-            onGoldRevert={() => revertGoldPass(m.id!)}
-            goldPassing={regeneratingId === m.id && goldPassing}
+            onPass={m.role === 'assistant' && !streaming ? () => passMessage(m.id!) : undefined}
+            onPassRevert={() => revertMessagePass(m.id!)}
+            passing={regeneratingId === m.id && passing}
           />
           ),
         )}
@@ -250,32 +248,20 @@ export default function ChatView() {
                 {renderText(streamingReasoning, { tagRules: appearance.tagRules, order: palette.colorOrder })}
               </details>
             )}
-            {/* Gold Pass is overwriting the reply that just finished. Said plainly, because what
-                is on screen is being replaced as it arrives. */}
-            {goldPassing && (
-              <p className="goldMarker">
+            {/* A pass stage is overwriting the reply that just finished. Said plainly, because
+                what is on screen is being replaced as it arrives. */}
+            {passing && (
+              <p className="passMarker">
                 <RiSparkling2Line size={14} />
-                Rewriting
+                Passing
               </p>
             )}
-            {/* Second Pass's first take, before the editing pass has produced anything. Dimmed
-                because it is provisional: it either gets replaced by the edited reply or brightens
-                in place when nothing was flagged. Cleared by the store on the first edited chunk,
-                so the two never show at once. */}
-            {streamingDraft && (
-              <div className="messageBody secondPassDraft">
-                {renderText(streamingDraft, { tagRules: appearance.tagRules, order: palette.colorOrder })}
-                <span className="caret">▌</span>
-              </div>
-            )}
-            {!streamingDraft && (
-              <div className="messageBody">
-                {/* Mid-stream an opener has no closer yet, so the block looks like plain text
-                    until the model finishes it and it folds away. */}
-                {renderText(streamingText, { tagRules: appearance.tagRules, order: palette.colorOrder })}
-                <span className="caret">▌</span>
-              </div>
-            )}
+            <div className="messageBody">
+              {/* Mid-stream an opener has no closer yet, so the block looks like plain text
+                  until the model finishes it and it folds away. */}
+              {renderText(streamingText, { tagRules: appearance.tagRules, order: palette.colorOrder })}
+              <span className="caret">▌</span>
+            </div>
           </div>
         )}
       </div>

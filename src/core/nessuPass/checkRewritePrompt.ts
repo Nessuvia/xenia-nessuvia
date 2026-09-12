@@ -2,8 +2,8 @@ import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 import type { Character, Message } from '../storage/types'
 import { countMessages, countTokens, perMessageOverhead } from '../prompt/budget.ts'
-import { buildGoldPrompt, rewriteInstruction } from './buildGoldPrompt.ts'
-import { defaultGoldPass, type GoldPassSettings } from './goldPassSettings.ts'
+import { buildRewritePrompt, rewriteInstruction } from './buildRewritePrompt.ts'
+import { defaultRewriteConfig, type RewriteStage } from './pipeline.ts'
 
 const character = {
   name: 'Vera',
@@ -20,16 +20,15 @@ const history: Message[] = Array.from({ length: 8 }, (_, i) => ({
   createdAt: i,
 }))
 
-const settings: GoldPassSettings = {
-  ...defaultGoldPass,
-  presets: [{ id: 'p1', label: 'Starter', text: 'Rewrite as {{char}} talking to {{user}}.' }],
-  presetId: 'p1',
+const config: RewriteStage['config'] = {
+  ...defaultRewriteConfig,
+  preset: 'Rewrite as {{char}} talking to {{user}}.',
 }
 
 const base = { character, userName: 'Dom', messages: history, text: 'the first pass' }
 
 // The shape: preset first, card second, history, passage last.
-const full = buildGoldPrompt({ ...base, settings })
+const full = buildRewritePrompt({ ...base, config })
 assert.equal(full[0].role, 'system')
 assert.equal(full[0].content, 'Rewrite as Vera talking to Dom.')
 assert.equal(full[1].role, 'system')
@@ -41,7 +40,7 @@ assert.equal(full.at(-1)!.content, `${rewriteInstruction}\n\nthe first pass`)
 
 // historyCount is a count of turns, and it takes them off the end.
 for (const historyCount of [0, 1, 3, 5, 8, 20]) {
-  const out = buildGoldPrompt({ ...base, settings: { ...settings, historyCount } })
+  const out = buildRewritePrompt({ ...base, config: { ...config, historyCount } })
   const kept = Math.min(historyCount, history.length)
   assert.equal(out.length, 2 + kept + 1, `historyCount ${historyCount}`)
   if (kept) {
@@ -51,30 +50,30 @@ for (const historyCount of [0, 1, 3, 5, 8, 20]) {
 }
 
 // History goes in as its own roles, not flattened into one turn.
-const roles = buildGoldPrompt({ ...base, settings: { ...settings, historyCount: 4 } })
+const roles = buildRewritePrompt({ ...base, config: { ...config, historyCount: 4 } })
   .slice(2, -1)
   .map((m) => m.role)
 assert.deepEqual(roles, ['user', 'assistant', 'user', 'assistant'])
 
 // includeCharacter: false drops the card turn and nothing else.
-const noCard = buildGoldPrompt({ ...base, settings: { ...settings, includeCharacter: false } })
+const noCard = buildRewritePrompt({ ...base, config: { ...config, includeCharacter: false } })
 assert.equal(noCard.length, full.length - 1)
 assert.ok(!noCard.some((m) => m.content.includes('short flat sentences')))
 
 // No character at all is the same window minus the card, not a crash.
-const noChar = buildGoldPrompt({ ...base, character: undefined, settings })
+const noChar = buildRewritePrompt({ ...base, character: undefined, config })
 assert.equal(noChar.length, full.length - 1)
 assert.equal(noChar[0].content, 'Rewrite as the character talking to Dom.')
 
 // A card with an empty description contributes no turn rather than a blank one.
 const blank = { ...character, description: '' } as Character
-assert.equal(buildGoldPrompt({ ...base, character: blank, settings }).length, full.length - 1)
+assert.equal(buildRewritePrompt({ ...base, character: blank, config }).length, full.length - 1)
 
 // Not armed: no preset, or a presetId naming one that was deleted. Empty array either way, which
 // is the caller's signal that nothing should be sent and nothing marked as failed.
-assert.deepEqual(buildGoldPrompt({ ...base, settings: { ...settings, presetId: '' } }), [])
-assert.deepEqual(buildGoldPrompt({ ...base, settings: { ...settings, presetId: 'gone' } }), [])
-assert.deepEqual(buildGoldPrompt({ ...base, settings: { ...settings, presets: [] } }), [])
+assert.deepEqual(buildRewritePrompt({ ...base, config: { ...config, preset: '' } }), [])
+assert.deepEqual(buildRewritePrompt({ ...base, config: { ...config, preset: '   ' } }), [])
+assert.deepEqual(buildRewritePrompt({ ...base, config: { ...config, preset: '' } }), [])
 
 // The budget trims history and never the window's fixed parts. A context this small leaves room
 // for the preset, the card and the passage, and for none of the history.
@@ -88,20 +87,37 @@ const roomFor = (turns: number) => ({
   safetyMarginPct: 0,
 })
 
-const tiny = buildGoldPrompt({ ...base, settings }, roomFor(0))
+const tiny = buildRewritePrompt({ ...base, config }, roomFor(0))
 assert.equal(tiny.length, 3)
 assert.equal(tiny.at(-1)!.content, `${rewriteInstruction}\n\nthe first pass`)
 // Room for two turns keeps the two newest, not the two oldest.
-const some = buildGoldPrompt({ ...base, settings }, roomFor(2))
+const some = buildRewritePrompt({ ...base, config }, roomFor(2))
 assert.equal(some.length, 5)
 assert.deepEqual(some.slice(2, -1).map((m) => m.content), ['turn 6', 'turn 7'])
 // A roomy budget keeps every turn historyCount asked for.
-const roomy = buildGoldPrompt({ ...base, settings }, roomFor(50))
+const roomy = buildRewritePrompt({ ...base, config }, roomFor(50))
 assert.equal(roomy.length, full.length)
 
-// The slim window is the feature. Reaching for buildPrompt would put the whole chat stack back in.
-const source = readFileSync(new URL('./buildGoldPrompt.ts', import.meta.url), 'utf8')
-assert.ok(!/from '.*\/buildPrompt/.test(source), 'buildGoldPrompt must not import buildPrompt')
-assert.ok(!source.includes('buildPrompt('), 'buildGoldPrompt must not call buildPrompt')
+// The banned list is its own system turn, and only when there is a list and the toggle is on.
+const banned = ['swallowed hard', 'something unreadable']
+const withBanned = buildRewritePrompt({ ...base, config, banned })
+const bannedTurn = withBanned.find((m) => m.content.includes('swallowed hard'))
+assert.ok(bannedTurn, 'the phrases should be in the prompt')
+assert.equal(bannedTurn!.role, 'system')
+assert.ok(bannedTurn!.content.includes('something unreadable'))
+// It never lands on the preset turn or the passage turn.
+assert.ok(!withBanned[0].content.includes('swallowed hard'), 'the preset turn is left alone')
+assert.equal(withBanned.at(-1)!.content, `${rewriteInstruction}\n\nthe first pass`)
+// Off, or empty, and the turn is not there at all.
+assert.equal(
+  buildRewritePrompt({ ...base, config: { ...config, promptBannedList: false }, banned }).length,
+  buildRewritePrompt({ ...base, config }).length,
+)
+assert.equal(buildRewritePrompt({ ...base, config, banned: [] }).length, buildRewritePrompt({ ...base, config }).length)
 
-console.log('checkGoldPrompt ok')
+// The slim window is the feature. Reaching for buildPrompt would put the whole chat stack back in.
+const source = readFileSync(new URL('./buildRewritePrompt.ts', import.meta.url), 'utf8')
+assert.ok(!/from '.*\/buildPrompt/.test(source), 'buildRewritePrompt must not import buildPrompt')
+assert.ok(!source.includes('buildPrompt('), 'buildRewritePrompt must not call buildPrompt')
+
+console.log('checkRewritePrompt ok')

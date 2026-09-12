@@ -5,7 +5,6 @@ import type { StoredRecord } from '../storage/storageInterface'
 import { activeDescription } from '../storage/types'
 import type { Block, CastEntry, Chapter, ParamOverrides, Story } from '../storage/types'
 import { sendMessage } from '../connectors/openaiCompatible'
-import { editPass, runSecondPass } from '../secondPass/runSecondPass'
 import {
   buildStoryPrompt,
   castText,
@@ -28,7 +27,7 @@ import { rewritePrompt } from '../prompt/rewrite'
 import { deletedSwipes, instructionChain, regenerated, selectSwipe, swipeIndex } from './swipes'
 import { countTokens, loadTokenizer, perMessageOverhead } from '../prompt/budget'
 import { tokenizerFor } from '../prompt/tokenizers'
-import { activeConnection, secondPassSettings } from './settingsStore'
+import { activeConnection } from './settingsStore'
 import { resolveParams } from '../settings/resolveParams'
 import { useStacks } from './stacksStore'
 import { useCharacters } from './charactersStore'
@@ -154,8 +153,6 @@ interface WriteState {
    *  tail in the wrong prose. Null when idle. */
   streamingStoryId: number | null
   streamingText: string
-  /** Second Pass's provisional first take; '' once the edited prose starts. */
-  streamingDraft: string
   /** Reasoning as it streams, shown above the tail when Show reasoning is on. */
   streamingReasoning: string
   /** The Block the stream is landing in, so its region draws the tail and locks itself. */
@@ -366,48 +363,6 @@ async function runOutline(
   return { text, finishReason }
 }
 
-/**
- * Run generated outline text through Second Pass, one string at a time.
- *
- * Not `runSecondPass`: the outline arrived as JSON from one request, so there is no generation to
- * wrap, only text to edit. Beat by beat rather than as one document, because the reply has to come
- * back split the same way it went in and re-splitting a numbered list the model retyped is a worse
- * failure than an extra request. `skipWhenClean` still means a clean beat costs nothing.
- *
- * A beat that fails to edit keeps its original text. Losing an outline to the cleanup step would
- * be worse than an unedited beat.
- */
-async function passOutlineText(texts: string[]): Promise<string[]> {
-  if (!secondPassSettings().passBeats) return texts
-
-  // Its own controller, put where Stop looks: the outline request's is finished and cleared by the
-  // time this starts, and a twenty-beat cleanup with no way to stop it is not shippable.
-  const controller = new AbortController()
-  abort = controller
-
-  const out: string[] = []
-  try {
-    for (const text of texts) {
-      if (!text.trim() || controller.signal.aborted) {
-        out.push(text)
-        continue
-      }
-      let edited = ''
-      try {
-        for await (const chunk of editPass(text, controller.signal)) {
-          if (chunk.content) edited += chunk.content
-        }
-      } catch {
-        // One beat's edit failing leaves that beat as written. Nothing else is affected.
-        edited = ''
-      }
-      out.push(edited.trim() || text)
-    }
-  } finally {
-    abort = null
-  }
-  return out
-}
 
 /** A parse failure, or the token limit that actually caused it. A truncation looks like a parse error
  *  otherwise, which points at the reply instead of at the limit that cut it. Clears the streaming
@@ -436,7 +391,6 @@ export const useWrite = create<WriteState>()((set, get) => ({
   streaming: false,
   streamingStoryId: null,
   streamingText: '',
-  streamingDraft: '',
   streamingReasoning: '',
   streamingBlockId: null,
   streamingReplaces: false,
@@ -715,8 +669,6 @@ export const useWrite = create<WriteState>()((set, get) => ({
       throw outlineError(set, err, reply.finishReason, connection, 'ask for fewer chapters')
     }
 
-    const summaries = await passOutlineText(outline.map((c) => c.summary))
-
     // Past here the reply is good, so the Story's existing plan can go. Nothing before this point
     // has written anything.
     for (const chapter of chapters) {
@@ -731,7 +683,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     for (const [i, entry] of outline.entries()) {
       const chapter: Chapter = {
         ...newChapter(story.id!, i, entry.title || `Chapter ${i + 1}`),
-        summary: summaries[i],
+        summary: outline[i].summary,
         targetWords: targets[i],
       }
       const id = await storage.put('chapters', chapter as unknown as StoredRecord)
@@ -766,11 +718,9 @@ export const useWrite = create<WriteState>()((set, get) => ({
       throw outlineError(set, err, reply.finishReason, connection, 'ask for fewer beats')
     }
 
-    const cleaned = await passOutlineText(beats.map((b) => b.beat))
-
     // The beats replace the Chapter's own, and the prose in them goes: the caller confirmed that.
     // Nothing else about the Chapter is touched, so its title, summary and target all survive.
-    const blocks = beats.map((b, i) => newBlock(cleaned[i], b.weight))
+    const blocks = beats.map((b) => newBlock(b.beat, b.weight))
     const next = { ...chapter, blocks, targetWords: req.targetWords, updatedAt: Date.now() }
     await storage.put('chapters', next as unknown as StoredRecord)
 
@@ -814,14 +764,12 @@ export const useWrite = create<WriteState>()((set, get) => ({
       streamingStoryId: story.id ?? null,
       streamingBlockId: blockId,
       streamingText: '',
-      streamingDraft: '',
-      streamingReasoning: '',
+          streamingReasoning: '',
       streamingReplaces: !!replaces,
       error: '',
     })
 
     let text = ''
-    let draft = ''
     let reasoning = ''
     let finishReason = ''
     try {
@@ -861,19 +809,10 @@ export const useWrite = create<WriteState>()((set, get) => ({
         },
         budget,
       )
-      for await (const chunk of runSecondPass(prompt.messages, connection, controller.signal, undefined, {
-        role: 'assistant',
-        // Earlier prose from this chapter, so repetition is measured against the story rather than
-        // against one block in isolation.
-        history: priorProse(current, chapterId, blockId),
-      })) {
-        if (chunk.draft) {
-          draft += chunk.draft
-          set({ streamingDraft: draft })
-        }
+      for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
         if (chunk.content) {
           text += chunk.content
-          set({ streamingText: text, streamingDraft: '' })
+          set({ streamingText: text })
         }
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
@@ -884,14 +823,13 @@ export const useWrite = create<WriteState>()((set, get) => ({
     } catch (err) {
       // Write rule: keep whatever streamed (same as Stop) and surface a toast. Nothing rolls back.
       if (!controller.signal.aborted) {
-        await commitSwipe(get, set, chapterId, blockId, text, reasoning, instruction, draft)
+        await commitSwipe(get, set, chapterId, blockId, text, reasoning, instruction)
         set({
           streaming: false,
           streamingStoryId: null,
           streamingBlockId: null,
           streamingText: '',
-          streamingDraft: '',
-          streamingReasoning: '',
+                  streamingReasoning: '',
           streamingReplaces: false,
           error: (err as Error).message,
         })
@@ -902,14 +840,13 @@ export const useWrite = create<WriteState>()((set, get) => ({
       abort = null
     }
 
-    await commitSwipe(get, set, chapterId, blockId, text, reasoning, instruction, draft)
+    await commitSwipe(get, set, chapterId, blockId, text, reasoning, instruction)
     set({
       streaming: false,
       streamingStoryId: null,
       streamingBlockId: null,
       streamingText: '',
-      streamingDraft: '',
-      streamingReasoning: '',
+          streamingReasoning: '',
       streamingReplaces: false,
       // The text is kept either way; this only says why it ended where it did.
       error:
@@ -1131,26 +1068,6 @@ function chainedInstruction(block: Block, instruction: string): string {
   return chain.map((c, i) => `${i + 1}. ${c}`).join('\n')
 }
 
-/**
- * Prose already written in this chapter, oldest first, up to the block being generated. Second
- * Pass's repetition check reads it, so a phrase is measured against the story rather than against
- * the one block in isolation. Blocks after the target are left out: they are not context the model
- * was given, and flagging the new prose for matching them would be backwards.
- *
- * Trimmed generously: the check applies its own `lookback` setting on top of this.
- */
-const HISTORY_FOR_NOTES = 40
-function priorProse(chapters: Chapter[], chapterId: number, blockId: string): string[] {
-  const chapter = chapters.find((c) => c.id === chapterId)
-  if (!chapter) return []
-  const at = chapter.blocks.findIndex((b) => b.id === blockId)
-  const before = at === -1 ? chapter.blocks : chapter.blocks.slice(0, at)
-  return before
-    .map((b) => b.content)
-    .filter((t) => t.trim())
-    .slice(-HISTORY_FOR_NOTES)
-}
-
 async function commitSwipe(
   get: () => WriteState,
   set: (partial: Partial<WriteState> | ((s: WriteState) => Partial<WriteState>)) => void,
@@ -1159,7 +1076,6 @@ async function commitSwipe(
   added: string,
   reasoning?: string,
   instruction?: string,
-  draft?: string,
 ) {
   if (!added.trim()) return
   const chapter =
@@ -1167,6 +1083,6 @@ async function commitSwipe(
     ((await storage.get('chapters', chapterId)) as unknown as Chapter | undefined)
   const block = chapter?.blocks.find((b) => b.id === blockId)
   if (!block) return
-  const next = regenerated(block, added.trim(), undefined, reasoning, instruction, draft)
+  const next = regenerated(block, added.trim(), undefined, reasoning, instruction)
   if (next) await putBlock(get, set, chapterId, next, true)
 }
