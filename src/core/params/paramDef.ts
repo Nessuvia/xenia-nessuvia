@@ -10,8 +10,9 @@ export type ConnectionType = 'chat' | 'text'
 export type ParamKind = 'number' | 'slider' | 'text' | 'bool' | 'select' | 'stringList' | 'json'
 
 /**
- * One form element in the sampler library. A def is data, not code: the built-ins are seeded rows
- * and a user-made one is the same shape, so a sampler nobody has heard of yet needs no release.
+ * One form element in the sampler library. A def is data rather than code: the built-ins are
+ * seeded rows and a user-made one is the same shape. A sampler nobody has heard of yet needs
+ * no release.
  */
 export interface ParamDef {
   id?: number
@@ -43,7 +44,7 @@ export interface ParamValue {
 
 /**
  * How a text-completion connection turns a message list into one string. Which template works is a
- * property of the model behind the endpoint, so it lives on the connection next to `model`.
+ * property of the model behind the endpoint. It lives on the connection next to `model`.
  */
 export interface InstructTemplate {
   systemPrefix: string
@@ -66,7 +67,7 @@ export interface InstructTemplate {
   wrapNewlines?: boolean
   /** Expand `{{char}}` and friends inside the sequences themselves. On unless turned off. */
   expandMacros?: boolean
-  /** Send every sequence as a stop string too, so the model can't write the next turn itself. */
+  /** Send every sequence as a stop string too. Keeps the model from writing the next turn itself. */
   sequencesAsStops?: boolean
   /** Whether a turn is labelled with its speaker's name. `group` means only in a group chat. */
   names?: NamesBehavior
@@ -81,7 +82,7 @@ export type NamesBehavior = 'never' | 'always' | 'group'
 
 /**
  * Where a model's thinking starts and ends, and what happens to it afterwards. It belongs to the
- * model rather than to the app, which is why it sits on the connection: the same chat viewed
+ * model rather than to the app, and sits on the connection accordingly: the same chat viewed
  * through two connections can have two different think markers in its history.
  */
 export interface ReasoningConfig {
@@ -95,7 +96,7 @@ export interface ReasoningConfig {
   maxSendBack?: number
 }
 
-/** ChatML, so a text connection sends something sane before anyone edits the template. */
+/** ChatML: what a text connection sends before anyone edits the template. */
 export function defaultTemplate(): InstructTemplate {
   return {
     systemPrefix: '<|im_start|>system\n',
@@ -110,9 +111,9 @@ export function defaultTemplate(): InstructTemplate {
 }
 
 /**
- * Instruct formats for the models people actually run locally. These are facts about a model, not
- * taste, so unlike a Second Sweep pipeline they ship: a user pointing at a Llama 3 build should not
- * have to retype `<|start_header_id|>` from memory to get a first reply.
+ * Instruct formats for the models people actually run locally. These are facts about a model
+ * rather than taste, and unlike a Second Sweep pipeline they ship: a user pointing at a Llama 3
+ * build gets a first reply without retyping `<|start_header_id|>` from memory.
  */
 export const templatePresets: { name: string; template: () => InstructTemplate }[] = [
   { name: 'ChatML', template: defaultTemplate },
@@ -202,7 +203,7 @@ export const templatePresets: { name: string; template: () => InstructTemplate }
  * request.
  *
  * `\n`, `\t` and `\r` are the whitespace entries, `\,` a literal comma, and `\\` a backslash.
- * Anything else after a backslash is that character, so a lone backslash in a stop string survives
+ * Anything else after a backslash is that character. A lone backslash in a stop string survives
  * rather than eating the next one.
  *
  * The one thing that cannot be written is a plain space at the start or end of an entry: the spaces
@@ -274,7 +275,7 @@ export function coerceValue(def: ParamDef, value: unknown): unknown {
     case 'stringList': {
       const list = Array.isArray(value) ? value.map(String) : parseList(String(value ?? ''))
       const kept = list.filter((s) => s !== '')
-      // Some backends reject an empty stop array outright, so an empty list means "don't send".
+      // Some backends reject an empty stop array outright. An empty list means "don't send".
       return kept.length ? kept : undefined
     }
     case 'json': {

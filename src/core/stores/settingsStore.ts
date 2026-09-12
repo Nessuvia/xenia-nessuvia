@@ -65,7 +65,7 @@ export function newConnection(): Connection {
 
 /**
  * A literal open/close pair to pull out of model output. Literal rather than regex: no escaping
- * rules for the user to learn, `[header]…[endheader]` works the same as `<think>…</think>`, and
+ * rules for the user to learn, `[header]...[endheader]` works the same as `<think>...</think>`, and
  * untrusted model text can't hand us a pathological pattern.
  */
 export interface TagRule {
@@ -170,22 +170,22 @@ interface SettingsState {
   /** Write shelf: clicking a Story cover opens the editor instead of the preview panel. */
   openStoryDirectly: boolean
   /** Games: text that is not a legal move is kept as something you said rather than refused. It
-   *  changes nothing about the board; it lands in the log and in the character's context, so they
+   *  changes nothing about the board; it lands in the log and in the character's context. They
    *  can answer it on a later turn. Off by default, which is the strict text-adventure input. */
   gameChatBack: boolean
-  /** Games: answer that line straight away instead of leaving it for the character's next turn.
-   *  Needs `gameChatBack`, and roughly doubles the number of requests a game makes. */
+  /** Games: answers that line straight away, on the same turn rather than the character's next
+   *  one. Needs `gameChatBack`, and roughly doubles the number of requests a game makes. */
   gameChatBackReply: boolean
   /** Games: the card and book sounds. */
   gameSoundOff: boolean
-  /** Games: clicking a card fills the box and sends it on its own a beat later, so a hand can be
+  /** Games: clicking a card fills the box and sends it on its own a beat later: a hand can be
    *  played without typing. Cancelled by touching the box. */
   gameAutoSend: boolean
   /** Games: after the character speaks the table stops and waits for the Next button before it
-   *  moves again, so a line can be read before the next card lands. Off by default. */
+   *  moves again: a line can be read before the next card lands. Off by default. */
   gameStepMode: boolean
   /** The Story tab's Chapter rail is collapsed. Global rather than per Story: whether the rail
-   *  shows is a working preference, not a property of a Story. Per Story is the upgrade path. */
+   *  shows is a working preference. Per Story is the upgrade path. */
   railCollapsed: boolean
   /** Story rail section ids pinned to the top, in the order they were pinned. Global rather than
    *  per Story: which sections you keep to hand is a working habit. Per Story is the upgrade path. */
@@ -363,7 +363,7 @@ export const useSettings = create<SettingsState>()(
       markStacksSeeded: () => set({ seededStacks: true }),
       setPalettePrompt: (palettePrompt) => set({ palettePrompt }),
 
-      // Returns the same array when the table is already flagged, so a run of writes to one table
+      // Returns the same array when the table is already flagged. A run of writes to one table
       // costs one persist rather than one per write.
       markTableDirty: (table) =>
         set((s) =>
@@ -390,8 +390,8 @@ export const useSettings = create<SettingsState>()(
     }),
     {
       name: 'nessuTavern.settings',
-      // Not a migration of values, the samplers a pre-params blob carried are gone on purpose.
-      // This only guarantees the shape, because every reader treats `params` as an array and a
+      // No migration of values: the samplers a pre-params blob carried are gone on purpose.
+      // This guarantees shape only. Every reader treats `params` as an array, and a
       // blob written before it existed would take the whole app down on the first render.
       merge: (persisted, current) => {
         const state = { ...current, ...(persisted as Partial<SettingsState>) }
@@ -437,7 +437,7 @@ export function useActiveConnection(): Connection | undefined {
 
 /**
  * A connection a feature named for itself, falling back to the active one. Null and a dangling id
- * both resolve to active, so a setting can't strand a feature on a connection the user deleted.
+ * both resolve to active. A setting can't strand a feature on a connection the user deleted.
  *
  * Resolved at call time on purpose: a feature that stores null follows the user's active connection
  * as they switch it, which is what "default to the active connection" has to mean to be useful.

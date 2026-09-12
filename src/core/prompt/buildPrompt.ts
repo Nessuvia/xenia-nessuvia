@@ -24,9 +24,9 @@ import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
 /**
  * The card's text, or the block's own content when the card has none. That is the spec's
  * "empty string means use the frontend's own" rule. {{original}} in the card's text resolves to
- * that same content, so a card can extend the stack's instruction instead of replacing it.
+ * that same content. A card can extend the stack's instruction instead of replacing it.
  *
- * Per-block, so it can't live in swapTokens: {{original}} means *this* block's content.
+ * Per-block: it can't live in swapTokens. {{original}} means *this* block's content.
  */
 function cardOverride(cardText: string, block: PromptBlock): string {
   const fallback = activeContent(block)
@@ -86,11 +86,11 @@ function indentLines(text: string, depth: number): string {
 
 /**
  * A block's whole text, children included: own text, then each child, then the closing text,
- * newline-joined. Blank parts drop out, so a bare group is just its children and an empty
- * bound field never leaves a stray blank line, but a wrapper's tags stay even with no children.
+ * newline-joined. Blank parts drop out. A bare group is just its children, an empty
+ * bound field never leaves a stray blank line, and a wrapper's tags stay even with no children.
  *
  * `indent` is display-only (the preview): each nesting level shifts its children right. The sent
- * prompt never passes it, so what goes over the wire has no indentation.
+ * prompt never passes it: what goes over the wire has no indentation.
  */
 function blockText(
   block: PromptBlock,
@@ -106,7 +106,7 @@ function blockText(
     block.source === 'text'
       ? activeContent(block)
       : boundText(block, character, persona, authorNote, worldInfo)
-  // Per-block, so it can't live in swapTokens: {{blockVal}} is this block's own input value.
+  // Per-block: it can't live in swapTokens. {{blockVal}} is this block's own input value.
   if (block.input) own = swapBlockVals(own, block.input)
   const parts = [
     indentLines(own, depth),
@@ -121,8 +121,8 @@ function blockText(
 }
 
 /**
- * Who said a history turn, for the label. The stamped name wins so a deleted character or persona
- * still gets credited; the fallbacks cover turns written before either field existed.
+ * Who said a history turn, for the label. The stamped name wins: a deleted character or persona
+ * still gets credited. The fallbacks cover turns written before either field existed.
  */
 function speakerLabel(message: Message, character: Character, persona: Persona): string {
   return message.role === 'user'
@@ -132,7 +132,7 @@ function speakerLabel(message: Message, character: Character, persona: Persona):
 
 /**
  * Drop each depth-limited tag block from a history message once it's older than the tag allows.
- * `distance` is how far the message is from the newest (1 = it is the last message), so a tag with
+ * `distance` is how far the message is from the newest (1 = it is the last message). A tag with
  * depth 1 rides along only while its message is last. Same literal open/close scan as renderText;
  * a rule with no `depth` is display-only and never touches the sent text. Storage is untouched.
  */
@@ -173,7 +173,7 @@ function findBlock(blocks: PromptBlock[], source: BlockSource): PromptBlock | un
   return undefined
 }
 
-/** The trailing turn naming who speaks next. Wording lives in `miscPrompts`, so a stack can
+/** The trailing turn naming who speaks next. Wording lives in `miscPrompts`, and a stack can
  *  override it; this only fills the slot. */
 export function nextSpeakerHint(name: string, prompts?: MiscPrompts): string {
   return fillSlots(miscPrompt('nextSpeaker', prompts), { char: name })
@@ -197,7 +197,7 @@ export interface BuildPromptArgs {
    *  the budget like any other text, never exempted. */
   appendSystem?: string
   /** A partial reply left as the last turn for the model to carry on from: what `/continue` sends.
-   *  Goes after `appendSystem` because a prefill only works while it is the final turn. Counted
+   *  Goes after `appendSystem`: a prefill only works while it is the final turn. Counted
    *  against the budget like any other text. */
   appendAssistant?: string
   /** Display-only: indent nested block content for the preview. Never set on the send path. */
@@ -242,8 +242,8 @@ export interface BuiltPrompt {
 
 /**
  * Walks the active zone in order and produces the exact request body messages.
- * With a budget, history is trimmed from the top first: the preview and the send
- * call this same function so they can't drift apart.
+ * With a budget, history is trimmed from the top first. The preview and the send
+ * path call this same function and can't drift apart.
  */
 export function buildPrompt(
   {
@@ -276,7 +276,7 @@ export function buildPrompt(
   const afterBlock = findBlock(stack.active, 'worldInfoAfter')
   const depthBlock = findBlock(stack.active, 'worldInfoDepth')
   // A stack with no after-char block folds those entries into the before-char one. Every stack
-  // written before the slots were split has exactly that shape, and dropping their after-char
+  // written before the slots were split has exactly that shape. Dropping their after-char
   // entries on the floor would silently shrink prompts that work today.
   const resolvedWorldInfo: ResolvedWorldInfo = worldInfo
     ? afterBlock
@@ -285,7 +285,7 @@ export function buildPrompt(
     : emptyWorldInfo
   // Labels only once there's more than one character to tell apart: a solo chat's prompt is
   // byte-identical to what Phase 1 produced. `chat.nameSpeakers` forces them on for a chat that
-  // several *people* speak in. Every buildPrompt caller passes `chat`, so a session's labels
+  // several *people* speak in. Every buildPrompt caller passes `chat`. A session's labels
   // reach the send path and the preview without either being told about multiplayer. The
   // `nameSpeakers` argument stays for callers with no chat record.
   const group = (chat ? isGroup(chat) || chat.nameSpeakers === true : false) || nameSpeakers === true
@@ -293,16 +293,16 @@ export function buildPrompt(
   // Authored card data only: character fields, persona info, freeform blocks. Chat history is
   // transcript, not card data: it is never substituted. {{user}} is always the *active* persona,
   // even where older turns were sent as someone else.
-  // {{charDescription}} follows the speaker too, so in a group each character's blocks paste
+  // {{charDescription}} follows the speaker too: in a group each character's blocks paste
   // that character's own description.
-  // {{char1}}…{{char4}} are the session roster instead, fixed for the whole session: they don't
-  // follow the speaker, so one block can talk about the cast as a group.
+  // {{char1}}…{{char4}} are the session roster instead, fixed for the whole session. They don't
+  // follow the speaker, and one block can talk about the cast as a group.
   const tokens = chatTokens(who, persona, cast, personas, game)
   const swap = (text: string) => swapTokens(text, tokens)
 
   // [if Narrator] and friends. Resolved per block, before substitution: a token inside a dropped
   // branch never gets swapped, and no token's value can be read back as a condition name. A
-  // conditional cannot span two blocks: each block's text is parsed on its own, so an [if] in one
+  // conditional cannot span two blocks: each block's text is parsed on its own. An [if] in one
   // block and its [endif] in the next are both literal text.
   const conditions = promptConditions(who, cast, gameKind)
 
@@ -324,7 +324,7 @@ export function buildPrompt(
       continue
     }
     // Holds no text of its own: its entries are spliced into history below, taking this block's
-    // role. It leaves the loop here so it isn't reported as an empty block every turn.
+    // role. It leaves the loop here: it must not be reported as an empty block every turn.
     if (block.source === 'worldInfoDepth') {
       if (!resolvedWorldInfo.atDepth.length) skipped.push({ label: block.label, reason: 'empty' })
       continue
@@ -373,7 +373,7 @@ export function buildPrompt(
     }
   }
 
-  // Both trailing turns are system turns, so the merge below concatenates them: the hint says who
+  // Both trailing turns are system turns. The merge below concatenates them: the hint says who
   // is up, then any rewrite instruction narrows what they should write. Neither overwrites the
   // other, and the more specific one has the last word.
   if (group) {
@@ -384,7 +384,7 @@ export function buildPrompt(
 
   // Not swapped here: appendSystem quotes transcript around the instruction, and transcript is
   // exempt. The authored half (what you typed into the rewrite box) is swapped by the caller
-  // before it's wrapped, so a {{char}} the model wrote stays a literal.
+  // before it's wrapped: a {{char}} the model wrote stays a literal.
   if (appendSystem?.trim()) {
     resolved.push({ role: 'system', content: appendSystem })
     fixedTokens += countTokens(appendSystem) + perMessageOverhead
@@ -403,7 +403,7 @@ export function buildPrompt(
 
   const out: ChatMessage[] = []
 
-  // Neighbouring same-role turns become one, so five system blocks are one system message
+  // Neighbouring same-role turns become one: five system blocks are one system message,
   // and every backend sees the same shape.
   function push(role: ChatMessage['role'], content: string) {
     const last = out.at(-1)
@@ -412,7 +412,7 @@ export function buildPrompt(
   }
 
   // History plus any depth notes, in final order. Depth counts messages from the end, clamped to
-  // the top. Notes are inserted deepest-last so each depth is read against the trimmed history.
+  // the top. Notes are inserted deepest-last: each depth is read against the trimmed history.
   // The label is added here and only here: stored `content` never carries a speaker prefix.
   // the prefix isn't in the trim arithmetic, only in the final count. A name per turn is
   // noise against the reply reserve; count it in trimHistory if long group chats start overflowing.
@@ -427,7 +427,7 @@ export function buildPrompt(
       name: speakerLabel(m, character, persona),
     }
   })
-  // Deepest first: each insertion point is counted from the end, so splicing a shallow note before
+  // Deepest first: each insertion point is counted from the end. Splicing a shallow note before
   // a deep one would shift the deep one's target by the row just added.
   for (const note of [...depthNotes].sort((a, b) => b.depth - a.depth)) {
     history.splice(Math.max(0, history.length - note.depth), 0, note.message)

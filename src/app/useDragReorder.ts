@@ -22,7 +22,7 @@ export interface DragReorder {
    * The drag half, for a dedicated handle inside the row.
    *
    * `draggable` on an ancestor stops Chrome placing the caret in a text field below it: a press
-   * and drag inside the field starts a row drag instead of selecting, so the caret sticks at the
+   * and drag inside the field starts a row drag instead of selecting. The caret sticks at the
    * start and clicking between words does nothing. Any row holding an `input` or `textarea` puts
    * this on a handle element and `dropProps` on the row.
    */

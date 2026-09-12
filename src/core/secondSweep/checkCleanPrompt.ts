@@ -11,7 +11,7 @@ const note = (over: Partial<Note> = {}): Note => ({
 
 // --- the skip predicate ---------------------------------------------------
 {
-  // Nothing flagged and nothing standing: the draft is already the answer, so no second request.
+  // Nothing flagged and nothing standing: the draft is already the answer. No second request.
   assert.equal(shouldRunClean([], '', true), false)
   assert.equal(shouldRunClean([note()], '', true), true)
   // A standing instruction runs the pass even on a reply nothing flagged.
@@ -33,7 +33,7 @@ const note = (over: Partial<Note> = {}): Note => ({
   assert.ok(body.includes('Rules for the passage:'), body)
   assert.ok(body.includes('1. No metaphors.'))
   assert.ok(body.includes('2. No em-dash asides.'))
-  // With rules present there is nothing to apologise for, so the empty-list line stays away.
+  // With rules present there is nothing to apologise for: the empty-list line stays away.
   assert.ok(!body.includes('No specific problems'), body)
 
   // Rules come before found problems: the rules are how prose should read, the problems are
@@ -55,7 +55,7 @@ const note = (over: Partial<Note> = {}): Note => ({
 
   // The passage must survive verbatim: the model is asked to return everything it did not change.
   assert.ok(msgs[1].content.includes(text), 'passage missing from the prompt')
-  // And it goes last, so it is the freshest thing in the context.
+  // And it goes last: the freshest thing in the context.
   assert.ok(msgs[1].content.trimEnd().endsWith(text), 'passage should be last')
 
   // The quoted slice is what makes the edit targeted rather than a rewrite.

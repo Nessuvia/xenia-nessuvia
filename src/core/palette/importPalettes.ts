@@ -15,7 +15,7 @@ export interface PaletteFile {
   palettes: Palette[]
   /**
    * The bytes for every background image the palettes reference, keyed by the exporting browser's
-   * `backgroundImages` row id. A row id means nothing anywhere else, so the file carries the image
+   * `backgroundImages` row id. A row id means nothing anywhere else. The file carries the image
    * itself and the importer rewrites the ids (see `remapImages`).
    *
    * Optional: a file written before this existed, or a hand-written one, has no images and every
@@ -29,7 +29,7 @@ export interface PaletteFileImage {
   dataUrl: string
 }
 
-/** Every user palette. Default is a constant in code, so it is never written out. */
+/** Every user palette. Default is a constant in code: it is never written out. */
 export function buildPaletteFile(
   palettes: Palette[],
   library: { id?: number; name: string; dataUrl: string }[] = [],
@@ -102,7 +102,7 @@ export function remapImages(palette: Palette, map: Record<number, number>): Pale
 /**
  * Read untrusted palette fields off `raw`, field by field, keeping `base`'s value for anything
  * missing or of the wrong type. Two callers with different bases: an imported file falls back to
- * Default, a model's reply falls back to the palette being edited, so a partial reply is a partial
+ * Default, a model's reply falls back to the palette being edited. A partial reply is a partial
  * edit. `id` and `ownerId` never come from outside.
  */
 export function coerceFields(raw: unknown, base: Palette): Palette {
@@ -117,7 +117,7 @@ export function coerceFields(raw: unknown, base: Palette): Palette {
       out[key] = value === undefined ? fallback : normalizeOrder(value as Palette['colorOrder'])
     } else if (key === 'backgrounds') {
       // Same rule: absent keeps the base's, present is normalized slot by slot. A model reply never
-      // carries this key (it's kept out of the prompt), so in practice only an import lands here.
+      // carries this key (it's kept out of the prompt). In practice only an import lands here.
       out[key] =
         value === undefined ? fallback : normalizeBackgrounds(value as Palette['backgrounds'])
     } else if (key === 'skinVars') {

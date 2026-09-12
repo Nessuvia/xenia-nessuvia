@@ -12,7 +12,7 @@ import { castSlots } from './swapTokens.ts'
  * `char1`…`char4`: that cast slot is filled. Matches the {{charN}} tokens one for one.
  * `game`: this send is a game's commentary rather than a chat turn.
  * The game's own kind, as written in `GameKind`: `goFish`, `blackjack`. One stack covers every
- * game, so the per-game half of the prompt is a branch in it rather than a stack each.
+ * game: the per-game half of the prompt is a branch in it rather than a stack each.
  */
 export interface PromptConditions {
   [name: string]: boolean
@@ -22,7 +22,7 @@ export interface PromptConditions {
  * The flags for one send. Names are lowercase; `resolveConditions` folds before it looks up.
  *
  * `game` is the `GameKind` string, taken as a plain string rather than the type: an unknown name is
- * false like any other, so this file stays free of core/games and a new game needs no edit here.
+ * false like any other. This file stays free of core/games, and a new game needs no edit here.
  */
 export function promptConditions(speaker: Character, cast?: Character[], game?: string): PromptConditions {
   const flags: PromptConditions = { narrator: isNarrator(speaker.id), game: Boolean(game) }
@@ -148,7 +148,7 @@ function render(nodes: Node[], flags: PromptConditions, out: string[]): void {
       continue
     }
     // First eligible branch wins; an [else] has no name and always qualifies. No match emits
-    // nothing at all, so an [if] with no [else] simply drops.
+    // nothing at all: an [if] with no [else] simply drops.
     const branch = node.branches.find(
       (b) => b.name === undefined || Boolean(flags[b.name]) !== b.negated,
     )
@@ -158,11 +158,11 @@ function render(nodes: Node[], flags: PromptConditions, out: string[]): void {
 
 /**
  * Resolves `[if X]` / `[elseif X]` / `[else]` / `[endif]` line-directives in prompt text. Runs
- * before token substitution, so a token inside a dropped branch is never swapped and no token
+ * before token substitution: a token inside a dropped branch is never swapped and no token
  * value can be mistaken for a condition name.
  *
  * Directive lines are consumed whole: a taken branch comes out with no blank line where the
- * `[if]` was. Nesting works. An unknown condition name is false, so a typo drops a branch rather
+ * `[if]` was. Nesting works. An unknown condition name is false: a typo drops a branch rather
  * than breaking the prompt, and malformed structure stays literal rather than throwing.
  */
 export function resolveConditions(text: string, flags: PromptConditions): string {

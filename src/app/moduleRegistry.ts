@@ -16,7 +16,7 @@ export interface AppModule {
   chatPanels?: readonly { label: string; component: ComponentType }[]
   // Text appended to the outgoing user message, before token substitution. '' contributes nothing.
   // ctx is exactly what the one current caller (body map) needs. Widen it when a second
-  // contributor wants more: it's a compile error in one place, so guessing wider now buys nothing.
+  // contributor wants more. It's a compile error in one place. Guessing wider now buys nothing.
   decorateMessage?(ctx: MessageContext): string | Promise<string>
 }
 
@@ -41,11 +41,11 @@ export function registerModule(mod: AppModule) {
 
 type ViewLoader = () => Promise<{ default: ComponentType }>
 
-// A lazy component keeps its loader private, so the same import has to be handed to us to prefetch.
+// A lazy component keeps its loader private. The same import has to be handed to us to prefetch.
 // lazyView pairs the two: React gets the lazy wrapper, the registry keeps the loader.
 const loaders = new Map<ComponentType, ViewLoader>()
 
-/** Use in place of `lazy()` for a module's route view, so it can also be prefetched. */
+/** Use in place of `lazy()` for a module's route view: it can also be prefetched. */
 export function lazyView(load: ViewLoader) {
   const component = lazy(load) as unknown as ComponentType
   loaders.set(component, load)
@@ -54,10 +54,10 @@ export function lazyView(load: ViewLoader) {
 
 let preloading = false
 
-/** Fetch every registered module's chunk, one at a time, so a tab is already in memory when it is
+/** Fetch every registered module's chunk, one at a time: a tab is already in memory when it is
  *  clicked. Sequential and idle-scheduled: the point is to stay out of the way of whatever the user
  *  is doing, not to win a race. The browser cache and the import map dedupe against the real
- *  navigation, so a click mid-prefetch costs nothing. */
+ *  navigation. A click mid-prefetch costs nothing. */
 export function preloadModules() {
   if (preloading) return
   preloading = true

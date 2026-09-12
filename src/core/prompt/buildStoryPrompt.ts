@@ -45,7 +45,7 @@ interface Bound {
 
 /**
  * The Story prose as the text a lorebook key is scanned against, newest last. An entry's scan depth
- * counts messages and a Story has none, so a paragraph stands in for one: "scan depth 4" reads as
+ * counts messages and a Story has none. A paragraph stands in for one: "scan depth 4" reads as
  * the last four paragraphs. `extra` goes on the end, for the Direction and the beat being written,
  * which are the newest statement of what the passage is about even though they aren't prose.
  */
@@ -136,9 +136,9 @@ export function fitEndBackward(text: string, available: number): string {
 /**
  * Cap on the "What follows" block, in tokens.
  *
- * The trailing text is priced in the fixed pass, so every token of it is a token `fitEndBackward`
+ * The trailing text is priced in the fixed pass: every token of it is a token `fitEndBackward`
  * can't spend on Story context. What the model actually needs is the passage it has to join up
- * with (the sentences immediately after the caret), so a few hundred tokens carries the job, and
+ * with (the sentences immediately after the caret). A few hundred tokens carries the job, and
  * a caret placed near the top of a long Chapter must not push the whole preceding Story out of the
  * window. Raise it if joins start reading as though the model couldn't see far enough ahead.
  */
@@ -146,8 +146,8 @@ export const maxTrailingTokens = 400
 
 /**
  * Keep the text nearest the caret, dropping whole lines from the bottom. The mirror image of
- * `fitEndBackward`: that one keeps the end of the prose, this one keeps the start of the tail,
- * because in both cases the text closest to the insert point is the text that matters.
+ * `fitEndBackward`: that one keeps the end of the prose, this one keeps the start of the tail.
+ * In both cases the text closest to the insert point is the text that matters.
  */
 export function fitStartForward(text: string, available: number): string {
   if (available <= 0) return ''
@@ -218,7 +218,7 @@ export interface BuildStoryArgs {
    *  is the common case. The block then renders empty and drops out. */
   storyTrailing?: string
   /** What the Story's lorebooks matched, already budgeted. `atDepth` entries have nowhere to go in
-   *  Write mode (there is no history to splice into), so only the two block-shaped slots arrive
+   *  Write mode (there is no history to splice into). Only the two block-shaped slots arrive
    *  here. Absent = no books, or nothing matched. */
   worldInfo?: { before: string; after: string }
   direction: string
@@ -241,7 +241,7 @@ export interface BuiltStoryPrompt {
  * Context assembly. Budget = the active connection's contextLimit.
  *
  * The beat is not in the Direction. It reaches the model through {{beat}} / {{beatTargetWords}},
- * placed by the stack, so a Story stack decides where the plan sits and how it is worded.
+ * placed by the stack: a Story stack decides where the plan sits and how it is worded.
  */
 export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltStoryPrompt {
   const { stack, castText: cast, tokens, storyText, direction } = args
@@ -251,7 +251,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
   const storyTrailing = fitStartForward(args.storyTrailing ?? '', maxTrailingTokens)
 
   // Rendered twice with the same walk: once with no prose to price the fixed cost, once with the
-  // prose the budget allowed. Anything but the Story text is identical between the passes, so the
+  // prose the budget allowed. Anything but the Story text is identical between the passes: the
   // two runs line up 1:1 and the trim can't shift a block into or out of the prompt.
   const worldInfo = args.worldInfo?.before ?? ''
   const worldInfoAfter = args.worldInfo?.after ?? ''
@@ -295,7 +295,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
   }
 
   const out: ChatMessage[] = []
-  // Neighbouring same-role turns merge, so a run of system blocks is one system message.
+  // Neighbouring same-role turns merge: a run of system blocks is one system message.
   const push = (role: ChatMessage['role'], content: string) => {
     const last = out.at(-1)
     if (last && last.role === role) last.content += `\n\n${content}`

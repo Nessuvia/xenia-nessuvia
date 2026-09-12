@@ -6,7 +6,7 @@ import type { Finding } from './analyse.ts'
 /** Label length. Long enough to recognise the phrase in a rules list, short enough to fit a row. */
 const LABEL_MAX = 40
 
-/** A finding with no slice has no phrase to match on, so there is nothing to turn into a rule. A
+/** A finding with no slice has no phrase to match on. There is nothing to turn into a rule. A
  *  standing rule is the only kind that reaches here, and it is already on a pipeline. */
 export function canAddRule(finding: Finding): boolean {
   return !!finding.slice?.trim()

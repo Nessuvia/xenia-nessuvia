@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkAnalyse.ts runs this under `node --experimental-strip-types`.
 // Pure: no React, no store, no Dexie. Everything here is a composition of detectors that already
-// exist, so a finding the Slop-dentifier shows is the same finding a pipeline would act on.
+// exist. A finding the Slop-dentifier shows is the same finding a pipeline would act on.
 import { collectFindings } from '../../core/secondSweep/collect.ts'
 import type { Note } from '../../core/secondSweep/note.ts'
 import type { DetectSettings } from '../../core/secondSweep/detectSettings.ts'
@@ -74,7 +74,7 @@ export function analyseText(
   ]
 
   const score = scoreText(cleaned, {
-    // No chat behind this screen, so there is no history to build a census from. The census part
+    // No chat behind this screen. There is no history to build a census from. The census part
     // of the score is always 0 here; the other four carry it.
     census: buildCensus([], defaultCensus),
     lexicon,

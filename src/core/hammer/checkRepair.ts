@@ -12,7 +12,7 @@ const cases: Array<[string, number, number, string]> = [
   // Doubled comma from cutting a clause: "apples, , and" → "apples, and".
   ['apples, , and oranges', 7, 9, 'apples, and oranges'],
   // Dangling ", and ." → ".": the object after the conjunction was stripped elsewhere.
-  // A single cut can't represent a prior strip, so this is covered in repairAll below.
+  // A single cut can't represent a prior strip. Covered in repairAll below.
   ['I saw the cat, and the dog', 22, 26, 'I saw the cat, and the'],
   // Cut removes the sentence body, leaving "The ." → "The." (article survives; space before punct fixed).
   ['The quick brown .', 4, 16, 'The.'],

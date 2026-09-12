@@ -21,7 +21,7 @@ import {
  * authoring them through a form is miserable. The build ships two starters and no further opinion.
  *
  * Untrusted input. A text rule's `find` becomes a RegExp, a hammer rule's `pattern` is compiled, a
- * note goes into a prompt and a preset becomes a system prompt, so all four are checked here
+ * note goes into a prompt and a preset becomes a system prompt: all four are checked here
  * rather than where they are used. A bad file is rejected whole rather than half-imported.
  */
 
@@ -30,7 +30,7 @@ const FORMAT = 'nessuTavern.pipelines'
 
 export function exportPipelines(pipelines: Pipeline[]): string {
   // `id`, `ownerId` and `updatedAt` are this install's bookkeeping and mean nothing to whoever
-  // opens the file. Left out so an exported pipeline is only the opinion it carries.
+  // opens the file. Left out: an exported pipeline is only the opinion it carries.
   const body = pipelines.map(({ id: _i, ownerId: _o, updatedAt: _u, ...rest }) => rest)
   return JSON.stringify({ format: FORMAT, pipelines: body }, null, 2)
 }
@@ -152,7 +152,7 @@ function oneStage(raw: unknown, index: number): Stage {
     throw new Error(`Stage ${index + 1} has an unknown kind: ${JSON.stringify(s.kind)}`)
   }
   const config = s.config && typeof s.config === 'object' ? s.config : {}
-  // `resolveStage` fills every field of the config from the defaults, so a file carrying half a
+  // `resolveStage` fills every field of the config from the defaults: a file carrying half a
   // config is completed rather than rejected. The kind is the only part that has to be right.
   return resolveStage({
     id: crypto.randomUUID(),

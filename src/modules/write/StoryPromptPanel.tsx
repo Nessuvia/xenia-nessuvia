@@ -16,11 +16,11 @@ import { resolveParams } from '../../core/settings/resolveParams'
 
 /**
  * What the next generation would send, rendered in the Story settings panel. It calls
- * `buildStoryPrompt` and `buildRequestBody`, the same two functions `generate` calls, so what it
+ * `buildStoryPrompt` and `buildRequestBody`, the same two functions `generate` calls. What it
  * shows and what goes over the wire can't diverge.
  *
- * The prose comes from the saved Chapter, which the editor writes 800ms after the last keystroke,
- * so the preview trails typing by about that long.
+ * The prose comes from the saved Chapter, which the editor writes 800ms after the last keystroke.
+ * The preview trails typing by about that long.
  */
 export default function StoryPromptPanel() {
   const story = useWrite((s) => s.story)
@@ -52,7 +52,7 @@ export default function StoryPromptPanel() {
     return () => clearTimeout(timer)
   }, [direction])
 
-  // Reading lorebook entries is async, so the match can't happen in the render below. It lands in
+  // Reading lorebook entries is async. The match can't happen in the render below. It lands in
   // the store, which is also where writeBlock reads it from: one value, one result in both places.
   const worldInfo = useWrite((s) => s.worldInfo)
   const refreshWorldInfo = useWrite((s) => s.refreshWorldInfo)
@@ -71,12 +71,12 @@ export default function StoryPromptPanel() {
   // Same fallback generate() uses: no cursor yet means the last Chapter.
   const active = chapters.find((c) => c.id === activeChapterId) ?? chapters.at(-1)
 
-  // The same story > connection resolution generate() does, so the budget shown is the real one.
+  // The same story > connection resolution generate() does. The budget shown is the real one.
   const connection = baseConnection && resolveParams(baseConnection, undefined, story)
 
-  // Split around the Block the cursor is in, the same way writeBlock() does, so the preview shows
+  // Split around the Block the cursor is in, the same way writeBlock() does. The preview shows
   // the "What follows" block the next generation would actually send, and honours that Block's own
-  // context setting. The prose here is the saved text, so it trails typing.
+  // context setting. The prose here is the saved text. It trails typing.
   const activeBlock = active?.blocks.find((b) => b.id === activeBlockId)
   const fit = storyFit(
     chapters,
@@ -156,7 +156,7 @@ export default function StoryPromptPanel() {
           {fit.degraded().count > 0 && (
             <p className="hint">
               {fit.degraded().count} of {fit.degraded().of} earlier blocks send their beat
-              instructions instead of their prose.
+              instructions in place of their prose.
             </p>
           )}
         </>

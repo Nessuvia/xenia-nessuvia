@@ -34,8 +34,8 @@ export const boundSources: Record<StackKind, BlockSource[]> = {
 /** Sources a block of this kind may take: freeform text plus the kind's bound sources. */
 export const kindSources = (kind: StackKind): BlockSource[] => ['text', ...boundSources[kind]]
 
-// Switched on only, at any depth: nesting a bound block inside a wrapper still uses that source,
-// so it counts. A disabled block takes its whole subtree out of the prompt, so neither counts.
+// Switched on only, at any depth: nesting a bound block inside a wrapper still uses that source
+// and it counts. A disabled block takes its whole subtree out of the prompt. Neither counts then.
 const countIn = (list: PromptBlock[], source: BlockSource): number =>
   list.reduce(
     (n, b) =>

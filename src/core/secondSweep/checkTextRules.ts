@@ -68,7 +68,7 @@ const rule = (over: Partial<TextRule> = {}): TextRule => ({
 
 // --- code spans and URLs are not prose ------------------------------------
 {
-  // The hammer's exclusions are reused, so a find inside inline code or a link target is left alone.
+  // The hammer's exclusions are reused: a find inside inline code or a link target is left alone.
   assert.equal(findTextMatches('Use `suddenly` here.', [rule()], 'assistant').length, 0)
   assert.equal(findTextMatches('See https://x.test/suddenly for more.', [rule()], 'assistant').length, 0)
   assert.equal(findTextMatches('Text.\n```\nsuddenly\n```\n', [rule()], 'assistant').length, 0)
@@ -101,7 +101,7 @@ const rule = (over: Partial<TextRule> = {}): TextRule => ({
   // No span: there is nothing in the passage to point at.
   assert.equal(notes[0].span, undefined)
 
-  // A rule with a find is a matcher, not a standing rule, so it must not appear in both lists.
+  // A rule with a find is a matcher, not a standing rule. It must not appear in both lists.
   assert.equal(standingNotes([rule({ note: 'x' })], 'assistant').length, 0)
   // A rule with neither a find nor a note has nothing to say.
   assert.equal(standingNotes([rule({ find: '', note: '  ' })], 'assistant').length, 0)

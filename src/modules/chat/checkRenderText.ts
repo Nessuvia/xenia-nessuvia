@@ -71,8 +71,8 @@ assert.deepStrictEqual(tags(quoteKids), ['em'])
 assert.ok(!JSON.stringify(quoteKids).includes('[object Object]'))
 
 // --- color precedence ---
-// Rank is top-first. The outermost quote span always outranks the text baseline, so it paints its
-// own color either way; the interesting element is the *emphasis* nested inside it. With quotes
+// Rank is top-first. The outermost quote span always outranks the text baseline: it paints its
+// own color either way. The interesting element is the *emphasis* nested inside it. With quotes
 // above emphasis the inner em defers (style.color: 'inherit') to the winning quote; flip the order
 // and the inner em wins and paints its own color. The winner never carries an inherit style.
 const style = (n: ReactNode | undefined) => (n && el(n).props.style) as { color?: string } | undefined
@@ -88,7 +88,7 @@ const emphasisTop = renderText('"hi *there*"', { order: ['emphasis', 'bold', 'qu
 assert.strictEqual(style(nestedEm(emphasisTop[0]))?.color, undefined) // emphasis outranks the quote
 
 // --- tag rules ---
-// createElement collapses a lone child, so text runs come back either bare or as an array.
+// createElement collapses a lone child: text runs come back either bare or as an array.
 const kids = (n: ReactNode): ReactNode[] => {
   const c = el(n).props.children
   return Array.isArray(c) ? c : [c]
@@ -111,7 +111,7 @@ assert.deepStrictEqual(tags(hidden), [Fragment, Fragment])
 assert.deepStrictEqual(kids(hidden[0]), ['before'])
 assert.deepStrictEqual(kids(hidden[1]), ['after'])
 
-// an unclosed opener is literal text, not a swallowed rest-of-message
+// an unclosed opener is literal text; nothing after it gets swallowed
 const unclosed = renderText('a<think>b', { tagRules: hide })
 assert.deepStrictEqual(tags(unclosed), [Fragment])
 assert.deepStrictEqual(kids(unclosed[0]), ['a<think>b'])
@@ -124,7 +124,7 @@ assert.deepStrictEqual(tags(renderText('x[h]y[/h]z', { tagRules: bracket })), [F
 const twice = renderText('<think>a</think>mid<think>b</think>', { tagRules: hide })
 assert.deepStrictEqual(kids(twice[0]), ['mid'])
 
-// newlines directly touching blocks are trimmed so back-to-back blocks don't stack blank space
+// newlines directly touching blocks are trimmed: back-to-back blocks don't stack blank space
 const spaced = renderText('<think>a</think>\n\n<think>b</think>\n\ntail', { tagRules: think })
 assert.deepStrictEqual(tags(spaced), ['details', 'details', Fragment])
 assert.deepStrictEqual(kids(spaced[2]), ['tail'])
@@ -153,13 +153,13 @@ const rule = (p: Partial<import('../../core/stores/settingsStore').ReplaceRule>)
   ...p,
 })
 
-// literal replace runs before the inline parser, so the result is plain text
+// literal replace runs before the inline parser: the result is plain text
 assert.deepStrictEqual(
   renderText('hello world', { replaceRules: [rule({ find: 'world', replace: 'there' })] }),
   ['hello there'],
 )
 
-// literal `find` is escaped: `.` matches a literal dot, not any char
+// literal `find` is escaped: `.` matches only a literal dot
 assert.deepStrictEqual(
   renderText('a.b axb', { replaceRules: [rule({ find: 'a.b', replace: 'X' })] }),
   ['X axb'],
@@ -213,7 +213,7 @@ const fenced = renderText('see:\n```js\nlet a = 1\n```\ndone')
 assert.deepStrictEqual(tags(fenced), ['pre'])
 assert.deepStrictEqual((fenced[1] as any).props.children.props.children, 'let a = 1')
 
-// a fence is matched before the single backtick, so ``` doesn't parse as an empty code span
+// a fence is matched before the single backtick: ``` doesn't parse as an empty code span
 assert.deepStrictEqual(tags(renderText('```\na\n```')), ['pre'])
 
 // unmatched backtick stays literal

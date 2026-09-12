@@ -43,7 +43,7 @@ const gold: LegacyGoldPass = {
 {
   const { pipelines, activeIndex, byPresetId } = pipelinesFromLegacy(second, gold)
   assert.equal(pipelines.length, 2)
-  // The two ran in this order, so the stages come out in it.
+  // The two ran in this order. The stages come out in it.
   assert.deepEqual(pipelines[0].stages.map((s) => s.kind), ['clean', 'rewrite', 'score'])
   // The selected preset is the one the new setting points at.
   assert.equal(activeIndex, 1)
@@ -74,7 +74,7 @@ const gold: LegacyGoldPass = {
   assert.equal(rewrite.config.historyCount, 9)
   assert.equal(rewrite.config.includeCharacter, false)
   assert.equal(rewrite.config.promptBannedList, false)
-  // Not written by the old blob, so it keeps the default rather than resolving undefined.
+  // Not written by the old blob: it keeps the default rather than resolving undefined.
   assert.equal(rewrite.config.samplerBannedList, true)
 
   const score = pipelines[0].stages[2] as ScoreStage
@@ -131,8 +131,8 @@ const gold: LegacyGoldPass = {
   // Nothing to convert: the sweep skips the write rather than rewriting every message it sees.
   assert.equal(passArraysFrom({}), null)
 
-  // Both passes ran on swipe 0. Second Pass ran first, so its draft is what the model actually
-  // said; `goldOriginals` holds the text *after* the edit, which is not the original.
+  // Both passes ran on swipe 0. Second Pass ran first: its draft is what the model actually
+  // said. `goldOriginals` holds the text *after* the edit, which is not the original.
   const both = passArraysFrom({
     drafts: ['raw'],
     goldOriginals: ['edited'],
@@ -146,7 +146,7 @@ const gold: LegacyGoldPass = {
   assert.deepEqual(passArraysFrom({ drafts: ['raw'] })!.passOriginals, ['raw'])
   assert.deepEqual(passArraysFrom({ goldOriginals: ['raw'] })!.passOriginals, ['raw'])
 
-  // Ragged arrays: a message whose passes ran on different swipes pads to the longest, so all
+  // Ragged arrays: a message whose passes ran on different swipes pads to the longest. All
   // three stay parallel to `swipes` and a hole keeps its index.
   const ragged = passArraysFrom({
     drafts: [undefined, 'two raw'],

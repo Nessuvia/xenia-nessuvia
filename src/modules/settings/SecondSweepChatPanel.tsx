@@ -53,7 +53,7 @@ export default function SecondSweepChatPanel() {
       <p className="hint">
         {pipeline
           ? `${pipeline.stages.filter((s) => s.enabled).length} stages run on each reply.`
-          : 'No pipeline is selected, so nothing runs.'}
+          : 'No pipeline is selected. Nothing runs.'}
       </p>
       {override === undefined && <p className="hint">Using the global settings.</p>}
       <p className="hint">

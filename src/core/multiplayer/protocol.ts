@@ -54,8 +54,8 @@ export interface SettingsSummary {
  *
  * The background's `css` and `html` are the host's own, and are rendered through the same
  * sanitizeBackgroundHtml/scopeBackgroundCss path as a local background, never innerHTML.
- * An uploaded image lives in the host's `backgroundImages` table and its bytes are not sent, so
- * only `url` travels; a host on an uploaded image shows guests no image.
+ * An uploaded image lives in the host's `backgroundImages` table and its bytes are not sent.
+ * Only `url` travels, and a host on an uploaded image shows guests no image.
  */
 export interface SharedAppearance {
   font: string
@@ -127,8 +127,8 @@ export interface StateEvent {
   settings: SettingsSummary
   appearance: SharedAppearance
   messages: GuestMessage[]
-  /** True when the host has locked persona editing. Guests hide the editor; the host still ignores
-   *  any `persona` that arrives, so a locked room holds even against a patched client. */
+  /** True when the host has locked persona editing. Guests hide the editor, and the host still
+   *  ignores any `persona` that arrives: a locked room holds even against a patched client. */
   personaLock: boolean
 }
 
@@ -180,8 +180,8 @@ const knownTypes = new Set([...guestTypes, ...hostTypes])
 /**
  * Strip a stored Message to what a guest may see. The only outward path for message data.
  * Drops requestSnapshots (the request itself, and up to ~256 KB per swipe), swipes, reasonings,
- * and every id except the message's own. Builds a fresh object rather than spreading and deleting,
- * so a field added to `Message` later never leaks through.
+ * and every id except the message's own. Builds a fresh object rather than spreading and deleting:
+ * a field added to `Message` later never leaks through.
  */
 export function forGuests(message: Message): GuestMessage {
   return {

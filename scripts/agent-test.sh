@@ -35,10 +35,8 @@ for arg in "$@"; do
   esac
 done
 
-# tsc, vite and node all colour their output; ANSI wrecks diffing and wastes tokens.
 strip_ansi() { sed -E $'s/\x1b\\[[0-9;?]*[a-zA-Z]//g'; }
 
-# node --experimental-strip-types prints a warning per invocation. Not signal.
 drop_node_noise() {
   grep -vE 'ExperimentalWarning|--trace-warnings|^\(node:[0-9]+\)' || true
 }
@@ -101,7 +99,6 @@ if [[ $RUN_CHECKS -eq 1 ]]; then
       failed=1
       failing_names+=("$(basename "$file")")
       echo "FAIL  $file  (exit $status)"
-      # An AssertionError's message is the useful part; the stack is node internals.
       body=$(printf '%s\n' "$out" | grep -vE '^\s+at ' | grep -v '^$')
       [[ -z "$body" ]] && body="$out"
       if [[ $VERBOSE -eq 1 ]]; then

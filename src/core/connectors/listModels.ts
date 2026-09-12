@@ -7,12 +7,12 @@ export interface ModelInfo {
   vision: boolean
 }
 
-// never throws. The model field is free text, so a backend without /v1/models
-// (or a typo'd endpoint) just means an empty list, not an error state to design around.
+// never throws. The model field is free text. A backend without /v1/models
+// (or a typo'd endpoint) returns an empty list rather than an error state to design around.
 // ?detailed=true is NanoGPT's opt-in for a capabilities map; standard backends ignore the
-// unknown query param and just omit `capabilities`, so vision falls back to false.
+// unknown query param, omit `capabilities`, and vision falls back to false.
 // `key:value, key:value` → URLSearchParams. Blank or malformed pairs are skipped; whatever the
-// user types is sent verbatim, so an unknown param just gets ignored by the backend.
+// user types is sent verbatim, and an unknown param gets ignored by the backend.
 export function parseModelQuery(raw: string | undefined): URLSearchParams {
   const params = new URLSearchParams({ detailed: 'true' })
   for (const pair of (raw ?? '').split(',')) {
@@ -27,7 +27,7 @@ export function parseModelQuery(raw: string | undefined): URLSearchParams {
 // Full models URL for a connection. Same base path as the chat endpoint (e.g. /api/v1); using
 // the bare origin drops that base and hits a different /models that ignores the query params.
 // `scope` isn't a query param on NanoGPT: subscription/paid are separate path variants
-// (/api/subscription/v1/models, /api/paid/v1/models), so it's pulled out and rewrites the path.
+// (/api/subscription/v1/models, /api/paid/v1/models). It's pulled out and rewrites the path.
 export function modelsUrl(endpointUrl: string, query: string | undefined): string {
   const params = parseModelQuery(query)
   const scope = params.get('scope')

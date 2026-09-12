@@ -35,7 +35,7 @@ export const useParamDefs = create<ParamDefsState>()((set, get) => ({
   },
 
   create: async (def) => {
-    // Keys are the reference connections store, so two defs can't share one.
+    // Keys are the reference connections store. Two defs can't share one.
     if (get().defs.some((d) => d.key === def.key)) return null
     const { id: _id, ...fields } = def
     const id = await storage.put('paramDefs', {

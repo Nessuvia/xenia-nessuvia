@@ -33,7 +33,7 @@ function sentences(count: number): string {
  *
  * Roughly one paragraph in four is a single short sentence, the rest run 50–140 words, which is
  * what makes the block read like a reply rather than a wall. The whole point is judging length by
- * eye. The last paragraph takes whatever is left, so the count is exact and the number under the
+ * eye. The last paragraph takes whatever is left. The count stays exact and the number under the
  * beat's target field matches what is on screen.
  */
 export function loremParagraphs(words: number): string {

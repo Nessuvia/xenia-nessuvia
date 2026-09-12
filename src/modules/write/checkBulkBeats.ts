@@ -56,7 +56,7 @@ assert.deepStrictEqual(ok('["a","b"]').beats, [
 const odd = ok('[{"content":"a","length":"short"},{"content":"b","length":"epic"},{"content":"c","length":"short"}]')
 // Deduplicated, in first-appearance order.
 assert.deepStrictEqual(odd.unknown, ['short', 'epic'])
-// The raw value survives the parse, so the dialog can show what was actually written.
+// The raw value survives the parse. The dialog can show what was actually written.
 assert.strictEqual(odd.beats[0].length, 'short')
 // Mapped, they become the Author's answers.
 assert.deepStrictEqual(

@@ -1,10 +1,10 @@
 // Inline markers for Story prose. Chat has its own pass (chat/renderText.ts) that builds React
-// elements; this one can't reuse it. The Story editor is an uncontrolled contenteditable, so the
+// elements; this one can't reuse it. The Story editor is an uncontrolled contenteditable. The
 // decoration has to be real DOM that React never owns, and the markers themselves have to survive
 // in the DOM text. The editor reads its value back with textContent, and a marker dropped for
 // display would be a marker deleted from the Chapter.
 //
-// So every marker stays a text node; it is only hidden with CSS. Invariant the whole thing rests
+// Every marker stays a text node. It is only hidden with CSS. Invariant the whole thing rests
 // on: decorate(el, text) leaves el.textContent === text, character for character.
 import type { MarkerKind } from '../../core/stores/settingsStore'
 
@@ -14,9 +14,9 @@ export type ProsePiece =
 
 export type MarkKind = 'bold' | 'em' | 'boldEm' | 'quote' | 'code'
 
-// Longest first so `**bold**` isn't eaten as a nested `*italic*`, and `***` before both.
+// Longest first: `**bold**` is not eaten as a nested `*italic*`, and `***` comes before both.
 const markers: { mark: string; kind: MarkKind }[] = [
-  // Grave accents first: what they wrap is literal, so nothing inside them is markup.
+  // Grave accents first: what they wrap is literal. Nothing inside them is markup.
   { mark: '`', kind: 'code' },
   { mark: '***', kind: 'boldEm' },
   { mark: '___', kind: 'boldEm' },
@@ -37,8 +37,8 @@ const classOf: Record<MarkKind, string> = {
   code: 'proseCode',
 }
 
-// Which color kinds a span competes for. `boldEm` is both, so it takes whichever ranks higher.
-// Code has no entry in the Story color order, so it never claims one and never blocks a nested run
+// Which color kinds a span competes for. `boldEm` is both. It takes whichever ranks higher.
+// Code has no entry in the Story color order. It never claims one and never blocks a nested run
 // from claiming: it has a color of its own in write.css.
 const kindColors: Record<MarkKind, MarkerKind[]> = {
   bold: ['bold'],
@@ -114,7 +114,7 @@ export function decorateProse(el: HTMLElement, text: string, order: MarkerKind[]
 /**
  * `bestRank` is the strongest color rank an ancestor already claims. A span stamps `data-win` with
  * the kind it colors for only when it outranks that; a loser stamps nothing and inherits the
- * winner's color through the cascade. The color values themselves are CSS vars, so changing one is
+ * winner's color through the cascade. The color values themselves are CSS vars. Changing one is
  * a repaint; only reordering needs the DOM rebuilt.
  */
 function buildPieces(
@@ -137,8 +137,8 @@ function buildPieces(
       : null
     const rank = winner ? rankOf(winner, order) : -1
     if (winner && rank > bestRank) span.dataset.win = winner
-    // The quote's own marks are part of the dialogue, so they stay visible; the others are hidden
-    // by CSS and only exist so the Chapter never loses a character.
+    // The quote's own marks are part of the dialogue. They stay visible. The others are hidden
+    // by CSS: they exist to keep the Chapter from losing a character.
     const markClass = piece.kind === 'quote' ? 'proseQuoteMark' : 'proseMark'
     span.appendChild(markSpan(piece.mark, doc, markClass))
     span.appendChild(buildPieces(piece.children, doc, order, Math.max(bestRank, rank)))
@@ -159,12 +159,12 @@ const blockTags = new Set(['DIV', 'P', 'LI', 'BLOCKQUOTE', 'PRE', 'H1', 'H2', 'H
 
 /**
  * One walk serving both the text read-back and the caret offset. They have to agree character for
- * character: a caret counted against a slightly different string drifts, so they share a walker
+ * character: a caret counted against a slightly different string drifts. They share a walker
  * rather than two implementations of the same newline rules.
  *
- * The rules exist because a contenteditable is not a textarea: pressing Enter makes the browser
- * insert a <br> or wrap lines in <div>s, and textContent renders both as nothing, so the newline
- * would vanish the next time the DOM was rebuilt from this string.
+ * The rules exist for one reason: a contenteditable is not a textarea. Pressing Enter makes the
+ * browser insert a <br> or wrap lines in <div>s, and textContent renders both as nothing. The
+ * newline would vanish the next time the DOM was rebuilt from this string.
  *
  * Passing a `caret` range stops the count at that point; `at` is null if the range was never
  * reached.
@@ -221,7 +221,7 @@ export function readProse(el: HTMLElement): string {
 }
 
 /**
- * Caret position as a character offset into readProse(el), so it survives the DOM being rebuilt.
+ * Caret position as a character offset into readProse(el). It survives the DOM being rebuilt.
  * Returns null when the caret isn't in this element (the Author clicked away mid-debounce).
  */
 export function saveCaret(el: HTMLElement): number | null {

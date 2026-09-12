@@ -8,7 +8,7 @@ import {
 import './learn.css'
 
 // the article is JSX, not markdown. No renderer dependency, no fetch, no build step.
-// If a second long-form page shows up, that's the cue to add a markdown pipeline.
+// A second long-form page is the cue to add a markdown pipeline.
 function Code({ children }: { children: string }) {
   return (
     <pre className="learnCode">
@@ -32,7 +32,7 @@ function Why({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** Code that looks fine and isn't, beside the fix. */
+/** Code that looks correct and breaks, beside the fix. */
 function Fix({
   what,
   wrong,
@@ -141,7 +141,7 @@ useEffect(() => {
     what: 'Keep a value between interactions',
     old: `request.session['lastChatId'] = chatId`,
     now: `useChats.setState({ lastChatId: chatId })`,
-    note: 'The store is memory, so it is gone on refresh. Use storage for anything that must survive.',
+    note: 'The store is memory. It is gone on refresh. Use storage for anything that must survive.',
   },
   {
     what: 'Carry a value to the next step of a form',
@@ -154,7 +154,7 @@ useEffect(() => {
     old: `// DataTables config + <th> + the row template
 { data: 'lastSeen', title: 'Last seen' }`,
     now: `<td>{formatStamp(c.lastSeen)}</td>`,
-    note: 'One place, because the markup for a row is a loop over your own array.',
+    note: 'One place: the markup for a row is a loop over your own array.',
   },
 ]
 
@@ -278,16 +278,16 @@ export default function CharacterPicker() {
   return <div className="chatPicker"><h2>Characters</h2></div>
 }`}</Code>
         <p>
-          That file runs as it stands, and it is the stub template and the stub view at once, since
-          there is no server to hand markup to. The route comes next, and in this repo it lives in
+          That file runs as it stands. It is the stub template and the stub view at once: there
+          is no server to hand markup to. The route comes next, and in this repo it lives in
           the module's own <code>index.tsx</code> rather than a central file:
         </p>
         <Code>{`// src/modules/chat/index.tsx
 registerModule({ id: 'chat', label: 'Chat', icon: RiChat3Line, route: '/chat', component: ChatModule })`}</Code>
         <FigRegistry />
         <p>
-          That one call produces both the sidebar link and the router entry, so there is no{' '}
-          <code>urls.py</code> to edit and no list of screens to keep current, adding a screen
+          That one call produces both the sidebar link and the router entry. There is no{' '}
+          <code>urls.py</code> to edit and no list of screens to keep current. Adding a screen
           means adding a folder and one import line in <code>main.tsx</code>.
         </p>
 
@@ -336,13 +336,13 @@ useEffect(() => {
         <p>
           Usually this is a DataTables call, or an input with a <code>keyup</code> handler that
           walks the rows and hides the ones that don't match. Here it comes to two pieces of
-          ordinary JS, the first being a value held in state:
+          ordinary JS. The first is a value held in state:
         </p>
         <Code>{`const [search, setSearch] = useState('')
 
 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search characters..." />`}</Code>
         <p>
-          and the second an array filtered by that value, worked out during render rather than
+          The second is an array filtered by that value, worked out during render rather than
           stored anywhere:
         </p>
         <Code>{`const q = search.trim().toLowerCase()
@@ -363,17 +363,17 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
             <code>shown</code> is derived: given <code>characters</code> and <code>search</code>{' '}
             there is exactly one correct value for it. Storing it in its own{' '}
             <code>useState</code> creates a second source of truth that can disagree with the first,
-            and then you are writing the sync code by hand, an effect that watches{' '}
-            <code>search</code> and calls <code>setShown</code>. That effect runs a render late, so
-            for one frame the list on screen doesn't match the box. Computing it during render makes
+            and then you are writing the sync code by hand: an effect that watches{' '}
+            <code>search</code> and calls <code>setShown</code>. That effect runs a render late.
+            For one frame the list on screen doesn't match the box. Computing it during render makes
             the mismatch unrepresentable.
           </p>
         </Why>
 
         <h2>2. The DOM is not yours anymore</h2>
         <p>
-          Most of this page renames something you already do. This section is the one that removes
-          a tool you use constantly, which is why it comes early.
+          Most of this page renames something you already do. This section removes a tool you use
+          constantly, and it comes early for that reason.
         </p>
         <Rule>
           Never change a node React rendered. No <code>.text()</code>, no{' '}
@@ -387,11 +387,11 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
             never reads the live document to find out what is there.
           </p>
           <p>
-            So a change you made with jQuery is invisible to it. The record still says the old text.
+            A change you made with jQuery is invisible to it. The record still says the old text.
             The next render compares new markup against that stale record, decides that node is
-            already correct or needs a different edit, and your change is gone. It is not that
-            touching the DOM is forbidden on principle, it is that React will silently undo it at
-            an unpredictable time, which is worse than an error.
+            already correct or needs a different edit, and your change is gone. Touching the DOM
+            is not forbidden on principle. React will silently undo it at an unpredictable time,
+            worse than an error.
           </p>
         </Why>
         <table className="learnTable">
@@ -417,7 +417,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
           </tbody>
         </table>
         <p>
-          The middle column repeats because most of these rows are the same failure arriving by
+          The middle column repeats: most of these rows are the same failure arriving by
           different routes.
         </p>
         <Fix
@@ -449,8 +449,9 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Rule>1. If state didn't change, the screen didn't change.</Rule>
         <Why>
           <p>
-            A rerender only happens because <code>set…</code> was called, a store slice you selected
-            changed, or a parent rerendered. Assigning to an ordinary variable does none of those.
+            A rerender only happens on one of three triggers: <code>set…</code> was called, a store
+            slice you selected changed, or a parent rerendered. Assigning to an ordinary variable
+            triggers none of those.
             The function already returned; the variable is gone; React was never told.
           </p>
         </Why>
@@ -462,7 +463,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Why>
           <p>
             React decides whether a value changed with <code>Object.is</code>, a reference
-            comparison. <code>push</code> leaves the same array object in place, so the old and new
+            comparison. <code>push</code> leaves the same array object in place. The old and new
             values are identical and the rerender is skipped. Same for{' '}
             <code>obj.name = 'x'</code>; write <code>setObj({'{ ...obj, name: \'x\' }'})</code>.
           </p>
@@ -472,9 +473,9 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Why>
           <p>
             <code>setText</code> schedules. It returns immediately and React runs the component
-            again after your handler finishes, which is why three <code>set</code> calls in one
+            again after your handler finishes: three <code>set</code> calls in one
             handler produce one rerender rather than three. You are still inside the render that had
-            the old value, so that is what you see. If you need the new value in the same handler,
+            the old value. That is what you see. If you need the new value in the same handler,
             use the local variable you passed in.
           </p>
         </Why>
@@ -494,9 +495,9 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Code>{`<input value={text} onChange={(e) => setText(e.target.value)} />`}</Code>
         <Why>
           <p>
-            You never call <code>.val()</code> because there is nothing to ask. The box shows{' '}
-            <code>text</code>, and every keystroke calls <code>setText</code>, so the two can't
-            drift. This is also why validation gets shorter: the value you would validate is already
+            You never call <code>.val()</code>. There is nothing to ask. The box shows{' '}
+            <code>text</code>, and every keystroke calls <code>setText</code>. The two can't
+            drift. Validation gets shorter for the same reason: the value you would validate is already
             a variable in scope, not something you have to go and collect from five inputs at submit
             time.
           </p>
@@ -505,8 +506,8 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <h3>What a hook is</h3>
         <p>
           A hook is a function starting with <code>use</code> that lets a component keep something
-          across renders. Your component runs top to bottom every time and has no memory of its own,
-          so a hook is how it reaches a box React holds on the side for this particular instance.
+          across renders. Your component runs top to bottom every time and has no memory of its own.
+          A hook is how it reaches a box React holds on the side for this particular instance.
         </p>
         <Rule>
           Call hooks at the top level of a component, unconditionally. Never inside an{' '}
@@ -516,7 +517,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
           <p>
             React tracks those boxes by call order, not by name: the first <code>useState</code> in
             the function gets box 1, the second gets box 2. Put one behind a condition and the
-            numbering shifts on the render where the condition flips, so box 2's value arrives in
+            numbering shifts on the render where the condition flips. Box 2's value arrives in
             box 1 and your draft text turns up in the wrong variable. The rule exists to keep the
             count identical on every render.
           </p>
@@ -548,11 +549,11 @@ const shown = [...characters]
         <p>
           Sorting by a clicked column is one more piece of state (<code>sortKey</code>) read by the
           comparator. Paging is <code>.slice(page * 50, page * 50 + 50)</code>. Export is a function
-          over <code>shown</code>, and it exports exactly what is on screen because the same array
+          over <code>shown</code>, and it exports exactly what is on screen: the same array
           produced both.
         </p>
         <p>
-          The <code>[...characters]</code> copy matters, because <code>.sort()</code> mutates in
+          The <code>[...characters]</code> copy matters. <code>.sort()</code> mutates in
           place and <code>characters</code> is state.
         </p>
         <Rule>
@@ -563,8 +564,8 @@ const shown = [...characters]
           <p>
             <code>{'{% for %}'}</code> ran once and the HTML was final. React renders the same list
             over and over and has to answer each time: is this the same five rows with one name
-            edited, or five different rows? <code>key</code> is the answer, same key means same
-            row, so React keeps that DOM node and patches what differs.
+            edited, or five different rows? <code>key</code> is the answer. Same key means same
+            row. React keeps that DOM node and patches what differs.
           </p>
           <p>
             With the array index instead, deleting row 2 renumbers everything below it. React sees
@@ -576,9 +577,9 @@ const shown = [...characters]
         <h2>5. Loading data: three states, not two</h2>
         <FigThreeStates />
         <p>
-          Django queried and <em>then</em> rendered, so a template could assume its context was
+          Django queried and <em>then</em> rendered: a template could assume its context was
           populated. Every read here is async and there is no moment before the first render to put
-          one in. So a screen that shows data has three cases, and two of them look identical in the
+          one in. A screen that shows data has three cases, and two of them look identical in the
           data.
         </p>
         <Rule>
@@ -591,8 +592,8 @@ const shown = [...characters]
         <Why>
           <p>
             Get the order wrong and the empty-state message flashes on every page load before the
-            real list arrives, because for the first frame the store genuinely holds{' '}
-            <code>[]</code>. It only shows up on a slow read, which is how it tends to get past
+            real list arrives: for the first frame the store genuinely holds{' '}
+            <code>[]</code>. It only shows up on a slow read, and that is how it tends to get past
             review.
           </p>
         </Why>
@@ -629,10 +630,10 @@ const shown = [...characters]
           </p>
           <p>
             The returned function is cleanup, which has no Django counterpart at all: a view had
-            nothing to tear down because the process ended, whereas here a component can be removed
+            nothing to tear down. The process ended. Here a component can be removed
             while its request is still in flight. React deliberately mounts every component twice in
-            development so that effects run twice, which is the tool exposing a missing cleanup
-            rather than a bug to guard against.
+            development, and effects run twice: the tool exposing a missing cleanup, not a bug to
+            guard against.
           </p>
         </Why>
 
@@ -650,7 +651,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           <code>request.session</code> becomes a store, with the difference that a store is memory
           and dies on refresh unless it was written to IndexedDB via <code>core/storage</code>, or
           to localStorage for small settings. The <strong>hidden field</strong> has no equivalent at
-          all, since there is no next request to smuggle a value into, so a multi-step form becomes
+          all: there is no next request to smuggle a value into. A multi-step form becomes
           one draft object held in state or a store for the whole flow, with every step reading and
           writing it.
         </p>
@@ -663,7 +664,7 @@ const save = useCharacters((s) => s.save)`}</Code>
         <p>
           React Router keeps <code>urls.py</code>'s pattern list and throws away everything else. It
           reads the URL out of the address bar, matches it, and swaps a component into the page that
-          is already open. No request, so stores, open streams and scroll position survive.
+          is already open. No request: stores, open streams and scroll position survive.
         </p>
         <Rule>
           Never use <code>&lt;a href&gt;</code> for an internal link. <code>&lt;Link to&gt;</code>{' '}
@@ -675,7 +676,7 @@ const save = useCharacters((s) => s.save)`}</Code>
         </Rule>
         <Why>
           <p>
-            In Django the URL was the only input the server got, so everything had to be in it.
+            In Django the URL was the only input the server got. Everything had to be in it.
             Here most state lives in components and stores, and putting something in the URL is a
             deliberate choice to publish it. The cost is that it becomes an interface, bookmarkable
             and back-buttonable, which is exactly what you want for a chat id and not for a
@@ -704,10 +705,10 @@ const save = useCharacters((s) => s.save)`}</Code>
           </li>
         </ul>
         <p>
-          You already enforce this under other names. Raw SQL in a template is obviously wrong, so
-          queries stay in the view. A sproc call scattered across five views is wrong, so it lives
+          You already enforce this under other names. Raw SQL in a template is obviously wrong:
+          queries stay in the view. A sproc call scattered across five views is wrong: it lives
           behind <code>db_utils.py</code>. Django doesn't enforce any of that either, the imports
-          would work. It holds because everyone agrees where things go. Same here: nothing stops you
+          would work. It holds on agreement: everyone agrees where things go. Same here: nothing stops you
           importing <code>db</code> into a component, and it is a review rule, not an error.
         </p>
 
@@ -716,7 +717,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           Your ladder elsewhere is fixed: IIS catches the 500, the Django log says what blew up,
           you read the view, then you check whether the sproc failed quietly, then you look at
           whether the template used the data or the JS went and fetched it itself. The same ladder
-          applies here, except that the whole stack is in one process, so there is no server log to
+          applies here, except that the whole stack is in one process. There is no server log to
           start from and the rungs sit closer together.
         </p>
         <ol>
@@ -727,7 +728,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           </li>
           <li>
             <strong>Is the state right?</strong> React DevTools, select the component, read its
-            hooks and the store. This is "debug the view" and it settles most bugs, because if the
+            hooks and the store. This is "debug the view" and it settles most bugs: if the
             state is right and the screen is wrong the problem is below you, and if the state is
             wrong it is above.
           </li>
@@ -751,10 +752,10 @@ const save = useCharacters((s) => s.save)`}</Code>
           on the loading state with nothing in the console but a warning.
         </Rule>
         <p>
-          The two failures with no analogue: a rerender that never fired because state was
+          The two failures with no analogue: a rerender that never fired, state
           mutated in place (§3), and a change you made to the DOM that React reverted (§2). Both
-          present as the code running with the screen not moving, which could not happen in Django
-          because the screen was the response.
+          present as the code running with the screen not moving. That could not happen in Django:
+          the screen was the response.
         </p>
 
         <h2 className="learnPart">Part two, look it up</h2>
@@ -885,7 +886,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           We usually split a module by <em>file type</em>: markup in <code>templates/</code>,
           behaviour in <code>static/js/</code>, modals in <code>lightbox/</code>, data access as a
           sproc name inside a view. Working on one screen means four folders open. Here a module is
-          split by feature, so the markup, the handlers and the styles for one screen sit together.
+          split by feature: the markup, the handlers and the styles for one screen sit together.
         </p>
         <div className="cmpPair">
           <div>
@@ -973,7 +974,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           </li>
           <li>Every tag self-closes. A component returns one root, use <code>&lt;&gt;…&lt;/&gt;</code> for siblings.</li>
           <li>
-            <code>{'{}'}</code> drops into JS. There is no <code>{'{% if %}'}</code> because you have{' '}
+            <code>{'{}'}</code> drops into JS. There is no <code>{'{% if %}'}</code>. Use{' '}
             <code>&amp;&amp;</code> and <code>?:</code>.
           </li>
           <li>
@@ -981,7 +982,7 @@ const save = useCharacters((s) => s.save)`}</Code>
             Write <code>{'count > 0 &&'}</code>.
           </li>
           <li>
-            JSX escapes text, which is why <code>dangerouslySetInnerHTML</code> is banned here
+            JSX escapes text. <code>dangerouslySetInnerHTML</code> is banned here:
             model output is untrusted and this origin holds API keys.
           </li>
         </ul>

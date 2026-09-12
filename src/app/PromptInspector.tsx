@@ -3,7 +3,7 @@ import { snapshotTooLarge } from '../core/connectors/snapshot'
 
 /**
  * A redacted request, rendered raw. The same component backs the live preview's JSON view and the
- * per-message inspector, so both show the request in exactly one format.
+ * per-message inspector: both show the request in exactly one format.
  */
 export default function PromptInspector({ json }: { json?: string }) {
   const [copied, setCopied] = useState(false)

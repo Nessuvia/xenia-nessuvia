@@ -22,10 +22,11 @@ const clampWidth = (n: number) => Math.min(100, Math.max(1, n || 100))
 
 /**
  * The open chat's settings, rendered in the sidebar. It reads its own state rather than taking
- * props, save for one presentational flag: the sidebar knows a chat is open, not what's in it.
+ * props, save for one presentational flag: the sidebar knows a chat is open. It doesn't see
+ * what's in it.
  *
- * No save button and no dirty state, edits land in the chat record 600ms after the last
- * keystroke. The sidebar keys this on the chat id, so the draft never needs resetting in place.
+ * No save button and no dirty state. Edits land in the chat record 600ms after the last
+ * keystroke. The sidebar keys this on the chat id: the draft never needs resetting in place.
  */
 export default function ChatSettingsPanel({
   /** Render every control disabled. Guests see the host's settings and cannot change them. */
@@ -41,10 +42,10 @@ export default function ChatSettingsPanel({
   const setActiveConnection = useSettings((s) => s.setActiveConnection)
   const activeStackId = useSettings((s) => s.activeStackId)
   const stacks = useStacks((s) => s.stacks)
-  // Story stacks build a different prompt and have no Chat History block, so they can't run a chat.
+  // Story stacks build a different prompt and have no Chat History block: they can't run a chat.
   const chatStacks = stacks.filter((s) => stackKind(s) === 'chat')
   // A chat with its own stack shows and edits that one. Only a chat without an override reaches
-  // the global, so a multiplayer session's stack can't be repointed from here by accident.
+  // the global: a multiplayer session's stack can't be repointed from here by accident.
   const ownStackId = chat?.stackId
   const shownStackId = ownStackId ?? activeStackId
   const stack = stacks.find((x) => x.id === shownStackId)
@@ -80,9 +81,9 @@ export default function ChatSettingsPanel({
     <section className="panel chatSettings screenBody">
       <fieldset disabled={readOnly} style={{ border: 'none', margin: 0, padding: 0 }}>
       {/* These select the global active connection/stack, same as Settings and the stack editor.
-          Every chat resolves generation from those globals, so this is a global default, not a
-          per-chat override. Per-chat: add connectionId to the Chat record (stackId already exists)
-          and resolve from it in ChatView. */}
+          Every chat resolves generation from those globals: this is a global default. Per-chat:
+          add connectionId to the Chat record (stackId already exists) and resolve from it in
+          ChatView. */}
       <ConnectionPicker value={activeConnectionId} onChange={setActiveConnection} />
 
       {/* <details> for the section toggles, native, and no state to persist. */}
@@ -179,8 +180,8 @@ export default function ChatSettingsPanel({
         <AppearancePanel colors={false} font="compact" />
       </details>
 
-      {/* Single-chat counterpart to Group Settings, a chat is single or group, never both. Holds the
-          one character's colors (written to the character record, so palette-agnostic). */}
+      {/* Single-chat counterpart to Group Settings: a chat is single or group, never both. Holds
+          the one character's colors, written to the character record and palette-agnostic. */}
       {!isGroup(value) && (
       <details>
         <summary>Chat Settings</summary>
@@ -231,7 +232,7 @@ export default function ChatSettingsPanel({
               />
             </label>
             <p className="hint">
-              Characters reply in order after your message. Capped at {roster} in this chat, so
+              Characters reply in order after your message. Capped at {roster} in this chat:
               nobody speaks twice.
             </p>
           </>

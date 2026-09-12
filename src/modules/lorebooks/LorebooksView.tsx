@@ -106,7 +106,7 @@ export default function LorebooksView() {
       <TwoColumn
         list={
           <ul className="lorebooksList">
-            {/* A header only appears when its group has rows, so a library with no bundled books
+            {/* A header only appears when its group has rows. A library with no bundled books
                 doesn't grow a heading over nothing. */}
             {bundled.length > 0 && <li className="lorebooksGroupHeader">Character Lorebooks</li>}
             {bundled.map(row)}

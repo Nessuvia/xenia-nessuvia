@@ -7,7 +7,7 @@ import type { LexiconEntry } from '../../core/quality/lexicon.ts'
 
 const detect = resolveDetect()
 
-// A fixture, not a shipped list: nothing ships a slop list, so the check writes the entry it is
+// A fixture, not a shipped list. Nothing ships a slop list: the check writes the entry it is
 // asserting about.
 const lexicon: LexiconEntry[] = [
   {
@@ -36,7 +36,7 @@ for (const f of report.findings) {
   assert.ok(['hammer', 'text', 'slop', 'standing'].includes(f.group), `unknown group ${f.group}`)
 }
 
-// Nothing counts sentences any more: a tricolon and a run-on sentence are not findings.
+// Sentence counting is gone: a tricolon and a run-on sentence are not findings.
 assert.equal(report.findings.filter((f) => f.group !== 'slop').length, 0)
 
 // Spans index the cleaned text, so a slice cut from it has to match what the finding quoted.
@@ -61,7 +61,7 @@ const rules: TextRule[] = [rule]
 assert.equal(hasRuleFor(rules, slop), true)
 assert.equal(hasRuleFor([], slop), false)
 
-// A standing rule has no phrase to capture, so it gets no button.
+// A standing rule has no phrase to capture. It gets no button.
 const standing = ruleFromFinding({ source: 'rule:x', message: 'Always this.', group: 'standing' })
 assert.equal(standing.find, '')
 assert.equal(canAddRule({ source: 'rule:x', message: 'Always this.', group: 'standing' }), false)

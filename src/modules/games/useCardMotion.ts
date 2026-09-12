@@ -5,21 +5,21 @@ import { forgetMotion, isFlying, noteMotion } from './cardMotion'
  * FLIP for the cards. Motion is normally off limits until polish, this is the polish pass and it
  * was asked for.
  *
- * The board renders state, so nothing about it moves on its own: a card given to you simply stops
+ * The board renders state. Nothing about it moves on its own: a card given to you simply stops
  * being drawn in one row and starts being drawn in another. This measures every card before and
- * after a state change and plays the difference, which is why cards carry a `data-cardid` that
+ * after a state change and plays the difference. Cards carry a `data-cardid` that
  * survives moving between rows: the lookup is by that attribute, not by DOM node, and a node
  * unmounted from one row and mounted in another still matches its old rectangle.
  *
  * A card with no previous rectangle is new to the board. It comes in from `origin`, the zone that
- * just shrank, so a fished card flies off the deck and a card you won flies out of their hand.
- * `useDiffOrigin` works that out; it arrives here as a ref because it belongs to the commit this
+ * just shrank: a fished card flies off the deck and a card you won flies out of their hand.
+ * `useDiffOrigin` works that out. It arrives here as a ref: it belongs to the commit this
  * effect is measuring. With no origin (the deal) the hand fans in, staggered by position.
  *
  * A face-up arrival plays in three beats: it travels face down, settles, then turns over. The back
- * is `.cardTableCard::after`, an opaque cover animated on the pseudo-element, so the card's face
+ * is `.cardTableCard::after`, an opaque cover animated on the pseudo-element: the card's face
  * stays in the DOM the whole time and nothing about the markup changes. A card that was already on
- * the table and has turned over, which is the hole card and nothing else, plays the last beat alone.
+ * the table and has turned over, the hole card and nothing else, plays the last beat alone.
  *
  * `prefers-reduced-motion` skips all of it, and the board is correct without any of it.
  */
@@ -50,7 +50,7 @@ export function useCardMotion(
   report = true,
 ) {
   const previous = useRef(new Map<string, DOMRect>())
-  /** Which cards were face down last time, so a reveal can be told from an arrival. */
+  /** Which cards were face down last time: tells a reveal from an arrival. */
   const wasDown = useRef(new Set<string>())
   const dealt = useRef(false)
 
@@ -125,7 +125,7 @@ export function useCardMotion(
       if (before) {
         const dx = before.left - rect.left
         const dy = before.top - rect.top
-        // A sub-pixel shift is reflow, not a move, and animating it reads as a twitch.
+        // A sub-pixel shift is reflow rather than a move, and animating it reads as a twitch.
         if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return
         play(
           card,
@@ -161,7 +161,7 @@ export function useCardMotion(
           ],
           { duration: arriveMs },
         )
-        // The face is under a cover that lifts at the edge-on frame, which is what makes the travel
+        // The face is under a cover that lifts at the edge-on frame. That makes the travel
         // read as face down and the landing as a turn.
         play(
           card,
@@ -192,7 +192,7 @@ export function useCardMotion(
     previous.current = next
     wasDown.current = down
     dealt.current = true
-    // The store waits on these before it writes the next event, so a card is never replaced
+    // The store waits on these before it writes the next event: a card is never replaced
     // mid-flight by the same card in its final place.
     if (report) noteMotion(started)
   }, [root, origin, version, report])

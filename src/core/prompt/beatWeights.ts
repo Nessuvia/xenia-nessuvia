@@ -1,4 +1,4 @@
-// Beat weights, and the Chapter word target divided by them. Pure, so checkBeatWeights.ts can run
+// Beat weights, and the Chapter word target divided by them. Pure: checkBeatWeights.ts runs
 // it under `node --experimental-strip-types`.
 //
 // Extension-ful imports on purpose, for the same reason.
@@ -43,10 +43,10 @@ export function asWeight(value: unknown): BeatWeight {
 /**
  * A Chapter's word target divided across its beats by weight.
  *
- * Whole words, and the parts add back up to `total` exactly: the rounding is done by running sum,
- * so each beat gets the difference between its own cumulative share and the previous one, and no
- * remainder is lost or invented. A chapter target that shows one number and beats that add to
- * another is the thing to avoid, since the Plot Layout displays both.
+ * Whole words, and the parts add back up to `total` exactly. The rounding is done by running sum:
+ * each beat gets the difference between its own cumulative share and the previous one. No
+ * remainder is lost or invented. The Plot Layout displays both the chapter target and the beat
+ * totals, and they must match.
  *
  * `total` of 0 (unset) gives zeroes, which is what an unset beat target means downstream.
  */

@@ -29,7 +29,7 @@ function loremWords(count: number): string {
   return out.join(' ')
 }
 
-/** A different reply every time, so alternates are actually distinguishable from each other. */
+/** A different reply every time: alternates stay distinguishable from each other. */
 function lorem(): string {
   return loremWords(20 + Math.floor(Math.random() * 40))
 }
@@ -45,7 +45,7 @@ function debugReply(userText: string): string {
   if (tag) return `<${tag[1]}>${loremWords(20)}</${tag[1]}>${loremWords(40)}`
   if (t.includes('format')) {
     const w = loremWords
-    // One of each nesting case, so every combination of markers has something to render.
+    // One of each nesting case: every combination of markers has something to render.
     return [
       `${w(6)} *${w(4)}* ${w(4)}`, // italics
       `${w(4)} **${w(4)}** ${w(4)}`, // bold
@@ -62,7 +62,7 @@ function debugReply(userText: string): string {
   return lorem()
 }
 
-/** A real SSE body, byte for byte, so debug mode exercises the same parser as a live backend. */
+/** A real SSE body, byte for byte. Debug mode exercises the same parser as a live backend. */
 export function loremStream(
   text: string,
   signal?: AbortSignal,
@@ -129,8 +129,8 @@ export async function* sendDummyMessage(
 ): AsyncGenerator<StreamChunk> {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? ''
   if (lastUser.toLowerCase().includes('think')) {
-    // Reasoning then reply, to exercise the reasoning-capture path. A few paragraphs' worth so the
-    // reasoning block is substantial to look at, not a single line.
+    // Reasoning then reply, to exercise the reasoning-capture path. A few paragraphs' worth,
+    // a substantial block rather than a single line.
     yield* parseSse(reasoningStream(loremWords(80), debugReply(lastUser), signal))
     return
   }

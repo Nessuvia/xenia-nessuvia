@@ -17,10 +17,10 @@ export interface StoryBook {
 
 /**
  * The books in play for a Story, in prompt order: every global book, then the enabled cast's own,
- * then the ones attached to this Story. Deduped by id, first origin winning, so a global book that
+ * then the ones attached to this Story. Deduped by id, first origin winning: a global book that
  * a cast member also carries is listed once as global.
  *
- * A disabled cast member contributes nothing else to the prompt, so their book drops out with them
+ * A disabled cast member contributes nothing else to the prompt. Their book drops out with them
  * rather than outliving the character it describes.
  */
 export function storyBooks(story: Story, characters: Character[], books: Lorebook[]): StoryBook[] {
@@ -33,7 +33,7 @@ export function storyBooks(story: Story, characters: Character[], books: Loreboo
   const add = (id: number, origin: BookOrigin, from: string) => {
     const book = byId.get(id)
     if (!book || seen.has(id)) return
-    // A dropped id is still skipped here rather than filtered later, so it can't take the slot of
+    // A dropped id is still skipped here rather than filtered later: it can't take the slot of
     // a later origin that would otherwise have listed the same book.
     seen.add(id)
     if (dropped.has(id) && origin !== 'story') return

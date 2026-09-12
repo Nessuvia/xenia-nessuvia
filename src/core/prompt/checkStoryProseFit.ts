@@ -7,9 +7,9 @@ import { fitStoryProse, storyProseSplit, type GuideChapter } from './chapterGuid
 import type { Block } from '../storage/types.ts'
 
 let b = 0
-/** Prose runs to six lines so degrading a Block actually shrinks the text. With prose shorter than
- *  its own instructions the ladder still walks, but every rung costs more than the last and only
- *  the floor is reachable, which tests nothing. */
+/** Prose runs to six lines: degrading a Block actually shrinks the text. With prose shorter than
+ *  its own instructions the ladder still walks, but every rung costs more than the last. Only
+ *  the floor is reachable, and that tests nothing. */
 const prose = (tag: string) => [tag, 'x', 'x', 'x', 'x', 'x'].join('\n')
 const beat = (instructions: string, tag: string): Block => ({
   id: `b${++b}`,
@@ -45,7 +45,7 @@ const chapters = (): GuideChapter[] => [
   },
 ]
 
-/** One token per line, so an allowance is a line count and the cases read as counts. */
+/** One token per line: an allowance is a line count and the cases read as counts. */
 const lines = (s: string) => (s === '' ? 0 : s.split('\n').length)
 const fit = (allowance: number, cs = chapters()) =>
   fitStoryProse(cs, 3, null, 'both', allowance, lines)
@@ -119,9 +119,9 @@ const fit = (allowance: number, cs = chapters()) =>
   const send = (mode: GuideChapter['guideSend']) => {
     const cs = chapters()
     cs[0].guideSend = mode
-    // The floor, so every Chapter is degraded whatever this mode costs. An 'off' Chapter is free
-    // once degraded, so a middling allowance would stop the ladder before Chapter 2 and the last
-    // case here would be testing nothing.
+    // The floor: every Chapter is degraded whatever this mode costs. An 'off' Chapter is free
+    // once degraded. A middling allowance would stop the ladder before Chapter 2, and the last
+    // case here would test nothing.
     return fit(1, cs).text
   }
 
@@ -152,8 +152,8 @@ const fit = (allowance: number, cs = chapters()) =>
   assert.ok(!out.text.includes('PROSE 1A'))
   assert.ok(!out.text.includes('PROSE 1B'))
   assert.ok(!/Beat \d+: *$/m.test(out.text), 'no beat line with nothing after the colon')
-  // Numbering is the Block's own position, so a beat that contributes no line still holds its
-  // place and the third Block is Beat 3.
+  // Numbering is the Block's own position. A beat that contributes no line still holds its
+  // place: the third Block is Beat 3.
   assert.ok(out.text.includes('Beat 3: He is followed'))
 }
 

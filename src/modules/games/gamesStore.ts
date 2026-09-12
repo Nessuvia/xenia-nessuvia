@@ -31,7 +31,7 @@ import { motionSettled } from './cardMotion'
 
 /**
  * A game is not a chat. It reads no chat history, writes no messages, and carries its own log.
- * The board moves first and the character's line arrives after, so a dead connection costs you the
+ * The board moves first and the character's line arrives after. A dead connection costs you the
  * commentary and nothing else.
  */
 
@@ -49,7 +49,7 @@ const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 /** How long a character's line may take before the table stops waiting on it. */
 const replyCutoffMs = 90000
 
-/** The reply in flight, so closing a game can drop it. One game is open at a time. */
+/** The reply in flight: closing a game can drop it. One game is open at a time. */
 let live: AbortController | null = null
 
 /** Whether the table is already playing itself out. Opening a game starts a run that nobody awaits,
@@ -62,7 +62,7 @@ let wanted = false
 /**
  * The step gate: the resolve of the promise the driver is parked on, or null when it is running.
  * With `gameStepMode` on the table stops after the character has spoken and only moves again when
- * Next is clicked, so a line can be read before the next card lands on top of it.
+ * Next is clicked. A line can be read before the next card lands on top of it.
  */
 let stepGate: (() => void) | null = null
 
@@ -85,8 +85,8 @@ async function beat(ms = moveBeat) {
 export type { AnyGameState }
 
 /**
- * The per-game pieces everything generic needs. Two implementations, so this is a table rather
- * than an abstraction: the casts inside it are the one place `Game.kind` deciding which half of
+ * The per-game pieces everything generic needs. Two implementations: this is a table rather
+ * than an abstraction. The casts inside it are the one place `Game.kind` deciding which half of
  * `GameEvent` a log is has to be said out loud.
  */
 interface GameRules {
@@ -114,7 +114,7 @@ const rules: Record<GameKind, GameRules> = {
   },
 }
 
-/** What the two sides are called in this game's lines. The names are on the record, so a persona
+/** What the two sides are called in this game's lines. The names are on the record: a persona
  *  renamed since is still the one who was at the table. */
 export function sideNames(game: Game): SideNames {
   return { player: game.personaName, char: game.characterName }
@@ -143,7 +143,7 @@ function newGame(
     personaName: persona?.name,
     stackId,
     // Milliseconds are seed enough: two games started in the same millisecond would need the same
-    // character too, and the shuffle only has to be unguessable to a person, not to an attacker.
+    // character too, and the shuffle only has to look random to a person.
     seed: now >>> 0,
     events: [],
     status: 'playing',
@@ -157,7 +157,7 @@ function newGame(
  * is a user turn.
  *
  * Only the newest user turn carries the `<gameState>` block. An old board is not the board, and
- * repeating one per turn would fill the context with hands that no longer exist.
+ * repeating one per turn would fill the context with hands that are gone.
  */
 function gameMessages(game: Game, tag: string): Message[] {
   const kind = rules[game.kind]
@@ -180,7 +180,7 @@ function gameMessages(game: Game, tag: string): Message[] {
     // unambiguous fact; their words are the turn, and a character that only ever saw the fact
     // could not answer what was actually said to it.
     const said = events.find((e) => e.kind === 'ask' && e.by === 'player' && e.text)
-    // Before the fact line, never after. The line already reports the ask and how it resolved, so a
+    // Before the fact line, never after. The line already reports the ask and how it resolved. A
     // quote of the ask sitting after it reads as a second ask that nothing has answered yet, and the
     // character replies to that instead of to the move. Speech first, then what it caused.
     const quote = said?.kind === 'ask' && said.text ? `${speaking} said: "${said.text}"\n\n` : ''
@@ -198,7 +198,7 @@ function gameMessages(game: Game, tag: string): Message[] {
       pushMove(current, batch, false, opening)
       batch = []
       opening = current
-      // The player's own line is a user turn, quoted the same way an ask is, so the character
+      // The player's own line is a user turn, quoted the same way an ask is. The character
       // reads it as something said to them rather than as another fact about the table.
       messages.push({
         ownerId: game.ownerId,
@@ -212,7 +212,7 @@ function gameMessages(game: Game, tag: string): Message[] {
     batch.push(event)
     current = kind.reduce(current, event)
   }
-  // The trailing batch is the move being reacted to right now, so it gets the board. When the log
+  // The trailing batch is the move being reacted to right now. It gets the board. When the log
   // ends on something the player said there is no trailing batch, and the block goes on that line
   // instead: a reply with no board in the prompt is the character guessing.
   if (batch.length > 0) {
@@ -226,7 +226,7 @@ function gameMessages(game: Game, tag: string): Message[] {
 
 /**
  * Board zoom and log width are non-portable preferences: they belong to this screen on this
- * monitor, not to the user's data. Straight to localStorage, no store table, out of the export.
+ * monitor. Straight to localStorage, no store table, out of the export.
  */
 const scaleKey = 'nessuTavern.gamesBoardScale'
 const handFitKey = 'nessuTavern.gamesHandFit'
@@ -250,7 +250,7 @@ interface GamesState {
   state: AnyGameState
   streaming: boolean
   streamingText: string
-  /** A failed reply. The board is already correct, so this is not a rollback. */
+  /** A failed reply. The board is already correct. This is not a rollback. */
   error: string
   /** Unparsable input: shown briefly, nothing is logged. */
   notice: string
@@ -295,9 +295,9 @@ async function gameStack(game: Game): Promise<PromptStack> {
   return useStacks.getState().stacks.find((s) => s.id === id) ?? defaultGameStack()
 }
 
-/** buildPrompt reads `chat` only for the author's note, speaker labels and group detection, so a
- *  record that has none of those is safe and a game never needs a Chat row. The note is the game's
- *  own, carried here because the author's note block is the route it already has to the prompt. */
+/** buildPrompt reads `chat` only for the author's note, speaker labels and group detection. A
+ *  record that has none of those is safe, and a game never needs a Chat row. The note is the game's
+ *  own, carried here: the author's note block is the route it already has to the prompt. */
 function syntheticChat(game: Game): Chat {
   return {
     id: 0,
@@ -371,7 +371,7 @@ export const useGames = create<GamesState>()((set, get) => ({
       notice: '',
       streamingText: '',
     })
-    // A hand dealt as a natural settles itself, so a new game can already be waiting on the driver
+    // A hand dealt as a natural settles itself. A new game can already be waiting on the driver
     // rather than on the player.
     void drive(get, set)
     return id
@@ -410,7 +410,7 @@ export const useGames = create<GamesState>()((set, get) => ({
 
     // Off your turn, or on it with something that is not a move: with chat back on the words are
     // kept as something you said. Nothing about the board moves and no reply is generated; the
-    // character reads it on its next turn, which is when it has something to answer with.
+    // character reads it on its next turn: that is when it has something to answer with.
     if (!move) {
       if (!useSettings.getState().gameChatBack) {
         set({
@@ -469,7 +469,7 @@ type Set = (patch: Partial<GamesState>) => void
  *
  * The pacing is the whole point. Every batch here is already decided; writing it all at once means
  * the card is drawn before you have read who asked for what, and the run of dealer hits lands as
- * one frame. So events go in one at a time with a beat between, and the driver is asked what comes
+ * one frame. Events go in one at a time with a beat between, and the driver is asked what comes
  * next until it says nothing does.
  */
 async function playMove(get: Get, set: Set, move: Rank | blackjack.Action, text: string) {
@@ -513,8 +513,8 @@ function worthReacting(kind: GameKind, events: GameEvent[]): boolean {
  * Everything nobody is deciding: the dealer's runout, the next round, the character's asks. Runs
  * until the driver says the table is waiting on the player again.
  *
- * The guard is a backstop. Both games are bounded by their own deck, so reaching it means a rule
- * changed underneath this and a bug is better than a spinning tab.
+ * The guard is a backstop. Both games are bounded by their own deck. Reaching it means a rule
+ * changed underneath this, and a bug is better than a spinning tab.
  */
 async function drive(get: Get, set: Set) {
   if (driving) {
@@ -535,11 +535,11 @@ async function drive(get: Get, set: Set) {
         if (!game || game.id !== id) break
         const batch = drivers[game.kind](get().state, { difficulty: game.difficulty })
         // Nothing left to do here: the table is waiting on the player, who can read at their own
-        // pace anyway. The gate goes after this check so it never sits in front of your own turn.
+        // pace anyway. The gate goes after this check. It never sits in front of your own turn.
         if (!batch || batch.length === 0) break
         await waitForNext(get, set)
         if (get().game?.id !== id) break
-        // A beat before they move again, so a run of turns reads as several moves.
+        // A beat before they move again. A run of turns reads as several moves.
         await beat()
         await pace(get, set, batch)
         if (worthReacting(game.kind, batch)) await react(get, set)
@@ -553,7 +553,7 @@ async function drive(get: Get, set: Set) {
 /**
  * Park the table until Next is clicked.
  *
- * Only where there is something to read: the gate exists for the character's line, so a log that
+ * Only where there is something to read: the gate exists for the character's line. A log that
  * has not ended on one since the last gate goes on without stopping. `driving` is still set here,
  * which is what holds the player's move off until they let the table go.
  */
@@ -609,7 +609,7 @@ async function persist(get: Get, set: Set, game: Game, state?: AnyGameState) {
  * Stream the character's line for whatever just happened and append it as a `say` event.
  *
  * The send path is store to connector, the same as every other generation: nothing here calls
- * fetch, so the CLAUDE.md rule stands.
+ * fetch. The CLAUDE.md rule stands.
  */
 async function react(get: Get, set: Set) {
   const game = get().game

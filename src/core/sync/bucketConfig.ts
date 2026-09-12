@@ -9,7 +9,7 @@
 export interface BucketConfig {
   /** Base URL of the S3 API, e.g. `https://s3.example.net` or `http://localhost:3900`. */
   endpoint: string
-  /** Self-hosted servers mostly ignore the value, but SigV4 signs it, so it has to match what the
+  /** Self-hosted servers mostly ignore the value. SigV4 signs it: it has to match what the
    *  server expects and cannot be blank. Garage's default is `garage`, set as `s3_region` in
    *  garage.toml. Hosted providers want a real region. */
   region: string
@@ -25,7 +25,7 @@ export interface BucketConfig {
 
 export const emptyBucketConfig: BucketConfig = {
   endpoint: '',
-  // Garage's default, since Garage is the setup the docs walk through. Anyone pointing at a hosted
+  // Garage's default: Garage is the setup the docs walk through. Anyone pointing at a hosted
   // provider has to change it, and would have had to change `us-east-1` just as often.
   region: 'garage',
   bucket: '',

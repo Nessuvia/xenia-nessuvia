@@ -2,7 +2,7 @@
  * The structural half of a palette. Colors come from the palette's own vars; a skin decides how the
  * app's surfaces are built out of them: translucency, blur, borders, shadows.
  *
- * Applied as `data-skin` on the root element, so a skin's stylesheet is a block of
+ * Applied as `data-skin` on the root element: a skin's stylesheet is a block of
  * `[data-skin='glass'] #root .panel { … }` rules and nothing else. Four classes are the whole
  * contract:
  *
@@ -16,7 +16,7 @@
  * rules rare and commented; a skin that lists module classes has stopped being a skin.
  *
  * A skin may only change how a surface is painted: background, border, shadow, filters. Radius,
- * padding and spacing stay in the base stylesheet, so a skin can look wrong but never break layout.
+ * padding and spacing stay in the base stylesheet. A skin can look wrong and never break layout.
  *
  * `default` is the absence of a skin: it matches no rules and the base stylesheet stands as-is.
  * Every skin file is additive.
@@ -67,8 +67,8 @@ export function findSkin(id: string): Skin | undefined {
   return skins.find((s) => s.id === id)
 }
 
-/** `--name` → value for the active skin's knobs, skipping any the palette has no number for so the
- *  skin's own stylesheet default shows through. */
+/** `--name` → value for the active skin's knobs, skipping any the palette has no number for. The
+ *  skin's own stylesheet default shows through instead. */
 export function skinVars(skinId: string, stored: Record<string, number>): Record<string, string> {
   const skin = findSkin(skinId)
   if (!skin) return {}

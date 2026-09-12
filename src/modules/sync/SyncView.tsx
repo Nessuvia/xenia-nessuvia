@@ -13,7 +13,7 @@ import {
   type TableComparison,
 } from '../../core/sync/syncStore'
 
-/** Both all-tables buttons act on every table, so the decision map is one direction across the
+/** Both all-tables buttons act on every table. The decision map is one direction across the
  *  board. Kept for the case where the user knows which side is right and skips the comparison. */
 function allTables(direction: Direction): Record<TableName, Direction> {
   return Object.fromEntries(tableNames.map((t) => [t, direction])) as Record<TableName, Direction>
@@ -101,7 +101,7 @@ function R2Section() {
 
   const [decisions, setDecisions] = useState<Partial<Record<TableName, Direction>>>({})
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok'>('idle')
-  // A saved endpoint that isn't R2's opens as the six-field form, so an existing Garage or B2
+  // A saved endpoint that isn't R2's opens as the six-field form. An existing Garage or B2
   // config still edits as itself. A blank one is a fresh install, which starts on R2.
   const [showAll, setShowAll] = useState(
     () => Boolean(bucket.endpoint) && r2AccountId(bucket.endpoint) === null,
@@ -153,7 +153,7 @@ function R2Section() {
 
       <div className="syncActions">
         {/* A disabled button on its own is a dead end: everything below here is hidden until the
-            config is complete, so the reason has to be on screen. */}
+            config is complete. The reason has to be on screen. */}
         {missing.length > 0 && <span className="syncNote">Still needed: {missing.join(', ')}.</span>}
         <button type="button" onClick={runTest} disabled={!ready || testState === 'testing'}>
           {testState === 'testing' ? 'Testing…' : 'Test connection'}
@@ -222,7 +222,7 @@ function R2Section() {
           decisions={decisions}
           busy={busy}
           onDecide={(table, direction) => setDecisions((d) => ({ ...d, [table]: direction }))}
-          // The radios show `suggested` as pre-selected, so Apply has to act on it. Only an
+          // The radios show `suggested` as pre-selected. Apply has to act on it. Only an
           // explicit click lands in `decisions`; without this merge a pre-filled row would look
           // chosen and then be skipped.
           onApply={() => {
@@ -243,8 +243,8 @@ function R2Section() {
   )
 }
 
-/** R2's endpoint is its account ID in a fixed hostname and its region is always `auto`, so those
- *  two fields are filled in rather than asked for. The stored BucketConfig is the same either way
+/** R2's endpoint is its account ID in a fixed hostname and its region is always `auto`. Those
+ *  two fields are filled in rather than asked for. The stored BucketConfig is the same either way:
  *  nothing below this component knows which form wrote it. */
 function R2Form({
   bucket,
@@ -384,7 +384,7 @@ function DropboxSection() {
   return (
     <Section title="Dropbox" status="Not available yet">
       <p className="syncNote">
-        Dropbox will connect with a sign-in instead of API keys, and store the same files in an app
+        Dropbox will connect with a sign-in, not API keys. It will store the same files in an app
         folder.
       </p>
     </Section>
@@ -481,8 +481,8 @@ function BucketForm({
 }
 
 /**
- * The per-table decision list. A table changed on both sides has no suggestion and no default
- * `apply` refuses until every one of them has a direction, so this is where that gets answered.
+ * The per-table decision list. A table changed on both sides has no suggestion and no default.
+ * `apply` refuses until every one of them has a direction. This is where that gets answered.
  */
 function ComparisonTable({
   comparison,

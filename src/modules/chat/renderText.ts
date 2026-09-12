@@ -1,6 +1,6 @@
 // Plain .ts, not the spec's .tsx: node --experimental-strip-types can't load .tsx at all, and
-// checkRenderText.ts has to import this. The output is <em>/<strong>/text, so createElement
-// reads fine without JSX.
+// checkRenderText.ts has to import this. The output is <em>/<strong>/text: createElement reads
+// fine without JSX.
 import { createElement, Fragment } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { MarkerKind, ReplaceRule, TagRule } from '../../core/stores/settingsStore'

@@ -2,14 +2,14 @@ import type { ResolvedTokenizerId } from './tokenizers.ts'
 
 /**
  * Guesses a model's tokenizer family from its id. Names are the only signal an OpenAI-compatible
- * endpoint gives (there is no field for this), so it is a guess, and the picker exists for when
- * the guess is wrong.
+ * endpoint gives: there is no field for this. It is a guess. The picker exists for when the
+ * guess is wrong.
  *
  * Order matters: the more specific pattern has to be tested before the family it belongs to
  * (`llama-3` before `llama`, `codestral` before `mistral`).
  */
 const rules: [RegExp, ResolvedTokenizerId][] = [
-  // Route names carry a vendor prefix (`openrouter/anthropic/claude-3.5-sonnet`), so match anywhere.
+  // Route names carry a vendor prefix (`openrouter/anthropic/claude-3.5-sonnet`). Match anywhere.
   [/gpt-?[45]|gpt-?oss|\bo[1-4]\b|chatgpt/, 'o200k_base'],
   [/gpt-?3\.5|text-davinci|gpt-?3\b/, 'cl100k_base'],
   [/claude/, 'claude'],

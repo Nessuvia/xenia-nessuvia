@@ -90,7 +90,7 @@ function newChapter(storyId: number, order: number, title: string): Chapter {
   }
 }
 
-/** Stamp the open Story as edited. Prose lives on the Chapter, so without this a Story's updatedAt
+/** Stamp the open Story as edited. Prose lives on the Chapter: without this a Story's updatedAt
  *  would only move on rename/cover/cast, and the shelf sorts by it. */
 async function touchStory(
   get: () => WriteState,
@@ -161,7 +161,7 @@ interface WriteState {
    *  the old text instead of leaving it above the tail. */
   streamingReplaces: boolean
   /** Progress of a chapter-wide rewrite: which beat of how many. Null when none is running. It is
-   *  separate from `streaming` because the run outlives each individual request. */
+   *  separate from `streaming`: the run outlives each individual request. */
   rewriting: { done: number; total: number } | null
   error: string
   /** The Block the cursor is in. Session state, never persisted. Find and Replace scopes to it, and
@@ -183,8 +183,8 @@ interface WriteState {
   collapsedBeats: string[]
   setCollapsedBeats(ids: string[]): void
   /** What the open Story's lorebooks matched on the last `refreshWorldInfo`. Held here rather than
-   *  resolved where it's needed because reading entries is async and the prompt preview renders
-   *  synchronously: this is the one value both the preview and `writeBlock` read, so what the
+   *  resolved where it's needed: reading entries is async and the prompt preview renders
+   *  synchronously. This is the one value both the preview and `writeBlock` read. What the
    *  preview shows and what goes over the wire cannot disagree. */
   worldInfo: ResolvedWorldInfo
   /** Match the Story's enabled lorebooks against `scan` and keep the result. Returns it too, for
@@ -244,10 +244,10 @@ interface WriteState {
    * Ask the model for the Story's chapters and write them in. Chapters and summaries only: beats
    * come from `generateChapterOutline`, one chapter at a time.
    *
-   * Replaces every Chapter the Story has. The prose goes with them, which is why the screen
-   * confirms it and why nothing is deleted until the reply has parsed.
+   * Replaces every Chapter the Story has. The prose goes with them: the screen
+   * confirms it, and nothing is deleted until the reply has parsed.
    *
-   * Throws on failure rather than only setting `error`, so the screen can stay open and show what
+   * Throws on failure rather than only setting `error`. The screen stays open and shows what
    * went wrong next to the fields that produced it.
    */
   generateStoryOutline(req: StoryOutlineRequest): Promise<void>
@@ -255,8 +255,8 @@ interface WriteState {
    *  prose in them. Same failure contract as the Story outline. */
   generateChapterOutline(chapterId: number, req: ChapterOutlineRequest): Promise<void>
   /**
-   * Stream prose for one Block. The result lands as a new swipe and becomes the selected one, so
-   * every generation is undoable by swiping back, there are no spans to splice or validate.
+   * Stream prose for one Block. The result lands as a new swipe and becomes the selected one:
+   * every generation is undoable by swiping back. There are no spans to splice or validate.
    *
    * `direction` defaults to the Direction box verbatim, the Story's standing instruction. The
    * beat is NOT folded in; it reaches the model through {{beat}}, wherever the stack places it.
@@ -281,7 +281,7 @@ interface WriteState {
    * appends a swipe. Runs one Block at a time so each sees the previous one's new prose.
    */
   rewriteChapter(chapterId: number, note: string): Promise<void>
-  /** Rewrite a Chapter's summary from the prose it actually holds, so the recap the prompt sends
+  /** Rewrite a Chapter's summary from the prose it actually holds. The recap the prompt sends
    *  matches what got written rather than what was planned. Replaces whatever is there. */
   summarizeChapter(chapterId: number): Promise<void>
   /** Select one of a Block's alternates. */
@@ -328,8 +328,8 @@ function outlineConnection(story: Story) {
 /**
  * The half both outline generators share: hold the streaming flag, send, collect the reply.
  *
- * Nothing renders this as it arrives, so there is no `streamingBlockId`; it lands as Chapters or
- * beats once it is done. The flag is the one `writeBlock` holds, so Stop works and neither can
+ * Nothing renders this as it arrives: there is no `streamingBlockId`. It lands as Chapters or
+ * beats once it is done. The flag is the one `writeBlock` holds. Stop works and neither can
  * start while the other runs.
  */
 async function runOutline(
@@ -347,7 +347,7 @@ async function runOutline(
   try {
     const stack = await useStacks.getState().ensureActive('story')
     // An outline for a long Story runs well past a 512-token default, and an object cut off halfway
-    // parses as nothing at all, so this request gets its own floor, like generatePalette.
+    // parses as nothing at all. This request gets its own floor, like generatePalette.
     const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), 2000))
     for await (const chunk of sendMessage(messagesFor(stack.miscPrompts), wide, controller.signal)) {
       if (chunk.content) text += chunk.content
@@ -472,7 +472,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     if (!story) return null
     const chapters = (await storage.find('chapters', 'storyId', id)) as unknown as Chapter[]
     chapters.sort((a, b) => a.order - b.order)
-    // Drop the ids so storage assigns new ones; createdAt/updatedAt are set by save().
+    // Drop the ids: storage assigns new ones. createdAt/updatedAt are set by save().
     const { id: _storyId, ...rest } = story
     const copyId = await save({ ...rest, title: `${story.title} copy`, createdAt: 0, updatedAt: 0 })
     const now = Date.now()
@@ -513,7 +513,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
       // Session state, and this is a different document's prose.
       activeBlockId: null,
       pendingCaret: null,
-      // Kept when you come back to a Story that is still generating, so the tail picks up mid-flight.
+      // Kept when you come back to a Story that is still generating: the tail picks up mid-flight.
       streamingText: get().streamingStoryId === id ? get().streamingText : '',
     })
   },
@@ -583,7 +583,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     const chapter = newChapter(story.id!, chapters.length, title || `Chapter ${chapters.length + 1}`)
     const id = await storage.put('chapters', chapter as unknown as StoredRecord)
     await persistOrder([...chapters, { ...chapter, id }], set)
-    // A new Chapter is where the Author is about to work, so it takes the cursor.
+    // A new Chapter is where the Author is about to work. It takes the cursor.
     set({ activeChapterId: id })
     await touchStory(get, set)
   },
@@ -669,7 +669,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
       throw outlineError(set, err, reply.finishReason, connection, 'ask for fewer chapters')
     }
 
-    // Past here the reply is good, so the Story's existing plan can go. Nothing before this point
+    // Past here the reply is good. The Story's existing plan can go. Nothing before this point
     // has written anything.
     for (const chapter of chapters) {
       if (chapter.id !== undefined) await storage.remove('chapters', chapter.id)
@@ -690,7 +690,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
       written.push({ ...chapter, id })
     }
 
-    // persistOrder puts the array in state; the orders already match, so it writes nothing again.
+    // persistOrder puts the array in state. The orders already match, so it writes nothing again.
     await persistOrder(written, set)
     set({
       streaming: false,
@@ -719,7 +719,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     }
 
     // The beats replace the Chapter's own, and the prose in them goes: the caller confirmed that.
-    // Nothing else about the Chapter is touched, so its title, summary and target all survive.
+    // Nothing else about the Chapter is touched. Its title, summary and target all survive.
     const blocks = beats.map((b) => newBlock(b.beat, b.weight))
     const next = { ...chapter, blocks, targetWords: req.targetWords, updatedAt: Date.now() }
     await storage.put('chapters', next as unknown as StoredRecord)
@@ -862,10 +862,10 @@ export const useWrite = create<WriteState>()((set, get) => ({
       ?.blocks.find((b) => b.id === blockId)
     if (!block || !instruction.trim()) return
     // The chat's re-roll wording, unchanged: quote what it said, then the instruction. An empty
-    // Block has nothing to rewrite, so the instruction steers a first draft instead. Either way the
-    // beat still arrives through {{beat}}, so it is not repeated here.
-    // The Story stack's own override, if it set one, `writeBlock` resolves the same stack again to
-    // build the prompt, so both halves of this request read the same row.
+    // Block has nothing to rewrite. The instruction steers a first draft instead. Either way the
+    // beat still arrives through {{beat}} and is not repeated here.
+    // The Story stack's own override, if it set one: `writeBlock` resolves the same stack again to
+    // build the prompt, and both halves of this request read the same row.
     const stack = await useStacks.getState().ensureActive('story')
     await get().writeBlock(
       chapterId,
@@ -881,8 +881,8 @@ export const useWrite = create<WriteState>()((set, get) => ({
   rewriteChapter: async (chapterId, note) => {
     const chapter = get().chapters.find((c) => c.id === chapterId)
     if (!chapter || get().streaming || !note.trim()) return
-    // The list is taken once, before anything runs: the Blocks are replaced as each pass commits,
-    // so holding the records would rewrite stale prose. Ids survive, so they are what is held.
+    // The list is taken once, before anything runs. The Blocks are replaced as each pass commits:
+    // holding the records would rewrite stale prose. Ids survive and are what is held.
     const ids = chapter.blocks.filter((b) => b.content.trim()).map((b) => b.id)
     if (!ids.length) return
     const stack = await useStacks.getState().ensureActive('story')
@@ -987,7 +987,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
   },
 
   // Stop ends the chapter rewrite too, not only the request in flight. An abort leaves the partial
-  // as a swipe and clears `error`, so the loop has no other way to tell it was stopped on purpose.
+  // as a swipe and clears `error`. The loop has no other way to tell it was stopped on purpose.
   stop: () => {
     rewriteStopped = true
     abort?.abort()
@@ -1053,12 +1053,12 @@ async function writeBlockContent(
 
 /**
  * A finished generation: the text becomes a new swipe on the Block and the selected one. Nothing is
- * spliced and no offsets are recorded - swiping back is what Undo used to be, and it survives a
- * reload for free because the alternates are stored.
+ * spliced and no offsets are recorded - swiping back is what Undo used to be. It survives a
+ * reload for free: the alternates are stored.
  */
 /**
  * Every correction that led to the selected swipe, plus the one just typed, as one instruction.
- * Numbered when there is more than one so the model can see them as a list rather than a paragraph
+ * Numbered when there is more than one: the model sees them as a list rather than a paragraph
  * of contradictions. This is what makes a re-roll iterate: round three does not have to re-explain
  * what rounds one and two already asked for.
  */

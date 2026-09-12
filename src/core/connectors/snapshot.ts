@@ -3,10 +3,10 @@ import type { ChatMessage } from './connectorInterface'
 import type { Connection } from '../stores/settingsStore'
 import { paramDefList } from '../stores/paramDefsStore'
 
-/** Past this, a snapshot isn't worth the storage space; the inspector says so instead. */
+/** Past this, a snapshot costs too much storage space. The inspector shows this marker. */
 const maxSnapshotBytes = 256 * 1024
 
-/** Stored in place of an oversized snapshot, so the inspector can say which case it is. */
+/** Stored in place of an oversized snapshot: lets the inspector tell the two cases apart. */
 export const snapshotTooLarge = 'too-large'
 
 /** The redacted request, as stored on the message. */

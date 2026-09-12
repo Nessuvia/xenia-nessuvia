@@ -30,8 +30,8 @@ export default function Sidebar() {
   const chatId = useMatch('/chat/:chatId')?.params.chatId
   // A Story takes the rail over the same way an open chat does.
   const storyId = useMatch('/write/s/:storyId')?.params.storyId
-  // So does an open game. The live board has its own route purely so this match has something to
-  // key on; /games itself stays the Play and History tabs.
+  // So does an open game. The live board has its own route purely for this match to key on;
+  // /games itself stays the Play and History tabs.
   const gameId = useMatch('/games/:gameId')?.params.gameId
   // Back to the character list, not the character's own page, leaving a chat means leaving the
   // character, and getting to the list from the character page was the extra step people hit.
@@ -42,7 +42,7 @@ export default function Sidebar() {
   const customTitle = useSettings((s) => s.customTitle)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const personaName = usePersonas((s) => s.personas.find((p) => p.id === activePersonaId)?.name)
-  // "User" is the persona a fresh install creates, so it does not count as a name the user picked.
+  // "User" is the persona a fresh install creates. It does not count as a name the user picked.
   const named = personaName?.trim() && personaName.trim().toLowerCase() !== 'user' ? personaName.trim() : ''
   const title = personaTitleOff
     ? customTitle.trim() || 'Xenia Nessuvia'
@@ -78,9 +78,9 @@ export default function Sidebar() {
     const el = rail.current
     if (!el) return
     const obs = new ResizeObserver(() => {
-      // The phone drawer is fixed and full-screen, so its measured width is the whole window
+      // The phone drawer is fixed and full-screen. Its measured width is the whole window,
       // which would push an excludeNav background layer off screen entirely. It sits over the
-      // content rather than beside it, so as far as layout goes it takes no width at all.
+      // content rather than beside it: as far as layout goes it takes no width at all.
       const width = window.matchMedia('(max-width: 700px)').matches
         ? '0px'
         : `${el.getBoundingClientRect().width}px`
@@ -91,10 +91,10 @@ export default function Sidebar() {
   }, [])
 
   // Module tabs open in a panel beside the rail. Fixed-positioned off the nav item's rect: the rail
-  // is overflow:hidden, so anything laid out inside it at left:100% would be clipped.
+  // is overflow:hidden. Anything laid out inside it at left:100% would be clipped.
   //
   // Two timings, both on leaving: the panel fades over 500ms, and stays mounted and hoverable for
-  // 500ms. Coming back inside that window cancels the close, so a mouse that slips off the panel
+  // 500ms. Coming back inside that window cancels the close. A mouse that slips off the panel
   // and returns keeps it open without going back to the nav item.
   const [flyout, setFlyout] = useState<{ id: string; top: number; left: number } | null>(null)
   const [closing, setClosing] = useState(false)
@@ -123,7 +123,7 @@ export default function Sidebar() {
   useEffect(() => () => clearTimeout(closeTimer.current), [])
 
   // The drag writes the CSS var straight to the element, then hands the same number to React on
-  // release so the style prop and the element agree.
+  // release: the style prop and the element agree.
   function startResize(e: ReactPointerEvent<HTMLDivElement>) {
     e.preventDefault()
     const el = rail.current
@@ -191,7 +191,7 @@ export default function Sidebar() {
       ref={rail}
       className={`navbar sidebar ${drawer.className}${chatId || storyId || gameId ? ' inChat' : ''}${collapsed ? ' collapsed' : ''}`}
       style={railStyle}
-      // Going somewhere closes the drawer, so the destination isn't hidden behind it. One handler
+      // Going somewhere closes the drawer: the destination isn't hidden behind it. One handler
       // rather than an onClick per link, the rail's links come from four different places. Links
       // that open a new tab are left alone: the drawer is still where you were.
       onClick={(e) => {
@@ -291,7 +291,7 @@ export default function Sidebar() {
             >
               {title}
             </button>
-            {/* A phone has no collapsed rail to go to, so the same slot closes the drawer. */}
+            {/* A phone has no collapsed rail to go to. The same slot closes the drawer. */}
             {phone ? (
               <button
                 type="button"

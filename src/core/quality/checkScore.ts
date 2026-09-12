@@ -5,7 +5,7 @@ import { buildCensus, defaultCensus } from './census.ts'
 import type { LexiconEntry } from './lexicon.ts'
 
 // Settings as literals rather than importing the store: a check script must not pull zustand in.
-// A fixture lexicon, not a shipped one: nothing ships a slop list any more, so a check that needs
+// A fixture lexicon, not a shipped one: nothing ships a slop list any more. A check that needs
 // one writes the two entries it is asserting about.
 const lexicon: LexiconEntry[] = [
   { id: 'shiver-spine', phrase: 'a shiver (ran|runs) down .{0,12}spine', regex: true, enabled: true, weight: 3 },
@@ -59,7 +59,7 @@ assert.ok(varietyCredit(varied) > varietyCredit(flat))
 assert.ok(varietyCredit('One sentence only.') === 0, 'too few sentences to measure')
 assert.ok(varietyCredit(flat) >= 0 && varietyCredit(varied) <= 1, 'the credit stays in range')
 
-// Parts are per 100 words, so one stock phrase costs less in a long passage than in a short one.
+// Parts are per 100 words: one stock phrase costs less in a long passage than in a short one.
 const filler = ' The window stayed shut and the kettle went cold on the ring.'.repeat(6)
 assert.ok(scoreText(slopped, ctx).parts.slop > scoreText(slopped + filler, ctx).parts.slop)
 
@@ -71,7 +71,7 @@ assert.equal(scoreText('', ctx).total, 0)
 assert.equal(scoreText('   ', ctx).total, 0)
 assert.equal(scoreText('Two words', ctx).total, 0)
 
-// Every part is reported, so the panel can show why a chunk lost.
+// Every part is reported: the panel can show why a chunk lost.
 assert.deepEqual(
   Object.keys(sloppedScore.parts).sort(),
   ['census', 'flags', 'selfRepeat', 'slop', 'variety'],

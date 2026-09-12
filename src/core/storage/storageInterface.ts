@@ -1,4 +1,4 @@
-/** The owner every row carries. There are no accounts, so this is the only value in use. Named so
+/** The owner every row carries. There are no accounts: this is the only value in use. Named so
  *  it can never be mistaken for "the current owner". */
 export const localOwnerId = 'local'
 
@@ -12,7 +12,7 @@ export function currentOwnerId(): string {
 
 /** No caller today, every row is owned by `localOwnerId`. Kept as the seam a multi-owner backend
  *  would write through, per the ownerId note in CLAUDE.md. Anything calling this must run before
- *  the first load(), since db.ts stamps the value at write time. */
+ *  the first load(): db.ts stamps the value at write time. */
 export function setOwnerId(id: string) {
   ownerId = id
 }
@@ -66,16 +66,16 @@ export const tableNames: TableName[] = [
   'promptStacks',
   'stories',
   'chapters',
-  // Backup reads this list, so background images ride along with everything else. Full-size
+  // Backup reads this list. Background images ride along with everything else. Full-size
   // wallpapers as base64 make that file large; nothing trims them.
   'backgroundImages',
   'palettes',
-  // Body map trackers ride along in a full backup. They're per-chat, unrelated to stories, so
-  // story export never touches them (see body-map-widget-plan Section 6).
+  // Body map trackers ride along in a full backup. They're per-chat and unrelated to stories.
+  // Story export never touches them (see body-map-widget-plan Section 6).
   'bodyTrackers',
-  // The saved body-map library (man, woman, non-human, …). Not per-chat; loaded into the author.
+  // The saved body-map library (man, woman, non-human, etc). Not per-chat: loaded into the author.
   'bodyMaps',
-  // The sampler library. Rides along in a backup: a connection references defs by key, so a
+  // The sampler library. Rides along in a backup: a connection references defs by key. A
   // restore without them would leave every custom param unresolvable.
   'paramDefs',
   // Played games, log and all. Small rows: a seed, a few hundred events, no card positions.

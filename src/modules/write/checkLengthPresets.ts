@@ -2,8 +2,8 @@
 import assert from 'node:assert'
 import { customPreset, lengthPresets, presetFor } from './lengthPresets.ts'
 
-// Every preset is reachable from its own numbers, which is what keeps the dropdown honest after a
-// reload: the choice is not remembered, it is recomputed.
+// Every preset is reachable from its own numbers. That keeps the dropdown honest after a
+// reload: the choice is recomputed rather than remembered.
 for (const p of lengthPresets) {
   assert.strictEqual(presetFor(p.targetWords, p.chapters), p.id)
 }

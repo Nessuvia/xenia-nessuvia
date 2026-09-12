@@ -88,8 +88,8 @@ function CharacterSelect() {
       })),
   ]
 
-  // The button keeps its place in the header and the picker floats over the transcript, so
-  // opening it doesn't push the messages down.
+  // The button keeps its place in the header and the picker floats over the transcript.
+  // Opening it doesn't push the messages down.
   return (
     <div className="askCharacterField">
       <button
@@ -162,7 +162,7 @@ export default function AskView() {
     replaceRules: appearance.replaceRules,
     order: palette.colorOrder,
   }
-  // Ask has no persona and no roster, so the assistant is either the picked card or nobody.
+  // Ask has no persona and no roster. The assistant is either the picked card or nobody.
   const replyName = character ? displayName(character) : 'Assistant'
   const replyColors = character?.colors ?? emptyColors()
 

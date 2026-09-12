@@ -3,8 +3,8 @@
  * out, and on the way back in the file's connections are added to the importer's rather than
  * replacing them.
  *
- * Its own file, extension-ful imports and all, so checkShareable.ts can run it under
- * `node --experimental-strip-types`, backup.ts pulls in Dexie and can't.
+ * Its own file, extension-ful imports and all: checkShareable.ts can run it under
+ * `node --experimental-strip-types`. backup.ts pulls in Dexie and can't.
  */
 
 type SettingsBlob = { state?: { connections?: { id?: string; name?: string }[] } }
@@ -17,7 +17,7 @@ const loremPool =
 
 /**
  * Connection names leak: people call them "work openrouter" or put an account in the label. A
- * shareable export keeps the endpoint and model so the file still imports, and replaces the name.
+ * shareable export keeps the endpoint and model: the file still imports. The name is replaced.
  */
 export function renameConnections(settings: string | null): string | null {
   if (settings === null) return null
@@ -53,11 +53,11 @@ export function mergeConnections(mine: string | null, theirs: string | null): st
  * when it is empty.
  *
  * Counting tables was the old test, and it was wrong in a way that got worse with every release.
- * A table added since the file was written made a full backup look sanitized, so it restored in
+ * A table added since the file was written made a full backup look sanitized. It restored in
  * add-to-what-is-here mode and kept rows the user expected to be replaced. Adding `pipelines` in
  * 0.0.43 broke every 0.0.42 file that way.
  *
- * Here rather than in backup.ts so checkShareable.ts can run it: backup.ts pulls in Dexie.
+ * Here rather than in backup.ts: checkShareable.ts can run it. backup.ts pulls in Dexie.
  */
 export function isPartialRestore(backup: {
   shareable?: boolean

@@ -13,9 +13,9 @@ import './paramBuilder.css'
  * right is the rest of the library. Dragging moves a param between the two, and the + and × do
  * the same thing for anyone not using a mouse.
  *
- * Only what's on the left is sent. A param dragged off is not set to its default, it stops being
- * in the request at all, which is what lets a backend apply its own and keeps a strict endpoint
- * from rejecting a key it doesn't know.
+ * Only what's on the left is sent. A param dragged off stops being in the request entirely rather
+ * than reset to its default. A backend can apply its own default, and a strict endpoint won't
+ * reject a key it doesn't know.
  */
 export default function ParamBuilder({
   connection,
@@ -30,13 +30,13 @@ export default function ParamBuilder({
   const [over, setOver] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<ParamDef | null>(null)
-  // Which library row is asking to be confirmed. Deleting a def removes it for every connection,
-  // so the row asks once rather than acting on the first click.
+  // Which library row is asking to be confirmed. Deleting a def removes it for every connection.
+  // The row asks once rather than acting on the first click.
   const [confirming, setConfirming] = useState<string | null>(null)
 
   const byKey = new Map(defs.map((d) => [d.key, d]))
   // A param whose def was deleted is dropped from the list rather than shown as a mystery row:
-  // buildRequestBody skips it too, so a row here would claim something is sent that isn't.
+  // buildRequestBody skips it too. A row here would claim something is sent that isn't.
   const rows = connection.params.filter((p) => byKey.has(p.key))
   const library = availableDefs(connection, defs)
 

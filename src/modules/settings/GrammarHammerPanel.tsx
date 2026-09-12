@@ -17,8 +17,8 @@ function ruleError(rule: GrammarHammerRule): string | null {
  * Grammar Hammer: slop constructions matched by POS patterns, stripped or flagged by the pipeline
  * that carries them.
  *
- * Prop-driven rather than store-driven: the rules belong to a pipeline record now, so the panel
- * edits whichever one the library has open. No Enable of its own; the pass toggle is global.
+ * Prop-driven rather than store-driven: the rules belong to a pipeline record now. The panel edits
+ * whichever one the library has open. No Enable of its own; the pass toggle is global.
  */
 export default function GrammarHammerPanel({
   detect,
@@ -82,7 +82,7 @@ export default function GrammarHammerPanel({
                     <input
                       className="patternInput"
                       value={rule.replacement ?? ''}
-                      placeholder="It's not $1, but $2..."
+                      placeholder="It's not $1, but $2…"
                       onChange={(e) => patchRule(rule.id, { replacement: e.target.value })}
                     />
                   )}

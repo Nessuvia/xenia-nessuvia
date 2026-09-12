@@ -25,8 +25,8 @@ for (const url of [
   assert.ok(isSentinel(url), `should be sentinel: ${url}`)
 }
 
-// Lookalikes are other hosts and must take the live path, or the check is a suffix match and any
-// domain ending in the sentinel string silently stops sending.
+// Lookalikes are other hosts and must take the live path. A suffix-match check would let any
+// domain ending in the sentinel string silently stop sending.
 for (const url of [
   '',
   '   ',
@@ -52,8 +52,8 @@ async function replyText(): Promise<string> {
 assert.strictEqual(await replyText(), sentinelReply)
 assert.strictEqual(await replyText(), explainers[1])
 
-// Both lists carry real text, and the explainers stay out of the draw: a user who has read the
-// instruction four times should not get it a fifth time as a random pick.
+// Both lists carry real text, and the explainers stay out of the draw. A user who has read the
+// instruction four times gets no fifth as a random pick.
 assert.ok(explainers.length > 0 && roulette.length > 1)
 for (const line of [...explainers, ...roulette]) assert.ok(line.trim().length > 0)
 for (const line of explainers) assert.ok(!roulette.includes(line), `explainer in roulette: ${line}`)
@@ -71,11 +71,11 @@ assert.strictEqual(
   roulette[roulette.length - 1],
 )
 
-// `avoid` is dropped from the pool, so the same line never comes back twice running. With the
-// first line avoided, a draw of 0 has to land on the second.
+// `avoid` is dropped from the pool: the same line never comes back twice running. With the
+// first line avoided, a draw of 0 lands on the second.
 assert.strictEqual(pickSentinelReply(explainers.length, roulette[0], () => 0), roulette[1])
-// Every line is reachable and every line is distinct, so nothing in the file is dead weight and a
-// pasted duplicate shows up here rather than as a joke that lands twice as often as the rest.
+// Every line is reachable and distinct. Nothing in the file is dead weight, and a pasted
+// duplicate shows up here rather than as a joke that lands twice as often as the rest.
 // Midpoints, not `i / length`: the round trip through the multiply lands just under the integer for
 // some i and floors to the line before.
 const seen = new Set<string>()

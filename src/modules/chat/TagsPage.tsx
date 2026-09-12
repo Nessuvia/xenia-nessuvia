@@ -7,9 +7,9 @@ import TwoColumn from '../../app/TwoColumn'
 import { allTags, renameTag, tagCounts } from './tags'
 
 /**
- * Rename, delete and reassign tags across the roster. Tags are only strings on characters, so
- * there is no tag record to edit: every action here is a sweep over the characters that carry it,
- * and a tag nobody carries stops existing. Hence the draft row for a new tag, it has nowhere to
+ * Rename, delete and reassign tags across the roster. Tags are only strings on characters: there
+ * is no tag record to edit. Every action here is a sweep over the characters that carry it,
+ * and a tag nobody carries stops existing. The draft row for a new tag has nowhere to
  * live until a character is checked.
  */
 export default function TagsPage() {

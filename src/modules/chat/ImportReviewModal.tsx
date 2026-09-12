@@ -4,7 +4,7 @@ import type { ImportedBook } from '../lorebooks/importLorebook'
 
 /**
  * Shown between parsing a card and saving it, when the card carries tags or an embedded lorebook.
- * Card sites hand out whatever the uploader typed, so this is the gate that keeps both lists yours.
+ * Card sites hand out whatever the uploader typed. This is the gate that keeps both lists yours.
  * Every tag starts included and clicking one drops it; the book starts checked.
  */
 export default function ImportReviewModal({

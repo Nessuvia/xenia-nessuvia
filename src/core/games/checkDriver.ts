@@ -66,13 +66,13 @@ function play(kind: GameKind, seed: number): { state: AnyGameState; turns: numbe
 
 // --- the driver is silent exactly when the player is being waited on ------
 {
-  // Blackjack opens with no cards on the table, so the driver deals rather than asking.
+  // Blackjack opens with no cards on the table: the driver deals rather than asking.
   const fresh = blackjack.initialState(3)
   assert.ok(drivers.blackjack(fresh, {}), 'a fresh shoe has to deal itself')
   const dealt = blackjack.dealRound(fresh).reduce(blackjack.reduce, fresh)
   if (dealt.turn === 'player') assert.strictEqual(drivers.blackjack(dealt, {}), null)
 
-  // Go Fish deals in `initialState` and the player asks first, so there is nothing to drive.
+  // Go Fish deals in `initialState` and the player asks first. Nothing to drive.
   const start = goFish.initialState(3)
   assert.strictEqual(start.turn, 'player')
   assert.strictEqual(drivers.goFish(start, {}), null)
@@ -91,7 +91,7 @@ function play(kind: GameKind, seed: number): { state: AnyGameState; turns: numbe
   assert.ok(best && worst)
   assert.strictEqual(best[0].kind, 'ask')
   // Not a rule, just this seed: the fixture is only useful while the two differ.
-  assert.notDeepStrictEqual(best[0], worst[0], 'seed 11 no longer separates best from worst')
+  assert.notDeepStrictEqual(best[0], worst[0], 'seed 11 stopped separating best from worst')
 }
 
 console.log('ok')

@@ -2,17 +2,17 @@
 //
 // Edge's own Read Aloud can't do this. It applies one user-chosen voice to the whole document and
 // the page has no say in it. The Web Speech API does, and in Edge `getVoices()` includes the same
-// Azure neural voices ("Microsoft Aria Online (Natural)"), so the good voices are reachable from
+// Azure neural voices ("Microsoft Aria Online (Natural)"). The good voices are reachable from
 // a file the user just opens.
 //
 // Dialogue is already marked in both exports' markup: `<q>` from proseHtml (story) and
 // `.spokenText` from renderText (chat). Nothing here parses quotes.
 //
 // `splitChunks` and `pickVoices` are real functions here and reach the exported page through
-// `String(fn)`, so checkReadAloud.ts tests the same code the browser runs. That means they must
+// `String(fn)`: checkReadAloud.ts tests the same code the browser runs. That means they must
 // stay self-contained: no imports, no module-scope references, nothing a closure would carry.
 
-/** One chunk, as offsets into the text node it came from, so it can also become a Range. */
+/** One chunk, as offsets into the text node it came from: it can also become a Range. */
 export interface Chunk {
   start: number
   end: number
@@ -21,7 +21,7 @@ export interface Chunk {
 /**
  * Break text into utterance-sized chunks at sentence boundaries.
  *
- * Chromium truncates long utterances and the online voices time out on them, so a whole paragraph
+ * Chromium truncates long utterances and the online voices time out on them: a whole paragraph
  * in one `speak()` is not safe. Greedy fill rather than one chunk per sentence: fewer utterances
  * means fewer seams between them.
  */
@@ -42,7 +42,7 @@ export function splitChunks(text: string, max = 200): Chunk[] {
       for (let j = end - 1; j > i; j--) {
         if ('.!?…'.indexOf(text.charAt(j)) >= 0) {
           let k = j + 1
-          // Trailing closer belongs to the sentence that ends, not the one that starts.
+          // Trailing closer belongs to the sentence that ends rather than the one that starts.
           while (k < n && '"\'”’)]'.indexOf(text.charAt(k)) >= 0) k++
           cut = k
           break
@@ -74,7 +74,7 @@ export interface VoiceLike {
 /**
  * Default voices for prose and dialogue, best available first.
  *
- * Online first because that is where the difference is audible: Edge's Natural voices, then any
+ * Online first: that is where the difference is audible. Edge's Natural voices, then any
  * other remote voice, then the local ones (David, Zira) that are all an offline reader gets. When
  * the pool holds a single voice both names come back the same and the caller shifts pitch instead.
  */
@@ -140,8 +140,8 @@ export const readAloudCss = `.readAloud {
 ::highlight(readAloud) { background: var(--accent); color: var(--bg); }`
 
 /**
- * The browser half. Kept as a string because it ships inside an exported file rather than running
- * in the app; the two pure helpers above are injected so there is one copy of that logic.
+ * The browser half. Kept as a string: it ships inside an exported file rather than running
+ * in the app. The two pure helpers above are injected: there is one copy of that logic.
  *
  * `skipSelector` is the export's own furniture (its nav, its collapsed think blocks) that should
  * not be read.

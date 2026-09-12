@@ -24,7 +24,7 @@ export default function BookAttach({
   const [picking, setPicking] = useState(false)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
-  // The book just made here, so the link to go and fill it in has somewhere to point.
+  // The book just made here: the link to go and fill it in has somewhere to point.
   const [createdId, setCreatedId] = useState<number | null>(null)
   // Books are known only after the first load resolves; before that every id looks dead.
   const [ready, setReady] = useState(false)
@@ -36,7 +36,7 @@ export default function BookAttach({
   const attached = ids.map((id) => books.find((b) => b.id === id)).filter((b) => !!b)
 
   // An id with no book left behind it, a book deleted in an older build, or one that never came
-  // back from a restore. Write the list back without it, so the count matches the rows.
+  // back from a restore. Write the list back without it: the count matches the rows.
   useEffect(() => {
     if (ready && attached.length !== ids.length) onChange(attached.map((b) => b.id!))
   })

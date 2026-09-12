@@ -13,7 +13,7 @@ import { cardTokens, fullDeck, isRed, rankPlural, ranks, shuffle, sortHand, suit
   assert.ok(isRed('H') && isRed('D') && !isRed('S') && !isRed('C'))
 }
 
-// --- a seeded shuffle is reproducible, which is what replay rests on ------
+// --- a seeded shuffle is reproducible: that is what replay rests on ------
 {
   const key = (seed: number) => shuffle(fullDeck(), seed).map((c) => `${c.rank}${c.suit}`).join(' ')
   assert.strictEqual(key(12345), key(12345), 'same seed gave a different deal')
@@ -26,7 +26,7 @@ import { cardTokens, fullDeck, isRed, rankPlural, ranks, shuffle, sortHand, suit
   assert.strictEqual(new Set(shuffled.map((c) => `${c.rank}${c.suit}`)).size, 52, 'shuffle lost a card')
   assert.notDeepStrictEqual(shuffled, source, 'shuffle did nothing')
 
-  // Every seed has to produce a full deck, not just the one we happened to try.
+  // Every seed has to produce a full deck: not just the one we happened to try.
   for (let seed = 0; seed < 50; seed++) {
     assert.strictEqual(new Set(shuffle(source, seed).map((c) => `${c.rank}${c.suit}`)).size, 52)
   }

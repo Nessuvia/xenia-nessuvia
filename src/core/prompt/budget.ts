@@ -2,9 +2,9 @@ import type { Message } from '../storage/types'
 import { defaultTokenizer, tokenizerDef, type ResolvedTokenizerId } from './tokenizers.ts'
 import { readVocab } from './tokenizerCache.ts'
 
-// A BPE table is big, so it loads on demand and never touches first paint. For the tiktoken
+// A BPE table is big. It loads on demand and never touches first paint. For the tiktoken
 // families the single-encoding entrypoint matters: the package root bundles every encoding it
-// ships, which doubled the chunk.
+// ships and doubles the chunk.
 //
 // Two phases on purpose: loading is async, counting is not. countTokens runs inside trim loops and
 // straight in JSX, and none of that can await.
@@ -15,7 +15,7 @@ async function buildCounter(id: ResolvedTokenizerId) {
   const def = tokenizerDef(id)
   try {
     if (def.kind === 'tiktoken') {
-      // Static specifiers, so Vite can see both chunks. A computed path would bundle nothing.
+      // Static specifiers: Vite needs both chunks visible. A computed path would bundle nothing.
       // Only o200k_base is precached; offline, cl100k_base fails here and falls back like the
       // undownloaded families do.
       const mod =
@@ -42,10 +42,10 @@ async function buildCounter(id: ResolvedTokenizerId) {
 
 /**
  * Prepares `id` and points countTokens at it. Falls back to the bundled default when the family
- * needs a download that hasn't happened, so this resolves with something usable either way.
+ * needs a download that hasn't happened. This resolves with something usable either way.
  *
  * Concurrent loads of different ids both write `count`, and the last one wins. Every counting site
- * awaits its own load first and only one connection is active at a time, so the worst case is a
+ * awaits its own load first, and only one connection is active at a time. The worst case is a
  * stale number in a preview, never a wrong prompt. Not worth a lock.
  */
 export async function loadTokenizer(id: ResolvedTokenizerId = defaultTokenizer): Promise<void> {

@@ -5,8 +5,8 @@
 import type { BeatWeight } from '../../core/storage/types.ts'
 import { beatWeights, defaultWeight } from '../../core/prompt/beatWeights.ts'
 
-/** One parsed entry. `length` is the raw string the input carried, not a weight: an unrecognised
- *  one is remapped by the Author rather than guessed at, so it stays as written until then. */
+/** One parsed entry. `length` is the raw string the input carried, not a weight. An unrecognised
+ *  one is remapped by the Author rather than guessed at, and it stays as written until then. */
 export interface BulkBeat {
   beat: string
   length: string
@@ -30,7 +30,7 @@ export interface BulkParse {
  * `content` is the only field that has to be there, and a missing `length` is a normal beat. Any
  * other field is ignored. A bare array of strings is accepted too: the strings are the contents.
  *
- * Untrusted input, and typed by hand as often as pasted, so every field is coerced and a bad entry
+ * Untrusted input, and typed by hand as often as pasted. Every field is coerced and a bad entry
  * is skipped rather than taking the whole paste down with it. The one thing that fails outright is
  * input that is not an array at all: that is a format mistake, and saying so is more use than
  * quietly adding nothing.
@@ -73,8 +73,8 @@ export function parseBulkBeats(input: string): BulkParse {
 }
 
 /** The parsed beats with their lengths resolved to weights. `mapping` answers the unknown values,
- *  keyed exactly as `unknown` listed them; anything still unanswered falls back to the default, so
- *  a dialog dismissed halfway adds beats rather than losing them. */
+ *  keyed exactly as `unknown` listed them; anything still unanswered falls back to the default.
+ *  A dialog dismissed halfway adds beats rather than losing them. */
 export function mapWeights(
   beats: BulkBeat[],
   mapping: Record<string, BeatWeight> = {},

@@ -97,7 +97,7 @@ assert.strictEqual(
     swapTokens('{{charDescription}}', characterTokens({ ...damien, description: 'x {{charDescription}}' }, 'Dom')),
     'x {{charDescription}}',
   )
-  // No character means no value, so the token stays put instead of blanking the line.
+  // No character means no value. The token stays put rather than blanking the line.
   assert.strictEqual(swapTokens('{{charDescription}}', { char: 'D', user: 'Dom' }), '{{charDescription}}')
 }
 
@@ -137,7 +137,7 @@ assert.strictEqual(
   const asMary = chatTokens(mary, dom, cast)
   assert.strictEqual(swapTokens('{{char}} / {{char1}}', asMary), 'Mary / Damien')
 
-  // Outside a session there is no cast, so a stray slot token stays visible.
+  // Outside a session there is no cast: a stray slot token stays visible.
   assert.strictEqual(swapTokens('{{char3}}', chatTokens(damien, dom)), '{{char3}}')
 
   // The full four, and a block that is nothing but empty slots is dropped rather than sent blank.
@@ -185,7 +185,7 @@ assert.strictEqual(
 {
   assert.strictEqual(swapTokens('{{game}}', chatTokens(damien, dom, undefined, undefined, 'Go Fish')), 'Go Fish')
   assert.strictEqual(swapTokens('{{GAME}}', chatTokens(damien, dom, undefined, undefined, 'Blackjack')), 'Blackjack')
-  // An ordinary chat has no game, so the token stays literal rather than blanking the sentence.
+  // An ordinary chat has no game: the token stays literal rather than blanking the sentence.
   assert.strictEqual(swapTokens('{{game}}', chatTokens(damien, dom)), '{{game}}')
   assert.strictEqual(
     buildPrompt({
@@ -227,7 +227,7 @@ assert.strictEqual(
   const narrator: Character = { ...damien, id: -1, name: 'Narrator' }
   assert.strictEqual(asWho(narrator), 'Write as the Narrator.\nDamien & Mary')
 
-  // Slot conditions follow the cast: char3 is empty here, so its branch drops.
+  // Slot conditions follow the cast: char3 is empty here and its branch drops.
   const slots = stack([
     block({ content: '[if char2]\ntwo\n[endif]\n[if char3]\nthree\n[endif]\ntail' }),
   ])
@@ -237,7 +237,7 @@ assert.strictEqual(
     'two\ntail',
   )
 
-  // Outside a session no slot is filled, so a cast branch drops and the block goes empty.
+  // Outside a session no slot is filled: a cast branch drops and the block goes empty.
   const built = buildPrompt({
     stack: stack([block({ content: '[if char1]\n{{char1}}\n[endif]' })]),
     character: damien,
@@ -372,7 +372,7 @@ assert.strictEqual(
     messages,
     worldInfo: wi({ before: 'Before lore.', after: 'After lore.' }),
   }).messages
-  // All three are system blocks, so they merge into one turn, in stack order.
+  // All three are system blocks: they merge into one turn, in stack order.
   assert.strictEqual(out[0].content, 'Before lore.\n\nplain description\n\nAfter lore.')
 }
 
@@ -401,7 +401,7 @@ assert.strictEqual(
     messages,
     worldInfo: wi({ atDepth: [{ depth: 1, text: 'Depth lore.' }] }),
   }).messages
-  // The block itself contributed nothing, so the depth entry is the only system turn, and it sits
+  // The block itself contributed nothing: the depth entry is the only system turn, and it sits
   // one message from the end rather than ahead of the whole history.
   assert.strictEqual(out.at(-1)?.content, 'hi')
   assert.ok(
@@ -432,7 +432,7 @@ assert.strictEqual(
   assert.ok(
     !built.messages.some((m) => m.role === 'system' && m.content.includes('Depth lore.')),
   )
-  // It holds no text of its own, so it is never reported as an empty block while entries match.
+  // It holds no text of its own: it is never reported as an empty block while entries match.
   assert.deepStrictEqual(built.skipped, [])
 }
 
@@ -738,7 +738,7 @@ const longHistory: Message[] = ['a', 'b', 'c', 'd'].map((content, i) => ({
   ])
 }
 
-// Depth past the history length clamps to the top instead of throwing.
+// Depth past the history length clamps to the top rather than throwing.
 {
   const out = buildPrompt({
     stack: stack([block({ source: 'chatHistory' }), block({ source: 'authorNote', depth: 99 })]),
@@ -956,7 +956,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.ok(rewritePrompt('old text', '  shorter  ').includes('old text'))
   assert.ok(rewritePrompt('old text', '  shorter  ').includes('following this instruction: shorter'))
 
-  // The last message has nothing after it, so there's no old-message default.
+  // The last message has nothing after it: there's no old-message default.
   assert.strictEqual(oldMessageInstruction([], 'Damien'), '')
 
   // Later messages are quoted with who said them: the stamped persona name, and the speaker name
@@ -1014,7 +1014,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.ok(replaced.includes('CARD RULES'))
   assert.ok(!replaced.includes('STACK DEFAULT'))
 
-  // {{original}} brings the block's own content back, so a card can extend instead of replace.
+  // {{original}} brings the block's own content back: a card can extend rather than replace.
   const extended = text(stack([sysBlock]), withCard('{{original}} Also be terse.'))
   assert.ok(extended.includes('STACK DEFAULT Also be terse.'))
 

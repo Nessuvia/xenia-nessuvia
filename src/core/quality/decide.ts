@@ -47,14 +47,14 @@ const EMPTY_SCORE: QualityScore = {
  * Decide, chunk by chunk, how much of a rewrite to keep.
  *
  * This is the fix for the thing a bare rewrite gets wrong. A second model was handed a finished reply and
- * whatever it returned became the message, checked only for length, and because the rewrite is
- * stored the first model then read it back as its own past voice. A local model that repeats stock
- * phrasing was therefore teaching the chat to repeat it.
+ * whatever it returned became the message, checked only for length, and the rewrite is
+ * stored: the first model then read it back as its own past voice. A local model that repeats stock
+ * phrasing was teaching the chat to repeat it.
  *
  * Whole-message accept would be the easy answer and the wrong one: a rewrite is usually good in
  * three paragraphs and bad in the fourth, and rejecting all four throws away the point of the pass.
- * So the decision is per chunk, with the original always available as the fallback, and the
- * reassembly uses the original's own separators so nothing about the passage's shape depends on
+ * The decision is per chunk instead, with the original always available as the fallback. The
+ * reassembly uses the original's own separators: nothing about the passage's shape depends on
  * what the rewrite did with whitespace.
  */
 export function decideRewrite(
@@ -70,7 +70,7 @@ export function decideRewrite(
   const before = splitChunks(original)
   const after = splitChunks(rewrite)
   // Nothing to decide about. The caller's whole-message length guard has already rejected an empty
-  // rewrite, so this is a passage with no prose in it either way.
+  // rewrite: this is a passage with no prose in it either way.
   if (!before.length) return { text: original, decisions: [], changed: 0 }
 
   const decisions: ChunkDecision[] = []

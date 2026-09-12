@@ -24,8 +24,8 @@ export interface DetectSettings {
 
 /**
  * The two mechanical sweeps: em dashes to commas, curly quotes and ellipses to their straight
- * forms. Settings rather than rules because there is no judgment in either one, so there is
- * nothing for the editing model to be told.
+ * forms. Settings rather than rules: there is no judgment in either one, and nothing for the
+ * editing model to be told.
  */
 export interface PunctuationSettings {
   dashes: boolean

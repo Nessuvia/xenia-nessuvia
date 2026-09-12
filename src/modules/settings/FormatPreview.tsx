@@ -3,7 +3,7 @@ import type { ChatMessage } from '../../core/connectors/connectorInterface'
 import type { InstructTemplate } from '../../core/params/paramDef'
 import { flattenPrompt, sequencesOf } from '../../core/prompt/flattenPrompt'
 
-/** A short stand-in chat, so the preview shows a system turn, both roles, and the open turn. */
+/** A short stand-in chat: shows a system turn, both roles, and the open turn. */
 const sample: ChatMessage[] = [
   { role: 'system', content: 'You are Xenia.' },
   { role: 'user', content: 'Hello.', name: 'Dom' },
@@ -11,10 +11,10 @@ const sample: ChatMessage[] = [
   { role: 'user', content: 'How are you?', name: 'Dom' },
 ]
 
-/** The prompt split into sequence and content runs, so the sequences can be marked in the output. */
+/** The prompt split into sequence and content runs: sequences are marked in the output. */
 function split(prompt: string, marks: string[]): { text: string; sequence: boolean }[] {
   if (!marks.length) return [{ text: prompt, sequence: false }]
-  // Longest first, so `<|im_start|>assistant` is matched before `<|im_start|>`.
+  // Longest first: `<|im_start|>assistant` matches before `<|im_start|>`.
   const sorted = [...new Set(marks)].sort((a, b) => b.length - a.length)
   const parts: { text: string; sequence: boolean }[] = []
   let plain = ''

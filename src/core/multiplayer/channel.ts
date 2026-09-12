@@ -1,7 +1,7 @@
 /**
  * The transport a session runs over.
  *
- * Everything above this — `hostSession.ts`, `JoinView`, the store, the room — holds a `Channel` and
+ * Everything above this (`hostSession.ts`, `JoinView`, the store, the room) holds a `Channel` and
  * never talks to the relay directly. `centrifugoChannel.ts` talks to a relay the user runs
  * (`resources/self-hosted-relay.md`).
  */

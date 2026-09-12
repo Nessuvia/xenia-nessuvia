@@ -41,7 +41,7 @@ assert.equal(
   link,
   `${origin}/join/abc123?r=wss%3A%2F%2Fr.example.net%2Fconnection%2Fwebsocket`,
 )
-// What the browser hands JoinView is the decoded parameter, so read it back the same way.
+// What the browser hands JoinView is the decoded parameter. Read it back the same way.
 assert.deepEqual(relayFromLink(new URL(link).searchParams.get('r')), relay)
 
 // A URL with a query of its own survives the round trip rather than truncating the link.
@@ -49,8 +49,8 @@ const withQuery = { url: 'wss://r.example.net/ws?x=1&y=2' }
 const queryLink = inviteLink(origin, 'abc123', withQuery)
 assert.deepEqual(relayFromLink(new URL(queryLink).searchParams.get('r')), withQuery)
 
-// An `r` that is missing or not a usable relay is undefined — the guest is told the link is bad
-// rather than pointed at whatever it said.
+// An `r` that is missing or not a usable relay is undefined. The guest is told the link is bad,
+// not pointed at whatever it said.
 assert.equal(relayFromLink(null), undefined)
 assert.equal(relayFromLink('ws://localhost:8000'), undefined)
 assert.equal(relayFromLink('http://evil.example/'), undefined)

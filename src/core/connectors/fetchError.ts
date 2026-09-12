@@ -1,7 +1,7 @@
 /**
  * What a failed `fetch` should say. The browser reports a blocked cross-origin request and an
  * unreachable host identically, as a bare TypeError with no detail. The page is not allowed to
- * know which one happened. Both causes get named, since neither can be ruled out from here.
+ * know which one happened. Both causes get named: neither can be ruled out from here.
  */
 export function describeFetchError(err: unknown, url: string): string {
   if (!(err instanceof TypeError)) return (err as Error)?.message ?? String(err)

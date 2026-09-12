@@ -21,7 +21,7 @@ assert.ok(!list.some((p) => p.includes('|')), 'regex entries never go out')
 assert.ok(!list.includes('a ghost of a smile'), 'a disabled entry never goes out')
 assert.ok(list.some((p) => p.includes('waited by the window')), 'the census is included')
 
-// The census comes first, so a cut takes the general phrases and keeps the chat-specific ones.
+// The census comes first: a cut takes the general phrases and keeps the chat-specific ones.
 assert.ok(list[0].includes('waited by the window'))
 const cut = bannedList(census, entries, 1)
 assert.equal(cut.length, 1)

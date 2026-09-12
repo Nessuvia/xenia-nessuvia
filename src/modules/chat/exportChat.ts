@@ -1,10 +1,10 @@
-// Chat export: JSON (the records as stored, shaped so an importer can remap them later), TXT (the
-// prose only) and HTML (one standalone file painted from the active palette). The story side of
-// this lives in ../write/exportStory.ts and the two are meant to read as one family.
+// Chat export: JSON (the records as stored; an importer can remap them later), TXT (prose only),
+// and HTML (one standalone file painted from the active palette). The story equivalent lives in
+// ../write/exportStory.ts. The two read as one family.
 //
-// Extension-ful imports on purpose: checkExportChat.ts runs the builders under
-// `node --experimental-strip-types`, which can't resolve extensionless app imports. The builders
-// stay pure for that reason: only the three `export*` wrappers touch `document`.
+// Imports use file extensions. checkExportChat.ts runs the builders under
+// `node --experimental-strip-types`, which does not resolve extensionless app imports. The builders
+// stay pure. Only the three `export*` wrappers touch `document`.
 import { createElement, Fragment } from 'react'
 import type { Chat, Message } from '../../core/storage/types.ts'
 import type { TagRule } from '../../core/stores/settingsStore'
@@ -33,7 +33,7 @@ export interface TranscriptTurn {
   role: 'user' | 'assistant'
   /** The selected swipe. `Message.content` already mirrors it, see core/stores/swipes.ts. */
   content: string
-  /** A `/break` row: no name, no body, just the rule. */
+  /** A `/break` row: the rule only. */
   divider?: boolean
 }
 
@@ -55,9 +55,9 @@ export interface Names {
 }
 
 /**
- * Who said it, the same resolution ChatView does: a user turn keeps the name recorded at send time
- * so a deleted persona still gets credited, and an assistant turn prefers the live card's display
- * name over the stamped one so a rename shows through.
+ * Who said it, the same resolution ChatView uses. A user turn keeps the name recorded at send
+ * time; a deleted persona keeps its credit. An assistant turn takes the live card's display name
+ * over the stamped one; a rename shows through.
  */
 export function turnName(m: Message, names: Names): string {
   if (m.role === 'user') return m.personaName ?? names.personaName ?? 'User'
@@ -65,12 +65,8 @@ export function turnName(m: Message, names: Names): string {
   return live ?? m.speakerName ?? names.characterName
 }
 
-/**
- * The tag rules this chat actually uses. A rule counts as used when some turn opens and closes it:
- * the same matched-pair test renderText applies, so an unclosed opener is literal text here too and
- * doesn't drag a rule into the export. The user's whole rule list is a global setting; a transcript
- * should only carry the ones its own text triggers.
- */
+/** The tag rules this chat's text actually uses. A rule counts as used when some turn opens and
+ *  closes it. */
 export function usedTagRules(turns: TranscriptTurn[], rules?: TagRule[]): TagRule[] {
   return (rules ?? []).filter((r) => {
     if (!r.open || !r.close) return false
@@ -112,18 +108,14 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * A message body as HTML. renderText is the parser the bubbles use, so the export shows the same
- * emphasis, quotes and code the screen does; rendering its elements to a string beats keeping a
- * second copy of that marker table here. React escapes text nodes, which is what keeps untrusted
- * model output safe in a file that gets opened in a browser.
+ * A message body as HTML. Renders through the same renderText markers the bubbles use: emphasis,
+ * quotes and code match the screen. React escapes text nodes.
  *
- * Tag rules are passed so a `<think>` block looks like the same collapsed `<details>` it does on
- * screen. No replaceRules or hammer options: those rewrite what was said, and a transcript
- * shouldn't.
+ * Tag rules render a `<think>` block as the same collapsed `<details>` used on screen. No
+ * replaceRules or hammer options apply.
  *
- * react-dom/server is imported here rather than at the top of the file because it is 57 KB gzipped
- * and nothing else in the app needs it. A static import puts it in the vendor chunk every visitor
- * downloads, a dynamic one gives it a chunk of its own that only an HTML export fetches.
+ * react-dom/server is imported dynamically here: it is 57 KB gzipped, and only an HTML export
+ * needs it. A static import would put it in the vendor chunk every visitor downloads.
  */
 export async function messageHtml(turn: TranscriptTurn, tagRules?: TagRule[]): Promise<string> {
   const { renderToStaticMarkup } = await import('react-dom/server')
@@ -132,7 +124,7 @@ export async function messageHtml(turn: TranscriptTurn, tagRules?: TagRule[]): P
   )
 }
 
-/** Drop each rule's open…close span, so a label doesn't quote text the reader has to expand. */
+/** Drops each rule's open…close span from the text. Used for labels. */
 function withoutTagBlocks(text: string, rules: TagRule[]): string {
   let out = text
   for (const r of rules) {
@@ -147,7 +139,7 @@ function withoutTagBlocks(text: string, rules: TagRule[]): string {
   return out
 }
 
-/** Option label for the jump menu: no tag blocks, no markers, no newlines, one line's worth. */
+/** Option label for the jump menu: flattened to one line, tag blocks and markers stripped. */
 export function preview(turn: TranscriptTurn, tagRules: TagRule[] = [], max = 50): string {
   const flat = withoutTagBlocks(turn.content, tagRules)
     .replace(/[*_`"]/g, '')
@@ -156,7 +148,7 @@ export function preview(turn: TranscriptTurn, tagRules: TagRule[] = [], max = 50
   return flat.length > max ? `${flat.slice(0, max).trimEnd()}…` : flat
 }
 
-/** Async only because messageHtml loads the renderer on demand; everything else here is pure. */
+/** Async: messageHtml loads the renderer on demand. Everything else here is pure. */
 export async function buildHtml(t: Transcript, palette: Palette): Promise<string> {
   const vars = {
     ...paletteVars(palette),
@@ -169,8 +161,7 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
     .map(([k, v]) => `  ${k}: ${v};`)
     .join('\n')
 
-  // Same Fontsource stylesheet useApplyWebfont injects at runtime. The `sans-serif` fallback baked
-  // into effectiveFont covers a reader who opens the file offline.
+  // Same Fontsource stylesheet useApplyWebfont injects at runtime.
   const fontLink =
     palette.useWebfont && palette.webfontId
       ? `<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/${escapeHtml(palette.webfontId)}@latest/index.css">`
@@ -178,8 +169,7 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
 
   const title = escapeHtml(t.title)
 
-  // Only carried when a rule fired: a chat with no tagged blocks shouldn't ship rules for them.
-  // Same look as chat.css: <details> holds the open/closed state, so no script is involved.
+  // Carried only when a rule fired. Same look as chat.css: <details> holds the open/closed state.
   const tagCss = t.tagRules.some((r) => r.mode === 'collapse')
     ? `.taggedBlock {
   margin: 6px 0;
@@ -200,8 +190,8 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
     t.turns.map((turn) => (turn.divider ? Promise.resolve('') : messageHtml(turn, t.tagRules))),
   )
 
-  // Dividers are not bubbles, so they take no number and no menu entry: the jump menu's indices
-  // have to line up with the `.bubble` elements the script collects. Hence the separate counter.
+  // Dividers are not bubbles. The counter increments only for bubbles; jump-menu indices line up
+  // with the `.bubble` elements the script collects.
   const body: string[] = []
   const options: string[] = []
   let n = 0
@@ -217,7 +207,6 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
         `<div class="body">${bodies[i]}</div>` +
         `</article>`,
     )
-    // One numbered link per message would run to hundreds of entries, so the bar is a jump menu.
     options.push(
       `<option value="m${n}">${escapeHtml(`${n} · ${turn.name}: ${preview(turn, t.tagRules)}`)}</option>`,
     )
@@ -325,8 +314,8 @@ ${body.join('\n')}
 ${readAloudScript(`nav, .readAloud, .codeBlock${tagCss ? ', .taggedBlock' : ''}`)}
 </script>
 <script>
-// Same scrollspy as the story export: the last bubble whose top has passed under the bar wins,
-// driving a menu instead of a row of links, and the arrows step through the same list.
+// Same scrollspy as the story export. The last bubble whose top has passed under the bar wins.
+// The arrows step through the same list.
 (function () {
   var jump = document.getElementById('jump')
   var at = document.getElementById('at')

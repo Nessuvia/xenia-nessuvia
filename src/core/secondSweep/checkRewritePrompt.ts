@@ -33,7 +33,7 @@ assert.equal(full[0].role, 'system')
 assert.equal(full[0].content, 'Rewrite as Vera talking to Dom.')
 assert.equal(full[1].role, 'system')
 assert.match(full[1].content, /^Vera\n/)
-// The card's own {{char}} resolves too, so a description written with tokens reads correctly.
+// The card's own {{char}} resolves too: a description written with tokens reads correctly.
 assert.match(full[1].content, /Vera speaks in short flat sentences/)
 assert.equal(full.at(-1)!.role, 'user')
 assert.equal(full.at(-1)!.content, `${rewriteInstruction}\n\nthe first pass`)
@@ -77,7 +77,7 @@ assert.deepEqual(buildRewritePrompt({ ...base, config: { ...config, preset: '' }
 
 // The budget trims history and never the window's fixed parts. A context this small leaves room
 // for the preset, the card and the passage, and for none of the history.
-// Sized off the window itself rather than off a literal, so editing the fixture text above cannot
+// Sized off the window itself rather than off a literal: editing the fixture text above cannot
 // quietly turn these into no-ops.
 const fixedCost = countMessages([full[0], full[1], full.at(-1)!])
 const turnCost = countTokens('turn 0') + perMessageOverhead

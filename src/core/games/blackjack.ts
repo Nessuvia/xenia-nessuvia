@@ -157,7 +157,7 @@ export type Action = 'hit' | 'stand'
 /**
  * What the player may do right now. Empty between rounds and once the game is over.
  *
- * A hand of 21 is not a decision, so `resolveAction` stands it for them and the turn is already
+ * A hand of 21 is not a decision: `resolveAction` stands it for them, and the turn is already
  * the dealer's by the time this is asked again. The bust check is the same story.
  */
 export function legalActions(state: BlackjackState): Action[] {
@@ -166,7 +166,7 @@ export function legalActions(state: BlackjackState): Action[] {
   return ['hit', 'stand']
 }
 
-/** Open a round. Separate from `resolveAction` because nobody chooses to be dealt to. */
+/** Open a round. Separate from `resolveAction`: nobody chooses to be dealt to. */
 export function dealRound(state: BlackjackState): BlackjackEvent[] {
   const events: BlackjackEvent[] = []
   let current = state
@@ -175,7 +175,7 @@ export function dealRound(state: BlackjackState): BlackjackEvent[] {
     current = reduce(current, event)
   }
   emit({ kind: 'deal' })
-  // Two blackjacks push, one wins on the spot, and neither side gets a decision either way.
+  // Two blackjacks push, one wins on the spot. Neither side gets a decision either way.
   if (isBlackjack(current.hands.player) || isBlackjack(current.hands.char)) {
     emit({ kind: 'reveal' })
     events.push(...settle(current))
@@ -185,7 +185,7 @@ export function dealRound(state: BlackjackState): BlackjackEvent[] {
 
 /**
  * The consequence of the player's own decision, and nothing past it. Every branch either leaves the
- * turn with the player or hands it to the dealer, and `nextEvents` picks the table up from there.
+ * turn with the player or hands it to the dealer. `nextEvents` picks the table up from there.
  *
  * Playing the dealer out from here is what used to strand a hand of exactly 21: the early return
  * left the turn with a player who had no legal action to take.
@@ -207,7 +207,7 @@ export function resolveAction(state: BlackjackState, action: Action): BlackjackE
   if (!card) return [{ kind: 'end' }]
   emit({ kind: 'hit', by: 'player', rank: card.rank })
   if (isBust(current.hands.player)) emit({ kind: 'bust', by: 'player' })
-  // Twenty-one needs no decision, so it is stood for them rather than asked about.
+  // Twenty-one needs no decision: it is stood for them rather than asked about.
   else if (handValue(current.hands.player).total === 21) emit({ kind: 'stand', by: 'player' })
   return events
 }
@@ -217,7 +217,7 @@ export function resolveAction(state: BlackjackState, action: Action): BlackjackE
  * waiting on the player, or the game is over.
  *
  * This is the whole of Blackjack's side of the driver. Every path that ends a player's turn runs
- * through it, so there is one place a round can be opened and one place the dealer plays.
+ * through it. There is one place a round can be opened and one place the dealer plays.
  */
 export function nextEvents(state: BlackjackState): BlackjackEvent[] | null {
   if (state.over || state.turn === 'player') return null
@@ -231,7 +231,7 @@ export function nextEvents(state: BlackjackState): BlackjackEvent[] | null {
   }
 
   if (current.holeDown) emit({ kind: 'reveal' })
-  // A busted player leaves nothing to beat, so the dealer turns the hole card over and stops.
+  // A busted player leaves nothing to beat. The dealer turns the hole card over and stops.
   if (isBust(current.hands.player)) {
     events.push(...settle(current))
     return events
@@ -254,13 +254,13 @@ function settle(state: BlackjackState): BlackjackEvent[] {
   return events
 }
 
-/** Who took the round. Read off the hands, so it can be checked against them. */
+/** Who took the round. Read off the hands: it can be checked against them. */
 export function roundOutcome(state: BlackjackState): Outcome {
   const player = handValue(state.hands.player).total
   const char = handValue(state.hands.char).total
   if (isBust(state.hands.player)) return 'char'
   if (isBust(state.hands.char)) return 'player'
-  // Blackjack beats a three-card twenty-one; two of them push.
+  // Blackjack beats a three-card twenty-one. Two of them push.
   const playerNatural = isBlackjack(state.hands.player)
   const charNatural = isBlackjack(state.hands.char)
   if (playerNatural !== charNatural) return playerNatural ? 'player' : 'char'

@@ -25,7 +25,7 @@ import { defaultSecondSweep, resolveSecondSweep } from './resolve.ts'
   assert.equal(rewrite.config.historyCount, 5)
   const score = newStage('score') as ScoreStage
   assert.equal(score.config.maxRatio, 2)
-  // Every stage gets its own config object, so editing one never edits another of the same kind.
+  // Every stage gets its own config object: editing one never edits another of the same kind.
   assert.notEqual(newStage('score').config, score.config)
 }
 
@@ -108,7 +108,7 @@ import { defaultSecondSweep, resolveSecondSweep } from './resolve.ts'
   assert.deepEqual(resolveSecondSweep(global, { pipelineId: 9 }), { enabled: true, pipelineId: 9 })
   // An empty override object inherits both: undefined means "not said", not "off".
   assert.deepEqual(resolveSecondSweep(global, {}), global)
-  // false is a value, not an absence, so it has to win over a global true.
+  // false is a value, not an absence: it has to win over a global true.
   assert.equal(resolveSecondSweep({ enabled: true, pipelineId: 1 }, { enabled: false }).enabled, false)
 }
 

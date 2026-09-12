@@ -19,11 +19,11 @@ const tokenSources: Record<string, BlockSource> = {
   loreafter: 'worldInfoAfter',
 }
 
-/** Tokens our own `{{...}}` substitution already handles, so they stay in the text as they are. */
+/** Tokens our own `{{...}}` substitution already handles. They stay in the text as they are. */
 const passThrough = new Set(['char', 'user'])
 
-/** Template machinery with no content of its own. `{{system}}` is the system prompt, which the
- *  import emits as its own block from `sysprompt`, so the placeholder is dropped too. */
+/** Template machinery with no content of its own. `{{system}}` is the system prompt: the
+ *  import emits it as its own block from `sysprompt`, and the placeholder is dropped too. */
 const dropped = new Set(['else', 'trim', 'system'])
 
 const labelFor = (text: string) => {
@@ -34,7 +34,7 @@ const labelFor = (text: string) => {
 
 export interface StoryStringImport {
   blocks: PromptBlock[]
-  /** Placeholders left in the text as-is, because nothing here maps them. */
+  /** Placeholders left in the text as-is: nothing here maps them. */
   unknownTokens: string[]
 }
 

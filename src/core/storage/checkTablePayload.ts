@@ -38,7 +38,7 @@ assert.strictEqual(
 )
 assert.match(hash, /^[0-9a-f]{64}$/, 'lowercase hex SHA-256')
 
-// A changed row changes the hash. So does the table name, since it is inside the hashed envelope.
+// A changed row changes the hash. So does the table name: it sits inside the hashed envelope.
 const edited = [row(1, 'Mark'), row(2, 'Damien'), row(3, 'Nessuvia!')]
 assert.notStrictEqual(hash, await hashPayload(JSON.stringify(tablePayload('characters', edited))))
 assert.notStrictEqual(hash, await hashPayload(JSON.stringify(tablePayload('personas', rows))))

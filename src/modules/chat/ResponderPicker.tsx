@@ -31,7 +31,7 @@ export default function ResponderPicker({
   const ref = useCloseOnOutside(open, () => setOpen(false))
 
   const memberIds = participants(chat)
-  // The Narrator is deliberately not in participantIds, so the membership check has to allow it.
+  // The Narrator is deliberately not in participantIds. The membership check has to allow it.
   const narratorPinned = withNarrator === true && isNarrator(chat.respondWith)
   // Only a current member counts as pinned, a dropped-out responder looks like cleared.
   const isPinnedMember = chat.respondWith !== undefined && memberIds.includes(chat.respondWith)

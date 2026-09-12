@@ -23,11 +23,11 @@ export interface Findings {
 /**
  * Run every detector once.
  *
- * Called once per pipeline run and shared by the gate and the clean stage, so the gate can never
+ * Called once per pipeline run and shared by the gate and the clean stage: the gate can never
  * decide on a different set of findings than the stage it gates. The score stage does not read
  * this: it measures two passages against each other rather than reading one.
  *
- * The mechanical edits come first so both the checks and the model see the cleaned text. Showing
+ * The mechanical edits come first: both the checks and the model see the cleaned text. Showing
  * the model the original slop would ask it to redo work `repairAll` already did correctly, and
  * putting the bad phrasing in front of it is a good way to get the bad phrasing back.
  */

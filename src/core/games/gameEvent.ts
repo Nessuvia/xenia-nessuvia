@@ -1,7 +1,7 @@
-// One `games` table holds every game, so one event type covers every game's log.
+// One `games` table holds every game. One event type covers every game's log.
 //
-// The union is safe to widen: `end` and `say` have the same shape in both games and every other
-// kind is unique to one of them, so `Game.kind` decides which half of the union a log is, and the
+// The union is safe to widen: `end` and `say` have the same shape in both games, and every other
+// kind is unique to one of them. `Game.kind` decides which half of the union a log is. The
 // two casts in the store are the only places that has to be said out loud.
 
 import type { BlackjackEvent } from './blackjack.ts'

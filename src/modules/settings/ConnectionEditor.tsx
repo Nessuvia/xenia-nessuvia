@@ -60,9 +60,9 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
     setSaved(false)
   }
 
-  // Carry the provider's vision flag alongside the model id so downstream (e.g. the body-map
-  // author) trusts the API over a name guess. A free-typed id that isn't in the list clears the
-  // flag (undefined) and falls back to the heuristic.
+  // Carry the provider's vision flag alongside the model id: downstream (e.g. the body-map author)
+  // trusts the API over a name guess. A free-typed id not in the list clears the flag (undefined)
+  // and falls back to the heuristic.
   const pickModel = (id: string) => {
     setDraft({ ...draft, model: id, modelVision: models.find((m) => m.id === id)?.vision })
     setSaved(false)
@@ -77,8 +77,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
   async function testConnection() {
     setTesting(true)
     setTestResult('')
-    // The sentinel host has no server to test against, so report what it does instead of
-    // resolving it.
+    // The sentinel host has no server to test against. Report what it does: it never resolves.
     if (isSentinel(draft.endpointUrl)) {
       setTestResult(`OK. ${sentinelHost} is a stand-in endpoint. Requests are not sent.`)
       setTesting(false)
@@ -113,7 +112,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
       else if (reasoning) lines.push('Reply was empty, the model returned only reasoning.')
       else lines.push(`No reply text found. Raw response:\n${body.slice(0, 500)}`)
 
-      // The chat uses streaming, so test that too: capture the raw stream and run it through the
+      // The chat uses streaming. Test that too: capture the raw stream and run it through the
       // real parser. Text present in the raw but nothing parsed means a framing the parser misses.
       const sres = await fetch(completionUrl(draft.endpointUrl, draft.type), {
         method: 'POST',
@@ -130,7 +129,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
     } catch (err) {
       setTestResult(describeFetchError(err, completionUrl(draft.endpointUrl, draft.type)))
     } finally {
-      // finally, not a line after the try: the early returns for a non-OK status and for a
+      // finally, rather than a line after the try: the early returns for a non-OK status and for a
       // non-JSON body skipped it and left the button reading "Testing…" until a reload.
       setTesting(false)
     }
@@ -215,7 +214,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
                 value={draft.model}
                 onChange={(e) => pickModel(e.target.value)}
                 onFocus={() => setModelsOpen(true)}
-                // Delay the close so a click on a row registers before the list unmounts.
+                // Delay the close: a click on a row registers before the list unmounts.
                 onBlur={() => setTimeout(() => setModelsOpen(false), 150)}
               />
               <button type="button" onClick={refreshModels} disabled={refreshing}>
@@ -231,7 +230,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
                       {shown.map((m) => (
                         <li
                           key={m.id}
-                          // mousedown beats the input's blur, so selection isn't cancelled first.
+                          // mousedown beats the input's blur: selection isn't cancelled first.
                           onMouseDown={() => {
                             pickModel(m.id)
                             setModelsOpen(false)

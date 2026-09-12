@@ -9,7 +9,7 @@ const cost = (text: string) => countTokens(text) + perMessageOverhead
 /**
  * The rendering half of a live prompt preview: the assembled turns, whatever the caller wants to
  * say about the budget, and the raw-JSON view. Chat and Story assemble their requests with
- * different builders, so each mode does its own building and hands the result here, the panel
+ * different builders. Each mode does its own building and hands the result here. The panel
  * itself knows nothing about chats, stories or stacks.
  */
 export default function PromptPreviewPanel({

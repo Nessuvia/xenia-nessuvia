@@ -8,7 +8,7 @@ import type { BlockContext, Chapter } from '../storage/types.ts'
 /** The fields the prose walk needs off a Chapter row. */
 export type GuideChapter = Pick<Chapter, 'id' | 'title' | 'summary' | 'blocks' | 'guideSend'>
 
-/** A Chapter's prose: its Blocks' content in order. Blocks are stretches of one document, so they
+/** A Chapter's prose: its Blocks' content in order. Blocks are stretches of one document: they
  *  join with a blank line, the same separator Chapters use inside the prose blob. */
 export const chapterProse = (chapter: Pick<Chapter, 'blocks'>): string =>
   chapter.blocks
@@ -16,7 +16,7 @@ export const chapterProse = (chapter: Pick<Chapter, 'blocks'>): string =>
     .filter(Boolean)
     .join('\n\n')
 
-/** The line marking a Chapter boundary inside the Story prose, so the model can see where the
+/** The line marking a Chapter boundary inside the Story prose: the model can see where the
  *  boundaries fall as the prose scrolls past them. Prompt wording; keep it here with the rest. */
 export const chapterDivider = (index: number, title: string): string =>
   `- Chapter ${index + 1}${title.trim() ? `: ${title.trim()}` : ''} -`
@@ -35,7 +35,7 @@ export function chapterState(chapter: GuideChapter, activeId: number | null): Ch
 
 /**
  * The header a Chapter gets once some of its prose has been degraded to instructions: what the
- * Chapter was, in one line, so the beat lines under it have something to hang off. Replaces
+ * Chapter was, in one line: the beat lines under it have something to hang off. Replaces
  * `chapterDivider` for that Chapter, and unlike the divider it is emitted for Chapter 1 too: with
  * the prose gone there is nothing else naming what those beats belong to.
  *
@@ -102,7 +102,7 @@ export interface FittedProse {
  *
  * Everything sends in full while there is room. Over budget, the oldest Block swaps its prose for
  * `Beat N: <instructions>` and its Chapter grows a `degradedHeader`; still over, the next Block
- * does the same, and so on. Blocks are walked in Story order, so a Chapter is fully converted
+ * does the same, and so on. Blocks are walked in Story order: a Chapter is fully converted
  * before the next one is touched, and what the model loses is always the oldest prose.
  *
  * The active Chapter is never degraded, and neither is anything after it: the passage being written
@@ -134,7 +134,7 @@ export function fitStoryProse(
 }
 
 /**
- * The one walk both exports share, so they cannot disagree about which Blocks are in scope or where
+ * The one walk both exports share: they cannot disagree about which Blocks are in scope or where
  * the caret splits the active Chapter.
  *
  * `degraded` is how many Blocks from the start of the Story send their instructions instead of their
@@ -184,8 +184,8 @@ function walk(
           if (text) parts.push(text)
           return
         }
-        // Degraded. Every Block is a beat, so the only one contributing no line is one the Author
-        // has not planned yet. Numbering is the Block's own position, so the lines stay in step
+        // Degraded. Every Block is a beat: the only one contributing no line is one the Author
+        // has not planned yet. Numbering is the Block's own position: the lines stay in step
         // with the Plot Layout even when an unwritten beat sits between two written ones.
         if (off || !wantsBeats) return
         const instructions = block.beat.trim()

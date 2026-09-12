@@ -33,7 +33,7 @@ assert.equal(parsed.state.connections[0].apiKey, '')
 assert.equal(parsed.state.nested.deep[0].apiKey, '')
 assert.equal(parsed.state.bucket.accessKeyId, '')
 assert.equal(parsed.state.bucket.secretAccessKey, '')
-// Non-secret bucket fields survive, so a restored backup still points at the right bucket.
+// Non-secret bucket fields survive. A restored backup still points at the right bucket.
 assert.equal(parsed.state.bucket.endpoint, 'https://s3.example.net')
 assert.equal(parsed.state.bucket.bucket, 'tavern')
 assert.equal(stripApiKeys(null), null)

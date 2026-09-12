@@ -20,9 +20,9 @@ export interface ImportedBook {
 
 /**
  * SillyTavern's `position` numbering, which is what both an export and a card's `character_book`
- * carry. 2 and 3 are before/after the author's note; this pass has no slot for that, so they land
+ * carry. 2 and 3 are before/after the author's note. This pass has no slot for that: they land
  * with the after-character entries rather than being dropped. The v2/v3 spec's string spelling is
- * accepted too, since cards in the wild write either.
+ * accepted too. Cards in the wild write either.
  */
 function readPosition(v: unknown): EntryPosition {
   if (typeof v === 'string') {
@@ -39,7 +39,7 @@ function readPosition(v: unknown): EntryPosition {
 
 /**
  * One entry off a card's `character_book` or a standalone world-info export, mapped onto our
- * record. The single mapper both import paths call, so an embedded book and a bare file can never
+ * record. The single mapper both import paths call: an embedded book and a bare file can never
  * read the same file differently.
  *
  * Every field is read through two or three spellings because the format has no single writer: the

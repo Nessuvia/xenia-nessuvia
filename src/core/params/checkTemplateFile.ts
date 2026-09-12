@@ -58,7 +58,7 @@ import { templateFromJson, templateToJson } from './templateFile.ts'
   for (const value of Object.values(template)) assert.notStrictEqual(value, undefined)
 }
 
-// --- a non-string sequence is dropped, not stringified -------------------
+// --- a non-string sequence is dropped -------------------------------------
 {
   const junk = '{"kind":"xeniaInstructTemplate","template":{"userPrefix":42,"stopSequences":["a",7]}}'
   const { template } = templateFromJson(junk)

@@ -164,7 +164,7 @@ const textOf = (entries: WorldInfoEntry[], messages: Message[], map?: Map<number
   )
 }
 
-// --- the token budget drops the tail, not the head ------------------
+// --- the token budget drops the tail -------------------------------
 {
   const first = entry({ name: 'first', always: true, order: 1, content: 'alpha '.repeat(50) })
   const second = entry({ name: 'second', always: true, order: 2, content: 'beta '.repeat(50) })
@@ -179,7 +179,7 @@ const textOf = (entries: WorldInfoEntry[], messages: Message[], map?: Map<number
   assert.ok(all.includes('alpha') && all.includes('beta'))
 }
 
-// --- the budget is per book, not per prompt -------------------------
+// --- the budget is per book --------------------------------------
 {
   const one = entry({ bookId: 1, name: 'one', always: true, order: 1, content: 'alpha '.repeat(50) })
   const oneMore = entry({ bookId: 1, name: 'oneMore', always: true, order: 2, content: 'beta '.repeat(50) })
@@ -230,13 +230,13 @@ const textOf = (entries: WorldInfoEntry[], messages: Message[], map?: Map<number
   const deep = entry({ name: 'd', always: true, order: 3, position: 'atDepth', depth: 3, content: 'deep text' })
   const out = resolveWorldInfo([before, after, deep], [])
   assert.strictEqual(out.before, 'before text')
-  assert.strictEqual(out.after, 'after text', 'afterChar no longer folds into the block text')
+  assert.strictEqual(out.after, 'after text', 'afterChar keeps its own block text')
   assert.deepStrictEqual(out.atDepth, [{ depth: 3, text: 'deep text' }])
 }
 
 // --- the prompt-wide cap drops the lowest-priority entries ----------
 {
-  // Roughly 50 tokens each, so a cap of 120 fits two.
+  // Roughly 50 tokens each: a cap of 120 fits two.
   const make = (name: string, order: number) =>
     entry({ name, always: true, order, content: `${name} `.repeat(50) })
   const list = [make('first', 1), make('second', 2), make('third', 3)]
@@ -246,7 +246,7 @@ const textOf = (entries: WorldInfoEntry[], messages: Message[], map?: Map<number
   assert.deepStrictEqual(
     out.dropped.map((d) => d.name),
     ['third'],
-    'what was cut is reported, so the preview can name it',
+    'what was cut is reported, for the preview to name',
   )
   // The cap stops rather than skips: a small late entry does not jump the queue.
   const withRunt = [...list, entry({ name: 'runt', always: true, order: 4, content: 'tiny' })]

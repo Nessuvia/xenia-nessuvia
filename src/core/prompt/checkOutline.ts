@@ -116,7 +116,7 @@ assert.deepStrictEqual(
     { beat: 'The inn', weight: 'normal' },
   ],
 )
-// The older beat/weight names are taken too, so a model that reuses them still lands its beats.
+// The older beat/weight names are taken too: a model that reuses them still lands its beats.
 assert.deepStrictEqual(parseChapterOutlineReply('{"beats":[{"beat":"a","weight":"major"}]}'), [
   { beat: 'a', weight: 'major' },
 ])
@@ -185,7 +185,7 @@ const withProse = buildChapterOutlineMessages(
 assert.match(withProse[0].content, /previous chapter ended on/)
 assert.doesNotMatch(withProse[0].content, /She landed\./)
 
-// Long prose is cut to its tail, so one written chapter cannot swamp the request.
+// Long prose is cut to its tail: one written chapter cannot swamp the request.
 const long = 'word '.repeat(2000)
 const cut = buildChapterOutlineMessages(chapter({ previousProse: long }))
 assert.ok(cut[0].content.length < 3000, `tail not cut: ${cut[0].content.length}`)

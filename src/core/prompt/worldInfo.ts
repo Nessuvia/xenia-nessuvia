@@ -3,8 +3,8 @@
 import type { Lorebook, WorldInfoEntry } from '../storage/types'
 import { countTokens } from './budget.ts'
 
-/** What a key is scanned against. A chat passes its `Message[]`; Write mode has no messages, so it
- *  passes paragraphs of prose. Only the text is ever read, so one type covers both. */
+/** What a key is scanned against. A chat passes its `Message[]`; Write mode has no messages and
+ *  passes paragraphs of prose instead. Only the text is ever read: one type covers both. */
 export interface ScanText {
   content: string
 }
@@ -57,8 +57,8 @@ function secondaryPasses(entry: WorldInfoEntry, haystack: string): boolean {
  * The entries that belong in this turn's prompt: every enabled always-on one, plus any whose key
  * appears within its own scan window of recent history and whose secondary keys let it through.
  *
- * Each entry gets its own window because the depth is per entry, so the text being searched differs
- * from one to the next, there's no single haystack to build up front. Case folding is per entry
+ * Each entry gets its own window: the depth is per entry, and the text being searched differs
+ * from one to the next. There's no single haystack to build up front. Case folding is per entry
  * too: a case-sensitive entry searches the messages as they were written.
  */
 export function matchedEntries(
@@ -83,11 +83,11 @@ export function matchedEntries(
 
 /**
  * `beforeChar` ahead of everything else, then the book's own order, then the row id. `atDepth`
- * entries leave the block entirely, so where they land in this list only orders them against each
+ * entries leave the block entirely. Where they land in this list only orders them against each
  * other at the same depth.
  *
- * The three positions now feed three block sources (`worldInfo`, `worldInfoAfter`,
- * `worldInfoDepth`), so this sort no longer decides placement on its own. It still decides
+ * The three positions feed three block sources (`worldInfo`, `worldInfoAfter`,
+ * `worldInfoDepth`). This sort does not decide placement on its own. It still decides
  * priority: the prompt-wide budget below fills in this order and drops the tail.
  */
 const rank = (entry: WorldInfoEntry) => (entry.position === 'beforeChar' ? 0 : 1)
@@ -114,7 +114,7 @@ export interface ResolvedWorldInfo {
  * field and reports as skipped.
  *
  * The budget is enforced rather than advisory, and enforced per book: real books carry entries of
- * several hundred words each, so a handful firing at once would swallow the context before history
+ * several hundred words each. A handful firing at once would swallow the context before history
  * got any, and one book's spending must not silence another's.
  */
 export function resolveWorldInfo(
@@ -158,7 +158,7 @@ export function resolveWorldInfo(
       kept.set(entry.bookId, (kept.get(entry.bookId) ?? 0) + 1)
     }
     // The prompt-wide cap, applied after the book's own. Stops rather than skips: `matched` is in
-    // priority order, so letting a small late entry jump the queue past the one that didn't fit
+    // priority order. Letting a small late entry jump the queue past the one that didn't fit
     // would make `order` mean less than it says.
     // Unlike a book budget this has no first-match exemption: the user set the number, and a cap
     // that quietly overspends is worse than one that yields nothing.
@@ -185,7 +185,7 @@ export function resolveWorldInfo(
     before: before.join('\n'),
     after: after.join('\n'),
     // Deepest first, which is the order they have to be spliced in: each insertion point is
-    // counted from the end of history, so a shallower note inserted first would shift a deeper one.
+    // counted from the end of history. A shallower note inserted first would shift a deeper one.
     atDepth: [...depths.entries()]
       .sort((a, b) => b[0] - a[0])
       .map(([depth, texts]) => ({ depth, text: texts.join('\n') })),

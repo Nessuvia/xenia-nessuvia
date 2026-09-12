@@ -22,7 +22,7 @@ const args: StoryTokenArgs = {
       id: 2,
       title: 'The Road',
       summary: '',
-      // Four beats, all normal, so each takes a quarter of the target.
+      // Four beats, all normal: each takes a quarter of the target.
       targetWords: 1130,
       blocks: [
         blk('b', 'The checkpoint'),
@@ -60,7 +60,7 @@ assert.strictEqual(t.nextChapterTitle, 'Arrival')
 assert.strictEqual(t.nextChapterBeats, '- The handoff\n- The refusal')
 
 assert.strictEqual(t.beat, 'Mary is searched')
-// Derived from the Chapter's target and the weights, not stored on the Block: four equal beats
+// Derived from the Chapter's target and the weights on read: four equal beats
 // over 1130 words, and the rounding leaves this one 282.
 assert.strictEqual(t.beatTargetWords, '282')
 assert.strictEqual(t.chapterTargetWords, '1130')
@@ -101,13 +101,13 @@ assert.strictEqual(
   swapStoryTokens('Write this next: {{beat}}\nRecap: {{chapterSummary}}.\nKeep going.', t),
   'Write this next: Mary is searched\nKeep going.',
 )
-// Mixed line: one token has content, so the line stays and the empty one blanks in place.
+// Mixed line: one token has content. The line stays and the empty one blanks in place.
 assert.strictEqual(swapStoryTokens('{{chapterTitle}} / {{chapterSummary}}', t), 'The Road / ')
 // Lines with no known tokens are never touched, empty or not.
 assert.strictEqual(swapStoryTokens('plain\n\n{{nonsense}}', t), 'plain\n\n{{nonsense}}')
 
-// The default stack's Beat block on a beat with no instructions: that line drops, and the target
-// line stays, because the Chapter has a target and this beat still has a share of it.
+// The default stack's Beat block on a beat with no instructions: that line drops. The target
+// line stays: the Chapter has a target and this beat still has a share of it.
 const unwritten = storyTokens({ ...args, blockId: 'e' })
 assert.strictEqual(unwritten.beat, '')
 assert.strictEqual(

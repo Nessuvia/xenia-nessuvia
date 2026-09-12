@@ -5,7 +5,7 @@ import { stripComments } from './stripComments.ts'
 /**
  * Every `{{token}}` the prompt layer understands, and what each one stands for. The card fields
  * mirror the bound `BlockSource`s one for one: anything a block can bind to, a token can paste
- * inline. Keys are lowercase because tokens match case-insensitively and are looked up folded.
+ * inline. Keys are lowercase: tokens match case-insensitively and are looked up folded.
  */
 export interface TokenValues {
   char: string
@@ -40,12 +40,12 @@ const tokenPattern =
 
 /**
  * Substitutes the known tokens. Unknown {{tokens}} are left exactly as they are, except for ST's
- * {{// comments}}, which are dropped: see `stripComments`. Comments go first, so a token inside one
+ * {{// comments}}, which are dropped: see `stripComments`. Comments go first: a token inside one
  * is never swapped.
  */
 export function swapTokens(text: string, values: TokenValues): string {
   return stripComments(text).replace(tokenPattern, (whole, token: string) => {
-    // Tokens match case-insensitively, so look them up folded.
+    // Tokens match case-insensitively: look them up folded.
     const value = values[token.toLowerCase() as keyof TokenValues]
     return value ?? whole
   })
@@ -53,7 +53,7 @@ export function swapTokens(text: string, values: TokenValues): string {
 
 /**
  * Token values for a character, and for the persona when one is in play. Each field is swapped
- * once here, so a card that writes {{char}} in its own text reads correctly when
+ * once here: a card that writes {{char}} in its own text reads correctly when
  * {{charDescription}} pastes it somewhere else. That single pass is deliberate: a description
  * containing {{charDescription}} leaves the token in place rather than expanding forever.
  */
@@ -81,7 +81,7 @@ export function characterTokens(
  * shape and the sentence about a character who isn't there comes out blank.
  *
  * Each description is swapped once against its own character, same single pass as
- * `characterTokens`, so a card writing {{char}} in its description looks like that character here.
+ * `characterTokens`. A card writing {{char}} in its description looks like that character here.
  */
 export function castTokens(cast: Character[], userName: string): Partial<TokenValues> {
   const values: Record<string, string> = {}
@@ -98,11 +98,11 @@ export function castTokens(cast: Character[], userName: string): Partial<TokenVa
 /**
  * The same values from a Persona row: the shape every chat-side caller already has.
  * `cast` is the multiplayer roster in host-chosen order. Without it the slot tokens are left out
- * entirely, so a stray {{char2}} in a solo chat stays visible rather than silently vanishing.
+ * entirely: a stray {{char2}} in a solo chat stays visible rather than silently vanishing.
  *
  * `personas` is the session's people as `Name: description` lines, already assembled by the caller,
  * the same arrangement `worldInfo` has in `buildPrompt`, and for the same reason: the roster
- * lives in the multiplayer store and this function stays pure. Absent outside a session, so
+ * lives in the multiplayer store and this function stays pure. Absent outside a session:
  * {{personas}} stays visible in an ordinary chat rather than blanking.
  */
 export function chatTokens(
@@ -121,7 +121,7 @@ export function chatTokens(
   }
 }
 
-/** A block's own input values. Per-block, so it can't ride along in swapTokens' shared table:
+/** A block's own input values. Per-block: it can't ride along in swapTokens' shared table.
  *  {{blockVal}} is the low end of the range and {{blockVal2}} the high end. */
 export function swapBlockVals(text: string, input: BlockInput): string {
   return text

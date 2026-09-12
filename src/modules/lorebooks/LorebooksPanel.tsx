@@ -4,7 +4,7 @@ import BookAttach from './BookAttach'
 
 /**
  * The chat sidebar's Lorebooks section. Writes `chat.lorebookIds`, this chat only. The speaking
- * character's own books and any book set to all chats apply on top and are not listed here, since
+ * character's own books and any book set to all chats apply on top and are not listed here:
  * detaching one from this panel would have to edit a record this panel doesn't own.
  */
 export default function LorebooksPanel() {

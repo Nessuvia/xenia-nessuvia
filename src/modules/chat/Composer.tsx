@@ -22,18 +22,14 @@ export default function Composer({
   /** Submit with nothing typed: re-roll the last reply with an instruction instead. */
   onRegenLast: () => void
 }) {
-  // In a store, not local state: the prompt preview lives in the sidebar and reads it from there.
   const text = useDraft((s) => s.text)
   const setText = useDraft((s) => s.setText)
   const [active, setActive] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const box = useRef<HTMLTextAreaElement>(null)
   const blocked = !!disabledReason || streaming
-  // Same 700px breakpoint as the stylesheets. Read per render rather than through a listener: a
-  // resize past the breakpoint re-renders the chat anyway, and a stale read costs one keystroke.
   const onPhone = window.matchMedia('(max-width: 700px)').matches
 
-  // Derived, not state: the menu is a function of what's typed, so it can never disagree with it.
   const menu = commandTargets && !dismissed ? menuFor(text, commandTargets) : null
   const index = menu ? Math.min(active, menu.items.length - 1) : 0
 
@@ -71,12 +67,9 @@ export default function Composer({
         onChange={(e) => {
           setText(e.target.value)
           setActive(0)
-          // Escape only hides the menu for the text that was on screen; typing brings it back.
           setDismissed(false)
         }}
         onKeyDown={(e) => {
-          // The menu owns these keys while it's open, so Enter completes a command instead of
-          // sending a half-typed one.
           if (menu) {
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
               e.preventDefault()

@@ -20,8 +20,8 @@ import {
  * Reading a 0.0.42 install into 0.0.43.
  *
  * Second Pass and Gold Pass were two features with two settings blobs, and they are one pipeline
- * now. Nothing else in the app reads those blobs, so this is the only code that knows their shape:
- * the interfaces below are copies of the deleted ones, kept here rather than anywhere a live code
+ * now. Nothing else in the app reads those blobs: this is the only code that knows their shape.
+ * The interfaces below are copies of the deleted ones, kept here rather than anywhere a live code
  * path could reach them.
  *
  * The conversion is faithful rather than tidy. The two features stacked at run time (Second Pass
@@ -137,7 +137,7 @@ function scoreStage(gold: LegacyGoldPass): ScoreStage {
       minRatio: gold.minRatio ?? stage.config.minRatio,
       maxRatio: gold.maxRatio ?? stage.config.maxRatio,
       // The old `quality.enabled: false` meant "take the rewrite whole", and `decideRewrite` still
-      // reads it that way, so the stage is kept rather than dropped. Deleting it would look the
+      // reads it that way. The stage is kept rather than dropped. Deleting it would look the
       // same today and silently lose the length guard, which ran either way.
       quality: gold.quality ?? stage.config.quality,
     },
@@ -203,7 +203,7 @@ export function pipelinesFromLegacy(
   }
 
   // The preset that was selected. A `presetId` naming one that was already deleted was not running
-  // anything, so it falls back to the first rather than inventing a choice the user never made.
+  // anything: it falls back to the first rather than inventing a choice the user never made.
   const active = gold?.presetId ? byPresetId[gold.presetId] : undefined
   return { pipelines, activeIndex: active ?? 0, byPresetId }
 }
@@ -219,7 +219,7 @@ export function legacyEnabled(
 /**
  * A message's four old arrays into the three new ones.
  *
- * `passOriginals` is what the *writing* model said, so a swipe that went through both passes takes
+ * `passOriginals` is what the *writing* model said. A swipe that went through both passes takes
  * its draft: Second Pass ran first, which makes `goldOriginals` the text after it rather than
  * before. Where only one of the two ran, whichever exists is that text.
  *

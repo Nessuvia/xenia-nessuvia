@@ -8,7 +8,7 @@ import './plotLayout.css'
  * Chapter generation: the beats of one chapter.
  *
  * Same plumbing as the Story outline, narrower scope. The chapter's own title and summary are the
- * required input and are already on the record, so the dialog opens on the optional half: what the
+ * required input and are already on the record. The dialog opens on the optional half: what the
  * author wants from it, how long it runs, how many beats to break it into. The story's premise,
  * themes and ending and the previous chapter go in automatically and are never retyped.
  */
@@ -50,7 +50,7 @@ export function ChapterOutlineDialog({
     setBusy(true)
     setError('')
     try {
-      // The target is the chapter's own field, so a run that fails still leaves the number where
+      // The target is the chapter's own field. A run that fails still leaves the number where
       // the author put it.
       if (targetWords !== chapter.targetWords) await updateChapter(chapter.id!, { targetWords })
       await generateChapterOutline(chapter.id!, {
@@ -128,7 +128,7 @@ export function ChapterOutlineDialog({
         <p className="hint">
           {previous
             ? `Chapter ${index} goes in as context, ${hasProse(previous) ? 'its prose' : 'its summary'}.`
-            : 'This is the first chapter, so there is nothing before it to carry in.'}
+            : 'This is the first chapter. There is nothing before it to carry in.'}
         </p>
 
         {error ? (

@@ -15,7 +15,7 @@ export function newBook(name = ''): Lorebook {
 
 /**
  * Strip a deleted book's id from every character and chat holding it. Written through `storage`
- * rather than through the two stores, so this file doesn't import them back: `charactersStore`
+ * rather than through the two stores: this file doesn't import them back. `charactersStore`
  * already imports this one. The stores' in-memory rows reload on their next `load()`, and
  * `BookAttach` drops a stale id it can't resolve on sight.
  */
@@ -98,9 +98,9 @@ export const useLorebooks = create<LorebooksState>()((set, get) => ({
   },
 
   remove: async (id) => {
-    // Cascade: an entry with no book is unreachable and unmatchable, so it goes with it, and so do
-    // the attachments. A dead id used to sit on the character, where it resolved to no row but
-    // still counted, the tab read "1 lorebook" over an empty list, and the next attach made 2.
+    // Cascade: an entry with no book is unreachable and unmatchable. It goes with it, and the
+    // attachments go too. A dead id used to sit on the character, resolving to no row but still
+    // counting: the tab read "1 lorebook" over an empty list, and the next attach made 2.
     await useWorldInfo.getState().removeFor(id)
     await storage.remove('lorebooks', id)
     await detachEverywhere(id)

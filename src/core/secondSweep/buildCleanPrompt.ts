@@ -27,8 +27,8 @@ function renderNote(note: Note, index: number): string {
 }
 
 /**
- * The second request. The passage goes last so it is the freshest thing in the context, and the
- * notes come first so they read as the task rather than as trailing commentary.
+ * The second request. The passage goes last: the freshest thing in the context. The
+ * notes come first: they read as the task rather than as trailing commentary.
  *
  * The reply has to be the finished passage, not a patch: it streams straight through to the caller
  * as the assistant's text. A structured patch would have to be buffered and applied, which is the
@@ -84,6 +84,6 @@ export function shouldRunClean(
 ): boolean {
   if (!skipWhenClean) return true
   // A standing rule forces the request the same way a standing instruction does. Both say "look at
-  // every reply", so a clean reply is still one the model has been asked to look at.
+  // every reply": a clean reply is still one the model has been asked to look at.
   return notes.length > 0 || standing.length > 0 || userPrompt.trim().length > 0
 }

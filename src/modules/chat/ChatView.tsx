@@ -64,9 +64,9 @@ export default function ChatView() {
   const scroller = useRef<HTMLDivElement>(null)
   const stuck = useRef(true)
   // Our own scroll-to-bottom fires onScroll too. Without this it lands after the user's scroll
-  // event and re-sticks them, so scrolling up mid-stream snaps back.
+  // event and re-sticks them: scrolling up mid-stream would snap back.
   const selfScroll = useRef(false)
-  // Which message has the regen modal open. Lives here so an empty composer submit can open it.
+  // Which message has the regen modal open. Lives here: an empty composer submit can open it.
   const [rewritingId, setRewritingId] = useState<number | null>(null)
   const [deletingRange, setDeletingRange] = useState(false)
   // Which message has its inline edit box open. On a phone the composer hides while it does, the
@@ -75,9 +75,9 @@ export default function ChatView() {
 
   useEffect(() => {
     load(chatId)
-    // The draft belongs to the chat you typed it in, not to the composer.
+    // The draft belongs to the chat you typed it in.
     useDraft.getState().setText('')
-    // `chat` stays loaded after you leave, so the store needs telling when it's actually on screen.
+    // `chat` stays loaded after you leave. The store needs telling when it's actually on screen.
     useChats.getState().setViewing(chatId)
     return () => useChats.getState().setViewing(null)
   }, [chatId, load])
@@ -113,14 +113,14 @@ export default function ChatView() {
     speakerId === undefined ? character : characters.find((c) => c.id === speakerId)
 
   return (
-    // Visual settings arrive as CSS vars on this element, so a new knob is a var plus a control.
+    // Visual settings arrive as CSS vars on this element: a new knob is a var plus a control.
     <div
       className="chatView"
       style={
         {
           // The chat's own width wins over the palette's default; see CLAUDE.md on specificity.
           '--chatWidth': `${chat.chatWidth ?? palette.chatWidth}%`,
-          // An empty value falls through to the var's fallback in chat.css, so "off" costs nothing.
+          // An empty value falls through to the var's fallback in chat.css: "off" costs nothing.
           '--chatFont': effectiveFont(palette) || '',
           '--chatFontSize': palette.fontSize ? `${palette.fontSize}px` : '',
           '--chatLineHeight': palette.lineHeight || '',
@@ -236,8 +236,8 @@ export default function ChatView() {
         )}
 
         {streaming && streamingChatId === chat.id && regeneratingId === null && (
-          // Same per-speaker color vars MessageBubble sets, so the stream is colored while it types
-          // instead of snapping to character colors only once it's saved.
+          // Same per-speaker color vars MessageBubble sets: the stream is colored the moment it
+          // starts typing.
           <div className="bubble message assistant" style={colorVars(speakerOf(speakingId ?? undefined)?.colors ?? emptyColors(), palette.overwriteCharColor)}>
             <div className="messageHeader">
               <span className="messageWho">{speakingName || character.name}</span>
@@ -248,8 +248,8 @@ export default function ChatView() {
                 {renderText(streamingReasoning, { tagRules: appearance.tagRules, order: palette.colorOrder })}
               </details>
             )}
-            {/* A pass stage is overwriting the reply that just finished. Said plainly, because
-                what is on screen is being replaced as it arrives. */}
+            {/* A pass stage is overwriting the reply that just finished: what's on screen is
+                being replaced as it arrives. */}
             {passing && (
               <p className="passMarker">
                 <RiSparkling2Line size={14} />
@@ -257,8 +257,8 @@ export default function ChatView() {
               </p>
             )}
             <div className="messageBody">
-              {/* Mid-stream an opener has no closer yet, so the block looks like plain text
-                  until the model finishes it and it folds away. */}
+              {/* Mid-stream an opener has no closer yet. The block looks like plain text
+                  until the model finishes it and folds away. */}
               {renderText(streamingText, { tagRules: appearance.tagRules, order: palette.colorOrder })}
               <span className="caret">▌</span>
             </div>

@@ -1,7 +1,7 @@
 // diagrams are divs and CSS, no chart library and no SVG authoring. If one of these
 // needs real geometry (curves, layout maths), that's the one to draw in SVG, not all of them.
 //
-// Two kinds only, because they're the two that answered a question the prose couldn't:
+// Two kinds only: the two that answered a question the prose couldn't.
 //   - "where does code live"      → boxes and arrows (FigLayers, FigLifetime, FigRegistry)
 //   - "what's on screen for this state" → a state value beside a mock screen (FigStateToScreen,
 //     FigThreeStates). Sequence diagrams got cut; the code already reads in order.

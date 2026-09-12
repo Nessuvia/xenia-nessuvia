@@ -5,10 +5,10 @@ import { isRed } from '../../core/games/deck'
 const pips: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' }
 
 /**
- * One card, drawn in CSS. The suit characters are typography, not icons standing in for icons.
+ * One card, drawn in CSS. The suit characters are typography.
  *
- * `rotate` and `shift` are the scatter of the pool. They are passed as vars because the value is
- * computed from the card's index; the styling itself stays in games.css.
+ * `rotate` and `shift` are the scatter of the pool. They are passed as vars: the value is
+ * computed from the card's index. The styling itself stays in games.css.
  */
 export function Card({
   card,
@@ -20,7 +20,7 @@ export function Card({
 }: {
   card?: CardData
   /** Identity for the motion pass, stable across moving between rows. Face-down cards get a
-   *  positional id from the caller, so a hand nobody may see stays out of the DOM. */
+   *  positional id from the caller. A hand nobody may see stays out of the DOM. */
   id?: string
   faceDown?: boolean
   rotate?: number

@@ -26,8 +26,8 @@ export default function AppRoutes() {
           <Route
             key={mod.id}
             path={`${mod.route}/*`}
-            // Module components are lazy, so each route needs a boundary. The spinner delays its
-            // own fade-in, so a chunk that lands quickly still shows nothing.
+            // Module components are lazy: each route needs a boundary. The spinner delays its
+            // own fade-in. A chunk that lands quickly still shows nothing.
             element={
               <Suspense fallback={<PageLoader />}>
                 <mod.component />

@@ -10,8 +10,8 @@ import { useSettings } from './settingsStore'
 /**
  * The pipeline library: every Second Sweep pipeline this install has, loaded once.
  *
- * A table rather than an array inside settings, because a pipeline is a document. It gets named,
- * duplicated, exported, traded and picked per chat, and none of that is comfortable inside a
+ * A table rather than an array inside settings: a pipeline is a document. It gets named,
+ * duplicated, exported, traded and picked per chat. None of that is comfortable inside a
  * settings blob that the whole app rewrites on every unrelated toggle.
  *
  * Nothing is seeded and nothing ships. A pipeline is written here, imported from a file, or built

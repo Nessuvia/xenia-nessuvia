@@ -54,7 +54,7 @@ for (const def of tokenizerDefs.filter((d) => d.kind === 'hf')) {
   const { json, config } = vocabUrls(def)
   assert.ok(json.startsWith('https://cdn.jsdelivr.net/npm/@lenml/tokenizer-'), json)
   assert.ok(config.endsWith('/tokenizer_config.json'), config)
-  // Pinned, so a cached vocab can never drift against the URL it was stored under.
+  // Pinned: a cached vocab can never drift against the URL it was stored under.
   assert.match(json, /@\d+\.\d+\.\d+\//, 'vocab url is not version-pinned')
 }
 

@@ -31,7 +31,7 @@ export default function MultiplayerPanel({ isHost }: { isHost: boolean }): JSX.E
   const me = participants.find((p) => p.id === meId)
   const editing = participants.find((p) => p.id === editingId)
 
-  // The order is over people, not characters, the host can move anyone, including themself.
+  // The order is over people, not characters. The host can move anyone, including themself.
   const { itemProps, over } = useDragReorder((from, to) => session?.reorder(from, to), false)
 
   return (

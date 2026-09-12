@@ -9,7 +9,7 @@ import { isSentinel, sentinelContextLimit } from '../../core/connectors/sentinel
  * put a length there under one of a few names).
  *
  * Never throws and never writes: the caller decides whether to take the number. A wrong context
- * limit silently truncates prompts, so this stays a button rather than something that fires on
+ * limit silently truncates prompts. This stays a button rather than something that fires on
  * its own.
  */
 export async function readContextLimit(connection: Connection): Promise<number | null> {

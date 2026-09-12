@@ -7,12 +7,12 @@
  *
  * ## Why presence is rebuilt from announcements
  *
- * Nobody signs in, host included, so every connection here is anonymous. Centrifugo fills a
+ * Nobody signs in, host included. Every connection here is anonymous. Centrifugo fills a
  * presence entry's `user` and `connInfo` from the connection's JWT, and an anonymous connection has
- * neither, so a presence row says a connection exists and nothing about *whose* it is. The
+ * neither. A presence row says a connection exists and nothing about *whose* it is. The
  * handlers need whose: `onLeave(member)` is what drops a participant from the roster.
  *
- * What a publication does carry is `info.client`, the publisher's connection id. So identity is
+ * What a publication does carry is `info.client`, the publisher's connection id. Identity is
  * correlated rather than read: each client announces `{clientId → PresenceMember}` on the channel,
  * everyone keeps the map, and a `leave` push is resolved through it. `onJoin` fires on the
  * announcement, not on the raw join push: an unidentified connection is nobody yet, and the host
@@ -24,7 +24,7 @@ import { parseEvent, withinSizeLimit } from './protocol'
 import type { Channel, ChannelHandlers, PresenceMember } from './channel'
 
 /** How long to wait for the subscription before calling the relay unreachable. Centrifugo's client
- *  retries a dead endpoint forever without ever resolving, so the wait is ours to bound. */
+ *  retries a dead endpoint forever without ever resolving. The wait is ours to bound. */
 const connectTimeoutMs = 10_000
 
 /**
@@ -94,7 +94,7 @@ export function openCentrifugoChannel(
 
   sub.on('publication', (ctx: PublicationContext) => {
     // Centrifugo echoes our own publications back. The host applies its own actions locally and
-    // then broadcasts, so an echo would double-apply.
+    // then broadcasts. An echo would double-apply.
     if (ctx.info?.client && ctx.info.client === myClientId) return
 
     const envelope = ctx.data as Envelope | null
@@ -121,7 +121,7 @@ export function openCentrifugoChannel(
 
   sub.on('join', (ctx: JoinContext) => {
     if (ctx.info.client === myClientId) return
-    // The newcomer has no map yet, so everyone already here re-announces. This is what lets a
+    // The newcomer has no map yet, and everyone already here re-announces. This is what lets a
     // guest's host-presence check find the host. A room is a handful of people; the traffic is
     // one small frame each.
     announce()

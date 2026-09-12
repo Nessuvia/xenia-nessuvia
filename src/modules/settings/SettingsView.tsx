@@ -49,7 +49,7 @@ export default function SettingsView() {
   const [resetPhrase, setResetPhrase] = useState('')
   const [keysPhrase, setKeysPhrase] = useState<string | null>(null)
 
-  // The editor autosaves, so this runs repeatedly while typing: the first write adds the record,
+  // The editor autosaves and this runs repeatedly while typing: the first write adds the record,
   // every later one updates it in place. It stays open until the user closes it.
   const save = useCallback(
     (connection: Connection) => {
@@ -128,8 +128,8 @@ export default function SettingsView() {
                           Set active
                         </button>
                       )}
-                      {/* The copy carries the API key: it is the same account, and a copy you
-                          have to re-key is not a copy. */}
+                      {/* The copy carries the API key: it is the same account, and re-keying a
+                          copy defeats the point of copying it. */}
                       <button
                         type="button"
                         className="connectionIconButton"

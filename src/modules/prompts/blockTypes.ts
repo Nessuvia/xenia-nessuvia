@@ -59,7 +59,7 @@ export function applyType(block: PromptBlock, type: BlockType): PromptBlock {
     label,
     source: type,
     input: undefined,
-    // The point of an author's note block is depth injection, so give a new one somewhere to land.
+    // The point of an author's note block is depth injection: give a new one somewhere to land.
     ...(type === 'authorNote' && block.depth === undefined ? { depth: 2 } : {}),
     // Its entries go in as system turns unless the block says otherwise; a block retyped from a
     // user or assistant one would otherwise change how they read for no reason the user asked for.

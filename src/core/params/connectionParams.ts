@@ -27,8 +27,8 @@ export function maxTokensOf(connection: Connection): number {
 }
 
 /**
- * The three numbers the token budget needs. `max_tokens` is a request param and the other two
- * aren't, so this is where the two halves are put back together, every trimHistory caller goes
+ * The three numbers the token budget needs. `max_tokens` is a request param, the other two
+ * aren't. This is where the two halves come back together. Every trimHistory caller goes
  * through here rather than passing a Connection and hoping the field names line up.
  */
 export function budgetOf(connection: Connection): Budget
@@ -50,7 +50,7 @@ export function withParam(connection: Connection, key: string, value: unknown): 
   return { ...connection, params }
 }
 
-/** A copy without one param, so the key stops being sent at all. */
+/** A copy without one param. The key stops being sent. */
 export function withoutParam(connection: Connection, key: string): Connection {
   return { ...connection, params: connection.params.filter((p) => p.key !== key) }
 }

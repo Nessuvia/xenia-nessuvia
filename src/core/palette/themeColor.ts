@@ -2,9 +2,9 @@
  * What the OS paints its own chrome with, derived from the active palette's background.
  *
  * Android, in a standalone PWA: `<meta name="theme-color">` colors the status bar and Chrome reads
- * it live, so a palette swap repaints it. The navigation bar at the bottom is not directly settable:
+ * it live. A palette swap repaints it. The navigation bar at the bottom is not directly settable:
  * Chrome derives it from the manifest's `background_color` at launch and from the page's own
- * background after that; so the honest lever there is `body { background: var(--bg) }`, which
+ * background after that. The honest lever there is `body { background: var(--bg) }`, which
  * index.css already sets.
  *
  * iOS, from the home screen: `apple-mobile-web-app-status-bar-style` takes a style name rather than
@@ -40,7 +40,7 @@ export function systemBars(bg: string): SystemBars {
   return { themeColor: color, iosStatusBarStyle: isLight(color) ? 'default' : 'black' }
 }
 
-/** Writes both meta tags. A missing tag is created rather than skipped, so this doesn't depend on
+/** Writes both meta tags. A missing tag is created rather than skipped: this doesn't depend on
  *  index.html shipping them. */
 export function applySystemBars(bg: string) {
   const bars = systemBars(bg)

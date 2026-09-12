@@ -4,7 +4,7 @@ import type { ScoreContext } from './score.ts'
 import { buildCensus, defaultCensus } from './census.ts'
 import type { LexiconEntry } from './lexicon.ts'
 
-// A fixture lexicon, not a shipped one: nothing ships a slop list any more, so a check that needs
+// A fixture lexicon, not a shipped one: nothing ships a slop list any more. A check that needs
 // one writes the two entries it is asserting about.
 const lexicon: LexiconEntry[] = [
   { id: 'shiver-spine', phrase: 'a shiver (ran|runs) down .{0,12}spine', regex: true, enabled: true, weight: 3 },
@@ -65,7 +65,7 @@ assert.ok(!spaced.text.includes('\n\n\n'), 'the original separator is used')
 // A tie keeps the original: the incumbent is what the user already read.
 assert.equal(decideRewrite(original, original, ctx, settings).changed, 0)
 
-// minImprovement raises the bar: a rewrite that wins by a little no longer wins.
+// minImprovement raises the bar: a rewrite that wins by a little now loses.
 const strict = { ...settings, minImprovement: 100 }
 assert.equal(decideRewrite(original, `${improved}\n\n${p2}`, ctx, strict).changed, 0)
 

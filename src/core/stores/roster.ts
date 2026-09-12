@@ -3,8 +3,8 @@
 import type { Chat } from '../storage/types'
 
 /**
- * The characters in the room, in speaking order. A solo chat is a roster of one, so the send path
- * never needs an `isGroup` branch, `characterId` stays pinned to the first participant.
+ * The characters in the room, in speaking order. A solo chat is a roster of one. The send path
+ * never needs an `isGroup` branch: `characterId` stays pinned to the first participant.
  */
 export function participants(chat: Chat): number[] {
   return chat.participantIds?.length ? chat.participantIds : [chat.characterId]
@@ -18,7 +18,7 @@ export function isGroup(chat: Chat): boolean {
  * Round robin: the participant after `lastSpeakerIndex`, wrapping. A cursor left pointing past the
  * end (the character it named was removed) wraps like any other value rather than throwing.
  *
- * round robin plus a click. Heuristic speaker selection is in the deferred table.
+ * Round robin plus a click. Heuristic speaker selection is in the deferred table.
  */
 export function nextSpeakerIndex(chat: Chat): number {
   const count = participants(chat).length
@@ -27,8 +27,8 @@ export function nextSpeakerIndex(chat: Chat): number {
 }
 
 /**
- * How many replies one user message draws. Capped at the roster size: the cap is what stops a
- * character being asked to speak twice in the same run, so a count of 5 in a room of three is
+ * How many replies one user message draws. Capped at the roster size: the cap stops a
+ * character being asked to speak twice in the same run. A count of 5 in a room of three is
  * three replies, not five.
  */
 export function autoTurns(chat: Chat): number {

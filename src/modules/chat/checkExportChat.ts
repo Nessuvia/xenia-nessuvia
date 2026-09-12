@@ -54,7 +54,7 @@ assert.deepEqual(
   t.turns.map((x) => `${x.name}:${x.content}`),
   ['Damien:picked', 'Dom:"Speech" she said. *Woah!*'],
 )
-// The selected swipe, not swipes[0]: content mirrors it and that mirror is what we read.
+// content tracks the swipe at swipeIndex (here index 1); that mirror is what we read.
 assert.equal(t.turns[0].content, 'picked')
 
 // A live card outranks the stamped name; a stamped name survives the card's deletion.
@@ -79,7 +79,7 @@ assert.equal(
 // An empty title still names the file's contents.
 assert.ok(buildTxt(buildTranscript({ ...chat, title: '  ' }, messages, names)).startsWith('Untitled Chat'))
 
-// A `/break` row is a rule in the text, with no name and no colon.
+// A `/break` row renders as the rule text alone.
 assert.ok(
   buildTxt({ title: 'T', tagRules: [], turns: [
     { name: 'Dom', role: 'user', content: 'hi' },
@@ -114,11 +114,11 @@ const tagHtml = await buildHtml(withTags, resolvePalette())
 assert.ok(tagHtml.includes('<details class="taggedBlock"><summary>Thoughts</summary>'))
 assert.ok(tagHtml.includes('weighing it'))
 assert.ok(tagHtml.includes('.taggedBlock > summary'))
-// The label reads the prose, not the block the reader still has to expand.
+// The label reads the prose. The block itself stays collapsed until the reader expands it.
 assert.ok(tagHtml.includes('<option value="m1">1 · Damien: Out loud.</option>'))
 // An unclosed opener stays literal text, exactly as renderText treats it.
 assert.ok(tagHtml.includes('&lt;plan&gt;never closed'))
-// Without the rules the block is plain text, so the CSS and the <details> only appear when used.
+// Without the rules the block is plain text. The CSS and the <details> only appear when used.
 const plain = await buildHtml(buildTranscript(chat, tagged, names), resolvePalette())
 assert.ok(!plain.includes('taggedBlock'))
 assert.ok(plain.includes('&lt;think&gt;weighing it&lt;/think&gt;'))

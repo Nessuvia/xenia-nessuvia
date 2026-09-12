@@ -3,7 +3,7 @@ import { Avatar } from './Avatar'
 import type { AvatarCrop } from '../core/storage/types'
 import './entityPicker.css'
 
-/** One row in the picker. `key` is the caller's, since ids only identify within a kind. */
+/** One row in the picker. `key` is the caller's: ids only identify within a kind. */
 export interface PickerItem {
   key: string
   label: string

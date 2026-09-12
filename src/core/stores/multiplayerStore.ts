@@ -35,7 +35,7 @@ export interface MultiplayerState {
   characters: RosterCharacter[]
   narratorName: string
   settings: SettingsSummary | null
-  /** The host's look, so the room paints the same for everyone. Only guests render from it; the
+  /** The host's look: the room paints the same for everyone. Only guests render from it; the
    *  host has the palette itself. Null before the first `state`. */
   appearance: SharedAppearance | null
 
@@ -122,7 +122,7 @@ export const useMultiplayer = create<MultiplayerState>((set) => ({
   appendMessage(message) {
     set((state) => ({
       messages: [...state.messages, message],
-      // The finished reply is the stream, so the bubble the caret was in becomes this message. A
+      // The finished reply is the stream: the bubble the caret was in becomes this message. A
       // user message is a turn being said and leaves anything in flight alone.
       streaming: message.role === 'assistant' ? null : state.streaming,
     }))

@@ -106,7 +106,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
   assert.strictEqual(autoTurns(chatOf({ ...three, selfReply: true, selfReplyCount: 2 })), 2)
   assert.strictEqual(autoTurns(chatOf({ ...three, selfReply: true, selfReplyCount: 3 })), 3)
 
-  // Capped at the roster, so nobody is asked to speak twice in one run.
+  // Capped at the roster: nobody is asked to speak twice in one run.
   assert.strictEqual(autoTurns(chatOf({ ...three, selfReply: true, selfReplyCount: 9 })), 3)
   assert.strictEqual(
     autoTurns(chatOf({ participantIds: [1, 2], selfReply: true, selfReplyCount: 9 })),
@@ -188,7 +188,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
 }
 
 // --- the hint and a rewrite instruction compose -----------------------------
-// Both are trailing system turns, so the merge concatenates them: neither is lost.
+// Both are trailing system turns: the merge concatenates them, and neither is lost.
 {
   const out = buildPrompt({
     stack: cards,
@@ -253,7 +253,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
   for (const m of messages) assert.ok(!m.content.startsWith(`${m.speakerName ?? ''}:`))
 }
 
-// --- labels are counted, because they're in the assembled text --------------
+// --- labels are counted: they're in the assembled text --------------
 {
   const args = { stack: cards, character: damien, persona: dom, messages, speaker: damien }
   const solo = buildPrompt({ ...args, chat: chatOf({ participantIds: [1] }) })
@@ -308,7 +308,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
 }
 
 // --- chat.nameSpeakers labels without the argument ---------------------------
-// How a multiplayer session gets its labels: the field is on the chat record, so the send path and
+// How a multiplayer session gets its labels: the field is on the chat record. The send path and
 // the preview both pick it up without either being passed a flag.
 {
   const args = { stack: cards, character: damien, persona: dom, messages, speaker: damien }

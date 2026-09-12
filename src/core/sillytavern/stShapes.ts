@@ -1,5 +1,5 @@
 // The SillyTavern export shapes, as much of them as an import needs, plus the sniffer that says
-// which one a file is. ST has no format marker anywhere, so the keys present are the only signal.
+// which one a file is. ST has no format marker anywhere. The keys present are the only signal.
 //
 // Extension-ful imports across this folder on purpose: checkSillyTavern.ts runs it under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.

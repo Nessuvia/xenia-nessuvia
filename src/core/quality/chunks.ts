@@ -24,7 +24,7 @@ const MARGIN = 0.05
  * Split a passage into decidable pieces: paragraphs, and long paragraphs split again at sentence
  * boundaries into runs of at most `MAX_CHUNK` characters.
  *
- * Offsets are into `text` as handed in, so a decision about a chunk can always be mapped back to
+ * Offsets are into `text` as handed in: a decision about a chunk can always be mapped back to
  * the exact span it came from.
  */
 export function splitChunks(text: string): Chunk[] {
@@ -62,7 +62,7 @@ function slice(source: string, start: number, end: number): Chunk {
 /** Break one over-long paragraph into sentence runs, each as close to MAX_CHUNK as fits. */
 function splitLong(source: string, para: Chunk): Chunk[] {
   const parts = sentences(para.text)
-  // No terminal punctuation anywhere: nothing to split on, so the paragraph stays whole. Better one
+  // No terminal punctuation anywhere: nothing to split on. The paragraph stays whole. Better one
   // large chunk than an arbitrary cut mid-sentence.
   if (parts.length < 2) return [para]
 
@@ -81,7 +81,7 @@ function splitLong(source: string, para: Chunk): Chunk[] {
 }
 
 /**
- * How one alignment step resolved. `from` and `to` hold one or more chunks each, so a paragraph the
+ * How one alignment step resolved. `from` and `to` hold one or more chunks each: a paragraph the
  * rewrite split in two, or two it merged into one, still comes through as a single decision.
  */
 export type Alignment =
@@ -175,7 +175,7 @@ function join(chunks: Chunk[], from: number, count: number): string {
 }
 
 /** Sorensen-Dice on word bigrams, the standard cheap "is this the same passage" measure. Words
- *  rather than characters, so a rewrite that changes every adjective still scores as a match. */
+ *  rather than characters: a rewrite that changes every adjective still scores as a match. */
 export function similarity(a: string, b: string): number {
   const x = bigrams(a)
   const y = bigrams(b)
@@ -192,7 +192,7 @@ export function similarity(a: string, b: string): number {
 function bigrams(text: string): Map<string, number> {
   const words = (text.toLowerCase().match(/[\p{L}\p{N}']+/gu) ?? []).map((w) => w.replace(/'/g, ''))
   const out = new Map<string, number>()
-  // A one-word chunk has no bigrams, so fall back to the word itself rather than scoring zero.
+  // A one-word chunk has no bigrams: fall back to the word itself rather than scoring zero.
   if (words.length === 1) return new Map([[words[0], 1]])
   for (let i = 0; i + 1 < words.length; i++) {
     const key = `${words[i]} ${words[i + 1]}`

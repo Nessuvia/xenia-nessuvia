@@ -1,5 +1,5 @@
 // The {{tokens}} a Story stack understands. Write mode's answer to `swapTokens`: a different set
-// of names over different data, so it is a separate table rather than an arm of the chat one.
+// of names over different data. It is a separate table rather than an arm of the chat one.
 //
 // Extension-ful imports on purpose: checkStoryTokens.ts runs this under
 // `node --experimental-strip-types`.
@@ -45,8 +45,8 @@ const beatLines = (blocks: TokenBlock[]) =>
     .join('\n')
 
 /**
- * Every Story token and its value. An unset field resolves to '' rather than being left out, so a
- * sentence built around a token that has nothing behind it comes out blank instead of showing the
+ * Every Story token and its value. An unset field resolves to '' rather than being left out: a
+ * sentence built around a token that has nothing behind it comes out blank rather than showing the
  * token to the model, the same rule `castTokens` follows.
  */
 export function storyTokens(args: StoryTokenArgs): Record<string, string> {
@@ -83,7 +83,7 @@ export function storyTokens(args: StoryTokenArgs): Record<string, string> {
     nextChapterBeats: next ? beatLines(next.blocks) : '',
 
     beat: block?.beat.trim() ?? '',
-    // A prompt saying "about 0 words" is worse than one saying nothing, so an unset target resolves
+    // A prompt saying "about 0 words" is worse than one saying nothing. An unset target resolves
     // blank like every other unset field.
     beatTargetWords: target > 0 ? String(target) : '',
     // Every other beat in the Chapter, in order. There is no covered/remaining split: nothing

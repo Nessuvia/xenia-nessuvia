@@ -1,5 +1,5 @@
 /**
- * The arithmetic behind a phone drawer's swipe, kept apart from the listeners so the release
+ * The arithmetic behind a phone drawer's swipe, kept apart from the listeners: the release
  * decision can be asserted without a DOM. useSideDrawer.ts owns the touch events.
  *
  * A drawer lives on one edge of the screen. Everything below works in `pull`: how far the finger
@@ -40,8 +40,8 @@ export interface Settle {
 }
 
 /**
- * Where the drawer lands when the finger lifts. A flick counts on speed alone, so a short sharp
- * swipe opens it; anything slower has to drag it a third of the way across. Both directions read
+ * Where the drawer lands when the finger lifts. A flick counts on speed alone: a short sharp
+ * swipe opens it. Anything slower has to drag it a third of the way across. Both directions read
  * the same, which is what makes closing feel like opening in reverse.
  */
 export function settleDrawer({ startOpen, pull, width, elapsed }: Settle): boolean {

@@ -18,7 +18,7 @@ assert.equal(norm('He said, "wait—'), 'He said, "wait')
 
 assert.equal(norm('“Hi,” she said… ‘really’'), '"Hi," she said... \'really\'')
 
-// Code spans and URLs are the author's, not the model's prose.
+// Code spans and URLs pass through untouched.
 assert.equal(norm('use `a — b` here'), 'use `a — b` here')
 
 // A user who turned the sweep off wants the character.

@@ -1,5 +1,5 @@
 // The two outline generators: Story (chapters and their summaries) and Chapter (the beats of one).
-// Same plumbing, different scope. Pure: no store, no fetch, so checkOutline.ts can run it.
+// Same plumbing, different scope. Pure: no store, no fetch. checkOutline.ts can run it.
 //
 // Extension-ful imports on purpose: the check scripts run this under
 // `node --experimental-strip-types`.
@@ -66,7 +66,7 @@ export function buildStoryOutlineMessages(
 }
 
 /**
- * The reply, as chapters. Model output, so nothing is trusted: the object is cut out rather than
+ * The reply, as chapters. Model output: nothing is trusted. The object is cut out rather than
  * parsed whole, every field is coerced, and an entry that holds no title and no summary is dropped
  * rather than becoming an empty Chapter.
  *
@@ -112,7 +112,7 @@ export interface ChapterOutlineRequest {
   previousProse: string
 }
 
-/** One beat of a parsed Chapter outline. The field names follow the Bulk Add format, so a reply
+/** One beat of a parsed Chapter outline. The field names follow the Bulk Add format: a reply
  *  can be pasted into that box and an outline can be pasted out of one. */
 export interface OutlineBeat {
   beat: string
@@ -184,8 +184,8 @@ export function parseChapterOutlineReply(text: string): OutlineBeat[] {
 // ------------------------------------------------------------------------- Chapter summary
 
 /** What the summary request carries. `prose` is already trimmed to fit by the caller, which is the
- *  only place that knows the connection's budget. `unwritten` is the beats with no prose yet, so
- *  the recap can say a chapter is unfinished rather than end mid-air. */
+ *  only place that knows the connection's budget. `unwritten` is the beats with no prose yet: it
+ *  lets the recap say a chapter is unfinished rather than end mid-air. */
 export interface ChapterSummaryRequest {
   chapterNumber: number
   title: string
@@ -236,7 +236,7 @@ function outlineObject(text: string): unknown {
   try {
     return JSON.parse(json)
   } catch (err) {
-    // A beat is prose, so the usual failure is a quote or a newline the model did not escape.
+    // A beat is prose: the usual failure is a quote or a newline the model did not escape.
     // Second pass rather than first: a reply that was already valid must never go through a repair.
     try {
       return JSON.parse(repairJsonStrings(json))
@@ -285,8 +285,8 @@ function para(text: string): string {
   return text ? `\n${text}\n` : ''
 }
 
-/** The end of a long stretch of prose. The previous chapter can be thousands of words and only its
- *  landing matters for planning the next one, so the outline request carries the tail. */
+/** The end of a long stretch of prose. The previous chapter can be thousands of words. Only its
+ *  landing matters for planning the next one, and the outline request carries the tail. */
 function tailOf(prose: string, chars = 1500): string {
   if (prose.length <= chars) return prose
   const cut = prose.slice(prose.length - chars)

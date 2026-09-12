@@ -1,8 +1,8 @@
 import { Fragment } from 'react'
 import type { Finding } from './analyse'
 
-/** Overlapping spans merged into one run, so a phrase caught by two detectors is marked once
- *  instead of nesting a highlight inside a highlight. */
+/** Overlapping spans merged into one run. A phrase caught by two detectors is marked once, not
+ *  nested as a highlight inside a highlight. */
 export function mergeSpans(findings: Finding[]): [number, number][] {
   const spans = findings
     .filter((f) => f.span && f.span.end > f.span.start)
@@ -22,7 +22,7 @@ export function mergeSpans(findings: Finding[]): [number, number][] {
  * The passage with every found span marked.
  *
  * React elements only. This is model output and imported card text, and the whole point of the
- * screen is looking at the worst of it, so it never goes near innerHTML.
+ * screen is looking at the worst of it. It never goes near innerHTML.
  */
 export default function Highlighted({ text, findings }: { text: string; findings: Finding[] }) {
   const spans = mergeSpans(findings)

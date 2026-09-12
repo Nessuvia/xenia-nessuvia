@@ -38,7 +38,7 @@ interface WorldInfoState {
   addAll(bookId: number, entries: ImportedEntry[]): Promise<void>
   /** Delete a book's entries, the lorebook cascade calls this. */
   removeFor(bookId: number): Promise<void>
-  /** The send path. Reads storage without touching `entries`, because the books in play for a turn
+  /** The send path. Reads storage without touching `entries`: the books in play for a turn
    *  are usually not the one open in the editor. */
   fetchFor(bookId: number): Promise<WorldInfoEntry[]>
   /** The send path, for the several books a turn can have attached. One pass, sorted as one list. */

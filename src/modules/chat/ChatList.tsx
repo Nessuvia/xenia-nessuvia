@@ -87,8 +87,7 @@ export default function ChatList({
   // Not persisted: which way you're searching right now is a glance-level choice, like the
   // collapsed column next door.
   const [inside, setInside] = useState(false)
-  // Also not persisted, and deliberately so: skipping the confirm is a decision for this sitting,
-  // not a setting that follows you into the next one.
+  // Also not persisted, deliberately: skipping the confirm is a decision for this sitting only.
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false)
 
   useEffect(() => {
@@ -116,8 +115,8 @@ export default function ChatList({
     return out
   }, [inside, query, searchMessages])
 
-  // A title hit still counts when searching inside, the extra results are the point of the box,
-  // not a replacement for the ones it already found.
+  // A title hit still counts when searching inside. The extra results are the point of the box:
+  // additions to what it already found.
   const shown = chats.filter(
     (c) => c.title.toLowerCase().includes(query) || (c.id !== undefined && counts[c.id] > 0),
   )
@@ -132,8 +131,8 @@ export default function ChatList({
         </span>
       </div>
 
-      {/* The sheet sits this list above the card's sections, so its chrome costs the sections
-          screen space. Under a handful of chats you can see them all anyway, the search and the
+      {/* The sheet sits this list above the card's sections. Its chrome costs the sections
+          screen space. Under a handful of chats you can see them all anyway. The search and the
           delete toggle only earn their rows once the list is long enough to need them. */}
       {showTools && (
         <>
@@ -178,7 +177,7 @@ export default function ChatList({
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={() => {
                   // Blur commits, like the chat title in the header. Escape clears the draft
-                  // first, so the blur it causes has nothing left to write.
+                  // first: the blur it causes has nothing left to write.
                   if (title.trim() && title.trim() !== c.title) renameChat(c.id!, title.trim())
                   setRenaming(null)
                 }}

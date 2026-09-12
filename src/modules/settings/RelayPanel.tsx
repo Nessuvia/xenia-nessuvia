@@ -9,7 +9,7 @@ import { openCentrifugoChannel } from '../../core/multiplayer/centrifugoChannel'
 import { useMediaQuery } from '../../app/useMediaQuery'
 
 export default function RelayPanel() {
-  // Running a relay needs a PC, so the option is struck out on a phone.
+  // Running a relay needs a PC. The option is struck out on a phone.
   const isMobile = useMediaQuery('(max-width: 700px)')
   const relay = useSettings((s) => s.relay)
   const setRelay = useSettings((s) => s.setRelay)

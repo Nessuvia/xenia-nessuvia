@@ -5,7 +5,7 @@
 /**
  * What a chat may say about Second Sweep, over the global default.
  *
- * Two fields, not a partial pipeline. A pipeline is a record with an id, so a chat overriding it
+ * Two fields, not a partial pipeline. A pipeline is a record with an id: a chat overriding it
  * names the one it wants rather than carrying a copy that drifts from the original. The wider
  * knobs (rules, stages, weights) belong to the pipeline and are edited in one place, which is the
  * specificity call this feature makes: picking a pipeline in a chat changes that chat, and

@@ -3,8 +3,8 @@
  *
  * Multiplayer is the one feature that sends anything outside the browser other than model requests.
  * Frames go through a relay the host runs (`resources/self-hosted-relay.md`). The relay carries
- * plaintext, and that is a fact the user should accept rather than discover — so it gates the
- * feature instead of sitting in a settings page.
+ * plaintext. That is a fact the user should accept, not discover: this notice gates the feature,
+ * it does not sit tucked away on a settings page.
  *
  * A guest's link says which relay the room is on, so the guest's copy names it.
  *

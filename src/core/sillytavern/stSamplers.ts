@@ -93,7 +93,7 @@ const skipKeys = new Set([
   'logit_bias',
 ])
 
-/** A whole sampler group switched off upstream, so its numbers mean nothing. */
+/** A whole sampler group switched off upstream: its numbers mean nothing. */
 function gatedOff(key: string, preset: Record<string, unknown>): boolean {
   if (key.startsWith('dry_') && !(Number(preset.dry_multiplier) > 0)) return true
   if (dynatempKeys.has(key) && !preset.dynatemp) return true

@@ -24,7 +24,7 @@ export default function SlopView() {
   const [added, setAdded] = useState('')
   const [tokens, setTokens] = useState(0)
 
-  // A chat quick action leaves the message here and routes in. Taken once, so a later visit is
+  // A chat quick action leaves the message here and routes in. Taken once. A later visit is
   // a blank screen rather than the last thing inspected.
   useEffect(() => {
     const sample = takeSample()
@@ -44,8 +44,8 @@ export default function SlopView() {
 
   const pipeline = pipelines.find((p) => p.id === pipelineId)
   const detect = useMemo(() => resolveDetect(pipeline?.detect), [pipeline])
-  // The pipeline's own list and nothing else. With no pipeline picked there is no slop list, so
-  // the lexicon group finds nothing and the built-in checks carry the report.
+  // The pipeline's own list and nothing else. With no pipeline picked there is no slop list.
+  // The lexicon group finds nothing and the built-in checks carry the report.
   const lexicon = useMemo(() => pipeline?.lexicon ?? [], [pipeline])
 
   const report = useMemo(
@@ -113,7 +113,7 @@ export default function SlopView() {
           </p>
           {!pipelines.length && (
             <p className="slopHint">
-              No pipelines. Rules and the slop list come from one, so there is nothing to find
+              No pipelines. Rules and the slop list come from one. There is nothing to find
               until you make a pipeline or import one.
             </p>
           )}

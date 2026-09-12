@@ -18,8 +18,8 @@ import { budgetOf, maxTokensOf } from '../../core/params/connectionParams'
 
 /**
  * What the next send would contain, rendered in the sidebar next to the chat's other settings.
- * It calls `buildPrompt` and `buildRequestBody`, the same two functions the send path calls, so
- * what it shows and what goes over the wire can't diverge.
+ * It calls `buildPrompt` and `buildRequestBody`, the same two functions the send path calls.
+ * What it shows and what goes over the wire can't diverge.
  *
  * debounced full rebuild, no incremental diffing, profile before optimising.
  */
@@ -59,7 +59,7 @@ export default function PromptPanel() {
   useEffect(() => {
     const speaker = characters.find((c) => c.id === speakerId)
     if (!chat || !speaker) return setWorldInfo(emptyWorldInfo)
-    // The unsent draft counts as the next user turn here too, so a key typed into the composer
+    // The unsent draft counts as the next user turn here too: a key typed into the composer
     // shows its entry appearing in the preview.
     const pending: Message[] = typed.trim()
       ? [...messages, { ownerId: 'local', chatId: chat.id!, role: 'user' as const, content: typed, createdAt: Date.now() }]
@@ -82,7 +82,7 @@ export default function PromptPanel() {
   const persona = personas.find((p) => p.id === activePersonaId) ?? personas[0]
   if (!chat || !character || !persona || !stack) return null
 
-  // The preview is of the *next* turn, so it resolves against whoever is up, card, labels, params.
+  // The preview is of the *next* turn: it resolves against whoever is up, card, labels, params.
   const speaker = characters.find((c) => c.id === nextSpeakerId(chat)) ?? character
   const connection = activeConnection && resolvedConnection(speaker, chat)
 

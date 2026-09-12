@@ -8,9 +8,9 @@ import { parseSillyTavern, shapeLabels } from '../../core/sillytavern/importSill
 import './settings.css'
 
 /**
- * Import a SillyTavern export. The parse is pure (`core/sillytavern`), so the file becomes a
+ * Import a SillyTavern export. The parse is pure (`core/sillytavern`): the file becomes a
  * summary first and nothing is written until Import is pressed. The tag rule is global appearance
- * rather than part of the connection, which is why it gets its own checkbox.
+ * rather than part of the connection, and it gets its own checkbox.
  */
 export default function StImportPanel() {
   const fileInput = useRef<HTMLInputElement>(null)

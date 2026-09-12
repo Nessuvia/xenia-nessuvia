@@ -20,7 +20,7 @@ const defaultUserLine = 'Hello there.'
 const exampleStory = 'The tavern had emptied hours ago. Nessu wiped the last glass and set it down.'
 const exampleDirection = 'Write a short paragraph continuing the scene.'
 const exampleCast = 'Name: Nessuvia\nNessu is the Development Team Lead.'
-// Stand-ins for the Story tokens, so a stack that uses them previews as something readable rather
+// Stand-ins for the Story tokens: a stack that uses them previews as something readable rather
 // than as a page of blanks. Every token gets a value: the point here is to show the stack's shape.
 const exampleTokens = storyTokens({
   title: 'Last Call',
@@ -106,7 +106,7 @@ function budgetFor(connection?: Connection) {
 }
 
 // A Story stack has no character and no chat history: the Co-Writer takes a Story-context blob and
-// a Direction, so the preview mirrors that, example prose + an example Direction, nothing else.
+// a Direction. The preview mirrors that: example prose plus an example Direction, nothing else.
 function StoryPreview({ stack, header, ready }: { stack: PromptStack; header: React.ReactNode; ready: boolean }) {
   const connection = useActiveConnection()
   const [storyText, setStoryText] = useState(exampleStory)
@@ -196,8 +196,8 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
     { ownerId: 'local', chatId: 0, role: 'user', content: userLine, createdAt: 2 },
   ]
 
-  // No chat here, so the books in play are the character's plus every global one. Matched against
-  // the example lines above, so a key typed into the user line shows its entry appearing.
+  // No chat here: the books in play are the character's plus every global one. Matched against
+  // the example lines above, a key typed into the user line shows its entry appearing.
   // Deps are the values `history` is built from, the array itself is new on every render.
   useEffect(() => {
     if (!character) return setWorldInfo(emptyWorldInfo)
@@ -219,10 +219,10 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
     )
   }
 
-  // The same call the send path makes, the preview can't drift from what gets sent. Counts and
-  // warnings read from this one, so indentation never touches the numbers.
+  // The same call the send path makes: the preview can't drift from what gets sent. Counts and
+  // warnings read from this one. Indentation never touches the numbers.
   const built = buildPrompt({ stack, character, persona, messages: history, worldInfo }, budgetOf(connection))
-  // A second, display-only pass with nested content indented. Same inputs, so its messages line up
+  // A second, display-only pass with nested content indented. Same inputs: its messages line up
   // 1:1 with `built` (indentation doesn't change role boundaries), and the <pre> shows this text.
   const display = buildPrompt(
     { stack, character, persona, messages: history, worldInfo, indent: true },

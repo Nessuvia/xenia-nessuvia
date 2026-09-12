@@ -25,7 +25,7 @@ const { useSettings } = await import('../stores/settingsStore.ts')
 const dirty = () => useSettings.getState().dirtyTables
 const clean = () => useSettings.getState().markTablesClean(tableNames)
 
-// Every table starts dirty: nothing has been pushed yet, so everything is pending.
+// Every table starts dirty. Nothing has been pushed yet, and everything is pending.
 assert.deepStrictEqual([...dirty()].sort(), [...tableNames].sort())
 
 // A mutation marks exactly its own table.
@@ -34,7 +34,7 @@ assert.deepStrictEqual(dirty(), [])
 markDirty('chats')
 assert.deepStrictEqual(dirty(), ['chats'])
 
-// Marking an already-dirty table is a no-op, not a duplicate entry.
+// Marking an already-dirty table is a no-op: no duplicate entry.
 markDirty('chats')
 assert.deepStrictEqual(dirty(), ['chats'])
 

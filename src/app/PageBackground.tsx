@@ -51,13 +51,13 @@ interface LayerSpec {
  * `.pageBackground` is the documented handle inside it, what the user's CSS targets and where their
  * HTML is placed.
  *
- * Which slot applies comes from the route, chat, write and prompts each have one, everything else uses
- * the baseline.
+ * Which slot applies comes from the route. Chat, write and prompts each have one. Everything else
+ * uses the baseline.
  *
  * A change to any of that builds a whole new layer rather than editing the live one: the image is
  * decoded first, the HTML goes in while the element is still transparent, and the two layers
- * crossfade. That's why there are two `@scope` roots and two `<style>` elements, during the fade
- * both sets of user CSS are live at once and each has to reach only its own layer.
+ * crossfade. There are two `@scope` roots and two `<style>` elements for that reason: during the
+ * fade both sets of user CSS are live at once and each has to reach only its own layer.
  *
  * Mounted once, in App.
  */
@@ -67,7 +67,7 @@ export default function PageBackground() {
   const preview = useBackgroundCss((s) => s.preview)
   const images = useBackgroundImages((s) => s.images)
   const loadImages = useBackgroundImages((s) => s.load)
-  // A guest in a room paints the host's background instead of its own, so both see one scene.
+  // A guest in a room paints the host's background instead of its own. Both see one scene.
   const shared = useMultiplayer((s) => (s.role === 'guest' ? s.appearance : null))
 
   useEffect(() => {
@@ -75,11 +75,11 @@ export default function PageBackground() {
   }, [loadImages])
 
   // A live preview renders its own slot rather than the route's: the Backgrounds panel lives on
-  // /appearance, so editing the chat background would otherwise show nothing until it was saved.
+  // /appearance. Editing the chat background would otherwise show nothing until it was saved.
   const slot = preview ? preview.slot : slotForPath(pathname)
 
   const background = useMemo(() => {
-    // The host sends no imageId, an uploaded image's bytes stay in its own table, so a shared
+    // The host sends no imageId. An uploaded image's bytes stay in its own table: a shared
     // background reaches the layer through `url` only.
     if (shared) return { imageId: 0, ...shared.background }
     const stored = palette.backgrounds
@@ -97,14 +97,14 @@ export default function PageBackground() {
   const css = cssDisabled ? '' : background.css
   const html = cssDisabled ? '' : background.html
 
-  // One string so the swap effect runs on a real change and not on every render.
+  // One string: the swap effect runs on a real change and not on every render.
   const signature = JSON.stringify([slot, src, background.fit, background.excludeNav, css, html])
 
   const nextKey = useRef(0)
-  // Parity is not derived from the key: a cancelled swap still burns a key, so `key % 2` can repeat
-  // the parity of the layer already on screen, two layers sharing a <style> and a scope root, where
-  // the outgoing one's cleanup wipes the incoming one's CSS. It's assigned against the layer being
-  // kept instead, inside the state updater.
+  // Parity is not derived from the key: a cancelled swap still burns a key. `key % 2` can otherwise
+  // repeat the parity of the layer already on screen, two layers sharing a <style> and a scope root,
+  // where the outgoing one's cleanup wipes the incoming one's CSS. It's assigned against the layer
+  // being kept instead, inside the state updater.
   const build = () => ({
     key: nextKey.current++,
     slot,
@@ -118,14 +118,14 @@ export default function PageBackground() {
   // Oldest first. Two entries means a fade is running; the first one is on its way out.
   const [layers, setLayers] = useState<LayerSpec[]>(() => [{ ...build(), parity: 0 }])
 
-  // Typing in the Backgrounds panel is exempt: the preview is debounced to 250ms, so crossfading
+  // Typing in the Backgrounds panel is exempt: the preview is debounced to 250ms. Crossfading
   // each burst would leave the editor permanently mid-fade. Edits land on the live layer instead.
   const editing = preview !== null
 
   useEffect(() => {
     const spec = build()
     if (editing || contentSig(spec) === contentSig(layers[layers.length - 1])) {
-      // Nothing visible differs, only the slot did, because the slot falls back to `all`. Fading
+      // Nothing visible differs, only the slot did: the slot falls back to `all`. Fading
       // one background into an identical copy of itself is a visible flicker for no reason.
       // Same element, new content: keeping the key and parity means no fade and no second layer.
       setLayers((prev) => {
@@ -138,8 +138,8 @@ export default function PageBackground() {
     const swap = () => {
       if (cancelled) return
       setLayers((prev) => {
-        // Only the newest layer is kept, a third swap mid-fade replaces the one still fading out
-        // rather than stacking, so there are never more than two.
+        // Only the newest layer is kept. A third swap mid-fade replaces the one still fading out
+        // rather than stacking: there are never more than two.
         const keep = prev[prev.length - 1]
         return [keep, { ...spec, parity: (1 - keep.parity) as 0 | 1 }]
       })
@@ -152,9 +152,9 @@ export default function PageBackground() {
     // eslint-disable-next-line
   }, [signature, editing])
 
-  // `data-bgAnimated` on <html>, from the newest layer's CSS, skins drop backdrop-filter under it,
-  // because a blur over a backdrop that repaints every frame is re-run every frame, once per blurred
-  // element. Set here rather than in BackgroundLayer so there is one writer: during a crossfade both
+  // `data-bgAnimated` on <html>, from the newest layer's CSS. Skins drop backdrop-filter under it:
+  // a blur over a backdrop that repaints every frame is re-run every frame, once per blurred
+  // element. Set here rather than in BackgroundLayer: there is one writer. During a crossfade both
   // layers are live, and the incoming one is the one that decides.
   const liveCss = layers[layers.length - 1].css
   const animated = useMemo(() => (liveCss ? scopeBackgroundCss(liveCss).animated : false), [liveCss])
@@ -185,16 +185,16 @@ function BackgroundLayer({ spec, leaving }: { spec: LayerSpec; leaving: boolean 
   const layer = useRef<HTMLDivElement>(null)
 
   // The user's own elements, sanitized to the structural allowlist, placed inside the layer via
-  // replaceChildren, never innerHTML: this origin holds API keys, so nothing bypasses sanitizeHtml.
-  // sanitizeBackgroundHtml hands back a fragment, so the subtree is built off-document and attached
+  // replaceChildren, never innerHTML: this origin holds API keys. Nothing bypasses sanitizeHtml.
+  // sanitizeBackgroundHtml hands back a fragment. The subtree is built off-document and attached
   // in one go, while this layer is still transparent.
   useEffect(() => {
     const el = layer.current
     if (!el) return
     // Reject-the-whole-thing, same rule the panel applies on Apply: a stored value with anything off
-    // the allowlist renders nothing. Rendering the stripped remainder is worse than rendering none
-    // it's a half-built layout, and for a raw-text tag it was the stylesheet source shown as text.
-    // spec.src is handed in so `<img src="image.jpg">` resolves to this slot's own image, the
+    // the allowlist renders nothing. Rendering the stripped remainder is worse than rendering none:
+    // a half-built layout, and for a raw-text tag it was the stylesheet source shown as text.
+    // spec.src is handed in: `<img src="image.jpg">` resolves to this slot's own image. The
     // uploaded one is a data URL in IndexedDB and has no address the user could type.
     const { nodes, invalid } = sanitizeBackgroundHtml(spec.html, spec.src)
     el.replaceChildren(...(invalid.length ? [] : [nodes]))
@@ -209,14 +209,14 @@ function BackgroundLayer({ spec, leaving }: { spec: LayerSpec; leaving: boolean 
       style = document.createElement('style')
       style.id = id
     }
-    // Wrapped in @scope so it only reaches inside this layer, and refused whole if it breaks out.
+    // Wrapped in @scope: it only reaches inside this layer, and is refused whole if it breaks out.
     // spec.src is substituted for `url(image.jpg)` first, the CSS half of the same stand-in name the
-    // HTML box uses, that's what lets four pages share one stylesheet and each paint its own image.
+    // HTML box uses. Four pages share one stylesheet this way and each paints its own image.
     style.textContent = scopeBackgroundCss(
       substituteImageUrl(spec.css, spec.src),
       scopeRootClassFor(spec.parity),
     ).css
-    // Which layer's CSS is in there, so unmounting doesn't clear a style another layer has claimed.
+    // Which layer's CSS is in there: unmounting doesn't clear a style another layer has claimed.
     style.dataset.owner = String(spec.key)
     // Appended every time, not just on create: `append` moves an existing node, which keeps this
     // last in <head>. Custom CSS has to outrank the module stylesheets at equal specificity, and
@@ -263,8 +263,8 @@ function slotForPath(pathname: string): BackgroundSlot {
 }
 
 /**
- * Resolves once the image is painted-ready, so the fade reveals the picture rather than a blank box.
- * Never rejects, and gives up after `decodeTimeout`, a bad URL must not strand the old background
+ * Resolves once the image is painted-ready: the fade reveals the picture rather than a blank box.
+ * Never rejects, and gives up after `decodeTimeout`. A bad URL must not strand the old background
  * on screen forever.
  */
 function decoded(src: string): Promise<void> {

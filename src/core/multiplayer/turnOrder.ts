@@ -30,9 +30,9 @@ export function reorder(order: string[], from: number, to: number): string[] {
 
 /**
  * Drop a participant and return the surviving order alongside the corrected cursor.
- * Removing the holder leaves the cursor pointing at whoever now occupies that slot, so the turn
+ * Removing the holder leaves the cursor pointing at whoever now occupies that slot: the turn
  * passes to the next person rather than skipping them. Removing someone earlier in the order
- * shifts the cursor back by one so the holder does not change.
+ * shifts the cursor back by one, and the holder does not change.
  */
 export function removeParticipant(
   order: string[],

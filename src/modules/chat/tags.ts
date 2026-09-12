@@ -2,7 +2,7 @@
 // `node --experimental-strip-types`, hence the explicit .ts on the type import.
 import type { Character } from '../../core/storage/types.ts'
 
-/** Characters carry tags as plain strings, so the tag list is whatever the roster says it is. */
+/** Characters carry tags as plain strings: the tag list is whatever the roster says it is. */
 export type Taggable = Pick<Character, 'tags'>
 
 export const UNTAGGED = 'Untagged'
@@ -23,7 +23,7 @@ export function tagCounts(characters: Taggable[]): Map<string, number> {
   return counts
 }
 
-/** Nothing selected matches everything, so the filter is inert until the user picks a tag. */
+/** Nothing selected matches everything: the filter is inert until the user picks a tag. */
 export function matchesTags(c: Taggable, selected: string[], mode: TagMode): boolean {
   if (selected.length === 0) return true
   const tags = c.tags ?? []
@@ -36,8 +36,8 @@ export interface TagGroup<T> {
 }
 
 /**
- * Partitions the roster into groups: each character lands in exactly one, under its FIRST tag, so
- * the counts sum to the roster size and no face repeats down the page. Untagged characters go to a
+ * Partitions the roster into groups: each character lands in exactly one, under its FIRST tag. The
+ * counts sum to the roster size and no face repeats down the page. Untagged characters go to a
  * trailing group.
  *
  * `only` restricts which groups come back: the selected tags in the filter dropdown. A character

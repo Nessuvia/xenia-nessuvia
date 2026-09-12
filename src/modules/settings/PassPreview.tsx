@@ -8,8 +8,8 @@ import './settings.css'
  * One preview for the whole panel: sample text run through the Hammer and the free-text rules, in
  * one list labelled by what reported each row.
  *
- * It sits outside the tab strip so it is reachable from any tab, and it runs whether or not the
- * pass is enabled, since the point of it is deciding what to enable.
+ * It sits outside the tab strip and is reachable from any tab. It runs whether or not the
+ * pass is enabled: the point of it is deciding what to enable.
  *
  * The Slop-dentifier is the fuller version of this, with the lexicon and a rule button on each
  * finding. This one stays because it reads the pipeline being edited, unsaved rules included.
@@ -53,7 +53,7 @@ export default function PassPreview({ detect }: { detect: DetectSettings }) {
     <div className="grammarPreview passPreview">
       <textarea
         value={text}
-        placeholder="Paste sample text to see what would be reported…"
+        placeholder="Paste sample text to see what would be reported."
         rows={4}
         onChange={(e) => setText(e.target.value)}
       />

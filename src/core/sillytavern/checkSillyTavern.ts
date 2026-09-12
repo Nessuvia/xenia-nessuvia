@@ -40,12 +40,12 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.deepStrictEqual(valueOf(params, 'stop'), ['<turn|>'])
   // max_length is a budget field, not a request param.
   assert.strictEqual(valueOf(params, 'max_length'), undefined)
-  // DRY is off in this preset, so its numbers say nothing and stay out.
+  // DRY is off in this preset. Its numbers say nothing and stay out.
   assert.strictEqual(valueOf(params, 'dry_base'), undefined)
   assert.strictEqual(valueOf(params, 'dry_multiplier'), undefined)
-  // Neither does the bias list, which ST keeps in its own shape.
+  // The bias list stays out too. ST keeps it in its own shape.
   assert.strictEqual(valueOf(params, 'logit_bias'), undefined)
-  // Set by hand in this preset, so they come over as new library rows.
+  // Set by hand in this preset. They come over as new library rows.
   assert.strictEqual(valueOf(params, 'temperature_last'), true)
   assert.ok(
     out.newDefs.some((d) => d.key === 'temperature_last'),
@@ -78,8 +78,8 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.ok(literal.includes('### Universe Overview'), 'literal text was dropped')
   assert.ok(literal.includes('{{user}}'), '{{user}} should stay, we substitute it')
 
-  // The bundle has an instruct template, so the think markers go on it and the global tag rules
-  // are left alone.
+  // The bundle has an instruct template. The think markers go on it, and the global tag rules
+  // stay untouched.
   const reasoning = out.connection!.template!.reasoning!
   assert.strictEqual(reasoning.prefix, '<|channel>thought')
   assert.strictEqual(reasoning.suffix, '<channel|>')
@@ -207,7 +207,7 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.strictEqual(template.sequencesAsStops, true)
   assert.strictEqual(template.names, 'always')
 
-  // macro absent counts as on, so the field stays unset rather than reading false.
+  // macro absent counts as on. The field stays unset rather than reading false.
   const { macro: _macro, ...noMacro } = instruct
   const onByDefault = parseSillyTavern(JSON.stringify(noMacro)).connection!.template!
   assert.strictEqual(onByDefault.expandMacros, undefined)
@@ -218,7 +218,7 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
       .names
   assert.strictEqual(behaviour('none'), 'never')
   assert.strictEqual(behaviour('never'), 'never')
-  // 'force' labels a turn conditionally, which is closest to our group behaviour.
+  // 'force' labels a turn conditionally: closest to our group behaviour.
   assert.strictEqual(behaviour('force'), 'group')
 }
 

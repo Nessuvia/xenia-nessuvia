@@ -3,10 +3,7 @@ import type { Character } from '../../core/storage/types'
 import { displayName } from '../../core/stores/charactersStore'
 import TagList from './TagList'
 
-/**
- * The quick-tag menu: right-click (or long-press) a card. Positioned at the pointer rather than
- * anchored to the card, since the card is a grid cell that may sit at either edge.
- */
+/** The quick-tag menu: right-click (or long-press) a card. Positioned at the pointer. */
 export default function TagContextMenu({
   character,
   tags,
@@ -15,7 +12,7 @@ export default function TagContextMenu({
   onClose,
 }: {
   character: Character
-  /** Every tag in use across the roster, so you can apply an existing one without retyping it. */
+  /** Every tag in use across the roster. */
   tags: string[]
   at: { x: number; y: number }
   onChange: (tags: string[]) => void
@@ -31,7 +28,6 @@ export default function TagContextMenu({
     <div
       ref={ref}
       className="panel tagContextMenu"
-      // Clamped so a card near the right or bottom edge does not open a menu off screen.
       style={{
         left: Math.min(at.x, window.innerWidth - 240),
         top: Math.min(at.y, window.innerHeight - 320),

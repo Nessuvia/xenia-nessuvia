@@ -33,7 +33,7 @@ function rows(kind: GameKind, events: GameEvent[], characterName: string): Row[]
       out.push({ key: i, side: event.by === 'char' ? 'char' : 'player', text: event.text })
       return
     }
-    // Your ask is the thing you typed, so it reads as your side of the conversation, in your own
+    // Your ask is the thing you typed. It reads as your side of the conversation, in your own
     // words. The character's ask stays in the middle: its voice is the line it says about the ask.
     if (event.kind === 'ask' && event.by === 'player') {
       out.push({ key: i, side: 'player', text: event.text || `Got any ${rankPlural(event.rank)}?` })
@@ -84,7 +84,7 @@ export default function GameLog({
   }, [items.length, streamingText, open])
 
   // Off a phone a closed log collapses to its rail. On a phone the panel stays mounted whatever the
-  // open state, because the drawer slides and tracks a finger, and an unmounted panel cannot.
+  // open state. The drawer slides and tracks a finger, and an unmounted panel cannot.
   if (!open && !phone) return <CollapseRail label="Game log" onToggle={onToggle} className="gameLogRail" />
 
   return (

@@ -1,6 +1,6 @@
 // What the model is told about a Blackjack table. Same shape as gameState.ts does for Go Fish: a
 // tagged block of board state, then one plain line about what just happened, written from the
-// character's side. The character deals, so they see both hands, their own hole card included.
+// character's side. The character deals: they see both hands, their own hole card included.
 
 import type { BlackjackEvent, BlackjackState, Side } from './blackjack.ts'
 import { handValue, isBlackjack, isBust } from './blackjack.ts'
@@ -9,7 +9,7 @@ import { naming } from './sides.ts'
 
 export interface StateBlockContext {
   tag?: string
-  /** What to call the two sides. The block is always written to the character, so only the
+  /** What to call the two sides. The block is always written to the character: only the
    *  player's name is ever read out of it. */
   names?: SideNames
 }
@@ -17,7 +17,7 @@ export interface StateBlockContext {
 /**
  * A hand with the reading already done. Bust and blackjack are said in words rather than left as a
  * total to compare against 21: a model given `10, 9, 5 (24)` and nothing else works it out most of
- * the time, and the times it does not it tells the player they went bust when they did not.
+ * the time. The times it does not, it tells the player they went bust when they did not.
  */
 function readHand(state: BlackjackState, side: Side): string {
   const cards = state.hands[side]
@@ -37,12 +37,12 @@ function readOutcome(state: BlackjackState, they: string): string {
 }
 
 export function buildStateBlock(state: BlackjackState, ctx: StateBlockContext = {}): string {
-  // The block is the character's own view, so the far side is the player.
+  // The block is the character's own view: the far side is the player.
   const far = naming('char', ctx.names)
   const lines: string[] = ['You are dealing Blackjack.']
-  // Which round the hands below belong to, so they are read as this round and not as the transcript
+  // Which round the hands below belong to: they are read as this round and not as the transcript
   // above: without it a model reaches back through the history for the last bust it can find.
-  // `round` counts rounds settled, so a settled table is still showing the hands of round `round`.
+  // `round` counts rounds settled: a settled table is still showing the hands of round `round`.
   lines.push(`Round ${state.outcome === null ? state.round + 1 : state.round}.`)
   lines.push(`Your hand: ${readHand(state, 'char')}`)
   if (state.holeDown && state.hands.char.length > 1) lines.push('Your second card is still face down.')
@@ -59,7 +59,7 @@ export function buildStateBlock(state: BlackjackState, ctx: StateBlockContext = 
           : 'Between rounds.',
   )
   // Last, next to the turn line: the hands above are the ones this settled. `deal` clears the
-  // outcome, so there is never a result here belonging to a round that is no longer on the table.
+  // outcome: there is never a result here belonging to a round already off the table.
   const outcome = readOutcome(state, far.they)
   if (outcome) lines.push(outcome)
 
@@ -72,7 +72,7 @@ export function buildStateBlock(state: BlackjackState, ctx: StateBlockContext = 
 /**
  * The events of one move in the second person. `you` picks whose side it reads from: the character
  * for the prompt, the player for the log on the board. The other side is called by name where
- * `names` has one, since "they" at a table of two is exactly the ambiguity that had characters
+ * `names` has one. "They" at a table of two is exactly the ambiguity that had characters
  * announcing the wrong person's bust.
  */
 export function describeEvent(events: BlackjackEvent[], you: Side = 'char', names?: SideNames): string {

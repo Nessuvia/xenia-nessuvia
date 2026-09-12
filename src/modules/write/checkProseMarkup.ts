@@ -30,18 +30,18 @@ assert.equal(shape(parseProse('a **b** c')), 'a bold[b] c')
 assert.equal(shape(parseProse('**a _b_ c**')), 'bold[a em[b] c]')
 assert.equal(shape(parseProse('*a _b_ c*')), 'em[a em[b] c]')
 
-// Same-character nesting closes on the first matching run, so `*a **b** c*` is three emphases
+// Same-character nesting closes on the first matching run. `*a **b** c*` is three emphases
 // rather than emphasis-around-bold. Chat's renderText scans the same way; the Story parser
 // matches it on purpose. Mixing `*` and `_` for the two levels is the way to nest.
 assert.equal(shape(parseProse('*a **b** c*')), 'em[a ]em[b]em[ c]')
 
-// Half-typed markup stays literal instead of swallowing the rest of the Chapter.
+// Half-typed markup stays literal. It does not swallow the rest of the Chapter.
 assert.equal(shape(parseProse('*unclosed and on we go')), '*unclosed and on we go')
 assert.equal(shape(parseProse('**')), '**')
 assert.equal(shape(parseProse('****')), '****')
 assert.equal(shape(parseProse('5 * 3 = 15')), '5 * 3 = 15')
 
-// Quotes are a marker like the others, so dialogue can take its own color. The quote characters
+// Quotes are a marker like the others. Dialogue can take its own color. The quote characters
 // stay inside the span: they read as part of the dialogue, unlike an asterisk.
 assert.equal(shape(parseProse('"Get down," he said.')), 'quote[Get down,] he said.')
 assert.equal(shape(parseProse('"*Now*," she hissed.')), 'quote[em[Now],] she hissed.')

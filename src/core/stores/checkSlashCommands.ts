@@ -28,7 +28,7 @@ assert.deepEqual(parseCommand('/break', names), { name: 'break', text: '' })
 assert.deepEqual(parseCommand('/continue', names), { name: 'continue', text: '' })
 assert.deepEqual(parseCommand('/continue please', names), { name: 'continue', text: 'please' })
 
-// The longest matching roster name wins, so a two-word name is not cut in half by the one-word
+// The longest matching roster name wins. A two-word name is not cut in half by the one-word
 // name it starts with.
 assert.deepEqual(parseCommand('/sendas Anna Belle waves.', names), {
   name: 'sendas',
@@ -46,7 +46,7 @@ assert.deepEqual(parseCommand('/sendas Annabelle waves.', names), {
   target: 'Annabelle',
   text: 'waves.',
 })
-// No match falls back to the first token, so the caller can name it in the error.
+// No match falls back to the first token: the caller can name it in the error.
 assert.deepEqual(parseCommand('/sendas Zed hi', names), {
   name: 'sendas',
   target: 'Zed',

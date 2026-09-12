@@ -31,7 +31,7 @@ assert.ok(proseSegments(code).every((s) => !s.includes('compute')))
 // A phrase must not form across the hole an exclusion leaves.
 assert.ok(!phrasesOf('one before `code` after two').some((p) => p.includes('before after')))
 
-// Pure function words are grammar, not habit.
+// Pure function words are grammar rather than habit.
 assert.ok(!phrasesOf('out of the').includes('out of the'))
 assert.ok(phrasesOf('out of the room').includes('out of the room'))
 
@@ -54,7 +54,7 @@ const capped = buildCensus([...noisy, ...history], { ...opts, maxEntries: 3 })
 assert.equal(capped.entries.length, 3)
 assert.ok(capped.entries[0].count >= capped.entries[2].count)
 
-// The window only looks at the tail, so an old habit the model has dropped stops being banned.
+// The window only looks at the tail: an old habit the model has dropped stops being banned.
 const old = buildCensus([...history, ...Array.from({ length: 20 }, () => 'A fresh unrelated line of prose.')], opts)
 assert.ok(!old.has('something unreadable in her eyes'))
 

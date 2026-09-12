@@ -7,7 +7,7 @@ import RangeSlider from './RangeSlider'
  * chat or Story surfaces without opening the full stack editor. Shared by the chat settings panel
  * and the Story settings panel; works for either kind.
  *
- * Writes go back to the shared stack via `onChange`, so a flip here changes every chat/Story on that
+ * Writes go back to the shared stack via `onChange`: a flip here changes every chat/Story on that
  * stack, new ones included. Per-scope overrides are the named upgrade path if that bites.
  */
 export default function PromptToggles({

@@ -88,7 +88,7 @@ export class CompromiseTagger implements Tagger {
     })
     // Compromise tags attributive past-participles inconsistently: "broken glass" → Adjective, but
     // "practiced hand"/"gilded cage" → Verb,PastTense. A past-tense verb directly before a noun in
-    // the same sentence is functioning as an adjective, so give it the adj slot too. Narrow to that
+    // the same sentence functions as an adjective: give it the adj slot too. Narrow to that
     // position to avoid pulling real past-tense verbs ("walked and talked") into adj rules.
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i]

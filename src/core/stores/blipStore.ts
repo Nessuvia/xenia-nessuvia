@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 
 /**
  * Characters whose reply finished while you were somewhere else. A reminder, not an inbox: there is
- * no count and no per-chat detail, just "this one said something since you looked".
+ * no count and no per-chat detail. Just "this one said something since you looked".
  *
  * character ids only. Per-chat blips are the upgrade path if a character with several
  * running chats ever needs to say *which* one replied.
@@ -50,7 +50,7 @@ export const useBlips = create<BlipState>()(
       blips: [],
       mark: (characterId) =>
         set((s) => {
-          // Only on a character that wasn't already blipping, so a run of replies isn't a run of
+          // Only on a character that wasn't already blipping: a run of replies isn't a run of
           // chimes.
           if (!characterId || s.blips.includes(characterId)) return s
           playBlip()

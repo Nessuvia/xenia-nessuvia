@@ -33,10 +33,8 @@ import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import { useSlopSample } from '../../core/stores/slopStore'
 
 
-/** Per-speaker color overrides as CSS vars. Only overridden fields are set: an empty '--textColor'
- *  would resolve var() to empty and wipe the global set on .chatView instead of inheriting it.
- *  `overwrite` (the palette's Overwrite Char. Color) drops every override, so the .chatView vars
- *  show through unshadowed and the palette becomes the only source of color. */
+/** Per-speaker color overrides as CSS vars. Only overridden fields are set. `overwrite` drops
+ *  every override. */
 export function colorVars(colors: CharacterColors, overwrite: boolean): CSSProperties {
   if (overwrite) return {}
   const style: Record<string, string> = {}
@@ -113,24 +111,17 @@ export default function MessageBubble({
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const editing = draft !== null
-  // Through a ref: the parent passes a fresh closure every render, and depending on it would fire
-  // the callback on every render rather than on the open/close edge.
   const editingCb = useRef(onEditingChange)
   editingCb.current = onEditingChange
   useEffect(() => editingCb.current?.(editing), [editing])
   const [pickingSwipes, setPickingSwipes] = useState(false)
-  // Quick actions is a <details>, but a bare <details> only closes when its own summary is clicked
-  // again, it sat open while the pointer went back to the message. Controlled so the standard
-  // dropdown dismissal applies: a click anywhere outside, or Escape.
   const [quickActions, setQuickActions] = useState(false)
   const navigate = useNavigate()
   const quickRef = useCloseOnOutside<HTMLDetailsElement>(quickActions, () =>
     setQuickActions(false),
   )
-  // Blur commits the edit, so Escape has to say it meant the other thing.
   const cancelled = useRef(false)
   const [inspecting, setInspecting] = useState(false)
-  // View state only: the rewrite stays the message either way. Reverting is the quick action.
   const [showOriginal, setShowOriginal] = useState(false)
   const appearance = useAppearance()
   const tagRules = appearance.tagRules
@@ -138,10 +129,6 @@ export default function MessageBubble({
   const palette = usePalette()
   const order = palette.colorOrder
 
-  // A text-completion model writes its thinking inline in the reply rather than on the separate
-  // stream channel `message.reasoning` holds. The stored text stays whole; the split happens here,
-  // at render, from the connection's markers. `reasoningEnd` on the message is the same offset
-  // recorded at save time, for the code that reads a reply without rendering it.
   const reasoningConfig = useActiveConnection()?.template?.reasoning
   const inline =
     message.role === 'assistant' && reasoningConfig?.autoParse
@@ -164,8 +151,6 @@ export default function MessageBubble({
   const name = who
   const passOriginal = passOriginalFor(message)
   const passFailure = passFailedFor(message)
-  // What the pass did, when it ran. Only the hover title uses it: a line of chrome per message
-  // would be louder than the decision deserves.
   const passSummary = passSummaryFor(message)
 
   return (
@@ -234,7 +219,7 @@ export default function MessageBubble({
             <RiPencilLine size={16} />
           </button>
           {onReprompt && (
-            <button type="button" title="Re-Prompt" onClick={onReprompt}>
+            <button type="button" title="Re-prompt" onClick={onReprompt}>
               <RiSendPlaneLine size={16} />
             </button>
           )}
@@ -250,7 +235,6 @@ export default function MessageBubble({
             className="quickActions"
             ref={quickRef}
             open={quickActions}
-            // The summary still toggles natively; this is what tells React it happened.
             onToggle={(e) => setQuickActions((e.target as HTMLDetailsElement).open)}
           >
             <summary title="Quick actions">
@@ -299,7 +283,6 @@ export default function MessageBubble({
               <button
                 type="button"
                 onClick={() => {
-                  // The store is the handoff buffer; the screen takes it on mount and clears it.
                   useSlopSample.getState().setSample(message.content)
                   navigate('/slopdentifier')
                   setQuickActions(false)
@@ -315,7 +298,7 @@ export default function MessageBubble({
                     setQuickActions(false)
                   }}
                 >
-                  Delete Swipe
+                  Delete swipe
                 </button>
               )}
               {assistant && onPass && (
@@ -349,7 +332,7 @@ export default function MessageBubble({
                     setQuickActions(false)
                   }}
                 >
-                  Delete Swipe(s)
+                  Delete swipe(s)
                 </button>
               )}
             </div>
@@ -384,8 +367,6 @@ export default function MessageBubble({
           <span className="caret">▌</span>
         </div>
       ) : draft === null ? (
-        // The rewrite is the message; showing the original is a look at what it replaced, and the
-        // class marks it so the two are never confused for each other.
         <div className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}>
           {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
             tagRules,
@@ -471,8 +452,7 @@ export default function MessageBubble({
   )
 }
 
-/** Pick alternates to delete. Numbers toggle selection; the last one clicked shows in the preview.
- *  rendered inline in the bubble, not portalled, the backdrop is position:fixed anyway. */
+/** Pick alternates to delete. Numbers toggle selection; the last one clicked shows in the preview. */
 function SwipePicker({
   swipes,
   onCancel,
@@ -504,7 +484,6 @@ function SwipePicker({
             </button>
           ))}
         </div>
-        {/* One line on purpose: newlines inside a <pre> in JSX render as whitespace. */}
         <pre className="swipePreview"><code>{text}</code></pre>
         <div className="dialogActions">
           <button type="button" onClick={onCancel}>

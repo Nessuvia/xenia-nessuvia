@@ -120,8 +120,8 @@ const messages = [{ role: 'user' as const, content: 'hello' }]
   assert.ok((body.prompt as string).includes('be brief'))
   assert.deepStrictEqual(body.stop, ['<|im_end|>']) // from the default ChatML template
 
-  // A stop param merges with the template's rather than replacing it: losing the template's
-  // sequence means the model never stops.
+  // A stop param merges with the template's rather than replacing it. The template's sequence
+  // is what stops the model.
   const both = buildRequestBody(messages, { ...text, params: [{ key: 'stop', value: ['###'] }] }, defs)
   assert.deepStrictEqual(both.stop, ['<|im_end|>', '###'])
 }

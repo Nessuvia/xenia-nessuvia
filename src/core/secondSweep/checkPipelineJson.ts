@@ -53,7 +53,7 @@ const minimal = {
     () => parsePipelineFile(JSON.stringify({ ...minimal, stages: [{ kind: 'translate' }] })),
     /unknown kind/,
   )
-  // A bad regex becomes a RegExp at run time, so it is caught here and names the rule.
+  // A bad regex becomes a RegExp at run time. Caught here, it names the rule.
   assert.throws(
     () =>
       parsePipelineFile(
@@ -96,7 +96,7 @@ const minimal = {
   assert.equal(back.id, undefined)
   const stage = back.stages[0] as RewriteStage
   assert.equal(stage.config.preset, 'Rewrite it.')
-  // The connection id survives, because it is part of the setup the author wrote. It will not
+  // The connection id survives: it is part of the setup the author wrote. It will not
   // resolve in someone else's install, and `rewriteConnection` treats that as not armed.
   assert.equal(stage.config.connectionId, 'local-1')
 }

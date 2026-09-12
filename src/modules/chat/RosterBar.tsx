@@ -9,8 +9,8 @@ import { displayName } from '../../core/stores/charactersStore'
 /**
  * The characters in the room, in speaking order. Click one to hand them the turn; drag to reorder.
  *
- * Removing a character leaves their past messages alone, `speakerName` on each message is a copy,
- * so the transcript keeps their name either way.
+ * Removing a character leaves their past messages alone: `speakerName` on each message is a copy.
+ * The transcript keeps their name either way.
  */
 export default function RosterBar({
   chat,

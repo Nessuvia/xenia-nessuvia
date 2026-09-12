@@ -52,12 +52,12 @@ export function regenerated<T extends Swipeable>(
   instruction?: string,
 ): T | null {
   if (!text) return null
-  // An untouched record (Write's Blocks start empty) has nothing worth keeping as swipe 1, so the
+  // An untouched record (Write's Blocks start empty) has nothing worth keeping as swipe 1. The
   // first real text becomes it rather than sitting behind a blank alternate.
   const base = seeded(message)
   const swipes = [...(base.length === 1 && !base[0].trim() ? [] : base), text]
-  // Snapshots are parallel to swipes, so the array is padded rather than appended to blindly:
-  // a message from before snapshots existed has holes, and a hole displays as unavailable.
+  // Snapshots are parallel to swipes: the array is padded rather than appended to blindly.
+  // A message from before snapshots existed has holes, and a hole displays as unavailable.
   const requestSnapshots = [...(message.requestSnapshots ?? [])]
   requestSnapshots.length = swipes.length - 1
   requestSnapshots.push(snapshot)
@@ -88,8 +88,8 @@ export function regenerated<T extends Swipeable>(
 
 /**
  * A finished continuation: `text` is the whole reply, the partial plus what the model just added,
- * and it replaces the selected swipe in place. A continuation is not a new take on the message, so
- * it must not become a swipe of its own; re-rolling still does that.
+ * and it replaces the selected swipe in place. A continuation is not a new take on the message.
+ * It must not become a swipe of its own; re-rolling still does that.
  *
  * The snapshot for that swipe becomes the continuation's request, which is the one that produced the
  * text as it now stands. Reasoning accumulates instead of replacing: both passes really happened.
@@ -171,7 +171,7 @@ export function withPass<T extends Swipeable>(
 
 /**
  * A finished pass over an existing message: the passed text replaces the selected swipe in place,
- * and `original` is what it replaced. Not a new swipe, since a pass is the same take worked over,
+ * and `original` is what it replaced. Not a new swipe: a pass is the same take worked over,
  * and re-running it a third time still starts from `original`.
  */
 export function passed<T extends Swipeable>(
@@ -237,7 +237,7 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
 /**
  * The instructions that led to the selected swipe, oldest first. Everything after `swipeIndex` is
  * left out on purpose: swiping back to an earlier take is how you drop a correction you no longer
- * want, so the chain a regen sends has to stop where the selection does.
+ * want. The chain a regen sends has to stop where the selection does.
  */
 export function instructionChain(message: Swipeable): string[] {
   const upTo = message.instructions?.slice(0, swipeIndex(message) + 1) ?? []

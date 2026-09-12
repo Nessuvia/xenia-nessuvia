@@ -59,7 +59,7 @@ async function run() {
   noteMotion([fake('finished').animation, fake('idle').animation])
   assert.equal(await settledYet(motionSettled()), true, 'finished animations should not be held')
 
-  // A wedged animation costs a slow turn, not the game.
+  // A wedged animation costs a slow turn.
   const stuck = fake()
   noteMotion([stuck.animation])
   const start = Date.now()

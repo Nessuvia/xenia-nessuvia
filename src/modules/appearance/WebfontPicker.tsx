@@ -5,7 +5,7 @@ import { listFonts, searchFonts, type FontsourceFont } from '../../core/connecto
 const pangram = 'The quick brown fox jumps over the lazy dog'
 
 /** The four palette fields one picker drives. Two sets exist: the chat/story font and the app font.
- *  `slot` also namespaces the preview `<link>`, since both pickers can be mounted at once. */
+ *  `slot` also namespaces the preview `<link>`: both pickers can be mounted at once. */
 export interface FontKeys {
   slot: string
   family: 'fontFamily' | 'appFontFamily'
@@ -34,14 +34,13 @@ export const appFontKeys: FontKeys = {
  * The Font row in the Appearance panel, with a Webfont checkbox that swaps the stack dropdown for a
  * Fontsource catalog search.
  *
- * The Webfont checkbox is an on/off toggle: unchecking it keeps the chosen family stored (so the
- * font can be switched back on later) and falls the app back to the stack `<select>`. While off, the
- * row is the four-option `<select>`. While on, the `<select>` is hidden and a search input plus a
- * scrollable results list take its place, with the current family previewed above and highlighted in
- * the list.
+ * The Webfont checkbox is an on/off toggle: unchecking it keeps the chosen family stored and falls
+ * the app back to the stack `<select>`. While off, the row is the four-option `<select>`. While on,
+ * the `<select>` is hidden and a search input plus a scrollable results list take its place, with
+ * the current family previewed above and highlighted in the list.
  *
- * Results are plain family names (no per-row font loading) and paginate by infinite scroll: a
- * sentinel `<li>` at the list bottom drives an `IntersectionObserver` that appends the next 10.
+ * Results are plain family names and paginate by infinite scroll: a sentinel `<li>` at the list
+ * bottom drives an `IntersectionObserver` that appends the next 10.
  */
 export default function WebfontPicker({
   palette,
@@ -72,12 +71,10 @@ export default function WebfontPicker({
   const setFamily = (value: string) => patch({ [keys.family]: value })
   const setWebfont = (f: FontsourceFont) =>
     patch({ [keys.webfont]: f.family, [keys.webfontId]: f.id, [keys.use]: true })
-  // A picker preference, not a palette value: whether result rows load their own font as they scroll
-  // into view. Local state, so it resets per mount, it doesn't belong on the stored palette.
+  // Local picker preference: whether result rows load their own font as they scroll into view.
   const [loadFonts, setLoadFonts] = useState(false)
-  // Editable sample text, a scratch space to try a font, seeded with a pangram on each pick and on
-  // open when the palette already has a webfont, so a set font shows rather than looking unset. Local
-  // state, not stored: it's the digital pen-test scribble, not a palette value.
+  // Editable sample text, seeded with a pangram on each pick and on open when the palette already
+  // has a webfont. Local state that the palette never stores.
   const [sample, setSample] = useState(webfont ? pangram : '')
 
   if (compact) {
@@ -182,15 +179,14 @@ function WebfontSearch({
 }: {
   family: string
   id: string
-  /** Namespaces the preview `<link>` so the chat and app pickers don't overwrite each other's. */
+  /** Namespaces the preview `<link>`: the chat and app pickers don't overwrite each other's. */
   slot: string
   locked: boolean
-  /** Load each result's font as it renders so the name shows in its own typeface. Slow at scale. */
+  /** Load each result's font as it renders: the name shows in its own typeface. Slow at scale. */
   loadFonts: boolean
   onPick: (f: FontsourceFont) => void
 }) {
-  // Seeded with the current family so the box names the font in use. Initial value only, picking a
-  // result must not overwrite what the user has typed.
+  // Seeded with the current family. Initial value only: picking a result doesn't overwrite it.
   const [query, setQuery] = useState(family)
   const [page, setPage] = useState(0)
   const [results, setResults] = useState<FontsourceFont[]>([])
@@ -201,9 +197,7 @@ function WebfontSearch({
   const sentinel = useRef<HTMLLIElement | null>(null)
   const root = useRef<HTMLUListElement | null>(null)
 
-  // Load the selected family's CSS so the preview renders in the font itself, not the system
-  // default. This is the picker's own concern, useApplyWebfont loads the active palette's font for
-  // the chat surfaces, but the picker needs the font regardless of which palette is active.
+  // Loads the selected family's CSS for the preview.
   useEffect(() => {
     const linkId = `webfontPreview-${slot}`
     if (!family || !id) {
@@ -229,9 +223,7 @@ function WebfontSearch({
     setHasMore(true)
   }, [query])
 
-  // Load a page. Runs on query change (page reset to 0 by the effect above) and on each page bump.
-  // `loading` is deliberately not a dep, it's set inside, so including it cancelled the
-  // fetch and re-entered on the guard, leaving the list stuck on "Loading…".
+  // Loads a page. Runs on query change and on each page bump. `loading` is deliberately not a dep.
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -274,7 +266,7 @@ function WebfontSearch({
     <div className="webfontSearch">
       <input
         type="search"
-        placeholder="Search Fontsource families..."
+        placeholder="Search Fontsource families"
         value={query}
         disabled={locked}
         onChange={(e) => setQuery(e.target.value)}
@@ -298,15 +290,15 @@ function WebfontSearch({
         {!results.length && !loading && !error && (
           <li className="webfontEmpty">No families match.</li>
         )}
-        {loading && <li className="webfontEmpty">Loading…</li>}
+        {loading && <li className="webfontEmpty">Loading...</li>}
         <li ref={sentinel} aria-hidden />
       </ul>
     </div>
   )
 }
 
-/** Injects the Fontsource CSS `<link>` for one family so a result row can render in it. Deduped by
- *  id across rows; the link is removed when the last row using it unmounts. */
+/** Injects the Fontsource CSS `<link>` for one family: a result row can render in it. Deduped by
+ *  id across rows. The link is removed when the last row using it unmounts. */
 function WebfontFace({ id }: { id: string }) {
   useEffect(() => {
     const linkId = `webfontFace-${id}`

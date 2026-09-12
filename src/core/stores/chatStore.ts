@@ -52,7 +52,7 @@ export function setSessionPersonas(personas: string | undefined): void {
   _sessionPersonas = personas
 }
 
-/** The session roster in host-chosen slot order, filling {{char1}}…{{char4}}, or undefined
+/** The session roster in host-chosen slot order, filling {{char1}} through {{char4}}, or undefined
  *  outside a session. Set by `hostSession`, same module-level shape as the Narrator prompt above. */
 let _sessionCast: Character[] | undefined = undefined
 export function setSessionCast(cast: Character[] | undefined): void {
@@ -66,7 +66,7 @@ const byTime = (a: Message, b: Message) => a.createdAt - b.createdAt || a.id! - 
  * the model repeating itself, and folding the user's own words in would count the reply for
  * quoting the person it is answering.
  *
- * Trimmed generously rather than exactly. The census applies its own window, so this only has to
+ * Trimmed generously rather than exactly. The census applies its own window: this only has to
  * be at least as much as the largest a user might set.
  */
 const HISTORY_FOR_NOTES = 40
@@ -90,7 +90,7 @@ interface PassResult {
  *
  * The history is assistant turns only, the same reasoning `passContext` gives: the census is
  * looking for the model repeating itself, and the user's own words are not that. `allowNames` is
- * every name the chat legitimately knows, so the proper-noun invariant rejects an invented
+ * every name the chat legitimately knows. The proper-noun invariant rejects an invented
  * character without rejecting one who simply is not in this paragraph.
  */
 function runContext(
@@ -127,7 +127,7 @@ function runContext(
  * should be stored. No pipeline, or one that is not armed, returns the text untouched and marks
  * nothing: a missing connection or a deleted pipeline is a settings problem, not a failed pass.
  *
- * Abort throws through, so the caller's existing stop handling fires. Nothing else throws: a pass
+ * Abort throws through: the caller's existing stop handling fires. Nothing else throws: a pass
  * that fails is worth less than the reply that already exists.
  */
 async function secondSweep(
@@ -162,7 +162,7 @@ async function secondSweep(
       }
     }
     // A new stage starting replaces what the last one was showing: each stage rewrites the whole
-    // passage, so accumulating across them would render one after the other.
+    // passage. Accumulating across them would render one after the other.
     if (step.value.stage) shown = ''
     if (step.value.content) {
       shown += step.value.content
@@ -184,7 +184,7 @@ const lengthNotice = (maxTokens: number) =>
 
 /**
  * The stack this chat should actually use: its own override, or the globally active one. The
- * override exists so a multiplayer session's stack cannot leak into every ordinary chat, the
+ * override keeps a multiplayer session's stack from leaking into every ordinary chat. The
  * global is what the Prompts tab and the Settings picker write, and a session must not repoint it.
  * Falls back to the global when the override names a stack that has since been deleted.
  */
@@ -199,7 +199,7 @@ export async function stackFor(chat: Chat | null): Promise<PromptStack> {
 
 /**
  * The connection as this chat should actually use it, the only place override precedence is
- * applied. It lives in the store rather than the view because the store is what sends: the
+ * applied. It lives in the store rather than the view: the store is what sends. The
  * budget, the request body and the preview all read the same resolved object.
  */
 export function resolvedConnection(character: Character, chat: Chat): Connection | undefined {
@@ -209,7 +209,7 @@ export function resolvedConnection(character: Character, chat: Chat): Connection
 
 /**
  * Where an inline think block ends in a finished reply, recorded on the message. The text is stored
- * whole; this is only the offset, so a reader can skip the thinking without re-parsing it against a
+ * whole; this is only the offset. A reader can skip the thinking without re-parsing it against a
  * connection that may since have changed. Undefined when there is no block to skip, which keeps the
  * field off the record entirely for the usual reply.
  */
@@ -224,8 +224,8 @@ function reasoningEndOf(text: string, connection: Connection): number | undefine
  * deleted out from under the roster still leaves a turn that can be generated.
  */
 function characterAt(chat: Chat, index: number, fallback: Character): Character {
-  // Check the Narrator first before the roster lookup. The Narrator is not in participantIds,
-  // so without this branch it would hit the fallback and silently generate a normal character.
+  // Check the Narrator first before the roster lookup. The Narrator is not in participantIds:
+  // without this branch it would hit the fallback and silently generate a normal character.
   if (isNarrator(index)) return narratorCharacter()
   const id = participants(chat)[index]
   return useCharacters.getState().characters.find((c) => c.id === id) ?? fallback
@@ -260,7 +260,7 @@ export async function worldInfoFor(
 export interface CharacterSummary {
   count: number
   latest: number
-  /** Most recently updated chat, so the picker can resume without loading a character's chat list. */
+  /** Most recently updated chat: the picker can resume without loading a character's chat list. */
   lastChatId?: number
   /** `updatedAt` of that chat, only used to pick it. */
   lastChatAt?: number
@@ -274,7 +274,7 @@ interface ChatState {
   chat: Chat | null
   messages: Message[]
   streamingText: string
-  /** Reasoning as it arrives, so the thinking is visible before any reply text shows up.
+  /** Reasoning as it arrives: the thinking is visible before any reply text shows up.
    *  Only reset when a stream starts, nothing renders it while `streaming` is false. */
   streamingReasoning: string
   streaming: boolean
@@ -282,7 +282,7 @@ interface ChatState {
    *  `streamingText` is being replaced as it arrives, which is the intended feel; this is what
    *  lets the bubble say so. */
   passing: boolean
-  /** Which chat the stream belongs to, so opening another chat mid-generation doesn't show its
+  /** Which chat the stream belongs to: opening another chat mid-generation doesn't show its
    *  reply there. Null when idle. */
   streamingChatId: number | null
   /** The chat ChatView currently has open, or null when no chat is on screen. Separate from `chat`,
@@ -417,7 +417,7 @@ export const useChats = create<ChatState>()((set, get) => ({
   load: async (chatId) => {
     const chat = (await storage.get('chats', chatId)) as unknown as Chat | undefined
     const rows = (await storage.find('messages', 'chatId', chatId)) as unknown as Message[]
-    // Resolved here so the view can show the same wording the send path will use, the rewrite box
+    // Resolved here: the view can show the same wording the send path will use, the rewrite box
     // prefills with the old-message instruction, and reading it off the stack in a component would
     // mean an async lookup per message row.
     const miscPrompts = chat ? (await stackFor(chat)).miscPrompts : undefined
@@ -511,16 +511,16 @@ export const useChats = create<ChatState>()((set, get) => ({
     const chat = get().chat
     if (!chat) return
 
-    // Commands are read here rather than in the composer because this is the one funnel: an
+    // Commands are read here rather than in the composer: this is the one funnel. An
     // ordinary chat, the host's own turn, and a guest's `say` off the wire all arrive through
-    // `send`, so a guest can type a command without the protocol carrying one.
+    // `send`. A guest can type a command without the protocol carrying one.
     const roster = participants(chat)
     const cards = useCharacters.getState().characters
     const inRoster = roster
       .map((id) => cards.find((c) => c.id === id))
       .filter((c): c is Character => !!c)
     const command = parseCommand(text, inRoster.map(displayName))
-    // Neither command runs a request, so nothing downstream would clear a stale error banner.
+    // Neither command runs a request: nothing downstream would clear a stale error banner.
     if (command) set({ error: '' })
 
     if (command?.name === 'sendas') {
@@ -547,15 +547,15 @@ export const useChats = create<ChatState>()((set, get) => ({
         speakerName: displayName(speaker), // copied, not looked up: survives deleting the character
         createdAt: Date.now(),
       })
-      // Move the cursor as a real reply would, so the round robin picks up after this character
+      // Move the cursor as a real reply would: the round robin picks up after this character
       // rather than handing them the next turn too.
       await get().patchChat({ lastSpeakerIndex: roster.indexOf(speaker.id!) })
       await get().load(chat.id!)
       return
     }
 
-    // A divider row: nothing is sent, nothing is generated. Role is 'user' only because the field
-    // is required; every reader that cares checks `divider` first.
+    // A divider row: nothing is sent, nothing is generated. Role is 'user' only: the field
+    // is required. Every reader that cares checks `divider` first.
     if (command?.name === 'break') {
       await storage.put('messages', {
         ownerId: currentOwnerId(),
@@ -581,9 +581,9 @@ export const useChats = create<ChatState>()((set, get) => ({
     // In a group this resolves {{char}} against the chat's first participant, not whoever replies
     // next: you type before the round robin picks. Per-message speaker choice is the upgrade path
     // if that turns out to be the wrong one.
-    // Module-contributed text rides along in the message, not as a separate prompt block, so the
+    // Module-contributed text rides along in the message, not as a separate prompt block: the
     // tag rules can collapse it from view the same way any other tag is collapsed. An unregistered
-    // module contributes nothing, so a WIP module left out of the build appends nothing either.
+    // module contributes nothing. A WIP module left out of the build appends nothing either.
     const ctx = { chatId: chat.id!, user: as?.name ?? persona.name, char: displayName(character) }
     const blocks: string[] = []
     const enabledPlugins = useSettings.getState().enabledPlugins
@@ -598,7 +598,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     if (command?.name === 'noreply' && !body.trim()) return
     const withBlock = [body, ...blocks].join('\n')
     const content = swapTokens(withBlock, chatTokens(character, persona))
-    // Persisted before the request goes out, so a failure can never lose what you typed.
+    // Persisted before the request goes out: a failure can never lose what you typed.
     await storage.put('messages', {
       ownerId: currentOwnerId(),
       chatId: chat.id!,
@@ -620,7 +620,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       return
     }
     // Self-reply: keep the round robin going for a few turns instead of stopping at one reply.
-    // Off is a run of one, so this is the same loop either way.
+    // Off is a run of one: this is the same loop either way.
     for (let turn = 0; turn < autoTurns(chat); turn++) {
       await get().retry(character)
       if (stopped || get().error) break
@@ -630,8 +630,8 @@ export const useChats = create<ChatState>()((set, get) => ({
   retry: async (character, speakerId) => {
     const chat = get().chat
     if (!chat) return
-    // The Narrator is deliberately not in chat.participantIds. Branch before the index maths
-    // so they never meet (both use -1 as a sentinel). If asked by Narrator, resolve speaker
+    // The Narrator is deliberately not in chat.participantIds. Branch before the index maths:
+    // they never meet (both use -1 as a sentinel). If asked by Narrator, resolve speaker
     // directly without touching lastSpeakerIndex.
     if (isNarrator(speakerId)) {
       const speaker = narratorCharacter()
@@ -721,7 +721,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       }
 
       // A clean stream that never produced reply text: don't vanish silently, say so, and name the
-      // reasoning-only case, since a reasoning model that hits its token limit while thinking is the
+      // reasoning-only case. A reasoning model that hits its token limit while thinking is the
       // usual cause.
       if (!text && !controller.signal.aborted) {
         const message = reasoning
@@ -757,8 +757,8 @@ export const useChats = create<ChatState>()((set, get) => ({
           passSummaries: [passSummary],
           createdAt: Date.now(),
         })
-        // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
-        // Both of these write through the *current* chat, so skip them if you navigated to another
+        // The cursor only moves on a reply that happened: a failed turn doesn't skip anyone.
+        // Both of these write through the *current* chat. Skip them if you navigated to another
         // one while this streamed, the message above already landed in the right chat.
         if (get().chat?.id === chat.id) {
           await get().patchChat({ lastSpeakerIndex: -1 }) // Narrator doesn't advance round robin
@@ -768,7 +768,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       }
       return
     }
-    // Round robin, unless an avatar was clicked. A solo chat is a roster of one, so this is the
+    // Round robin, unless an avatar was clicked. A solo chat is a roster of one: this is the
     // same code path either way, index 0, every time.
     const asked = speakerId === undefined ? -1 : participants(chat).indexOf(speakerId)
     const index = asked >= 0 ? asked : nextSpeakerIndex(chat)
@@ -921,7 +921,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     const target = get().messages[at]
     if (!target || target.role !== 'assistant') return
 
-    // Re-rolled as whoever said it, not as whoever is up next, so the snapshot stays truthful and
+    // Re-rolled as whoever said it, not as whoever is up next: the snapshot stays truthful and
     // the reply keeps the same voice, card and params.
     const speaker =
       useCharacters.getState().characters.find((c) => c.id === target.speakerId) ?? character
@@ -945,7 +945,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     })
 
     // Loaded before the instruction is built, not inside the try below: both re-roll wordings are
-    // the stack's to override, so the stack has to be in hand first.
+    // the stack's to override. The stack has to be in hand first.
     const stack = await stackFor(chat)
     // Your instruction if you gave one; otherwise, on an old message, the default that tells the
     // model what came after it. Re-rolling the last message appends nothing, exactly as Phase 1.
@@ -1050,7 +1050,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     })
     const regen = regenerated(target, text, snapshot, reasoning, instruction)
     // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
-    // count itself, so an older message's holes stay where they belong.
+    // count itself. An older message's holes stay where they belong.
     const updated = regen && withPass(regen, passOriginal, passFail, passSummary)
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
@@ -1071,7 +1071,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       return
     }
     // Trailing whitespace is not part of what was said, and some endpoints reject a prefill that
-    // ends in it. Trimmed once here so the text sent and the text appended to are the same string.
+    // ends in it. Trimmed once here: the text sent and the text appended to are the same string.
     const prefix = target.content.replace(/\s+$/, '')
     if (!prefix) {
       set({ error: 'Nothing to continue, the last reply is empty.' })
@@ -1092,8 +1092,8 @@ export const useChats = create<ChatState>()((set, get) => ({
     set({
       streaming: true,
       streamingChatId: chat.id ?? null,
-      // The bubble renders streamingText in place of the message, so it carries the partial too:
-      // otherwise the reply would appear to vanish and regrow from the join.
+      // The bubble renders streamingText in place of the message: it carries the partial too.
+      // Otherwise the reply would appear to vanish and regrow from the join.
       streamingText: prefix,
       streamingReasoning: '',
       error: '',
@@ -1110,7 +1110,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       const stack = await stackFor(chat)
       const persona = await usePersonas.getState().ensureActive()
       await loadTokenizer(tokenizerFor(connection))
-      // History is everything before this message; the message itself goes in as the prefill, so
+      // History is everything before this message; the message itself goes in as the prefill:
       // it appears once rather than twice. Deliberately unlabelled in a group chat, where history
       // turns carry a `Name:` prefix, the continuation should come back as bare text.
       const prompt = buildPrompt(
@@ -1133,12 +1133,12 @@ export const useChats = create<ChatState>()((set, get) => ({
       set({ trimmedCount: prompt.droppedCount })
       snapshot = snapshotOf(prompt.messages, connection)
       // Deliberately not passed. A continuation's reply is the accepted prefix plus
-      // what the model just added, and `continued` writes the whole thing back over the swipe, so a
+      // what the model just added, and `continued` writes the whole thing back over the swipe. A
       // second pass would edit text the user already kept. Wiring it needs the pass to be told which
       // span is new and to leave the rest alone.
       //
       // The pass is skipped here for the same reason, and more strongly: a rewrite stage remakes a whole
-      // passage rather than a flagged span, so it would restate the prefix the user accepted. The
+      // passage rather than a flagged span. It would restate the prefix the user accepted. The
       // manual action on the message is how a continued reply gets rewritten.
       for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
         if (chunk.reasoning) {
@@ -1204,7 +1204,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       return
     }
 
-    // Always from the stored original, so running this twice passes the reply again rather than
+    // Always from the stored original: running this twice passes the reply again rather than
     // passing what the last run produced.
     const source = passOriginalFor(target) ?? target.content
     if (!source.trim()) return
@@ -1221,7 +1221,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       streaming: true,
       passing: true,
       streamingChatId: chat.id ?? null,
-      // The bubble renders streamingText in place of the message, so it starts as the source and
+      // The bubble renders streamingText in place of the message: it starts as the source and
       // is overwritten as the rewrite arrives.
       streamingText: source,
       streamingReasoning: '',

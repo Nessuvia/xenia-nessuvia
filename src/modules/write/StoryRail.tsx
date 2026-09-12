@@ -47,7 +47,7 @@ function CastSection() {
   const toggle = (kind: CastEntry['kind'], id: number) =>
     setCast(cast.map((e) => (e.kind === kind && e.id === id ? { ...e, enabled: !e.enabled } : e)))
 
-  // Cast rows show the same avatar + name as the picker, so look both up in one pass.
+  // Cast rows show the same avatar + name as the picker. Look both up in one pass.
   const lookOf = (entry: CastEntry) => {
     if (entry.kind === 'character') {
       const c = characters.find((x) => x.id === entry.id)
@@ -206,7 +206,7 @@ function BooksSection() {
 
 /**
  * The whole Story's beats, one `<details>` per Chapter. The active Chapter opens; the rest stay
- * closed and the open/closed state is view-only, so nothing is persisted for it.
+ * closed. The open/closed state is view-only. Nothing is persisted for it.
  *
  * Every row can be written, not just the active Chapter's, a beat two Chapters out is reachable
  * without moving the cursor there first. Ticking a beat here is the same write the box in the
@@ -275,7 +275,7 @@ export function StoryBeats() {
                 : beats.length > 0 || chapter.id === activeChapterId
             }
             // currentTarget is already detached by the time this fires; read the element itself.
-            // React 19 bubbles onToggle, so without stopping it the enclosing RailSection reads
+            // React 19 bubbles onToggle. Without stopping it the enclosing RailSection reads
             // this chapter's open state as its own and folds the whole panel.
             onToggle={(e) => {
               e.stopPropagation()
@@ -381,8 +381,8 @@ const storyColorField: Record<MarkerKind, 'storyEmphasisColor' | 'storyBoldColor
   quotes: 'storyQuoteColor',
 }
 
-// The active connection, shown here so a Story never needs a trip to Settings to switch endpoints.
-// One dropdown, so it sits at the top of the rail rather than inside a collapsible of its own,
+// The active connection, shown here to save a trip to Settings when switching endpoints.
+// One dropdown, sitting at the top of the rail rather than inside a collapsible of its own,
 // matching the chat settings panel.
 function ConnectionPick() {
   const connections = useSettings((s) => s.connections)
@@ -476,8 +476,8 @@ function AppearanceSection() {
 
   return (
     <>
-      {/* Per Story, like the chat's width is per chat, the rail is only here while a Story is
-          open, so the scope is the Story on screen. The palette's Story width is the default
+      {/* Per Story, like the chat's width is per chat. The rail is only here while a Story is
+          open. The scope is the Story on screen. The palette's Story width is the default
           every Story that has none of its own uses. */}
       <label className="storyWidth">
         <span>Story width</span>
@@ -499,7 +499,7 @@ function AppearanceSection() {
         %
       </label>
       <p className="hint">Overrides the Story width in the palette.</p>
-      {/* The same global switch as the chat's, shown here so it is reachable without opening a
+      {/* The same global switch as the chat's, shown here to stay reachable without opening a
           chat. There is no per-beat toggle. */}
       <label
         className="checkboxRow"
@@ -512,10 +512,10 @@ function AppearanceSection() {
         />
         Show reasoning
       </label>
-      {/* Font and size only: the chat's colors don't reach a Story, so showing them here would be
+      {/* Font and size only: the chat's colors don't reach a Story. Showing them here would be
           a control that does nothing. */}
       <AppearancePanel colors={false} font={false} />
-      {/* Write-only, so these sit here rather than in AppearancePanel, which the chat rail shows
+      {/* Write-only. These sit here rather than in AppearancePanel, which the chat rail shows
           too. Global like the chat's colors, applied to every Story, and independent of them. */}
       <h3>Story colors</h3>
       {locked && <p className="hint">{lockedHint}</p>}
@@ -606,7 +606,7 @@ function RailSection({
 
 /**
  * The open Story's one rail, in the app nav rail where the chat's settings panel goes. Every
- * section is a sibling, so the prompt toggles and the beat list can be open at the same time;
+ * section is a sibling. The prompt toggles and the beat list can be open at the same time;
  * pinning moves a section to the top of the list.
  *
  * Pin and open state are global rather than per Story, how the rail is arranged is a working

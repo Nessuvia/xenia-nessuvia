@@ -48,7 +48,7 @@ import {
 
 // --- the Narrator carries no instructions of its own ---------------------
 {
-  // The whole point: every narrator instruction lives in the prompt stack, so a description here
+  // The whole point: every narrator instruction lives in the prompt stack. A description here
   // would be a second source the stack editor could neither show nor override.
   const c = narratorCharacter()
   assert.strictEqual(c.description, '')

@@ -25,7 +25,7 @@ const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
 
 // --- a standing rule is not a found problem -------------------------------
 {
-  // No `find`, so it applies to every passage rather than matching this one.
+  // No `find`: it applies to every passage rather than matching this one.
   const standing = {
     id: 's1',
     enabled: true,
@@ -54,7 +54,7 @@ const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
     scope: 'assistant' as const,
     note: 'no',
   }
-  // The em dash is gone by the time the rule runs, so a rule written against the raw text misses.
+  // The em dash is gone by the time the rule runs. A rule written against the raw text misses.
   // That is the contract: the model is shown `cleaned`, and a note must quote what it will see.
   const out = collectFindings('She waited — then left.', { ...quiet, textRules: [rule] })
   assert.equal(out.notes.length, 0)
@@ -74,7 +74,7 @@ const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
   const detect = { ...quiet, textRules: [rule] }
   assert.equal(collectFindings('perhaps', detect, { role: 'assistant' }).notes.length, 1)
   assert.equal(collectFindings('perhaps', detect, { role: 'user' }).notes.length, 0)
-  // No role given means assistant: the pass runs on replies, so that is the useful default.
+  // No role given means assistant: the pass runs on replies, and that is the useful default.
   assert.equal(collectFindings('perhaps', detect).notes.length, 1)
 }
 

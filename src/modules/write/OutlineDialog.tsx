@@ -41,7 +41,7 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
   }
 
   /**
-   * The drafts, onto the Story. Every field here is already a Story field, so there is nowhere else
+   * The drafts, onto the Story. Every field here is already a Story field. There is nowhere else
    * for them to live and nothing to serialise: this is the same write `run` does, minus the request.
    *
    * Called on the way out as well as on Generate. Without it, typing a premise and closing the
@@ -75,8 +75,9 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
     setBusy(true)
     setError('')
     try {
-      // These are the Story's own fields, not a copy that lives in the dialog: the Premise cap on
-      // the strip edits the same premise, and a second run opens on what was asked for last time.
+      // These are the Story's own fields rather than a copy that lives in the dialog: the Premise
+      // cap on the strip edits the same premise, and a second run opens on what was asked for last
+      // time.
       await persist()
       await generateStoryOutline({
         premise,
@@ -205,7 +206,7 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="dialogActions">
-          {/* Close, not Cancel: the fields are kept either way, so the label must not promise
+          {/* Close, not Cancel: the fields are kept either way. The label must not promise
               they are thrown away. */}
           <button type="button" className="secondary" disabled={busy} onClick={close}>
             Close

@@ -50,7 +50,7 @@ export default function BlockModal({
   block: PromptBlock
   /** Which token list the guide shows. */
   kind: StackKind
-  /** Inside another block: it shares the parent's role, so there's no role to pick. */
+  /** Inside another block: it shares the parent's role. There's no role to pick. */
   nested: boolean
   onChange: (block: PromptBlock) => void
   onDelete: () => void
@@ -298,7 +298,7 @@ export default function BlockModal({
           </dl>
           <p className="hint">
             {kind === 'story'
-              ? 'Usable in this block’s text. A line whose variables are all empty is dropped, so a sentence about a field that is not set does not get sent. A variable in the Story prose itself is left alone.'
+              ? 'Usable in this block’s text. A line whose variables are all empty is dropped: a sentence about a field that is not set does not get sent. A variable in the Story prose itself is left alone.'
               : 'Usable in this block’s text. An unknown variable is left as it is.'}
           </p>
           {draft.input && (

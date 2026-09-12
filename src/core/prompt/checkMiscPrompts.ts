@@ -39,7 +39,7 @@ assert.equal(miscPrompt('continue', { continue: '   ' }), builtIn, 'blank is not
 assert.equal(miscPrompt('continue', { continue: 'Keep going.' }), 'Keep going.')
 // One stack's override must not reach another prompt.
 assert.equal(miscPrompt('rewrite', { continue: 'Keep going.' }), miscPrompt('rewrite'))
-// A row for a prompt this build no longer has is inert, not a crash on the send path.
+// A row for a prompt this build lacks stays inert on the send path.
 assert.equal(miscPrompt('goneInALaterBuild', { goneInALaterBuild: 'x' }), 'x')
 assert.equal(miscPrompt('neverExisted'), '')
 

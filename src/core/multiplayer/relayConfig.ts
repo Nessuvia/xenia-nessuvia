@@ -1,5 +1,5 @@
 /**
- * Which relay a session runs on. On its own so the settings store and the channel code can import
+ * Which relay a session runs on. On its own: the settings store and the channel code import
  * it without a cycle, the same way `sync/bucketConfig.ts` sits between settings and the sync client.
  *
  * No imports of its own: `checkRelayConfig.ts` runs under node --strip-types.
@@ -21,8 +21,8 @@ export function relayConfigured(c: RelayConfig): boolean {
 /**
  * `wss://` only. This runs on the invite link's `?r=`, which is untrusted input arriving from
  * whoever sent the link: the same rule as an imported card. `ws://` is rejected rather than
- * allowed and left to fail: the app is served over https, so a browser blocks the plaintext socket
- * as mixed content anyway, and saying so early beats a silent connection failure.
+ * allowed and left to fail: the app is served over https, and a browser blocks the plaintext
+ * socket as mixed content anyway. Saying so early beats a silent connection failure.
  */
 export function validRelayUrl(url: string): boolean {
   if (!url) return false
@@ -42,7 +42,7 @@ export function relayHost(config: RelayConfig): string {
   }
 }
 
-/** The invite link for a session. The relay travels on it, since only the host has it configured. */
+/** The invite link for a session. The relay travels on it: only the host has it configured. */
 export function inviteLink(origin: string, sessionId: string, config: RelayConfig): string {
   return `${origin}/join/${sessionId}?r=${encodeURIComponent(config.url)}`
 }

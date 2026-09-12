@@ -16,7 +16,7 @@ const colorField: Record<MarkerKind, keyof CharacterColors> = {
 
 /**
  * The open chat's colors, in the rail. This edits the *character's* overrides rather than the
- * palette's globals: in a chat the colors on screen are that character's, so the control nearest
+ * palette's globals: in a chat the colors on screen are that character's. The control nearest
  * to hand should write where the user is looking. The palette's own marker colors are still edited
  * in Settings → Themes.
  *
@@ -27,8 +27,8 @@ const colorField: Record<MarkerKind, keyof CharacterColors> = {
 export default function SpeakerColors({ chat }: { chat: Chat }) {
   const characters = useCharacters((s) => s.characters)
   const save = useCharacters((s) => s.save)
-  // The order is read from the palette but not editable here, precedence is not a per-character
-  // idea, so it stays in Settings → Themes where one list governs every speaker.
+  // The order is read from the palette but not editable here: precedence is not a per-character
+  // idea. It stays in Settings → Themes where one list governs every speaker.
   const palette = usePalette()
 
   const roster = participants(chat)
@@ -36,7 +36,7 @@ export default function SpeakerColors({ chat }: { chat: Chat }) {
   const character = characters.find((c) => c.id === roster[0])
   const colors = { ...emptyColors(), ...character?.colors }
 
-  // A color input fires on every frame of a drag, and save() is a write plus a full reload, so the
+  // A color input fires on every frame of a drag. save() is a write plus a full reload: the
   // swatch follows the pointer from local state and the record is written once the drag settles.
   const [draft, setDraft] = useState<CharacterColors | null>(null)
   const timer = useRef<number | undefined>(undefined)
@@ -68,7 +68,7 @@ export default function SpeakerColors({ chat }: { chat: Chat }) {
       />
       <p className="hint">
         {palette.overwriteCharColor
-          ? 'The theme is overwriting character colors, so these are ignored. Turn off Overwrite Char. Color in Settings → Themes to use them.'
+          ? 'The theme is overwriting character colors. These are ignored. Turn off Overwrite Char. Color in Settings → Themes to use them.'
           : group
             ? 'Cannot edit character colors in a group chat. Change it manually at each character’s landing page, or return to a 1-on-1 chat to restore it'
             : 'Overrides the palette colors for this character. Empty uses the palette.'}

@@ -20,12 +20,12 @@ const handSize = 64
 // the ordinary gap everywhere else.
 const handRoom = handSize + tipGap
 
-// The art points up. Pointing up is the readable pose, so the hand goes under the target and only
+// The art points up. Pointing up is the readable pose: the hand goes under the target and only
 // flips to pointing down when there is no room under it. This is independent of which side the box
 // landed on: a hand under the target still reads as pointing at it with the box off to the left.
 const handTurn = { up: 0, down: 180 }
 
-// The fingertip sits at 97,15 in the 256px art, so 24,4 at the size it renders, which is -8,-28
+// The fingertip sits at 97,15 in the 256px art: 24,4 at the size it renders, which is -8,-28
 // from the image centre. Placement runs backwards from that: the tip goes where it should point,
 // and the image is positioned around it.
 const tipFromCentre = { up: { x: -8, y: -28 }, down: { x: 8, y: 28 } }
@@ -53,7 +53,7 @@ interface Props {
 
 /**
  * The dim, the cutout, the hand and the box that holds a step's copy. Two engines render through
- * it: the passive tour and the gated tutorial. It owns geometry and nothing else, so a caller's
+ * it: the passive tour and the gated tutorial. It owns geometry and nothing else. A caller's
  * only job is to say what to point at and what to put in the box.
  */
 export default function SpotlightOverlay({ target, side, dock, onMissingTarget, onOverlayClick, revision, children }: Props) {
@@ -112,7 +112,7 @@ export default function SpotlightOverlay({ target, side, dock, onMissingTarget, 
       top: rect.top,
     }
     // Only the side the hand stands on has to make room for it. The docked box takes one edge of
-    // the screen, so on a phone the room on that side ends where the box starts.
+    // the screen: on a phone the room on that side ends where the box starts.
     const floor = window.innerHeight - (phone && edge === 'bottom' ? h : 0) - gap
     const ceiling = (phone && edge === 'top' ? h : 0) + gap
     const handUp = rect.bottom + handRoom <= floor || rect.top - handRoom < ceiling
@@ -166,7 +166,7 @@ export default function SpotlightOverlay({ target, side, dock, onMissingTarget, 
 
   return (
     <div className="spotlightOverlay" onClick={onOverlayClick}>
-      {/* A centred step has no rect, so the cutout collapses to nothing in the middle of the
+      {/* A centred step has no rect: the cutout collapses to nothing in the middle of the
           screen and its 9999px shadow dims everything. */}
       <div
         className="spotlightCutout"
@@ -178,7 +178,7 @@ export default function SpotlightOverlay({ target, side, dock, onMissingTarget, 
         }}
       />
 
-      {/* Outside the box, and before it in the DOM, so the wrist end passes behind the box instead
+      {/* Outside the box, and before it in the DOM: the wrist end passes behind the box instead
           of painting on top of it. */}
       {hand && (
         <img

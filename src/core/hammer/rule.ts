@@ -8,10 +8,10 @@
  *
  * `flag` edits nothing and hands the match to the pass's editing model as a note instead. The
  * split is whether the fix is mechanical. `with a [adj] [noun]` cuts cleanly and `repairAll` tidies
- * the seam, so no model is wanted. `[adv] [adj]` is a judgment call, and cutting it blind deletes
+ * the seam: no model is needed. `[adv] [adj]` is a judgment call, and cutting it blind deletes
  * "quietly furious" along with the filler.
  *
- * Lives here rather than in the store because a rule is hammer data, and the pipeline that carries
+ * Lives here rather than in the store: a rule is hammer data, and the pipeline that carries
  * a list of them is stored in Dexie rather than in settings.
  */
 export interface GrammarHammerRule {

@@ -4,8 +4,8 @@ import { create } from 'zustand'
  * The handoff buffer between a chat message and the Slop-dentifier screen.
  *
  * Not persisted and not in a backup: it holds one passage for the length of a navigation. A chat
- * quick action drops the message text here and routes to /slopdentifier, the view picks it up on
- * mount and clears it, so opening the screen later starts empty rather than showing whatever was
+ * quick action drops the message text here and routes to /slopdentifier. The view picks it up on
+ * mount and clears it. Opening the screen later starts empty rather than showing whatever was
  * last inspected.
  */
 interface SlopState {

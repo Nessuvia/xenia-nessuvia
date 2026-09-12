@@ -1,13 +1,13 @@
 /**
  * The seeding flags a restore or a pull has to force on.
  *
- * Four stores write bundled rows on first load and record a flag so a delete sticks: palettes,
+ * Four stores write bundled rows on first load and record a flag: a delete sticks. Palettes,
  * characters, sampler defs and prompt stacks. A restore or a pull replaces those tables with
  * someone else's rows, and without the flags the next load writes the bundled ones on top. For
  * stacks that is worse than an extra row: stacksStore.load also calls setActiveId for the two
- * stacks it seeds, so the restored active-stack choice is overwritten too.
+ * stacks it seeds, and the restored active-stack choice is overwritten too.
  *
- * Its own file, extension-ful imports and all, so checkSeedFlags.ts can run it under
+ * Its own file, extension-ful imports and all: checkSeedFlags.ts can run it under
  * `node --experimental-strip-types`. backup.ts pulls in Dexie and can't.
  */
 

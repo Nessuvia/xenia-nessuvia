@@ -1,21 +1,21 @@
 /**
  * User background HTML, gated against a tight structural allowlist. It goes inside `.pageBackground`
- * for the user's own CSS to target. This origin holds API keys in localStorage, though, so raw markup
+ * for the user's own CSS to target. This origin holds API keys in localStorage. Raw markup
  * (which runs JS via `<img onerror>`, `<svg onload>`, inline handlers) is never trusted as-is.
  *
  * Only structural tags survive, carrying only `class`/`id` (and `src`/`alt` on images). The policy is
  * reject-the-whole-thing: if anything off the allowlist appears, `invalid` lists it and the panel
  * refuses to apply until the user removes it. No silent scrubbing that could mask an intent.
  *
- * A `<template>` is the parser on purpose. Regex over HTML misses nested and quoted forms, which is
- * how XSS slips through; `template.innerHTML` is the native parser and its content is an inert
+ * A `<template>` is the parser on purpose. Regex over HTML misses nested and quoted forms: that is
+ * how XSS slips through. `template.innerHTML` is the native parser and its content is an inert
  * document: it runs no script and loads no resource. We only walk the parsed tree, then build a
- * fresh fragment, so no handler ever attaches to a live node even when the input turns out invalid.
+ * fresh fragment. No handler ever attaches to a live node even when the input turns out invalid.
  *
  * Not DOMParser: that runs the document insertion algorithm, which hoists a leading `<style>` or
  * `<title>` into `<head>`. Walking only `body` then silently dropped it: the same tag was flagged
- * or ignored depending on where in the input it sat. Template parses in fragment context, so
- * everything stays where the user wrote it and every tag reaches the allowlist.
+ * or ignored depending on where in the input it sat. Template parses in fragment context.
+ * Everything stays where the user wrote it and every tag reaches the allowlist.
  */
 
 /** Tags kept. Anything else lands in `invalid`; a disallowed tag's allowed children are still kept. */
@@ -27,7 +27,7 @@ const allowedTags = new Set(['div', 'span', 'hr', 'br', 'p', 'img'])
 const allowedAttrs = new Set(['class', 'id', 'src', 'alt', 'style'])
 
 /** Elements whose content is raw text, not markup. Unwrapping one would dump its stylesheet or
- *  script source into the page as visible text, so they're dropped whole. */
+ *  script source into the page as visible text. They're dropped whole. */
 const rawTextTags = new Set(['style', 'script', 'title', 'textarea', 'noscript', 'template'])
 
 export interface SanitizeResult {
@@ -39,9 +39,9 @@ export interface SanitizeResult {
 
 /**
  * The stand-in name for the slot's own background image in `<img src="…">`. An uploaded image lives
- * in IndexedDB as a data URL with no path a user could type, so the HTML box needs a name to point
- * at; there is only ever one image per slot, so one name is enough. Bare `image` counts too, since
- * the extension carries no meaning here.
+ * in IndexedDB as a data URL with no path a user could type. The HTML box needs a name to point
+ * at, and there is only ever one image per slot: one name is enough. Bare `image` counts too: the
+ * extension carries no meaning here.
  *
  * The CSS box takes the same name inside `url(…)`; see `substituteImageUrl` in scopeCss.ts, which
  * asks this. One name across both boxes is what lets the four slots share a single set of HTML and
@@ -92,7 +92,7 @@ function clean(node: Node, invalid: Set<string>, imageSrc: string): Node[] {
   const safe = document.createElement(tag)
   for (const attr of Array.from(el.attributes)) {
     if (attr.name === 'src' && isBackgroundImageRef(attr.value)) {
-      // The slot's own image. Left as written when there is none, so the panel's validation pass
+      // The slot's own image. Left as written when there is none: the panel's validation pass
       // (which has no image to hand) neither resolves nor rejects it.
       if (imageSrc) safe.setAttribute('src', imageSrc)
       else safe.setAttribute('src', attr.value)

@@ -4,13 +4,13 @@ import { applySystemBars } from './themeColor'
 import { skinVars } from '../../app/skins/skins'
 import { usePalette } from '../stores/palettesStore'
 
-/** Vars written on the last run, so a palette that drops one removes it instead of leaving it set. */
+/** Vars written on the last run. A palette that drops one removes it instead of leaving it set. */
 let applied: string[] = []
 
 /**
  * Writes the active palette onto `document.documentElement`. Runtime vars there win over the
- * `:root` block in index.css, which stays as the fallback. Default sets the same values, so
- * nothing changes visually until another palette is picked.
+ * `:root` block in index.css, which stays as the fallback. Default sets the same values.
+ * Nothing changes visually until another palette is picked.
  *
  * Mounted once, in App.
  */
@@ -22,14 +22,14 @@ export function useApplyPalette() {
     const root = document.documentElement
     const style = root.style
 
-    // An unknown or missing skin id matches no rules, which is the same thing 'default' does, so
-    // there is nothing to validate here.
+    // An unknown or missing skin id matches no rules, the same thing 'default' does.
+    // There is nothing to validate here.
     root.dataset.skin = palette.skin || 'default'
 
-    // The OS chrome, which lives outside the document and so can't read a CSS var (themeColor.ts).
+    // The OS chrome lives outside the document and can't read a CSS var (themeColor.ts).
     applySystemBars(palette.bg)
 
-    // A flag rather than a var: the widths are set inline per view, so the phone-width override has
+    // A flag rather than a var: the widths are set inline per view. The phone-width override has
     // to beat them on the width property itself (index.css).
     if (palette.mobileFullWidth) root.dataset.mobileFullWidth = ''
     else delete root.dataset.mobileFullWidth

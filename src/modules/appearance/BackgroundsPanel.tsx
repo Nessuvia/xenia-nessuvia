@@ -41,8 +41,8 @@ function draftsFor(backgrounds: Record<BackgroundSlot, Background>): Drafts {
   ) as Drafts
 }
 
-/** A slot keeps its own HTML and CSS when either one is stored; empty is what falls it back to the
- *  baseline's pair, so that's the same question asked of the stored row. */
+/** A slot keeps its own HTML and CSS when either one is stored. Empty falls it back to the
+ *  baseline's pair: the same question asked of the stored row. */
 function separateFor(
   backgrounds: Record<BackgroundSlot, Background>,
 ): Record<BackgroundSlot, boolean> {
@@ -61,19 +61,12 @@ export default function BackgroundsPanel() {
   const clearPreview = useBackgroundCss((s) => s.clearPreview)
 
   const [slot, setSlot] = useState<BackgroundSlot>('all')
-  // The CSS and HTML boxes are the controls here that don't autosave, so they keep their own drafts.
-  // The layer previews them live; Apply is what writes them to the palette.
-  // Kept per slot so flipping sub-tabs doesn't throw away unapplied text, leaving the Backgrounds
-  // tab unmounts this panel, which is what clears them.
+  // The CSS and HTML boxes hold their own per-slot drafts, applied to the palette on Apply.
   const [drafts, setDrafts] = useState(() => draftsFor(palette.backgrounds))
-  // Which slots keep HTML and CSS of their own. The rest edit the "All pages" set, so one stylesheet
-  // covers every page and each page only supplies its own image. Stored state is the empty string:
-  // resolveBackground falls a slot back to the baseline's css/html when its own are empty. This is
-  // the panel's read of that, held separately so turning it on can seed the boxes before anything is
-  // written, a draft the user may still discard.
+  // Which slots keep HTML and CSS of their own, versus editing the "All pages" set.
   const [separate, setSeparate] = useState(() => separateFor(palette.backgrounds))
 
-  // The slot the boxes below actually edit: this one when it keeps its own, the baseline otherwise.
+  // The slot the boxes below edit: this one when it keeps its own, the baseline otherwise.
   const editSlot: BackgroundSlot = slot === 'all' || separate[slot] ? slot : 'all'
   const { css: cssDraft, html: htmlDraft } = drafts[editSlot]
   const setCssDraft = (css: string) =>
@@ -81,8 +74,6 @@ export default function BackgroundsPanel() {
   const setHtmlDraft = (html: string) =>
     setDrafts((d) => ({ ...d, [editSlot]: { ...d[editSlot], html } }))
 
-  // Checked on every keystroke rather than on Apply: the drafts are already on screen, so the reason
-  // nothing rendered belongs next to the box that caused it.
   const invalidHtml = useMemo(() => sanitizeBackgroundHtml(htmlDraft).invalid, [htmlDraft])
   const cssEscaped = useMemo(() => scopeBackgroundCss(cssDraft).escaped, [cssDraft])
 
@@ -92,24 +83,18 @@ export default function BackgroundsPanel() {
 
   const background = palette.backgrounds[slot]
   const baseline = palette.backgrounds.all
-  // The image the layer will actually paint for this slot, baseline fallback included.
   const inherits = slot !== 'all' && !background.imageId && !background.url
   const shown = inherits ? baseline : background
   const image = images.find((img) => img.id === shown.imageId)
   const preview = image?.dataUrl || shown.url
 
-  // Switching preset abandons drafts. Only the palette row: keying on the backgrounds object would
-  // reset the drafts every time one of the autosaving controls above wrote to it.
+  // Switching preset abandons drafts.
   useEffect(() => {
     setDrafts(draftsFor(palette.backgrounds))
     setSeparate(separateFor(palette.backgrounds))
   }, [palette.id]) // eslint-disable-line
 
-  // Live preview. Debounced so a keystroke doesn't restyle mid-word, and in memory only, a reload
-  // drops it, which is still the way out of css that made the page unreadable.
-  // The preview replaces the slot's stored pair outright, so the baseline fallback has to be applied
-  // here too, the same field-by-field `own || base` resolveBackground uses. Without it a slot with
-  // its own pair emptied out would preview a bare layer and then paint the baseline's once saved.
+  // Live preview, debounced, held in memory only.
   const previewCss = editSlot === 'all' ? cssDraft : cssDraft || drafts.all.css
   const previewHtml = editSlot === 'all' ? htmlDraft : htmlDraft || drafts.all.html
 
@@ -118,12 +103,10 @@ export default function BackgroundsPanel() {
     return () => clearTimeout(timer)
   }, [slot, previewCss, previewHtml, setPreview])
 
-  // Leaving the panel hands the layer back to what's saved.
   useEffect(() => () => clearPreview(), [clearPreview])
 
   const edited = palette.backgrounds[editSlot]
   const dirty = cssDraft !== edited.css || htmlDraft !== edited.html
-  // Both inputs are reject-the-whole-thing: nothing is saved (or rendered) until they're clean.
   const canApply = dirty && !locked && invalidHtml.length === 0 && !cssEscaped
 
   const patchSlot = (fields: Partial<Background>, id: BackgroundSlot = slot) =>
@@ -139,9 +122,7 @@ export default function BackgroundsPanel() {
     setHtmlDraft(edited.html)
   }
 
-  // Turning it on only seeds the boxes from the shared set; Apply is still what writes them, so a
-  // copy the user decides against never reaches the palette. Turning it off drops the slot's own
-  // pair, which is what puts it back on the shared one.
+  // Turning it on seeds the boxes from the shared set. Turning it off drops the slot's own pair.
   const toggleSeparate = () => {
     if (locked) return
     const own = !separate[slot]
@@ -286,7 +267,7 @@ export default function BackgroundsPanel() {
               Elements placed inside <code>.pageBackground</code> for your CSS to target. Allowed:{' '}
               <code>div span hr br p img</code>, with <code>class</code>, <code>id</code>,{' '}
               <code>style</code>, <code>src</code>, <code>alt</code>. Anything else is rejected until
-              you remove it. Put CSS in the CSS box, not in a <code>&lt;style&gt;</code> tag.
+              you remove it. CSS belongs in the CSS box. A <code>&lt;style&gt;</code> tag is rejected.
             </p>
             <p className="backgroundsHint">
               <code>&lt;img src="image.jpg"&gt;</code> in the HTML and <code>url(image.jpg)</code> in

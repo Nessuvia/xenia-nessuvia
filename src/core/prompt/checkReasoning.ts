@@ -27,7 +27,7 @@ const think: ReasoningConfig = {
   assert.strictEqual(withoutReasoning('\n\n  <think>hmm</think>Answer.', think), 'Answer.')
 }
 
-// --- a marker mid-reply is the model quoting it, not thinking ------------
+// --- a marker mid-reply is the model quoting it -------------------------
 {
   const text = 'I considered it. <think>later</think> done'
   assert.strictEqual(reasoningSpan(text, think), null)
@@ -47,7 +47,7 @@ const think: ReasoningConfig = {
   assert.strictEqual(withoutReasoning('Just an answer.', think), 'Just an answer.')
 }
 
-// --- an empty prefix never matches, so a blank config is inert -----------
+// --- an empty prefix never matches: a blank config is inert -------------
 {
   const blank: ReasoningConfig = { prefix: '', suffix: '', autoParse: true, sendBack: false }
   assert.strictEqual(reasoningSpan('<think>x</think>y', blank), null)

@@ -20,7 +20,7 @@ export const overridableFields: OverridableField[] = ['contextLimit', 'safetyMar
 export type ParamSource = 'chat' | 'character' | 'connection'
 
 /** Unset means absent, not falsy. `temperature: 0` is a real value. A blank string is the
- *  exception: nothing there to use, so it falls through. */
+ *  exception: nothing there to use, and it falls through. */
 function isSet(value: unknown): boolean {
   if (value === undefined || value === null) return false
   if (typeof value === 'string') return value.trim() !== ''

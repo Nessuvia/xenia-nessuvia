@@ -32,7 +32,7 @@ export function ColorInput({
   alpha?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  // The hex field's own text, so a half-typed value can sit there without being written back.
+  // The hex field's own text: a half-typed value can sit there without being written back.
   const [text, setText] = useState(value)
   const [typing, setTyping] = useState(false)
   const fieldId = useId()
@@ -127,7 +127,7 @@ export function ColorInput({
         <div
           ref={popoverRef}
           className="colorPopover"
-          // Measured position, so it can't live in the stylesheet. Hidden for the first frame,
+          // Measured position: it can't live in the stylesheet. Hidden for the first frame,
           // before the measurement lands.
           style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
           onClick={(e) => e.stopPropagation()}

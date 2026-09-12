@@ -109,7 +109,7 @@ assert.strictEqual(splitVars['--appFont'], 'ui-monospace, monospace')
 assert.strictEqual(webfontVars['--appFont'], '')
 
 // The match toggle: on copies the chat font over, off must always leave the two unmatched. The
-// checkbox is derived from the fields, so a no-op "off" would stick on forever.
+// checkbox is derived from the fields: a no-op "off" would stick on forever.
 const georgia = resolvePalette({ fontFamily: 'Georgia, serif' })
 assert.strictEqual(appFontMatched(georgia), false)
 assert.strictEqual(appFontMatched(resolvePalette({ ...georgia, ...matchAppFontPatch(georgia, true) })), true)
@@ -121,13 +121,13 @@ assert.strictEqual(appFontMatched(linked), true)
 assert.strictEqual(effectiveAppFont(linked), '"Roboto", sans-serif')
 assert.strictEqual(appFontMatched(resolvePalette({ ...linked, ...matchAppFontPatch(linked, false) })), false)
 // The default palette starts matched (both fonts empty); turning the toggle off there still has to
-// produce an unmatched pair, which is why the patch falls to the named stack rather than ''.
+// produce an unmatched pair: that's why the patch falls to the named stack rather than ''.
 const fresh = resolvePalette({})
 assert.strictEqual(appFontMatched(fresh), true)
 assert.strictEqual(appFontMatched(resolvePalette({ ...fresh, ...matchAppFontPatch(fresh, false) })), false)
 
 // textWeight: emitted as a bare number string, and never empty. An unset weight means 400, not a
-// dropped var, since :root's fallback is the same value either way.
+// dropped var: :root's fallback is the same value either way.
 assert.strictEqual(paletteVars(resolvePalette({ textWeight: 600 }))['--textWeight'], '600')
 assert.strictEqual(paletteVars(resolvePalette({}))['--textWeight'], '400')
 assert.strictEqual(paletteVars(resolvePalette({ textWeight: 0 }))['--textWeight'], '400')
@@ -138,7 +138,7 @@ for (const field of rootVarFields) {
   assert.strictEqual(vars[`--${field}`], defaultPalette[field], `missing --${field}`)
 }
 assert.strictEqual(vars['--radius'], '6px')
-// A cleared color is left out so the :root fallback shows through.
+// A cleared color is left out: the :root fallback shows through.
 assert.ok(!('--accent' in paletteVars(resolvePalette({ accent: '' }))))
 
 // --- color-scheme is derived from the background --------------------------
@@ -292,12 +292,12 @@ assert.strictEqual(sloppy.fontSize, base.fontSize)
 assert.strictEqual(sloppy.name, 'Base')
 assert.strictEqual(sloppy.radius, 9)
 
-// Each way a reply can fail says which way it was, so the panel isn't one message for everything.
+// Each way a reply can fail says which way it was: the panel isn't one message for everything.
 assert.throws(() => parsePaletteReply('I cannot help with that.', base), /no JSON object/)
 assert.throws(() => parsePaletteReply('{"bg": #fff}', base), /did not parse/)
 assert.throws(() => parsePaletteReply('{"bg":"#fff","accent":', base), /cut off/)
 assert.throws(() => parsePaletteReply('', base), /no JSON object/)
-// The object is cut out of the text, so a reply that leads with an array still yields its object.
+// The object is cut out of the text: a reply that leads with an array still yields its object.
 assert.strictEqual(parsePaletteReply('[{"bg":"#fff"}]', base).bg, '#fff')
 
 // coerceFields is the same code both callers use: base Default matches the import path.
@@ -380,7 +380,7 @@ assert.deepStrictEqual(
   changedFields(base, { ...base, colorOrder: ['bold', 'emphasis', 'quotes'] }),
   ['colorOrder'],
 )
-// Everything a full reply changed is reported, so nothing is left without a rewind.
+// Everything a full reply changed is reported: nothing is left without a rewind.
 assert.deepStrictEqual(changedFields(base, parsePaletteReply('{"bg":"#fff","radius":12}', base)), [
   'bg',
   'radius',
@@ -417,7 +417,7 @@ assert.deepStrictEqual(resolveBackground(bgs, 'chat'), {
   css: 'b{}', // the page's own replaces the baseline's rather than stacking on it
   html: '<div class="b"></div>',
 })
-// CSS and HTML fall back independently: only CSS set here, so the baseline's elements still render.
+// CSS and HTML fall back independently: only CSS set here. The baseline's elements still render.
 const cssOnly = normalizeBackgrounds({
   all: { css: 'a{}', html: '<div class="a"></div>' },
   chat: { css: 'b{}' },
@@ -439,7 +439,7 @@ assert.deepStrictEqual(resolveBackground(bgs, 'write'), {
   fit: 'contain', // its own 'stretch' is ignored: the image it shows is the baseline's
   excludeNav: false,
   css: 'a{}',
-  html: '<div class="a"></div>', // the page has none of its own, so just the baseline's
+  html: '<div class="a"></div>', // the page has none of its own: just the baseline's
 })
 assert.strictEqual(resolveBackground(bgs, 'all').css, 'a{}') // the baseline never doubles itself
 assert.strictEqual(resolveBackground(bgs, 'all').html, '<div class="a"></div>')
@@ -463,7 +463,7 @@ for (const [fit, size, repeat] of sized) {
   })
 }
 
-// Rewind: the object is rebuilt on every resolve, so it must compare by contents.
+// Rewind: the object is rebuilt on every resolve. It must compare by contents.
 const withBg = resolvePalette({ id: 1, backgrounds: { chat: { imageId: 2 } } as never })
 assert.deepStrictEqual(changedFields(withBg, resolvePalette(withBg)), [])
 assert.deepStrictEqual(
@@ -484,7 +484,7 @@ const replied = parsePaletteReply('{"bg":"#fff","skin":"default","skinVars":{}}'
 assert.strictEqual(replied.skin, 'glass')
 assert.deepStrictEqual(replied.skinVars, { '--glassBlur': 4 })
 
-// Knob values reach a `style.setProperty` call, so only finite numbers under a `--` key survive.
+// Knob values reach a `style.setProperty` call: only finite numbers under a `--` key survive.
 assert.deepStrictEqual(
   normalizeSkinVars({ '--glassBlur': 8, '--bad': 'url(x)', glassTint: 4, '--nan': NaN, '--n': null }),
   { '--glassBlur': 8 },
@@ -507,7 +507,7 @@ assert.deepStrictEqual(systemBars('#101014'), { themeColor: '#101014', iosStatus
 assert.deepStrictEqual(systemBars('#f2f2f5'), { themeColor: '#f2f2f5', iosStatusBarStyle: 'default' })
 assert.deepStrictEqual(systemBars('#fff'), { themeColor: '#fff', iosStatusBarStyle: 'default' })
 assert.strictEqual(systemBars('  #FFF  ').themeColor, '#FFF') // trimmed, case kept
-// The theme-color meta takes a color, so a value that isn't one falls back to the stylesheet's
+// The theme-color meta takes a color. A value that isn't one falls back to the stylesheet's
 // background rather than reaching the tag. An ignored tag would leave the last palette's bar up.
 for (const junk of ['', 'red', 'rgb(0,0,0)', '#12345', '101014', '#gggggg']) {
   assert.strictEqual(systemBars(junk).themeColor, fallbackBg, `${junk} should fall back`)
@@ -518,7 +518,7 @@ assert.strictEqual(fallbackBg, defaultPalette.bg)
 // --- the bundled files ----------------------------------------------------
 // bundledPalettes() can't run here (import.meta.glob is Vite's), but it parses these files exactly
 // the way this does. Seeding and the Bundled picker both read the result, and the picker lists them
-// by name, so a file that doesn't parse takes the whole panel down with it.
+// by name. A file that doesn't parse takes the whole panel down with it.
 const bundledDir = join(dirname(fileURLToPath(import.meta.url)), 'bundled')
 const bundledFiles = readdirSync(bundledDir).filter((f) => f.endsWith('.json'))
 assert.ok(bundledFiles.length > 0, 'no bundled palettes')

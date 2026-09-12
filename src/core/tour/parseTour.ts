@@ -10,8 +10,8 @@ const layouts = ['desktop', 'mobile'] as const
  *     ## .chatSidebar | left | desktop
  *
  * `center` in the selector slot means a step with no target. A `##` with nothing after it is not a
- * step; its body is dropped rather than attached to the step above, since a heading marks a break
- * either way.
+ * step. Its body is dropped rather than attached to the step above: a heading marks a break either
+ * way.
  */
 export function parseTour(id: string, source: string): Tour {
   const steps: Step[] = []

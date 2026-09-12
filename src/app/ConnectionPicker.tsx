@@ -3,12 +3,12 @@ import './connectionPicker.css'
 
 /**
  * Pick one of the user's connections. Hoisted out of the chat settings sidebar, which had the only
- * copy of this markup, because the clean stage needs the same control to name the model that does the
+ * copy of this markup. The clean stage needs the same control to name the model that does the
  * editing.
  *
  * Two modes, from `allowActive`. Without it the picker names a connection outright, which is what
  * the global active-connection setting wants. With it, an "Active connection" row sits at the top
- * and reads back as `null`: the caller stores the null rather than the current id, so the setting
+ * and reads back as `null`: the caller stores the null rather than the current id. The setting
  * keeps following whatever the user makes active later. Resolve it with `resolveConnection`.
  */
 export default function ConnectionPicker({

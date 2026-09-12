@@ -135,8 +135,8 @@ export const useCharacters = create<CharactersState>()((set, get) => ({
       }
       await storage.remove('chats', chat.id!)
     }
-    // No lorebook cascade: a book is independent now and can be attached to other characters, so
-    // deleting one leaves its imported book behind in the Lorebooks list to be deleted there.
+    // No lorebook cascade: a book is independent now and can be attached to other characters.
+    // Deleting one leaves its imported book behind in the Lorebooks list to be deleted there.
     await storage.remove('characters', id)
     await get().load()
   },

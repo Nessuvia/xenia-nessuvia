@@ -16,19 +16,11 @@ next to it, click for next. Copy lives in markdown files you edit directly.
 | Routing | One tour per page. No cross-page chaining in v1. |
 | Mobile | Text box docks to the bottom, target scrolls into view, hand points at it. |
 
-## Why not Intro.js
+## Geometry
 
-Intro.js ships the three things that are actually hard here: cutout positioning, tooltip placement
-with collision flipping, and scroll-into-view. It also ships its own DOM and its own `.introjs-*`
-classes. Everything you asked for after that fights it. Palette colors mean overriding a stylesheet
-you do not own with selectors this repo's CSS conventions ban. The hand PNG has to be injected into
-their tooltip node. The mobile bottom sheet is not their layout. You would keep about 60 lines of
-real behaviour and pay for it in overrides plus 30KB.
-
-The parts worth having are small. A cutout is four divs or one `box-shadow: 0 0 0 9999px`. Placement
-is `getBoundingClientRect` plus a flip when the box would leave the viewport. Scroll is
-`scrollIntoView({ block: 'center' })`. If placement turns out fiddly against the chat rails,
-`@floating-ui/react` drops in for that one job without taking the rest.
+A cutout is four divs or one `box-shadow: 0 0 0 9999px`. Placement is `getBoundingClientRect` plus a
+flip when the box would leave the viewport. Scroll is `scrollIntoView({ block: 'center' })`. If
+placement turns out fiddly against the chat rails, `@floating-ui/react` drops in for that one job.
 
 ## Content format
 
@@ -55,8 +47,7 @@ Hover a message for the edit, retry and branch buttons.
 - Directives: `left` `right` `top` `bottom` force a side (default is auto), `desktop` and `mobile`
   limit a step to one, `center` means no target at all (an intro or outro step).
 - Body is everything until the next `##`. Blank lines split paragraphs. No markdown rendering beyond
-  paragraph splitting: model output is untrusted here anyway and this is one more reason not to
-  build an HTML path. Text is rendered as React text nodes.
+  paragraph splitting. Text is rendered as React text nodes.
 
 Parser is `parseTour.ts`, roughly 40 lines, with `checkParseTour.ts` next to it covering: a step with
 no directives, every directive, a `center` step, a body with blank lines, and a malformed `##` line.
@@ -78,8 +69,8 @@ src/app/
 public/tour/hand.png  the pointer
 ```
 
-`core/tour` holds no React and no DOM. `app/Tour.tsx` holds all of it. That keeps the parser
-checkable by a plain node script.
+`core/tour` holds no React and no DOM. `app/Tour.tsx` holds all of it. The parser stays checkable by
+a plain node script.
 
 ## How a step runs
 
@@ -87,23 +78,23 @@ checkable by a plain node script.
    step index and selector.
 2. `scrollIntoView({ block: 'center', behavior: 'smooth' })`, then measure after a frame.
 3. Cutout is a fixed div at the target's rect with `box-shadow: 0 0 0 9999px var(--overlay)` and a
-   `--radiusMd` corner, so there is one element to animate and no four-div seams. `pointer-events:
-   none` on it; a full-screen sibling swallows clicks so the app underneath cannot be used mid-tour.
+   `--radiusMd` corner: one element, no four-div seams. `pointer-events: none` on it; a full-screen
+   sibling swallows clicks and blocks the app underneath during the tour.
 4. The text box is placed on the side with the most room. The hand sits on the box edge facing the
    target, rotated in 90 degree steps to match the side.
 5. Advance on click anywhere, Enter, Space or right arrow. Back on left arrow. Escape ends the tour.
-6. Re-measure on `resize` and on `scroll` (capture phase, passive), so a rail opening mid-tour does
-   not leave the cutout behind.
+6. Re-measure on `resize` and on `scroll` (capture phase, passive), to keep the cutout aligned when a
+   rail opens mid-tour.
 
-Targets that only exist inside a closed rail are the known hole. On mobile the sidebar is a drawer,
-so steps pointing into it get `desktop`. Nothing opens a rail for a step in v1.
+Targets that only exist inside a closed rail are the known hole. On mobile the sidebar is a drawer;
+steps pointing into it get `desktop`. Nothing opens a rail for a step in v1.
 
 ## Mobile
 
 Below 700px the text box leaves the anchored position and docks to the bottom of the viewport, full
-width, with the hand on its top edge pointing up at the highlighted element. The target still
-scrolls to center, so it sits above the box. `useMediaQuery('(max-width: 700px)')` picks the mode,
-matching the repo's one breakpoint.
+width, with the hand on its top edge pointing up at the highlighted element. The target scrolls to
+center, above the box. `useMediaQuery('(max-width: 700px)')` picks the mode, matching the repo's one
+breakpoint.
 
 ## Styling
 
@@ -120,9 +111,9 @@ appears on whatever page loads first, pointing at that button. `nessuTavern.tour
 persisted state: a non-portable browser preference, straight to `localStorage`, no store, no Dexie
 table, out of the backup by construction.
 
-Since tours do not chain in v1, the offer starts the current page's tour and nothing else. The
-sequence of every page is a later change, and the natural shape for it is a `tourOrder` array in
-`tours.ts` plus a "next: Characters" button on the last step.
+Tours do not chain in v1: the offer starts the current page's tour and nothing else. A later change
+covers the sequence of every page, as a `tourOrder` array in `tours.ts` plus a "next: Characters"
+button on the last step.
 
 ## Scope
 
@@ -137,7 +128,7 @@ sequence of every page is a later change, and the natural shape for it is a `tou
 **Out**
 
 - Cross-page chaining and the full-site walkthrough.
-- Avatar poses. One hand, one PNG. The pointer is a component taking a side, so a pose prop is an
+- Avatar poses. One hand, one PNG. The pointer is a component taking a side; a pose prop is an
   additive change.
 - Resume after refresh, completion tracking, "tours you have not seen".
 - Any step that opens a rail, a drawer or a modal for you.
@@ -146,11 +137,10 @@ sequence of every page is a later change, and the natural shape for it is a `tou
 
 ## Risk
 
-Selectors drift. Nothing in the build catches a renamed class, and skip-on-missing means a tour
-quietly gets shorter. Two cheap mitigations if it bites: prefer selectors on classes that already
-carry a module prefix (the CSS conventions make these stable), and add a DEV panel under `/learn`
-that runs every tour and lists dead selectors. That panel is maybe 30 lines and worth it before
-release week.
+Selectors drift. Nothing in the build catches a renamed class; skip-on-missing means a tour quietly
+gets shorter. Two mitigations: prefer selectors on classes that already carry a module prefix, and
+add a DEV panel under `/learn` that runs every tour and lists dead selectors. That panel is maybe 30
+lines.
 
 ## Build order
 

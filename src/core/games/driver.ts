@@ -3,8 +3,8 @@
 // Both games have a state the player is not being asked about: the dealer's runout, the next round,
 // the character's ask. That rule used to live in three places (a trailing `if` after a Blackjack
 // action, a `while` loop in the store for Go Fish, and the dealer's turn buried inside
-// `resolveAction`), and every stuck table was a branch that fell out of one of them. It lives here
-// now, and the store's only job is to pace what comes back.
+// `resolveAction`). Every stuck table was a branch that fell out of one of them. It lives here
+// now. The store's only job is to pace what comes back.
 //
 // Pure and synchronous, like the rest of core/games: no timers, no React, no model. `next` returns
 // events; applying them is the caller's job.
@@ -40,7 +40,7 @@ export const drivers: Record<GameKind, Driver> = {
 
 /**
  * How many times a caller may drive before it decides something is wrong. A Go Fish run of
- * successful asks is bounded by the deck, and a Blackjack shoe is bounded by `shoeFloor`, so this
+ * successful asks is bounded by the deck, and a Blackjack shoe is bounded by `shoeFloor`. This
  * is a backstop and not a rule: reaching it is a bug, not a long game.
  */
 export const driveGuard = 200

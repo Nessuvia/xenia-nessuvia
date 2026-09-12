@@ -17,12 +17,12 @@ const WEIGHTS: Array<[keyof QualityWeights, string]> = [
  * The controls for what happens to a candidate after it comes back: the weights, the invariants,
  * the accept threshold and the slop lexicon.
  *
- * Its own component rather than more rows in the stage editor, because it is the longest part of
+ * Its own component rather than more rows in the stage editor: it is the longest part of
  * the panel and none of it touches the stage's ratio band above it.
  *
- * The lexicon is the pipeline's, not the stage's: the banned list a rewrite stage sends and the
- * list this scores against have to be the same list, or the rewrite is marked down for obeying
- * its own instructions.
+ * The lexicon belongs to the pipeline rather than the stage: the banned list a rewrite stage sends
+ * and the list this scores against have to be the same list. Otherwise the rewrite is marked down
+ * for obeying its own instructions.
  */
 export default function QualitySection({
   config,
@@ -44,8 +44,8 @@ export default function QualitySection({
   const setWeight = (key: keyof QualityWeights, value: number) =>
     setQuality({ weights: { ...quality.weights, [key]: value } })
 
-  // The list is the pipeline's own, all of it. Nothing ships a slop list, so there is no bundled
-  // half to overlay and every row is the user's to edit or delete.
+  // The list is the pipeline's own, all of it. Nothing ships a slop list: there is no bundled
+  // half to overlay, and every row is the user's to edit or delete.
   const entries = lexicon
   const setEntry = (id: string, over: Partial<LexiconEntry>) =>
     patchLexicon(lexicon.map((e) => (e.id === id ? { ...e, ...over } : e)))

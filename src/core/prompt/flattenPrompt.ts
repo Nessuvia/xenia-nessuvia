@@ -102,7 +102,7 @@ export function flattenPrompt(messages: ChatMessage[], template: InstructTemplat
     if (message.role === 'assistant' && template.reasoning) {
       content = stripReasoning(content, template.reasoning, messages.length - idx)
     }
-    // A group chat already carries the speaker inline (see buildPrompt), so labelling again would
+    // A group chat already carries the speaker inline (see buildPrompt). Labelling again would
     // read "Alice: Alice: ...". The guard is what lets both paths coexist.
     if (labelled && message.name && !content.startsWith(`${message.name}:`)) {
       content = `${message.name}: ${content}`
@@ -112,12 +112,12 @@ export function flattenPrompt(messages: ChatMessage[], template: InstructTemplat
     add(suffix, true)
   })
 
-  // The open assistant turn. Without it the model has to guess whose line is next. It stays open,
-  // so the trailing newline `add` would give a wrapped sequence is exactly what the model needs.
+  // The open assistant turn. Without it the model has to guess whose line is next. It stays open:
+  // the trailing newline `add` would give a wrapped sequence is exactly what the model needs.
   add(seq(template.lastModelPrefix || template.modelPrefix), true)
   // A label on the open turn names who must answer, which is the whole point in a group chat.
   if (labelled && char) out += `${char}: `
-  // Text the reply has to begin with. Written into the prompt, so the model continues it rather
+  // Text the reply has to begin with. Written into the prompt: the model continues it rather
   // than deciding whether to use it.
   if (template.prefill) out += macro(template.prefill)
   // A trailing space after the prefix costs a token on most tokenizers and shifts the reply.

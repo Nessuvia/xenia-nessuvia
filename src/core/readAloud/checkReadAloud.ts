@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { pickVoices, readAloudScript, splitChunks, type VoiceLike } from './readAloud.ts'
 
-// splitChunks: offsets, not strings, because the browser turns them into Ranges.
+// splitChunks: offsets rather than strings. The browser turns them into Ranges.
 {
   const text = 'She looked up. The sky held nothing at all. Then it did.'
   const chunks = splitChunks(text, 200)

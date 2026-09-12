@@ -123,9 +123,9 @@ const find = (key: string) => defs.find((d) => d.key === key)!
 
 // --- stringList: whitespace entries survive the round trip ---------------
 {
-  // The reported failure: DRY's sequence breakers are mostly whitespace and punctuation, and
-  // split-then-trim deleted the newline. All four gone left an empty list, which meant "omit the
-  // key", and the backend answered 400 dry_sequence_breakers must be a non-empty array.
+  // The reported failure: DRY's sequence breakers are mostly whitespace and punctuation.
+  // split-then-trim deleted the newline. All four gone left an empty list: that meant "omit the
+  // key". The backend answered 400 dry_sequence_breakers must be a non-empty array.
   const breakers = ['\n', ':', '"', '*']
   const line = formatList(breakers)
   assert.strictEqual(line, '\\n, :, ", *')
@@ -162,7 +162,7 @@ const find = (key: string) => defs.find((d) => d.key === key)!
   assert.deepStrictEqual(parseList(''), [])
   // A trailing backslash is someone mid-escape, and stands for itself.
   assert.deepStrictEqual(parseList('a\\'), ['a\\'])
-  // An unknown escape is the character itself, so a quote can be written either way.
+  // An unknown escape is the character itself: a quote can be written either way.
   assert.deepStrictEqual(parseList('\\"'), ['"'])
   // The documented limit: a space at the edge of an entry is the user's typing and is trimmed.
   assert.deepStrictEqual(parseList('  a  '), ['a'])

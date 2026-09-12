@@ -69,7 +69,7 @@ export default function StackEditor() {
   // choice; the active stack of each kind lives in settings. `?kind=story` is how the Story
   // sidebar's edit link lands on the right builder.
   const [params] = useSearchParams()
-  // Blocks or the utility prompts. Both edit the same open stack, so the picker row above stays put
+  // Blocks or the utility prompts. Both edit the same open stack: the picker row above stays put
   // and only the body swaps.
   const [tab] = useHashTab(['stacks', 'misc'] as const)
   const writeEnabled = useSettings((s) => s.writeEnabled)
@@ -169,7 +169,7 @@ export default function StackEditor() {
   const types = kindTypes(sources)
   const takenTypes = (block: PromptBlock, nested: boolean): BlockType[] => [
     ...blocks.filter((b) => b.id !== block.id).map((b) => b.source).filter((s) => bound.includes(s)),
-    // Chat History's turns carry their own roles, so it can't sit inside another block.
+    // Chat History's turns carry their own roles. It can't sit inside another block.
     ...(nested ? (['chatHistory'] as BlockType[]) : []),
   ]
 
@@ -183,8 +183,8 @@ export default function StackEditor() {
     try {
       const text = await file.text()
       // A SillyTavern export is the other thing anyone drops on this button. Only its stack half
-      // lands here; its samplers and instruct sequences need a connection, which is why the full
-      // import is in Settings › Connections.
+      // lands here. Its samplers and instruct sequences need a connection: the full import is in
+      // Settings › Connections.
       const imported = text.includes('nessu-prompt-stack') ? parseStack(text) : stackFromSt(text)
       const id = await save(imported)
       const importedKind = stackKind(imported)
@@ -235,7 +235,7 @@ export default function StackEditor() {
 
   function deleteBlock(id: string) {
     if (!draft) return
-    // The only delete path for a block, so the confirm belongs here rather than in the modal.
+    // The only delete path for a block. The confirm belongs here rather than in the modal.
     const block = findBlock(draft.active, id)
     if (!skipDeleteConfirm && block) {
       const nested = block.children?.length ? ' and the blocks inside it' : ''
@@ -291,7 +291,7 @@ export default function StackEditor() {
                 onMove={(dir) => moveBlock(block.id, dir)}
                 onDragStart={() => (drag.current = block.id)}
                 onDragOver={(before) =>
-                  // Below the midpoint means "in front of my next sibling", so a container's
+                  // Below the midpoint means "in front of my next sibling". A container's
                   // whole subtree stays together.
                   setDrop({ parentId, beforeId: before ? block.id : (list[i + 1]?.id ?? null) })
                 }

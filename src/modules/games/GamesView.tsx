@@ -32,7 +32,7 @@ function GamesHome() {
   return tab === 'history' ? <History /> : <Play />
 }
 
-// Setup: pick a game, then a character. An unfinished game is listed so it can be resumed.
+// Setup: pick a game, then a character. An unfinished game is listed. It can be resumed.
 function Play() {
   const characters = useCharacters((s) => s.characters)
   const loadCharacters = useCharacters((s) => s.load)

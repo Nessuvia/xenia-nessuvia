@@ -3,7 +3,7 @@
 import assert from 'node:assert'
 import { aiccId, chubFullPath } from './fetchCard.ts'
 
-// aicharactercards.com: the API takes the last two path segments, so the page URL and the
+// aicharactercards.com: the API takes the last two path segments. The page URL and the
 // "ST Card ID" printed on that page both resolve.
 assert.equal(aiccId('https://aicharactercards.com/cards/2151'), 'cards/2151')
 assert.equal(aiccId('https://www.aicharactercards.com/cards/2151/'), 'cards/2151')

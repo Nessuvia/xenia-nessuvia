@@ -1,4 +1,4 @@
-/** `{{char}}-mm_dd_yyyy`, plus `-2`, `-3`… when that title is already taken. */
+/** `{{char}}-mm_dd_yyyy`, plus `-2`, `-3`, etc when that title is already taken. */
 export function chatTitle(name: string, at: number, existing: string[]): string {
   const d = new Date(at)
   const pad = (n: number) => String(n).padStart(2, '0')

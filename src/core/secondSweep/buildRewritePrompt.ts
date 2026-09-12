@@ -59,7 +59,7 @@ export function buildRewritePrompt(input: RewritePromptInput, budget?: Budget): 
   }
 
   // Its own turn rather than appended to the preset: the preset is the user's opinion about voice
-  // and this is generated per request, so keeping them apart makes both readable in the preview and
+  // and this is generated per request. Keeping them apart makes both readable in the preview and
   // makes the list trivial to drop.
   if (config.promptBannedList && banned.length) {
     head.push({ role: 'system', content: bannedPromptTurn(banned) })

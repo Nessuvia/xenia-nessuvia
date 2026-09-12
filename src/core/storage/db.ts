@@ -5,10 +5,10 @@ import { markDirty } from '../sync/dirtyTables'
 
 const db = new Dexie('nessuTavern')
 
-// The only schema block. Versions 1 to 13 were deleted: none carried an upgrade() callback, so the
-// chain did nothing a single declaration doesn't, and an older local DB upgrades straight to this
+// The only schema block. Versions 1 to 13 were deleted: none carried an upgrade() callback, and the
+// chain did nothing a single declaration doesn't. An older local DB upgrades straight to this
 // schema. The number only ever goes up. IndexedDB refuses to open a database whose
-// stored version is higher than the one requested, so renumbering to 1 would throw VersionError on
+// stored version is higher than the one requested. Renumbering to 1 would throw VersionError on
 // every browser that already has the data.
 db.version(16).stores({
   characters: '++id, ownerId',
@@ -33,7 +33,7 @@ function table(name: TableName) {
   return db.table<StoredRecord, number>(name)
 }
 
-// Two owner ids coexist in one IndexedDB after a sign-in, so get, find and remove filter by owner
+// Two owner ids coexist in one IndexedDB after a sign-in. get, find and remove filter by owner
 // the way getAll always has. get and remove throw on a foreign row rather than returning undefined
 // or deleting nothing: a caller holding an id from another account is a bug, and a silent no-op
 // hides it.
@@ -56,7 +56,7 @@ export const storage: Storage = {
       .equals(value as never)
       .and((r) => r.ownerId === currentOwnerId())
       .toArray(),
-  // The four mutation functions are the whole of the app's durable writes, so marking the table
+  // The four mutation functions are the whole of the app's durable writes. Marking the table
   // dirty here covers every store with no changes to any of them. markDirty runs before the write:
   // a write that throws partway through still leaves its table pending.
   put: (name, record) => {

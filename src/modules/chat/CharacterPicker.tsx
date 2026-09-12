@@ -19,8 +19,8 @@ import TagMenu from './TagMenu'
 import { useLongPress } from './useLongPress'
 import { allTags, groupByPrimaryTag, matchesTags, type TagMode } from './tags'
 
-// Which of Any/All the filter uses. A UI preference, so localStorage rather than a store, it is
-// deliberately outside backup and sync.
+// Which of Any/All the filter uses. A UI preference: localStorage rather than a store.
+// Deliberately outside backup and sync.
 const MODE_KEY = 'nessuTavern.tagFilterMode'
 const storedMode = (): TagMode => (localStorage.getItem(MODE_KEY) === 'all' ? 'all' : 'any')
 
@@ -57,8 +57,8 @@ export default function CharacterPicker() {
     loadSummaries()
   }, [load, loadSummaries])
 
-  // Cleared on the way out, not on the way in: a reply that lands while you're standing here still
-  // gets seen, and the blip is gone the next time you come back.
+  // Clears on the way out. On the way in, nothing clears: a reply landing while you're standing
+  // here still shows, and the blip is gone the next time you come back.
   useEffect(() => () => useBlips.getState().clearAll(), [])
 
   async function runImport(json: unknown, avatar = '') {
@@ -137,7 +137,7 @@ export default function CharacterPicker() {
         }
         blip={blips.includes(c.id!)}
         onOpen={() => navigate(`/chat/c/${c.id}`)}
-        // Nine visits in ten are "resume the chat I was in", so that gets its own hit zone rather
+        // Nine visits in ten are "resume the chat I was in". That gets its own hit zone rather
         // than a stop at the sheet. Nothing to resume falls through to the sheet.
         onResume={
           summary?.lastChatId ? () => navigate(`/chat/${summary.lastChatId}`) : undefined
@@ -199,7 +199,7 @@ export default function CharacterPicker() {
                     accept=".json,application/json,.png,image/png"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
-                      e.target.value = '' // so re-picking the same file fires onChange again
+                      e.target.value = '' // resets the input: picking the same file again still fires onChange
                       setMenuOpen(false)
                       if (file) importFile(file)
                     }}
@@ -265,8 +265,8 @@ export default function CharacterPicker() {
       )}
       {characters.length > 0 && sorted.length === 0 && <p className="placeholder">No matches.</p>}
 
-      {/* The grid is the scroller, so the header and search stay put. .appContent clips, so without
-          this the cards below the fold were simply unreachable. */}
+      {/* The grid is the scroller: the header and search stay put. .appContent clips. Without
+          this the cards below the fold were unreachable. */}
       {grouped ? (
         <div className="tagGroups screenBody">
           {groupByPrimaryTag(sorted, selected).map((group) => (
@@ -298,13 +298,13 @@ export default function CharacterPicker() {
 }
 
 /**
- * One card, two targets. Split out so the flat grid and the grouped view share exactly one copy
+ * One card, two targets, split out: the flat grid and the grouped view share exactly one copy
  * of it.
  *
  * The avatar resumes the last chat and the rest of the card opens the character; both are one
  * click and neither is behind a menu. Two hit zones on one card is only learnable if they look
- * like two, so the avatar carries a play overlay on hover and focus. Without a chat to resume it
- * does what the rest of the card does, there's nothing there to mislearn.
+ * like two: the avatar carries a play overlay on hover and focus. Without a chat to resume it
+ * does what the rest of the card does. There's nothing there to mislearn.
  */
 function PickerCard({
   character,
@@ -347,7 +347,7 @@ function PickerCard({
         type="button"
         className="pickerAvatarButton"
         title={onResume ? 'Continue last chat' : 'Open character'}
-        // The card itself opens the character, so the avatar has to keep its click to itself.
+        // The card itself opens the character. The avatar keeps its click to itself.
         onClick={(e) => {
           e.stopPropagation()
           ;(onResume ?? onOpen)()

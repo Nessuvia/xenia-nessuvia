@@ -10,8 +10,8 @@ const kinds: ParamKind[] = ['number', 'slider', 'text', 'bool', 'select', 'strin
  * line of JSON, the same line the backend's docs show, and everything under it is the shape
  * inferred from it. Editing skips that step and opens on the fields directly.
  *
- * A built-in is edited in place rather than forked: two defs cannot share a key, since the key is
- * how a connection references one. Deleting it from the library is how to be rid of it.
+ * A built-in is edited in place rather than forked: two defs cannot share a key. The key is how a
+ * connection references one. Deleting it from the library is how to be rid of it.
  */
 export default function ParamDefModal({
   edit,

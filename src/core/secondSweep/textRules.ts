@@ -6,7 +6,7 @@ import { computeExclusions, type Range } from '../hammer/exclusions.ts'
 /** Matches reported per rule. One rule matching forty times is one problem, not forty notes. */
 const MAX_PER_RULE = 3
 
-/** Escape a literal find so nothing in it is treated as a pattern. Same approach as
+/** Escape a literal find. Nothing in it is then treated as a pattern. Same approach as
  *  `applyReplaceRules` in the chat renderer, which is the other place a user writes a find. */
 function escape(find: string): string {
   return find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -38,7 +38,7 @@ function scopeMatches(scope: TextRule['scope'], role: 'user' | 'assistant'): boo
 /**
  * Run the free-text rules and report what they matched, changing nothing.
  *
- * Called on the text the Grammar Hammer's strip pass already produced, so the spans are coordinates
+ * Called on the text the Grammar Hammer's strip pass already produced: the spans are coordinates
  * into what the model will actually be shown, same as `findFlags`.
  */
 export function findTextMatches(
@@ -83,10 +83,10 @@ export function findTextMatches(
 /**
  * The rules that carry no find: standing instructions, handed to the model on every pass.
  *
- * Kept apart from the matched notes rather than merged into them, because the two answer different
+ * Kept apart from the matched notes rather than merged into them: the two answer different
  * questions. A matched note says something is wrong with this reply. A standing rule says how prose
  * should read in general, and it is true of every reply including a clean one. Merging them would
- * make `skipWhenClean` dead the moment a single standing rule is enabled, since the note list would
+ * make `skipWhenClean` dead the moment a single standing rule is enabled. The note list would
  * never be empty.
  */
 export function standingNotes(rules: TextRule[], role: 'user' | 'assistant'): Note[] {

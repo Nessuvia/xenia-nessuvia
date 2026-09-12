@@ -17,7 +17,7 @@ const roster = [
 assert.deepStrictEqual(allTags(roster), ['Brooding', 'Male', 'Video Games'])
 assert.deepStrictEqual(allTags([c('female'), c('Female')]), ['female', 'Female'].sort((a, b) => a.localeCompare(b)))
 
-// counts every use, not just primaries
+// counts every use, including non-primaries
 assert.strictEqual(tagCounts(roster).get('Brooding'), 2)
 assert.strictEqual(tagCounts(roster).get('Male'), 3)
 assert.strictEqual(tagCounts(roster).get('Nope'), undefined)
@@ -42,7 +42,7 @@ assert.deepStrictEqual(
   ['Male:2', 'Video Games:2', 'Brooding:1', `${UNTAGGED}:1`],
   'biggest first, ties alphabetical, Untagged last',
 )
-// Brooding is on two characters but is only one character's primary, so its group holds one
+// Brooding is on two characters and is only one character's primary: its group holds one
 assert.strictEqual(tagCounts(roster).get('Brooding'), 2)
 assert.strictEqual(groups.find((g) => g.tag === 'Brooding')!.characters.length, 1)
 
@@ -56,7 +56,7 @@ assert.deepStrictEqual(
   ['Video Games'],
 )
 
-// rename keeps position, so the primary group does not shift
+// rename keeps position: the primary group does not shift
 assert.deepStrictEqual(renameTag(['Video Games', 'Brooding'], 'Video Games', 'Games'), [
   'Games',
   'Brooding',

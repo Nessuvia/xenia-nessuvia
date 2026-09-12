@@ -28,7 +28,7 @@ const pv = previewStrips('She runs with a graceful elegance.', [r1], 'assistant'
 assert.equal(pv.removed.length, 1)
 assert.ok(pv.removed[0].slice.includes('graceful'))
 
-// Preview strikes the orphan space repair would remove, so an end-of-sentence match doesn't leave
+// Preview strikes the orphan space repair would remove. An end-of-sentence match doesn't leave
 // a visible gap before the period. The struck slice grows to include the leading space.
 const pvEnd = previewStrips('He took the glass with a practiced hand.', [r1], 'assistant', tagger)
 assert.equal(pvEnd.removed.length, 1)
@@ -51,7 +51,7 @@ const rBad = rule('[notapos]')
 const sBad = stripWith('She runs fast.', [rBad], 'assistant', tagger)
 assert.equal(sBad.text, 'She runs fast.')
 
-// Exclusion zone: inline code content is never tagged or matched, so `quick` survives even
+// Exclusion zone: inline code content is never tagged or matched. `quick` survives even
 // though it is an adjective. The bare `fast` outside is an adjective too and does strip.
 const rAdj = rule('[adj]')
 const fenced = stripWith('She runs `quick` fast.', [rAdj], 'assistant', tagger)
@@ -100,11 +100,11 @@ const flagSource = 'She runs very quickly and looks quietly furious.'
 assert.equal(stripWith(flagSource, [rFlag], 'assistant', tagger).text, flagSource)
 const flags = findFlags(flagSource, [rFlag], 'assistant', tagger)
 assert.ok(flags.length >= 1, 'expected the flag rule to match')
-// The span has to index the text handed in, since that is what the model gets shown.
+// The span indexes the text handed in: that is what the model gets shown.
 assert.equal(flagSource.slice(flags[0].start, flags[0].end), flags[0].slice)
 assert.equal(flags[0].rule.id, rFlag.id)
 
-// Flags are sorted left to right even when several rules match, so notes read in reading order.
+// Flags are sorted left to right even when several rules match: notes read in reading order.
 const flagsMulti = findFlags(flagSource, [rFlag, rule('[adj] and [adj]', { action: 'flag' })], 'assistant', tagger)
 for (let i = 1; i < flagsMulti.length; i++) {
   assert.ok(flagsMulti[i].start >= flagsMulti[i - 1].start, 'flags out of order')

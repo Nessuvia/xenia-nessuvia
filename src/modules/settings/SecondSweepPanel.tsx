@@ -44,7 +44,7 @@ const STAGE_KINDS: Array<[StageKind, string]> = [
  * Second Sweep: the pipeline library, and an editor for whichever pipeline is open.
  *
  * The tab state is a `useState` on purpose: the Settings sidebar keeps one flat entry for the
- * pass, so there is nothing to link to and no hash to read.
+ * pass. There is nothing to link to and no hash to read.
  *
  * Two levels of writing happen here and they must not be confused. The Setup tab's enable toggle
  * and pipeline choice are the **global** default, which a chat can override in its own sidebar.
@@ -73,7 +73,7 @@ export default function SecondSweepPanel() {
       stages: open.stages.map((s) => (s.id === id ? ({ ...s, ...over } as Stage) : s)),
     })
 
-  /** Add what the JSON holds. Import adds; it never replaces the library, so a file with one
+  /** Add what the JSON holds. Import adds; it never replaces the library. A file with one
    *  pipeline in it cannot cost you the other five. */
   const addJson = async (text: string) => {
     try {

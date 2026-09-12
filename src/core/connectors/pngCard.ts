@@ -2,7 +2,7 @@
 // keyed "chara" (v2) or "ccv3" (v3). We read the JSON out of that chunk; the PNG itself becomes
 // the avatar. No deps: a PNG is a signature plus length/type/data/crc chunks.
 
-// Both halves of a tEXt chunk are ASCII (a latin1 keyword, then base64), so one UTF-8 decoder
+// Both halves of a tEXt chunk are ASCII (a latin1 keyword, then base64): one UTF-8 decoder
 // reads either. It replaces `String.fromCharCode(...bytes)`: a card carrying a lorebook has a
 // payload around 100 KB, and spreading that many arguments overflows the call stack in Chrome.
 const ascii = new TextDecoder()
@@ -39,8 +39,8 @@ export function pngDataUrl(buffer: ArrayBuffer): string {
 /** Parses the card JSON embedded in a Tavern PNG. Throws if none is present. */
 export function parsePngCard(buffer: ArrayBuffer): unknown {
   const bytes = new Uint8Array(buffer)
-  // ccv3 wins when both are present: it's the newer, fuller record. Two passes rather than one,
-  // because a single pass would return whichever chunk came first in the file.
+  // ccv3 wins when both are present: it's the newer, fuller record. Two passes rather than one:
+  // a single pass would return whichever chunk came first in the file.
   const b64 = readTextChunk(bytes, 'ccv3') ?? readTextChunk(bytes, 'chara')
   if (!b64) throw new Error('No character data in this PNG')
   const json = decodeURIComponent(escape(atob(b64))) // atob → latin1; this recovers UTF-8

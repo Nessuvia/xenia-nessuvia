@@ -4,7 +4,7 @@
  * trusting.
  *
  * The provider's own encryption at rest is not a substitute: the provider holds that key. This one
- * never leaves the device, so the ciphertext is opaque to whoever hosts the bucket.
+ * never leaves the device. The ciphertext is opaque to whoever hosts the bucket.
  *
  * Salt and IV are random per write and travel with the ciphertext; that is what they are for. The
  * passphrase itself is never written to the bucket in the clear.

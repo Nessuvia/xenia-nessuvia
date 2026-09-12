@@ -4,7 +4,7 @@
  * This is the fourth thing that talks outward, alongside sync/syncClient.ts,
  * multiplayer/centrifugoChannel.ts and the two Settings probes. It fetches two public JSON files from
  * jsDelivr and nothing else: no key, no header, no user text, and only when the user presses the
- * button in the connection editor. A vocab is a static asset, so it never reaches the model
+ * button in the connection editor. A vocab is a static asset. It never reaches the model
  * endpoint or the relay, and nothing about the request identifies the browser beyond the URL.
  *
  * Storage is the Cache API rather than Dexie on purpose. A vocab is redownloadable and up to 17 MB;
@@ -51,7 +51,7 @@ export async function fetchVocab(id: ResolvedTokenizerId): Promise<void> {
   const cache = open()
   if (!urls || !cache) throw new Error('This browser cannot store tokenizers.')
   const store = await cache
-  // addAll is atomic enough for this: it rejects without writing if either file fails, so a
+  // addAll is atomic enough for this: it rejects without writing if either file fails. A
   // half-downloaded vocab never looks cached.
   await store.addAll([urls.json, urls.config])
 }

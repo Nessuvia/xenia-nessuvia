@@ -15,7 +15,7 @@ export interface InvariantOptions {
   newProperNouns: boolean
   dialogue: boolean
   lengthBand: boolean
-  /** Handled by `decide.ts`, which is the only place that can see the alignment. Carried here so
+  /** Handled by `decide.ts`, which is the only place that can see the alignment. Carried here:
    *  every invariant toggle lives in one shape. */
   paragraphCount: boolean
   /** Per-chunk ratio band. Wider than the whole-message one in `lengthGuard`: a single paragraph
@@ -43,10 +43,10 @@ export const defaultInvariants: InvariantOptions = {
  * Hard rejections: things that are wrong whatever the prose score says.
  *
  * A score compares two passages and picks the better one. These are different. A rewrite that
- * invents a character, or puts words in someone's mouth, is not a worse version of the paragraph,
- * it is a different paragraph, and no score should be allowed to accept it.
+ * invents a character, or puts words in someone's mouth, swaps in a different paragraph rather
+ * than a worse version of this one. No score should be allowed to accept it.
  *
- * Runs per aligned chunk pair, so a violation costs one paragraph rather than the whole reply.
+ * Runs per aligned chunk pair: a violation costs one paragraph rather than the whole reply.
  */
 export function checkInvariants(
   before: string,
@@ -103,10 +103,10 @@ function quote(run: string): string {
 /**
  * Proper nouns, normalised.
  *
- * From compromise rather than from a capitalisation regex, because the regex answer is wrong in
- * both directions: it misses "the Verge" and it fires on every word after a full stop. The tagger
- * in `core/hammer` cannot be used as-is, since its eight POS slots deliberately have no proper-noun
- * slot, so this reads the raw tag.
+ * From compromise rather than from a capitalisation regex: the regex answer is wrong in
+ * both directions, missing "the Verge" and firing on every word after a full stop. The tagger
+ * in `core/hammer` cannot be used as-is: its eight POS slots deliberately have no proper-noun
+ * slot. This reads the raw tag instead.
  */
 export function properNounTerms(text: string): Array<{ key: string; text: string }> {
   const out: Array<{ key: string; text: string }> = []

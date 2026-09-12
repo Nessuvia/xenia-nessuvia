@@ -13,7 +13,7 @@ export const DEFAULT_LIMIT = 40
  * The prevention half of the feature. Scoring catches slop after the fact and costs a rejected
  * chunk; this tries to stop it being generated. The same list goes three places: into the Gold
  * prompt as a system turn, into `banned_strings` on endpoints that accept one, and, implicitly,
- * into the score, since it is built from the same census and lexicon the scorer reads.
+ * into the score: it is built from the same census and lexicon the scorer reads.
  *
  * Regex entries are left out. A sampler takes literal strings, and a prompt asking a local model not
  * to use `(heart|pulse) (hammered|pounding)` is a prompt it will quote back verbatim.
@@ -48,7 +48,7 @@ export function bannedList(
 }
 
 /** The instruction that carries the list into the prompt. One plain sentence and the phrases, one
- *  per line, so a small model can follow it without parsing anything. */
+ *  per line: a small model can follow it without parsing anything. */
 export function bannedPromptTurn(phrases: string[]): string {
   return `Do not use any of these phrases:\n${phrases.join('\n')}`
 }

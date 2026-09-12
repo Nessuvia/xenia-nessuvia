@@ -4,11 +4,11 @@ import type { TableName } from '../storage/storageInterface.ts'
 
 /** Suppression is module-level rather than a parameter threaded through storage: the callers that
  *  need it (`restoreBackup`, and the pull path) replace whole tables through the same `clear` +
- *  `putAll` that ordinary edits use, so there is no signature to distinguish them by. */
+ *  `putAll` that ordinary edits use. There is no signature to distinguish them by. */
 let suppressed = false
 
 /** Called by `db.ts` on every durable write, before the write runs: a write that throws partway
- *  through still leaves its table flagged, so nothing is silently left unpushed. */
+ *  through still leaves its table flagged. Nothing is silently left unpushed. */
 export function markDirty(table: TableName) {
   if (suppressed) return
   useSettings.getState().markTableDirty(table)

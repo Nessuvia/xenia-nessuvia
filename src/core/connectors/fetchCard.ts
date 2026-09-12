@@ -1,5 +1,5 @@
-// The ONLY place a card-import URL is fetched. Throws with a readable message on any failure so
-// the modal can show it directly. Returns the parsed card JSON plus an optional avatar data URL
+// The ONLY place a card-import URL is fetched. Throws with a readable message on any failure,
+// shown directly in the modal. Returns the parsed card JSON plus an optional avatar data URL
 // (chub cards arrive as PNGs with the image embedded).
 import { parsePngCard, pngDataUrl } from './pngCard.ts' // explicit extension: checkFetchCard.ts imports this file under node
 
@@ -53,8 +53,8 @@ async function fetchChubCard(fullPath: string): Promise<FetchedCard> {
   return { json, avatar: String(node.max_res_url ?? node.avatar_url ?? '') }
 }
 
-// A path segment we're willing to paste into an outbound URL. `.` and `..` are excluded so the
-// result can't walk out of the API's own path. The Worker route repeats this guard.
+// A path segment we're willing to paste into an outbound URL. `.` and `..` are excluded.
+// The Worker route repeats this guard.
 const segment = /^(?!\.\.?$)[\w.-]+$/
 
 /**
@@ -82,7 +82,7 @@ export function aiccId(input: string): string | null {
   return last.join('/')
 }
 
-// aicharactercards.com sends no CORS header, so this goes through our own /aicc/ route (the Worker
+// aicharactercards.com sends no CORS header. This goes through our own /aicc/ route (the Worker
 // in src/index.js on a build, vite.config.ts's proxy in dev). The card it returns is a Tavern PNG:
 // the JSON is in a tEXt chunk and the image itself is the avatar.
 async function fetchAiccCard(id: string): Promise<FetchedCard> {
@@ -98,11 +98,11 @@ async function fetchAiccCard(id: string): Promise<FetchedCard> {
 }
 
 /**
- * Remote image URL → data URL, so the avatar lives in the save instead of hotlinking someone
+ * Remote image URL → data URL. The avatar lives in the save. No hotlinking someone
  * else's CDN. Returns '' on any failure; the caller keeps the URL as the degraded case.
  */
-// stores the original bytes, which for a card PNG is around a megabyte. If saves get
-// fat, re-encode through a canvas here. The crop is stored as fractions, so it survives a resize.
+// Stores the original bytes: around a megabyte for a card PNG. If saves get
+// fat, re-encode through a canvas here. The crop is stored as fractions and survives a resize.
 async function inlineAvatar(url: string): Promise<string> {
   try {
     const res = await fetch(url)

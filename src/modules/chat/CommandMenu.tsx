@@ -26,7 +26,6 @@ export default function CommandMenu({
               key={c.name}
               className={`commandRow${i === active ? ' active' : ''}`}
               onMouseEnter={() => onHover(i)}
-              // mousedown, not click: the textarea must not lose focus before the pick lands.
               onMouseDown={(e) => {
                 e.preventDefault()
                 onPick(i)

@@ -6,9 +6,9 @@ const REVEAL = 1500
 const FADE = 500
 const BUBBLES = 26
 
-// circle positions computed at module scope, they never change, so no useMemo.
+// circle positions computed at module scope: they never change, and need no useMemo.
 const circles = Array.from({ length: BUBBLES }, (_, i) => {
-  const a = i * 2.399963 // golden angle, so the scatter fills evenly without overlapping runs
+  const a = i * 2.399963 // golden angle: the scatter fills evenly without overlapping runs
   const rad = 46 * Math.sqrt(i / BUBBLES)
   return {
     cx: 50 + rad * Math.cos(a),

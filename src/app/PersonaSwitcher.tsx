@@ -31,7 +31,7 @@ export default function PersonaSwitcher() {
   const [open, setOpen] = useState(false)
   const ref = useCloseOnOutside(open, () => setOpen(false))
 
-  // The rail shows this on every screen, so it can't wait for a view that loads personas.
+  // The rail shows this on every screen. It can't wait for a view that loads personas.
   useEffect(() => {
     if (personas.length === 0) void load()
   }, [personas.length, load])

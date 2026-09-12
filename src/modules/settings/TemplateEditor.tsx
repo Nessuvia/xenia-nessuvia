@@ -134,7 +134,7 @@ export default function TemplateEditor({
               onChange={(e) => set('prefill', e.target.value)}
             />
             <span className="templateHint">
-              Written at the end of the prompt, so the reply continues it.
+              Written at the end of the prompt. The reply continues it.
             </span>
           </label>
           <label className="templateField">

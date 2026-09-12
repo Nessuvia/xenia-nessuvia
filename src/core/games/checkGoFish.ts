@@ -54,7 +54,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
   assert.ok(events.some((e) => e.kind === 'book' && e.by === 'char' && e.rank === '7'), 'no book event')
   assert.deepStrictEqual(after.books.char, ['7'])
   assert.strictEqual(after.hands.char.filter((c) => c.rank === '7').length, 0, 'booked cards stayed in hand')
-  // The player was emptied by handing the card over, so they drew.
+  // The player was emptied by handing the card over, and drew.
   assert.strictEqual(after.hands.player.length, 1)
 }
 
@@ -88,7 +88,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
 
 // --- the empty hand draws, and the deal runs out --------------------------
 {
-  // Deck spent and a hand empty: nothing more can happen, so the game ends.
+  // Deck spent and a hand empty: nothing more can happen. The game ends.
   const before = state({ turn: 'char', hands: { player: hand('3H'), char: hand('3S') }, deck: [] })
   const events = resolveAsk(before, 'char', '3')
   const after = events.reduce(reduce, before)
@@ -105,7 +105,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
   const events = resolveAsk(before, 'player', '3', typed)
   const ask = events.find((e) => e.kind === 'ask')!
   assert.strictEqual(ask.kind === 'ask' && ask.text, typed, 'the typed text was dropped')
-  // The rules read `rank` alone, so carrying the words changes nothing about the outcome.
+  // The rules read `rank` alone: carrying the words changes nothing about the outcome.
   const withText = events.reduce(reduce, before)
   const withoutText = resolveAsk(before, 'player', '3').reduce(reduce, before)
   assert.deepStrictEqual(withText.hands, withoutText.hands)
@@ -173,7 +173,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
       assert.ok(rank, `seed ${seed}: the side to move held nothing`)
       const side = current.turn
       const previous = current.asked[side][current.asked[side].length - 1]
-      // A rank asked twice running only makes sense when the first ask was answered, since a
+      // A rank asked twice running only makes sense when the first ask was answered: a
       // failed ask proves the other side is empty of it. Repeating past that is the stuck opponent.
       // Unless it is the only rank in hand, in which case there is nothing else to ask.
       if (previous === rank && legalAsks(current, side).length > 1) {
@@ -195,9 +195,9 @@ function state(patch: Partial<GoFishState>): GoFishState {
     asked: { player: [], char: ['9'] },
     known: { player: ['9'], char: [] },
   })
-  // The character asked for nines, so it held one: best play is to take them back.
+  // The character asked for nines: it held one, and best play is to take them back.
   assert.strictEqual(chooseMove(board, 'player', 'best'), '9')
-  // Once that ask has come back empty the read is spent, so it must not be asked again.
+  // Once that ask has come back empty the read is spent. It must not be asked again.
   const spent = state({
     hands: { player: hand('3H 7D 7S 9C'), char: hand('KC') },
     asked: { player: ['9'], char: ['9'] },
@@ -234,7 +234,7 @@ function state(patch: Partial<GoFishState>): GoFishState {
 
   assert.strictEqual(buildStateBlock(board, { tag: '' }).startsWith('You are playing Go Fish.'), true)
 
-  // The block is built after the move landed, so cards handed over are already out of the hand.
+  // The block is built after the move landed: cards handed over are already out of the hand.
   // Without `before` the character reads its own hand and denies holding what it just gave away.
   const after = state({
     turn: 'player',
@@ -256,13 +256,13 @@ function state(patch: Partial<GoFishState>): GoFishState {
     { kind: 'turn', to: 'char' },
   ])
   assert.strictEqual(line, 'They asked you for sevens. They drew from the deck. It is your turn.')
-  // A card the player drew is face down, so its rank must not leak into the line.
+  // A card the player drew is face down: its rank must not leak into the line.
   assert.ok(!line.includes('K'))
   assert.strictEqual(
     describeEvent([{ kind: 'give', from: 'player', to: 'char', rank: '7', count: 2 }]),
     'They handed you 2 sevens.',
   )
-  // The board's log reads from the player's side, so the same events flip.
+  // The board's log reads from the player's side: the same events flip.
   const fromPlayer = describeEvent(
     [{ kind: 'ask', by: 'player', rank: '7' }, { kind: 'draw', by: 'player', rank: 'K' }, { kind: 'turn', to: 'char' }],
     'player',

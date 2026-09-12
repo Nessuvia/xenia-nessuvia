@@ -53,7 +53,7 @@ const defaultish = () =>
   assert.deepStrictEqual(out.at(-1), { role: 'user', content: 'Write two paragraphs.' })
   assert.ok(out.some((m) => m.content.includes('Name: Mark')))
   assert.ok(out.some((m) => m.content.includes('The rain fell.')))
-  // The beat block has no beat behind it, so its one line drops and it produces no turn.
+  // The beat block has no beat behind it: its one line drops and it produces no turn.
   assert.ok(!out.some((m) => m.content.includes('undefined')))
 }
 
@@ -295,7 +295,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
     none.messages,
   )
 
-  // It is priced as fixed, so it costs the Story prose rather than riding free.
+  // It is priced as fixed: it costs the Story prose rather than riding free.
   assert.ok(out.fixedTokens > none.fixedTokens)
 }
 
@@ -374,7 +374,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
     storyText: 'the prose so far',
     direction: '',
   })
-  // Free prose: no beat, no target, so no user turn at all.
+  // Free prose: no beat, no target, and no user turn at all.
   assert.ok(!built.messages.some((m) => m.role === 'user'))
   assert.ok(!built.messages.some((m) => m.content.includes('Write this next')))
 }
@@ -422,7 +422,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
     { content: 'two' },
     { content: 'three' },
   ])
-  // Extras land after the prose, so a scan depth of 1 sees the beat and not the last paragraph.
+  // Extras land after the prose: a scan depth of 1 sees the beat and not the last paragraph.
   assert.deepStrictEqual(storyScanText('one\n\ntwo', ['', 'the beat']), [
     { content: 'one' },
     { content: 'two' },

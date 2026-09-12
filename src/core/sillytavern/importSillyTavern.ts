@@ -1,5 +1,5 @@
 // The one export the UI uses. Pure: it reads a file's text and returns what could be made from it.
-// Nothing here writes to a store or to Dexie, so the panel decides which parts get applied.
+// Nothing here writes to a store or to Dexie. The panel decides which parts get applied.
 import type { Connection, TagRule } from '../stores/settingsStore.ts'
 import type { InstructTemplate, NamesBehavior, ParamDef, ParamValue } from '../params/paramDef.ts'
 import type { PromptBlock, PromptStack } from '../storage/types.ts'
@@ -25,7 +25,7 @@ export interface StImport {
   stack?: PromptStack
   /** Sampler defs for keys the library has never seen, ready for `useParamDefs.create`. */
   newDefs: ParamDef[]
-  /** From `reasoning`. A tag rule is global, so the panel asks before applying it. */
+  /** From `reasoning`. A tag rule is global: the panel asks before applying it. */
   tagRule?: TagRule
   /** What was dropped, and why. */
   notes: string[]
@@ -55,9 +55,9 @@ function templateOf(instruct: StInstruct): InstructTemplate {
   const stopSequences = [...new Set([stop, ...sequences].map((s) => s.trim()).filter(Boolean))]
   const first = text(instruct.first_output_sequence)
   const last = text(instruct.last_output_sequence)
-  // ST's names_behavior has a fourth value, 'force', which labels a turn only when the speaker
+  // ST's names_behavior has a fourth value, 'force': it labels a turn only when the speaker
   // isn't the character whose turn it is. That distinction needs per-turn card identity this
-  // function doesn't have, so it lands on 'group', the closest honest reading.
+  // function doesn't have. It lands on 'group', the closest honest reading.
   const names: NamesBehavior | undefined =
     instruct.names_behavior === 'always'
       ? 'always'
@@ -80,7 +80,7 @@ function templateOf(instruct: StInstruct): InstructTemplate {
     ...(last ? { lastModelPrefix: last } : {}),
     ...(instruct.system_same_as_user ? { systemAsUser: true } : {}),
     ...(instruct.wrap ? { wrapNewlines: true } : {}),
-    // ST's `macro` defaults on where it is absent, so only an explicit false turns it off.
+    // ST's `macro` defaults on where it is absent. Only an explicit false turns it off.
     ...(instruct.macro === false ? { expandMacros: false } : {}),
     ...(instruct.sequences_as_stop_strings ? { sequencesAsStops: true } : {}),
     ...(names ? { names } : {}),
@@ -119,9 +119,9 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
   if (preset) notes.push(...preset.notes)
 
   const template = sections.instruct ? templateOf(sections.instruct) : undefined
-  // Think markers belong to the model, so on a text connection they go on the template and the
-  // global tag rules are left alone. Without an instruct template there is nowhere to put them,
-  // and the tag rule below is the fallback.
+  // Think markers belong to the model. On a text connection they go on the template, and the
+  // global tag rules stay untouched. Without an instruct template there is nowhere to put them:
+  // the tag rule below is the fallback.
   const open = text(sections.reasoning?.prefix).trim()
   const close = text(sections.reasoning?.suffix).trim()
   if (template && open && close) {
@@ -192,7 +192,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
   }
 
   // --- reasoning --------------------------------------------------------
-  // Only when the template didn't take it. A tag rule is global, so the panel asks first.
+  // Only when the template didn't take it. A tag rule is global: the panel asks first.
   const tagRule: TagRule | undefined =
     open && close && !template?.reasoning
       ? { id: crypto.randomUUID(), open, close, mode: 'collapse', label: 'Reasoning' }

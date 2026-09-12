@@ -33,7 +33,7 @@ import {
  *
  * The reply is already written when this is called. That is the shape the merge settled on: the
  * send path streams the model's own text, the user reads it, and the pass works it over
- * afterwards. A stage that changes the text hands its output to the next stage, so a clean
+ * afterwards. A stage that changes the text hands its output to the next stage: a clean
  * followed by a rewrite rewrites the cleaned text, and a score stage judges whatever the stage
  * before it produced against whatever went into that stage.
  *
@@ -55,8 +55,8 @@ export interface RunContext extends PassContext {
 export interface PassOutcome {
   /** What to store. Equal to the input text when nothing survived. */
   text: string
-  /** The text as it was before the pipeline ran. Kept so a re-run always starts from the true
-   *  original rather than compounding rewrites, and so the bubble can show both. */
+  /** The text as it was before the pipeline ran. Kept for two reasons: a re-run always starts
+   *  from the true original rather than compounding rewrites, and the bubble can show both. */
   original: string
   /** One line naming what happened, for the bubble. Absent when nothing happened. */
   summary?: string
@@ -126,7 +126,7 @@ export async function* runPipeline(
       current = result.text
       summaries.push('rewritten')
       // A score stage right after this one judges `before` against `current`. Carried on the
-      // candidate rather than recomputed, so the pair being compared is the pair that was made.
+      // candidate rather than recomputed: the pair being compared is the pair that was made.
       sources.set(stage.id, before)
       continue
     }
@@ -137,7 +137,7 @@ export async function* runPipeline(
     if ('reason' in verdict) {
       failed = verdict.reason
       current = source
-      // The rewrite it was judging is gone, so the summary that claimed it is too.
+      // The rewrite it was judging is gone. The summary that claimed it goes too.
       const at = summaries.lastIndexOf('rewritten')
       if (at >= 0) summaries.splice(at, 1)
       continue
@@ -326,7 +326,7 @@ function judge(
  *
  * Named outright, with no fallback to the active connection: rewriting with the connection that
  * just wrote the reply is the one thing the stage must not do silently. The sentinel counts as
- * none, since it answers with a fixed line rather than model output.
+ * none: it answers with a fixed line rather than model output.
  */
 export function rewriteConnection(connectionId: string): Connection | undefined {
   if (!connectionId) return undefined

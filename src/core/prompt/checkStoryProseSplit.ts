@@ -1,7 +1,7 @@
 ﻿// Run: node --experimental-strip-types src/core/prompt/checkStoryProseSplit.ts
 //
 // The split around a Block, and the four context modes. This is the whole of the per-Block context
-// feature (buildStoryPrompt already took these two strings), so it is the thing worth covering.
+// feature: buildStoryPrompt already took these two strings, and this is the thing worth covering.
 import assert from 'node:assert'
 import { chapterProse, storyProse, storyProseSplit, type GuideChapter } from './chapterGuide.ts'
 import type { Block } from '../storage/types.ts'
@@ -27,7 +27,7 @@ const ch = (title: string, blocks: Block[]): GuideChapter => ({
 // --- a Chapter's prose is its Blocks, blank-line joined ----------------------
 {
   const c = ch('One', [block('alpha'), block(''), block('  '), block('beta')])
-  // Empty and whitespace-only Blocks contribute nothing, so an unwritten beat leaves no gap.
+  // Empty and whitespace-only Blocks contribute nothing: an unwritten beat leaves no gap.
   assert.strictEqual(chapterProse(c), 'alpha\n\nbeta')
   assert.strictEqual(chapterProse(ch('Empty', [])), '')
 }
@@ -44,12 +44,12 @@ const ch = (title: string, blocks: Block[]): GuideChapter => ({
   const split = storyProseSplit(chapters, chapters[1].id!, target.id, 'both')
   assert.strictEqual(split.text, 'first prose\n\n- Chapter 2: Two -\n\nsecond A')
   assert.strictEqual(split.trailing, 'second Z')
-  // What is being replaced is not also handed back as context to write against.
+  // The Block being replaced is excluded from both halves.
   assert.ok(!split.text.includes('the old draft'))
   assert.ok(!split.trailing.includes('the old draft'))
 
   // The trailing text stops at the end of the active Chapter: later Chapters stay out of both
-  // halves, which is the whole point of the split being Chapter-bounded.
+  // halves. The split is Chapter-bounded.
   assert.ok(!split.trailing.includes('third prose'))
   assert.ok(!split.text.includes('third prose'))
 
@@ -66,7 +66,7 @@ const ch = (title: string, blocks: Block[]): GuideChapter => ({
   assert.strictEqual(none.text, '')
   assert.strictEqual(none.trailing, '')
 
-  // The split falls on the *active* Chapter, not the last one.
+  // The split falls on the *active* Chapter.
   assert.strictEqual(storyProseSplit(chapters, chapters[0].id!, one.id, 'both').trailing, '')
 }
 
@@ -105,7 +105,7 @@ const ch = (title: string, blocks: Block[]): GuideChapter => ({
 // --- storyProse is the no-Block split, unchanged ------------------------------
 {
   const chapters = [ch('One', [block('prose')]), ch('Two', [])]
-  // A Chapter with no prose still contributes its divider, so the model sees the boundary.
+  // A Chapter with no prose still contributes its divider: the model sees the boundary.
   assert.strictEqual(storyProse(chapters, chapters[1].id!), 'prose\n\n- Chapter 2: Two -')
   assert.strictEqual(storyProse([ch('One', [])], null), '')
 }

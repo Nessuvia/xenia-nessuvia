@@ -15,7 +15,7 @@ assert.strictEqual(parseAsk('10', legal), '10')
 assert.strictEqual(parseAsk('any tens', legal), '10')
 assert.strictEqual(parseAsk('q', legal), 'Q')
 
-// A bare letter is read only when nothing spelled out matched, so the article in "got a jack"
+// A bare letter is read only when nothing spelled out matched: the article in "got a jack"
 // does not turn into an ace.
 assert.strictEqual(parseAsk('got a jack?', legal), 'J')
 assert.strictEqual(parseAsk('a', legal), 'A')

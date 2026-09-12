@@ -15,11 +15,11 @@ import type { Lorebook } from '../../core/storage/types'
 /**
  * One character, read and edited on the same page, `/chat/c/:characterId`, or `/chat/c/new`.
  *
- * The description used to be kept off the read view on the grounds that it's the model's view of
- * the character rather than the reader's. That split cost more than it bought: the card system
- * (variants, greetings, the lorebook, param overrides) had no surface anywhere, so the sheet now
- * shows the card whole. Identity, the chat actions and the chat list sit above the collapsed
- * sections, because most visits here are to resume a chat, not to edit anything.
+ * The description used to be kept off the read view: it's the model's view of the character
+ * rather than the reader's. That split cost more than it bought. The card system (variants,
+ * greetings, the lorebook, param overrides) had no surface anywhere. The sheet now shows the card
+ * whole. Identity, the chat actions and the chat list sit above the collapsed sections: most
+ * visits here are to resume a chat.
  */
 export default function CharacterSheet() {
   const { characterId } = useParams()
@@ -39,7 +39,7 @@ export default function CharacterSheet() {
     if (characters.length === 0) load()
   }, [characters.length, load])
 
-  // Only the export menu needs the books, so they load when it opens rather than on every visit.
+  // Only the export menu needs the books. They load when it opens rather than on every visit.
   useEffect(() => {
     if (menuOpen) loadBooks()
   }, [menuOpen, loadBooks])
@@ -51,9 +51,9 @@ export default function CharacterSheet() {
   // Still loading an existing character. `/chat/c/new` has no id and drops straight through.
   if (id !== null && !character) return <p className="placeholder">Loading…</p>
 
-  // A card carries one `character_book`, so a character holding several gets one export item per
-  // book rather than a choice made for them. Entries are read at export time; the menu only needs
-  // the count, which the store already has.
+  // A card carries one `character_book`. A character holding several gets one export item per
+  // book rather than a choice made for them. Entries are read at export time. The menu only
+  // needs the count: the store already has it.
   const attached = (character?.lorebookIds ?? [])
     .map((bookId) => books.find((b) => b.id === bookId))
     .filter((b) => !!b)
@@ -189,8 +189,8 @@ export default function CharacterSheet() {
         characterId={character?.id ?? null}
         onSaveState={setSaveState}
         header={identity}
-        // A new character gets an id on its first autosave; move onto its own URL so the identity
-        // block and chat list appear and Back has somewhere to return from.
+        // A new character gets an id on its first autosave. Move onto its own URL: the identity
+        // block and chat list appear, and Back has somewhere to return from.
         onCreated={(newId) => navigate(`/chat/c/${newId}`, { replace: true })}
       />
     </div>

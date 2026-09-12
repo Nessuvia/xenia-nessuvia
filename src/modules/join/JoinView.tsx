@@ -75,8 +75,8 @@ export function guestSay(text: string, responderId: number): void {
   channel.send({ v: protocolVersion, type: 'say', guestId: meId, text, responderId })
 }
 
-/** Sends a persona rewrite. The host decides whether it is allowed and when it takes effect, this
- *  side only asks. A no-op when there is no open channel. */
+/** Sends a persona rewrite. The host decides whether it is allowed and when it takes effect.
+ *  This side only asks. A no-op when there is no open channel. */
 export function guestChangePersona(persona: Omit<GuestPersona, 'guestId'>): void {
   const meId = useMultiplayer.getState().meId
   if (!channel || !meId) return
@@ -117,7 +117,7 @@ function openGuestChannel(sessionId: string, relay: RelayConfig, persona: GuestP
         channel?.send({ v: protocolVersion, type: 'hello', persona })
         useMultiplayer.getState().setPhase('waiting')
 
-        // Sessions cannot be enumerated and a used-up link is inert, so presence is the only
+        // Sessions cannot be enumerated and a used-up link is inert. Presence is the only
         // "does this session exist" check there is.
         setTimeout(() => {
           if (useMultiplayer.getState().phase !== 'waiting') return

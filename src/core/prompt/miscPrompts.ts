@@ -1,6 +1,6 @@
 // The small utility prompts: the instructions the app sends on its own behalf, as opposed to the
-// blocks a stack assembles. A prompt is a row here, not a string in the code that sends it, so
-// adding one is a row and a call site and needs no UI work.
+// blocks a stack assembles. A prompt is a row here rather than a string in the code that sends it.
+// Adding one is a row and a call site and needs no UI work.
 //
 // Extension-ful imports on purpose: the check scripts run this under
 // `node --experimental-strip-types`.
@@ -142,7 +142,7 @@ What the chapter says:
 ]
 
 /**
- * A stack's overrides, keyed by def id. Passed around rather than read off a store so every
+ * A stack's overrides, keyed by def id. Passed around rather than read off a store: every
  * function that builds prompt text stays pure and check-testable.
  *
  * Undefined is the honest default for the callers that have no stack to resolve against. Ask has
@@ -166,7 +166,7 @@ export function miscPrompt(id: string, prompts?: MiscPrompts): string {
 }
 
 /**
- * Fill `{{token}}` slots. One pass, so a value that itself contains `{{…}}` (model output, which
+ * Fill `{{token}}` slots. One pass: a value that itself contains `{{…}}` (model output, which
  * every one of these quotes) is never rescanned and never substituted again. An unknown token is
  * left as written: it is more likely a typo the user wants to see than a slot to blank out.
  */
@@ -179,10 +179,10 @@ export function fillSlots(text: string, values: Record<string, string>): string 
 
 /**
  * Overrides off an imported stack file, keeping only non-blank string values. A stack file comes
- * from wherever the user got it, so it can't just be spread onto the record: a nested object or a
+ * from wherever the user got it. It can't just be spread onto the record: a nested object or a
  * number would reach `miscPrompt` and be sent, or break the editor's textarea.
  *
- * An id this build doesn't know is kept, not dropped. A file from a later build round-trips, and
+ * An id this build doesn't know is kept. A file from a later build round-trips, and
  * `miscPrompt` already ignores an id with no def.
  */
 export function coerceMiscPrompts(raw: unknown): Record<string, string> | undefined {

@@ -19,7 +19,7 @@ export interface CensusOptions {
   windowSize: number
   /** Occurrences before a phrase counts as overused. */
   minCount: number
-  /** Cap on the exported list. It goes into a prompt, so it cannot grow without limit. */
+  /** Cap on the exported list. It goes into a prompt: it cannot grow without limit. */
   maxEntries: number
 }
 
@@ -33,7 +33,7 @@ export const defaultCensus: CensusOptions = {
 const MIN_N = 3
 const MAX_N = 6
 
-/** Function words. An n-gram made only of these is grammar, not a habit: "out of the" appearing
+/** Function words. An n-gram made only of these is grammar: "out of the" appearing
  *  twelve times says nothing about the prose. */
 const STOPWORDS = new Set([
   'a', 'an', 'and', 'as', 'at', 'be', 'been', 'but', 'by', 'for', 'from', 'had', 'has', 'have',

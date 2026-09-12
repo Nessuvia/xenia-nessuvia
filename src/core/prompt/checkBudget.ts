@@ -3,7 +3,7 @@ import assert from 'node:assert'
 import type { Message } from '../storage/types'
 import { countTokens, loadTokenizer, perMessageOverhead, trimHistory } from './budget.ts'
 
-// Real token counts, so the arithmetic here is the arithmetic the app does.
+// Real token counts: the arithmetic here is the arithmetic the app does.
 await loadTokenizer()
 
 let id = 0

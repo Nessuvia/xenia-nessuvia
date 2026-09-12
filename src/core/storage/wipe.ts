@@ -1,5 +1,5 @@
 // Wipes every origin-scoped store this app writes to, for testing a first load.
-// Deletes databases by enumeration rather than by name so nothing survives a rename.
+// Deletes databases by enumeration rather than by name. Nothing survives a rename.
 export async function wipeEverything() {
   const dbs = await indexedDB.databases()
   await Promise.all(

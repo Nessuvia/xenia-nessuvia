@@ -19,8 +19,8 @@ import { maxTokensOf } from '../params/connectionParams'
  */
 export type AskTurn = Message
 
-// Ids only have to be unique within the one saved transcript, so a counter seeded past whatever
-// was reloaded is enough, no store to hand them out.
+// Ids only have to be unique within the one saved transcript. A counter seeded past whatever
+// was reloaded is enough. No store to hand them out.
 let nextId = 1
 const withId = (turn: Omit<Message, 'id'>): Message => ({ ...turn, id: nextId++ })
 
@@ -34,7 +34,7 @@ interface AskState {
   streamingText: string
   /** Reasoning as it arrives. Only reset when a stream starts; nothing renders it while idle. */
   streamingReasoning: string
-  /** The turn being re-rolled, so the stream renders in place instead of at the bottom. */
+  /** The turn being re-rolled: the stream renders in place instead of at the bottom. */
   regeneratingId: number | null
   error: string
   send(text: string): Promise<void>
@@ -45,7 +45,7 @@ interface AskState {
   /** Drop alternates by index. Dropping the last one drops the turn. */
   deleteSwipes(messageId: number, indices: number[]): void
   editMessage(id: number, content: string): void
-  /** Drop one turn. The rest keep their order, so the next send carries the edited transcript. */
+  /** Drop one turn. The rest keep their order: the next send carries the edited transcript. */
   deleteMessage(id: number): void
   stop(): void
   newChat(): void
@@ -59,7 +59,7 @@ export function askCharacter() {
 }
 
 function askTokens() {
-  // `{{user}}` maps to itself: Ask has no persona, so leave the token in the text rather than
+  // `{{user}}` maps to itself: Ask has no persona. Leave the token in the text rather than
   // blanking it. With no character picked there's nothing to resolve against and every token
   // stays literal.
   const character = askCharacter()
@@ -74,7 +74,7 @@ function askSwap(text: string): string {
 
 /**
  * The whole request. Built here rather than through the prompt stack system: Ask has no cards, no
- * persona and no lore, so the prompt is the system box, the transcript and the suffix.
+ * persona and no lore. The prompt is the system box, the transcript and the suffix.
  *
  * `history` is what the model sees as the conversation, the full transcript on a send, everything
  * before the target on a re-roll. `appendSystem` carries the rewrite instruction.
@@ -92,7 +92,7 @@ function buildAskMessages(history: AskTurn[], appendSystem?: string): ChatMessag
     const framing = swap(prompt)
     // The card travels with the framing, the prompt asks the model to weigh what kind of
     // character this is, which it can only do from the card. A prompt that places
-    // {{charDescription}} itself has already said where the card goes, so it isn't appended
+    // {{charDescription}} itself has already said where the card goes. It isn't appended
     // a second time.
     const card = /\{\{charDescription\}\}/i.test(prompt)
       ? ''

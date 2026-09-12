@@ -98,9 +98,8 @@
 }
 
 /* Four knobs to a row, each cell one horizontal line: label, slider, typed value. The knobs take a
-   line of their own under the dropdown, because sharing the Structure line left each cell too
-   narrow to lay out sideways. The fixed column count keeps cells the same width when a skin has
-   fewer. */
+   line of their own under the dropdown: sharing the Structure line left each cell too narrow to lay
+   out sideways. The fixed column count keeps cells the same width when a skin has fewer. */
 .skinKnobs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -44,12 +44,12 @@ export function defaultStack(name = 'Default'): PromptStack {
  * covers two kinds of turn: the Narrator is told to write as a third party and gets the whole cast,
  * while a character is told to write as itself and gets only its own description.
  *
- * This stack is the *only* source of the Narrator's instructions, the Narrator is a speaker with a
- * name and no card, so anything not written here is not sent. Editing this text is how the Narrator
+ * This stack is the *only* source of the Narrator's instructions. The Narrator is a speaker with a
+ * name and no card: anything not written here is not sent. Editing this text is how the Narrator
  * is changed.
  *
  * The Narrator branch uses the slot tokens rather than the bound `characterDescription`, which only
- * ever holds the speaker. A slot with no character resolves to '' on both tokens, so the empty
+ * ever holds the speaker. A slot with no character resolves to '' on both tokens: the empty
  * slots contribute nothing but a blank line. `{{personas}}` is the people in the room, which no
  * character token covers.
  */
@@ -95,8 +95,8 @@ export function defaultMultiplayerStack(name = 'Multiplayer'): PromptStack {
  * The stack a game runs on. Kind stays 'chat': a game turn is a user message and an assistant
  * reply like any other, so nothing needs a new stack kind.
  *
- * The sentence cap is load-bearing. A game is 20 to 40 calls and the board has to keep moving, so
- * the shipped default makes the character terse. Anyone who wants monologues edits the stack.
+ * The sentence cap is load-bearing. A game is 20 to 40 calls and the board has to keep moving: the
+ * shipped default makes the character terse. Anyone who wants monologues edits the stack.
  */
 export function defaultGameStack(name = 'Game'): PromptStack {
   return {
@@ -233,7 +233,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
     }
     const rows = (await storage.getAll('promptStacks')) as unknown as PromptStack[]
     // Rows written while the Inactive pool existed still carry one. Its blocks come back as
-    // disabled active blocks so nothing parked there disappears. Drop this once such rows are gone.
+    // disabled active blocks: nothing parked there disappears. Drop this once such rows are gone.
     set({ stacks: rows.map(foldInactive) })
   },
 

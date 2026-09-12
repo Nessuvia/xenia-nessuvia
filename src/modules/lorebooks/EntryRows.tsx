@@ -28,7 +28,7 @@ const splitKeys = (value: string) =>
 
 /**
  * The entry list of one book. Rows save on blur rather than on a debounce: a row has a dozen fields
- * and an entry's content runs to hundreds of words, so writing per keystroke buys nothing here.
+ * and an entry's content runs to hundreds of words. Writing per keystroke buys nothing here.
  *
  * The second line of controls (secondary keys, logic, position, order, depth) only appears with the
  * text, because a book of sixty entries is read as a list of names and keys first.
@@ -52,7 +52,7 @@ export default function EntryRows({
   const [openId, setOpenId] = useState<number | null>(null)
   const drag = useDragReorder(onReorder)
   const narrow = useMediaQuery('(max-width: 700px)')
-  // Blur commits the text, so Escape has to say it meant the other thing.
+  // Blur commits the text. Escape has to say it meant the other thing.
   const cancelled = useRef(false)
 
   const commit = (entry: WorldInfoEntry, patch: Partial<WorldInfoEntry>) =>
@@ -207,7 +207,7 @@ export default function EntryRows({
                 defaultValue={entry.content}
                 className="lorebooksEntryText"
                 onBlur={(e) => {
-                  // Focus moving to the selects above is still inside the entry, so the row only
+                  // Focus moving to the selects above is still inside the entry. The row only
                   // closes once focus leaves it altogether.
                   const leaving = !e.currentTarget
                     .closest('li')
@@ -225,7 +225,7 @@ export default function EntryRows({
                     return
                   }
                   // Enter saves and closes the row, shift-Enter is a newline. On a phone Enter is
-                  // the only newline key there is, so the Close button does the closing instead.
+                  // the only newline key there is. The Close button does the closing there.
                   if (e.key !== 'Enter' || e.shiftKey || narrow) return
                   e.preventDefault()
                   commit(entry, { content: e.currentTarget.value })

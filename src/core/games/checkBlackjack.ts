@@ -9,7 +9,7 @@ import {
 } from './blackjack.ts'
 
 /** The table playing itself out to the end of the round in hand: what the store's driver loop does,
- *  stopped at the settle so the next deal does not overwrite what is being asserted. */
+ *  stopped at the settle. The next deal must not overwrite what is being asserted. */
 function runOut(start: BlackjackState): { events: BlackjackEvent[]; state: BlackjackState } {
   const events: BlackjackEvent[] = []
   let current = start
@@ -118,7 +118,7 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
   const run = runOut(busted)
   assert.strictEqual(run.state.outcome, 'char')
   assert.strictEqual(run.state.score.char, 1)
-  // A busted player does not make the dealer draw: there is nothing left to beat.
+  // A busted player does not make the dealer draw: nothing left to beat.
   assert.strictEqual(run.state.hands.char.length, 2)
   assert.ok(run.events.some((e) => e.kind === 'reveal'))
 }
@@ -134,7 +134,7 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
 
 // --- twenty-one needs no decision -----------------------------------------
 // This is the table that used to wedge: hitting to 21 left the turn with a player who had no legal
-// action, and nothing else could move.
+// action. Nothing else could move.
 {
   const board = state({ hands: { player: hand('5S 6H'), char: hand('9D 7C') }, deck: hand('QH 5S 8D 2C 3D 4S 6D 7H 8S 9C JS QD KC AH 2D 3S') })
   const events = resolveAction(board, 'hit')
@@ -152,7 +152,7 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
   const batch = nextEvents(settled)
   assert.ok(batch?.some((e) => e.kind === 'deal'), 'a table waiting on nobody deals the next round')
   // A natural settles inside the deal, and the driver picks it straight back up: this is the hand
-  // that used to sit there forever, because only a player action ever opened a round.
+  // that used to sit there forever. Only a player action ever opened a round.
   const after = batch!.reduce(reduce, settled)
   assert.ok(isBlackjack(after.hands.player), 'the fixture did not deal a natural')
   assert.strictEqual(after.turn, null)
@@ -175,7 +175,7 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
   assert.ok(handValue(after.hands.char).total >= dealerStands, 'the dealer stopped short of 17')
   assert.ok(!isBust(after.hands.char))
   assert.ok(events.some((e) => e.kind === 'stand' && e.by === 'char'))
-  // Player stood on 18; the dealer drew 14 → 16 → 19 and took it.
+  // Player stood on 18; the dealer drew 14, 16, 19 and took it.
   assert.strictEqual(handValue(after.hands.char).total, 19)
   assert.strictEqual(after.outcome, 'char')
 }
@@ -258,8 +258,8 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
 
 // --- the state block says the reading, not just the total ----------------
 {
-  // A bust is a word in the block. Left as `(24)` the model had to compare it to 21 itself, and
-  // the round it got wrong was the one where it told the player they had gone bust.
+  // A bust is a word in the block. Left as `(24)` the model had to compare it to 21 itself.
+  // The round it got wrong was the one where it told the player they had gone bust.
   const busted = buildStateBlock(state({ hands: { player: hand('KS 9H 5D'), char: hand('7S 8H') }, turn: 'char' }))
   assert.ok(busted.includes('Their hand: K, 9, 5 (24, bust)'), busted)
   assert.ok(!busted.includes('Your hand: 7, 8 (15, bust)'), busted)

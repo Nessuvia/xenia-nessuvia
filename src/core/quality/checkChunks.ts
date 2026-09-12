@@ -24,7 +24,7 @@ assert.ok(pieces.length > 1, 'a 1800-char paragraph should split')
 assert.ok(pieces.every((p) => p.text.length <= 900), 'no piece should be wildly over the cap')
 assert.equal(pieces.map((p) => p.text).join(' '), long)
 
-// No terminal punctuation means nothing to split on, so it stays whole rather than being cut mid-word.
+// No terminal punctuation means nothing to split on: it stays whole rather than being cut mid-word.
 const unpunctuated = 'word '.repeat(200).trim()
 assert.equal(splitChunks(unpunctuated).length, 1)
 

@@ -21,7 +21,7 @@ export function rewritePrompt(
 
 /**
  * What `/continue` sends. The partial reply rides along as a trailing assistant turn for the model
- * to carry on from, so this only has to say not to restart it. Endpoints that ignore the prefill
+ * to carry on from: this only has to say not to restart it. Endpoints that ignore the prefill
  * are the reason it says so at all.
  */
 export function continuePrompt(prompts?: MiscPrompts): string {
@@ -36,7 +36,7 @@ function speaker(message: Message, characterName: string): string {
 
 /**
  * The default instruction for re-rolling a message that isn't the last one. Regenerating an old
- * message sends only the history *before* it, so without this the model writes as if the
+ * message sends only the history *before* it. Without this the model writes as if the
  * conversation ended there. Quoting what follows is the whole point: it costs tokens and the
  * budget counts them like anything else.
  *

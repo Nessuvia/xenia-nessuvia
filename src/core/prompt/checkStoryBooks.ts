@@ -81,7 +81,7 @@ const cast = [character(10, 'Mark', [2]), character(11, 'Dom', [4])]
   assert.deepStrictEqual(rows.filter((r) => r.book.id === 2).map((r) => r.from), ['Mark'])
 }
 
-// An id with no book behind it (deleted out from under the Story) is skipped, not rendered blank.
+// An id with no book behind it (deleted out from under the Story) is skipped.
 {
   const rows = storyBooks(story({ lorebookIds: [3, 404] }), cast, books)
   assert.deepStrictEqual(rows.map((r) => r.book.id), [1, 3])

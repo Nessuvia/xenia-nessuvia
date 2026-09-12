@@ -164,10 +164,10 @@ function BulkAddBeats({
 }) {
   const [text, setText] = useState('')
   // A length the parse did not recognise is answered here rather than guessed at. Keyed by the raw
-  // value, so two beats that both say "epic" are one row.
+  // value. Two beats that both say "epic" are one row.
   const [mapping, setMapping] = useState<Record<string, BeatWeight>>({})
   const { beats, unknown, error } = parseBulkBeats(text)
-  // An empty box is not a mistake the Author has made yet, so it says nothing.
+  // An empty box is not a mistake the Author has made yet. It says nothing.
   const shown = text.trim() ? error : ''
   const resolved = mapWeights(beats, mapping)
   const unanswered = unknown.filter((u) => !mapping[u])
@@ -253,7 +253,7 @@ function BulkAddBeats({
 }
 
 // A field that holds its own draft and writes on a pause, like Cap: `updateChapter` awaits the
-// Dexie write before it sets state, so a controlled value fed straight from the store lands a render
+// Dexie write before it sets state. A controlled value fed straight from the store lands a render
 // late and React puts the caret back at the end of the line. Every field on this tab that writes to
 // a Chapter needs it, not only the beats.
 function DraftText({
@@ -323,14 +323,14 @@ function BeatText({ value, onSave }: { value: string; onSave: (text: string) => 
       rows={1}
       className="plotBeatText"
       placeholder="What happens in this beat"
-      title="What is meant to happen in this beat. Sent instead of its prose when the prose no longer fits."
+      title="What is meant to happen in this beat. Sent in place of its prose when the prose no longer fits."
     />
   )
 }
 
 // One block on the chain: what the Chapter is planned to do, at a glance. Select-only, clicking it
 // opens it in the editor and nothing else. Beats are truncated to a row each; the summary is a
-// recap and would crowd out the plan, so it stays in the editor.
+// recap and would crowd out the plan. It stays in the editor.
 function PlotBlock({
   chapter,
   index,
@@ -408,7 +408,7 @@ function ChapterEditor({
   const [generateOpen, setGenerateOpen] = useState(false)
   const [rewriteOpen, setRewriteOpen] = useState(false)
 
-  // Both chapter-wide actions read the prose, so neither is offered on a Chapter that has none.
+  // Both chapter-wide actions read the prose. Neither is offered on a Chapter that has none.
   const prose = chapter.blocks.some((b) => b.content.trim())
 
   function onSummarize() {
@@ -636,7 +636,7 @@ function ChapterEditor({
                 type="button"
                 title="Remove this beat and the prose in it"
                 onClick={() => {
-                  // The beat owns its prose now, so removing it removes writing. Ask when there is any.
+                  // The beat owns its prose now. Removing it removes writing. Ask when there is any.
                   if (beat.content.trim() && !confirm('Delete this beat and the prose in it?')) return
                   setBeats(beats.filter((b) => b.id !== beat.id))
                 }}
@@ -784,7 +784,7 @@ export default function PlotLayout({
       el.removeEventListener('touchcancel', end)
       ro.disconnect()
     }
-    // On a phone the chain is a vertical stack, so the horizontal scroller isn't in play.
+    // On a phone the chain is a vertical stack. The horizontal scroller isn't in play.
   }, [phone, chapters.length])
 
   if (!story) return null

@@ -6,12 +6,9 @@ import { useCloseOnOutside } from './useCloseOnOutside'
 import './BackupButtons.css'
 
 /**
- * Import and Export, in the sidebar and again on the Online Sync page. Hoisted rather than copied:
- * Import clears every table, and two versions of that drifting apart is the kind of bug that loses
- * someone's library.
- *
- * `className` is the caller's, because the two hosts style their buttons differently, the rail's
- * `.sidebar-item` and the sync page's own. Nothing else about them differs.
+ * Import and export buttons, used in the sidebar and on the online sync page.
+ * Import clears every table in the database.
+ * `className` is passed by the caller: the sidebar and the sync page style the buttons differently.
  */
 export default function BackupButtons({ className }: { className: string }) {
   const exportKeys = useSettings((s) => s.exportKeys)
@@ -51,7 +48,7 @@ export default function BackupButtons({ className }: { className: string }) {
           type="button"
           className={className}
           onClick={async () => {
-            // Without keys in the file there is one sensible export, so skip the menu.
+            // Without keys in the file there is one sensible export. Skip the menu.
             if (!exportKeys) return downloadBackup(await buildBackup())
             setChoosing((v) => !v)
           }}

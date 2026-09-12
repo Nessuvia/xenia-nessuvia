@@ -57,8 +57,8 @@ export default function ParamInput({
           min={def.min ?? 0}
           max={def.max ?? 1}
           step={def.step ?? 0.01}
-          // A range input has no empty state, so the override editor's "inherit" shows as the
-          // inherited value until the user moves it, the number box next to it is the real control.
+          // A range input has no empty state. The override editor's "inherit" shows as the
+          // inherited value until the user moves it. The number box next to it is the real control.
           value={text === '' ? (placeholder ?? '0') : text}
           onChange={(e) => onChange(Number(e.target.value))}
         />
@@ -86,8 +86,8 @@ export default function ParamInput({
     )
   }
 
-  // Not `text`: a list is shown escaped, so a newline entry is visible as `\n` in a one-line input
-  // instead of vanishing into it.
+  // Not `text`: a list is shown escaped. A newline entry stays visible as `\n` in a one-line
+  // input rather than disappearing into it.
   if (def.kind === 'stringList') {
     const list = Array.isArray(value) ? value.map(String) : parseList(String(value ?? ''))
     return (
@@ -117,7 +117,7 @@ export default function ParamInput({
 
 /**
  * Comma-separated text over a string array. The raw text is held here rather than round-tripped
- * through the array: splitting on every keystroke eats the separator, so a second item can't
+ * through the array: splitting on every keystroke eats the separator, and a second item can't
  * be typed. Re-seeds from the value only when the value changed underneath it.
  */
 function ListInput({

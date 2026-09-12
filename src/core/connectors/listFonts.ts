@@ -1,6 +1,6 @@
 /**
  * Fontsource catalog fetch + client-side search. The Fontsource list endpoint is exact-match only
- * on `?family=`, which is no good for a typeahead, so the whole catalog is fetched once per session
+ * on `?family=`, not usable for a typeahead. The whole catalog is fetched once per session
  * and filtered here. Only `family`, `id`, and `category` are kept: the picker is family-only this
  * phase; weights and subsets are dropped.
  */
@@ -43,7 +43,7 @@ export async function listFonts(): Promise<FontsourceFont[]> {
 
 /**
  * Case-insensitive substring filter on the family name, then a slice for the page. Kept separate
- * from `listFonts` so it is trivial to exercise without a network. Empty query returns the whole
+ * from `listFonts`: trivial to exercise without a network. Empty query returns the whole
  * catalog's first page, the same as typing nothing into the search box.
  */
 export function searchFonts(

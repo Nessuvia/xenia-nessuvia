@@ -1,8 +1,8 @@
 // Two sounds, synthesised rather than shipped: no audio files in the build, no new dependency, and
 // nothing to load before the first card moves.
 //
-// The context is created on the first play, not at import, because a browser refuses to start one
-// before a user gesture and a suspended context left over from page load never recovers on its own.
+// The context is created on the first play. A browser refuses to start one before a user gesture,
+// and a suspended context left over from page load never recovers on its own.
 
 let context: AudioContext | null = null
 

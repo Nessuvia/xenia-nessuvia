@@ -8,9 +8,9 @@ import { usePalette } from '../stores/palettesStore'
  *
  * Mounted once, in App, alongside `useApplyPalette`. `useApplyPalette` writes `--chatFont` and
  * `--appFont` from `effectiveFont`/`effectiveAppFont`; this hook only owns the `<link>`s that
- * deliver the families. The two are separate because a font stays loaded across a palette swap to
- * another palette using the same family, and because `paletteVars` is a pure var emitter that
- * should not touch the DOM.
+ * deliver the families. The two are separate: a font stays loaded across a palette swap to
+ * another palette using the same family, and `paletteVars` is a pure var emitter. It should not
+ * touch the DOM.
  */
 export function useApplyWebfont() {
   const palette = usePalette()
@@ -38,7 +38,7 @@ function loadWebfont(linkId: string, on: boolean, fontId: string, clearVar: stri
     link.id = linkId
     link.rel = 'stylesheet'
     // `display=swap` is not a Fontsource CSS param; the @font-face rules already set
-    // font-display: swap, so a missing font falls back immediately while it loads.
+    // font-display: swap. A missing font falls back immediately while it loads.
     document.head.append(link)
   }
   const href = `https://cdn.jsdelivr.net/fontsource/css/${fontId}@latest/index.css`

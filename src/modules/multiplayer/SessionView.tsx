@@ -57,8 +57,8 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
   const shared = useMultiplayer((s) => s.appearance)
   const palette = usePalette()
   // Host-side reads. The first two mark who is speaking in the left panel; the last two are read
-  // only to subscribe, the host's messages live in chatStore, and without them the shell would not
-  // re-render on a new message, so the effect below would stop following the bottom.
+  // only to subscribe. The host's messages live in chatStore. Without them the shell would not
+  // re-render on a new message, and the effect below would stop following the bottom.
   const streaming = useChats((s) => s.streaming)
   const speakingId = useChats((s) => s.speakingId)
   const messageCount = useChats((s) => s.messages.length)
@@ -69,7 +69,7 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
   const [rightShut, setRightShut] = useState(false)
   // A phone gets the message column and nothing else; the two side panels become drawers on their
   // own edges, opened by the buttons at the top right. One at a time, either one covers the
-  // screen, so both open would only mean one of them is buried.
+  // screen. Both open would only mean one of them is buried.
   //
   // Neither opens on a swipe: the navbar already owns the left-to-right swipe, and a room with two
   // panels has no way to say which one a swipe from the right meant. A swipe closes whichever is
@@ -100,8 +100,8 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
     if (el && stuck.current) el.scrollTop = el.scrollHeight
   })
 
-  // Guests render the host's look so everyone sees one scene. Before the first `state` lands there
-  // is nothing to render from, so the local palette stands in.
+  // Guests render the host's look: everyone sees one scene. Before the first `state` lands there
+  // is nothing to render from, and the local palette stands in.
   const look: RoomLook =
     !isHost && shared
       ? shared
@@ -117,7 +117,7 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
           colorOrder: palette.colorOrder,
         }
 
-  // A guest arrived through the link, so its own URL is the invite. The host asks the session.
+  // A guest arrived through the link: its own URL is the invite. The host asks the session.
   const roomLink = () => (isHost ? activeSession()?.link : window.location.href)
 
   return (
@@ -428,8 +428,8 @@ function GuestMessages({ look }: { look: RoomLook }): JSX.Element {
   const streaming = useMultiplayer((s) => s.streaming)
   const appearance = useAppearance()
 
-  /** The roster character behind a stream/history name, for its avatar. Untrusted, so this is the
-   *  only path an avatar can reach the page through, never a raw string treated as a src. */
+  /** The roster character behind a stream/history name, for its avatar. Untrusted: this is the
+   *  only path an avatar can reach the page through. Never a raw string treated as a src. */
   const speakerAvatar = (name: string | undefined) => {
     const found = characters.find((c) => c.name === name)
     return found?.avatar ? { avatar: found.avatar } : null
@@ -515,8 +515,8 @@ function GuestBar(): JSX.Element {
       <Composer
         streaming={false}
         disabledReason={myTurn ? '' : `It is ${holder?.name ?? 'someone else'}'s turn.`}
-        // Completed from the roster the host sent; the command itself is read on the host, so
-        // this side only has to offer the names.
+        // Completed from the roster the host sent; the command itself is read on the host.
+        // This side only has to offer the names.
         commandTargets={characters}
         onSend={(text) => guestSay(text, responderId)}
         onStop={() => {}}

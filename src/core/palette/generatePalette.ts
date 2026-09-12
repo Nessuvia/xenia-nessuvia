@@ -38,7 +38,7 @@ export interface PaletteError extends Error {
  *
  * Structured output is not configured, it is discovered: the request asks for a JSON schema, and
  * an endpoint that refuses gets asked again one rung lower. `connection.structuredOutput` is where
- * the answer is remembered, so the walk down happens once per connection rather than once per ask.
+ * the answer is remembered. The walk down happens once per connection rather than once per ask.
  */
 export async function generatePalette(
   prompt: string,
@@ -49,7 +49,7 @@ export async function generatePalette(
 ): Promise<GeneratedPalette> {
   const messages = buildPaletteMessages(prompt, ask, palette)
   // A full palette object runs past the 512-token default, and a truncated object parses as
-  // nothing at all, so this one request gets its own floor rather than the connection's limit.
+  // nothing at all. This one request gets its own floor rather than the connection's limit.
   const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), 1500))
   const rungs = modeLadder(connection.structuredOutput)
   let lastError: PaletteError | undefined

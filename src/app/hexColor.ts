@@ -4,7 +4,7 @@
 
 /**
  * What the field shows while typing: one leading `#`, hex digits only, uppercase, cut at the
- * longest form the field accepts. Everything else the user types is dropped as it is typed, so a
+ * longest form the field accepts. Everything else the user types is dropped as it is typed. A
  * half-finished value stays in the field instead of being rejected on the way in.
  */
 export function sanitizeHexText(raw: string, allowAlpha = false): string {
@@ -24,7 +24,7 @@ const expand = (digits: string) => digits.split('').map((c) => c + c).join('')
  * yet: the caller leaves the value alone and lets the typing continue.
  *
  * Shorthand expands (`#ABC` → `#AABBCC`). Eight digits pasted into a field without alpha lose the
- * alpha pair, since the field has nowhere to keep it.
+ * alpha pair: the field has nowhere to keep it.
  */
 export function normalizeHex(raw: string, allowAlpha = false): string | null {
   const digits = sanitizeHexText(raw, allowAlpha).slice(1)

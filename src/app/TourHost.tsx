@@ -6,7 +6,7 @@ import Tour, { handSrc } from './Tour'
 import './tour.css'
 
 // Non-portable preference: whether this browser has been offered a tour. Straight to localStorage,
-// no store and no Dexie table, so it stays out of a backup by construction.
+// no store and no Dexie table. It stays out of a backup by construction.
 const seenKey = 'nessuTavern.tourSeen'
 
 export default function TourHost() {

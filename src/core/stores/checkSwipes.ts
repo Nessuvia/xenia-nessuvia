@@ -32,7 +32,7 @@ function mirrors(m: Message) {
   assert.strictEqual(first.content, 'second')
   mirrors(first)
 
-  // …and appends from there, always pointing at the newest.
+  // Appends from there, always pointing at the newest.
   const third = regenerated(first, 'third')!
   assert.deepStrictEqual(third.swipes, ['original', 'second', 'third'])
   assert.strictEqual(third.swipeIndex, 2)
@@ -84,7 +84,7 @@ function mirrors(m: Message) {
   assert.strictEqual(partial.content, 'half a sen')
 }
 
-// --- swiping message N leaves N+1… byte-identical -------------------------
+// --- swiping message N leaves N+1 onward byte-identical --------------------
 {
   const list = [reply(1, 'one'), reply(2, 'two'), reply(3, 'three')]
   const snapshot = JSON.stringify(list.slice(1))
@@ -207,7 +207,7 @@ function mirrors(m: Message) {
   m = regenerated(m, 'three', undefined, undefined, 'less dialogue')!
   m = regenerated(m, 'four', undefined, undefined, '  she should refuse  ')!
   assert.strictEqual(m.instructions!.length, m.swipes!.length)
-  // Swipe 0 and 1 predate any instruction, so they are holes rather than a shifted array.
+  // Swipe 0 and 1 predate any instruction: they are holes rather than a shifted array.
   assert.deepStrictEqual(m.instructions, [undefined, undefined, 'less dialogue', 'she should refuse'])
   assert.deepStrictEqual(instructionChain(m), ['less dialogue', 'she should refuse'])
 
@@ -227,7 +227,7 @@ function mirrors(m: Message) {
   assert.strictEqual(blank.instructions![4], undefined)
   assert.deepStrictEqual(instructionChain(blank), ['less dialogue', 'she should refuse'])
 
-  // Continuing writes in place, so it must not disturb the instructions either.
+  // Continuing writes in place. It must not disturb the instructions either.
   const on = continued(selectSwipe(m, 2), 'three and more')!
   assert.deepStrictEqual(on.instructions, m.instructions)
   assert.deepStrictEqual(instructionChain(on), ['less dialogue'])
@@ -256,7 +256,7 @@ function mirrors(m: Message) {
   assert.strictEqual(passOriginalFor(mixed), undefined)
   assert.strictEqual(passOriginalFor(selectSwipe(mixed, 1)), 'two')
 
-  // Deleting a swipe takes its original with it, so the arrays stay aligned.
+  // Deleting a swipe takes its original with it. The arrays stay aligned.
   const pruned = deletedSwipes(mixed, [0])!
   assert.deepStrictEqual(pruned.swipes, ['two, tightened', 'three'])
   assert.strictEqual(passOriginalFor(selectSwipe(pruned, 0)), 'two')

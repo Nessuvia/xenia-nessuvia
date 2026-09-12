@@ -3,7 +3,7 @@ import type { BlockInput } from '../../core/storage/types'
 
 /**
  * The two-ended slider a scroll block is edited with, one thumb per end, dragged separately.
- * Native `<input type="range">` only carries one value, so the track and thumbs are drawn here and
+ * Native `<input type="range">` only carries one value. The track and thumbs are drawn here and
  * driven by pointer events.
  */
 export default function RangeSlider({
@@ -46,7 +46,7 @@ export default function RangeSlider({
     return Math.min(input.max, Math.max(input.min, snapped))
   }
 
-  /** Dragging past the other thumb stops at it, so the low end stays the low end. */
+  /** Dragging past the other thumb stops at it. The low end stays the low end. */
   function drag(end: 'value' | 'value2', e: React.PointerEvent) {
     e.preventDefault()
     const move = (ev: PointerEvent) => {
@@ -68,7 +68,7 @@ export default function RangeSlider({
 
   const at = (end: 'value' | 'value2') => (end === 'value' ? input.value : value2)
 
-  /** Keyboard: arrows nudge by a step, so the control isn't pointer-only. */
+  /** Keyboard: arrows nudge by a step. The control isn't pointer-only. */
   const nudge = (end: 'value' | 'value2', e: React.KeyboardEvent) => {
     const dir = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0
     if (!dir) return

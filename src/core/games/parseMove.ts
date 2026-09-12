@@ -28,11 +28,10 @@ const letters: [string, Rank][] = [['a', 'A'], ['j', 'J'], ['q', 'Q'], ['k', 'K'
 
 /**
  * Read an ask out of free text. `legal` is the ranks the player holds: a rank outside it reads as
- * no move at all, since asking for what you do not hold is not a legal move rather than a
- * different one.
+ * no move at all. Asking for what you do not hold is not a legal move rather than a different one.
  */
 export function parseAsk(text: string, legal: Rank[]): Rank | null {
-  // Tokenise on anything that is not a letter or digit, so "any 3s?" and "3's" both split cleanly.
+  // Tokenise on anything that is not a letter or digit: "any 3s?" and "3's" both split cleanly.
   const tokens = text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
   const found = collect(tokens, words)
   // Two ranks in one line is ambiguous, not a move. "any threes or fours" gets a toast.

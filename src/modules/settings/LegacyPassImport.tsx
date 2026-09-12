@@ -5,7 +5,7 @@ import './settings.css'
 /**
  * The 0.0.42 importer, in Misc next to the other import and export controls.
  *
- * The card is only rendered when there is something to convert, so an install that never held the
+ * The card is only rendered when there is something to convert. An install that never held the
  * old settings never sees it, and neither does one that has already run it.
  */
 export default function LegacyPassImport() {

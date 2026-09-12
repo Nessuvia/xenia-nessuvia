@@ -12,9 +12,9 @@ import { useDiffOrigin } from './useDiffOrigin'
  * The Blackjack table. Same column as Go Fish, and the same shared `cardTable*` chrome: the
  * character deals from the top, you play at the bottom, and the shoe sits between you.
  *
- * Hit and Stand are buttons as well as words. Blackjack has exactly two moves and making someone
- * type them every round would be a worse game, but the box stays because the character is the
- * point and talking to them is half of it.
+ * Hit and Stand are buttons as well as words. Blackjack has exactly two moves. Making someone
+ * type them every round would be a worse game. The box stays: the character is the point, and
+ * talking to them is half of it.
  */
 export default function BlackjackBoard({
   state,
@@ -53,11 +53,11 @@ export default function BlackjackBoard({
   const [text, setText] = useState('')
   const actions = legalActions(state)
   const canAct = !readOnly && !streaming && !awaitingNext && actions.length > 0
-  // With chat back on the box stays live between rounds: what you type there is speech, not a move.
+  // With chat back on the box stays live between rounds: what you type there counts as speech.
   const locked = readOnly || streaming || awaitingNext || (!canAct && !chatBack)
 
   const table = useRef<HTMLDivElement>(null)
-  // Every card on this table comes off the shoe, so the origin never has to be worked out.
+  // Every card on this table comes off the shoe. The origin never has to be worked out.
   const origin = useDiffOrigin(state, (previous, next) => (previous.deck.length > next.deck.length ? 'deck' : null))
   useCardMotion(table, origin, state, !readOnly)
 
@@ -100,7 +100,7 @@ export default function BlackjackBoard({
             style={{ '--handCount': state.hands.char.length } as CSSProperties}
           >
             {state.hands.char.map((card, i) =>
-              // The hole card is face down until the dealer plays, so its rank is not in the DOM.
+              // The hole card is face down until the dealer plays. Its rank stays out of the DOM.
               // Its motion id stays 'charHole' either way: identity is not the face, and changing
               // it on the reveal made the card look like a new one landing rather than one turning
               // over.
@@ -147,7 +147,7 @@ export default function BlackjackBoard({
           </div>
         </div>
 
-        {/* Always rendered, empty between turns: the row holds its height so the input and your
+        {/* Always rendered, empty between turns: the row holds its height. The input and your
             avatar underneath do not jump every time it becomes your move. */}
         <div className="blackjackActions">
           {canAct && (

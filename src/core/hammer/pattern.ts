@@ -32,8 +32,8 @@ export class PatternError extends Error {}
 export function compilePattern(dsl: string, caseSensitive = false): CompiledPattern {
   const matchers: TokenMatcher[] = []
   // Split on whitespace but keep bracket groups intact: they contain no spaces by construction.
-  // Source punctuation is dropped at tokenization, so edge punctuation in a pattern token can never
-  // match anything, so strip it. This makes seed rules like `not just [noun], but [noun]` work (the
+  // Source punctuation is dropped at tokenization. Edge punctuation in a pattern token can never
+  // match anything: strip it. This makes seed rules like `not just [noun], but [noun]` work (the
   // comma after `]` would otherwise read as a bad quantifier) and drops standalone punctuation tokens.
   const parts = dsl
     .trim()

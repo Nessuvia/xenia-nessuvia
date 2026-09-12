@@ -66,7 +66,7 @@ export function proseHtml(text: string): string {
       .map((p) => {
         if ('text' in p) return escapeHtml(p.text)
         const [open, close] = tagOf[p.kind]
-        // Backtick contents are literal, so they never recurse; parseProse already saw to that.
+        // Backtick contents are literal. They never recurse; parseProse already saw to that.
         return `${open}${render(p.children)}${close}`
       })
       .join('')

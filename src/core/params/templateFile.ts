@@ -12,9 +12,9 @@ export interface TemplateFile {
 }
 
 /**
- * A template as a shareable file. The endpoint and the API key are not in the shape at all, so
- * there is no path by which a shared template carries a secret; a template is a fact about a model
- * and the connection is the account.
+ * A template as a shareable file. The endpoint and the API key are not in the shape at all: no
+ * path exists by which a shared template carries a secret. A template is a fact about a model,
+ * the connection is the account.
  */
 export function templateToJson(name: string, template: InstructTemplate): string {
   const file: TemplateFile = { kind: 'xeniaInstructTemplate', version: 1, name, template }
@@ -31,7 +31,7 @@ const str = (value: unknown, fallback = ''): string =>
  * Read a template file. Throws with a message meant for the user.
  *
  * Every field is read by name off an untrusted file: a template arrives by email like a character
- * card does. Missing sequences fall back to ChatML's rather than to undefined, so a half-written
+ * card does. Missing sequences fall back to ChatML's rather than to undefined. A half-written
  * file still sends something instead of producing a prompt with `undefined` in it.
  */
 export function templateFromJson(source: string): { name: string; template: InstructTemplate } {

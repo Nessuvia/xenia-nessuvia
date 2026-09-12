@@ -1,13 +1,10 @@
 import type { MarkerKind } from '../../core/stores/settingsStore'
 import { appFontMatched, matchAppFontPatch, type Palette } from '../../core/palette/palette'
 import { lockedHint, usePaletteEditor } from '../../core/stores/palettesStore'
-// Rendered in the Settings tab and in the chat rail's Visual Options, so it carries its own styles.
 import ColorStack from '../../app/ColorStack'
 import WebfontPicker, { appFontKeys } from './WebfontPicker'
 import './appearance.css'
 
-// A short list rather than a free-text box: a font the browser doesn't have renders as a silent
-// fallback, which is worse than not offering it.
 export const fonts: [string, string][] = [
   ['', 'App default'],
   ['Georgia, serif', 'Serif'],
@@ -22,12 +19,9 @@ export const colorField: Record<MarkerKind, 'emphasisColor' | 'boldColor' | 'quo
   quotes: 'quoteColor',
 }
 
-/** Font, size and the chat marker colors, all read from and written to the active palette.
- *  `colors` off drops the chat color list, leaving the font and size, the Story rail has its own
- *  colors and the chat's do nothing there. `heading` off is for the palette editor, where the
- *  collapsible container already names the section. `font` off drops the webfont picker (and its
- *  Fontsource credit), the chat/write rails keep the quick settings light, font choice lives in the
- *  main appearance editor. */
+/** Font, size and the chat marker colors, read from and written to the active palette.
+ *  `colors` off drops the chat color list, leaving the font and size. `heading` off drops the
+ *  section heading. `font` off drops the webfont picker and its Fontsource credit. */
 export default function AppearancePanel({
   colors = true,
   heading = true,
@@ -43,7 +37,7 @@ export default function AppearancePanel({
 
   const matched = appFontMatched(palette)
 
-  // While matched, every chat font edit is mirrored onto the app fields, so the match holds.
+  // While matched, every chat font edit mirrors onto the app fields.
   const patchChatFont = (fields: Partial<Palette>) => {
     if (!matched) return patch(fields)
     const mirrored: Partial<Palette> = { ...fields }

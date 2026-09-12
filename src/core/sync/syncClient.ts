@@ -6,13 +6,13 @@
  * Nothing here knows about sign-in, because there is nothing to sign in to.
  *
  * CLAUDE.md puts network calls in core/connectors/, and this file breaks that: the fetch wrapper
- * lives here rather than there. The reason is that every request has to be SigV4-signed with the
- * bucket credentials, so splitting it out would mean threading a signer through every call for no
- * gain. One file that talks outward is the boundary that matters. core/connectors/ stays what it
- * is: the model endpoint.
+ * lives here rather than there. Every request has to be SigV4-signed with the bucket credentials.
+ * Splitting it out would mean threading a signer through every call for no gain. One file that
+ * talks outward is the boundary that matters. core/connectors/ stays what it is: the model
+ * endpoint.
  *
  * Note: src/core/multiplayer/centrifugoChannel.ts is the app's other outward file. It is
- * unrelated — an ephemeral relay, no storage.
+ * unrelated: an ephemeral relay, no storage.
  */
 import { AwsClient } from 'aws4fetch'
 import { tableNames, type TableName } from '../storage/storageInterface'
@@ -55,7 +55,7 @@ function objectKey(c: BucketConfig, name: string): string {
 const hashMeta = 'x-amz-meta-hash'
 
 const missingHash =
-  'The bucket did not return the stored hash. Add x-amz-meta-hash to the bucket’s CORS ExposeHeaders, and check that the server keeps object metadata.'
+  "The bucket did not return the stored hash. Add x-amz-meta-hash to the bucket's CORS ExposeHeaders, and check that the server keeps object metadata."
 
 export interface TableManifestEntry {
   updatedAt: number
@@ -141,9 +141,9 @@ export async function fetchManifest(): Promise<Manifest> {
       })
     }
 
-    // The token decides, not IsTruncated. A page that says truncated has nowhere to send us
+    // The token decides whether to continue. A page that says truncated has nowhere to send us
     // without one, and an S3 clone that omits the flag but supplies a token still has more to
-    // give. A token that repeats means the server is not advancing, so stop rather than loop.
+    // give. A token that repeats means the server is not advancing. Stop rather than loop.
     const next = doc.getElementsByTagName('NextContinuationToken')[0]?.textContent ?? ''
     if (!next || next === token) break
     token = next
@@ -157,7 +157,7 @@ export async function fetchManifest(): Promise<Manifest> {
     const hash = head.headers.get(hashMeta)
     // Compare is built on this hash. Without it every table looks like changed in the bucket and the
     // screen would keep proposing downloads that overwrite local work, a wrong answer delivered
-    // confidently. Two causes, indistinguishable from the browser, so the message names both.
+    // confidently. Two causes, indistinguishable from the browser: the message names both.
     if (hash === null) throw new Error(missingHash)
     manifest[table] = { ...entry, hash }
   }
@@ -176,7 +176,7 @@ export async function pullTable(table: TableName | 'settings'): Promise<PulledTa
   if (response.status === 404) return null
   if (!response.ok) throw await failure(response)
   const hash = response.headers.get(hashMeta)
-  // Recorded as this table's synced hash, so a blank would make every later compare wrong. Reached
+  // Recorded as this table's synced hash. A blank would make every later compare wrong. Reached
   // when "Download all" skips the compare that would otherwise have caught it.
   if (hash === null) throw new Error(missingHash)
   return { json: await response.text(), hash }

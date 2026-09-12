@@ -19,9 +19,9 @@ import { useSettings } from './settingsStore'
  * still displays, it just cannot show what it looked like before the pass ran until its arrays are
  * converted.
  *
- * Run once. There is no flag saying so, because a flag would be wrong after restoring an old
- * backup: what marks the job done is that the old data is gone, which is checkable and survives
- * anything. `legacyPassFound` reads the same state the run clears.
+ * Run once. There is no flag saying so: a flag would be wrong after restoring an old backup.
+ * What marks the job done is that the old data is gone. That is checkable and survives anything.
+ * `legacyPassFound` reads the same state the run clears.
  */
 export interface ImportReport {
   pipelines: number
@@ -30,8 +30,8 @@ export interface ImportReport {
 }
 
 /** The settings blob's old fields. They survive rehydration: `persist` merges the stored object
- *  over the store's own state, so keys the current store does not declare are kept and written
- *  back. Read from the live state rather than parsing localStorage, so a pending write cannot make
+ *  over the store's own state. Keys the current store does not declare are kept and written
+ *  back. Read from the live state rather than parsing localStorage: a pending write cannot then make
  *  the two disagree. */
 function legacySettings(): { second?: LegacySecondPass; gold?: LegacyGoldPass } {
   const state = useSettings.getState() as unknown as {
@@ -112,9 +112,9 @@ export async function importLegacyPass(): Promise<ImportReport> {
   const { secondPass: _s, goldPass: _g, ...rest } = state
   useSettings.setState(rest as never, true)
 
-  // Blocks carried `drafts` too, from Write's own pass. Write has no pass now, so there is nothing
-  // to convert them into and they are left where they are: a Chapter's prose is in `content`, and
-  // the field is simply never read again.
+  // Blocks carried `drafts` too, from Write's own pass. Write has no pass now: there is nothing
+  // to convert them into, and they are left where they are. A Chapter's prose is in `content`,
+  // and the field is simply never read again.
   await usePipelines.getState().load()
   return report
 }

@@ -7,11 +7,11 @@ assert.equal(r2Endpoint(id), `https://${id}.r2.cloudflarestorage.com`)
 assert.equal(r2AccountId(r2Endpoint(id)), id, 'round trip')
 assert.equal(r2AccountId(r2Endpoint(`  ${id}  `)), id, 'the account id is trimmed on the way in')
 
-// A blank account id leaves the endpoint blank, so the form still looks like unconfigured.
+// A blank account id leaves the endpoint blank. The form still looks unconfigured.
 assert.equal(r2Endpoint(''), '')
 assert.equal(r2Endpoint('   '), '')
 
-// Anything that is not an R2 endpoint opens the generic form instead.
+// Anything that is not an R2 endpoint opens the generic form.
 assert.equal(r2AccountId('http://localhost:3900'), null)
 assert.equal(r2AccountId('https://s3.us-west-002.backblazeb2.com'), null)
 assert.equal(r2AccountId(''), null)

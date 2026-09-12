@@ -13,8 +13,8 @@ import { useGames } from './gamesStore'
  */
 export default function GameSettingsPanel() {
   const { game, state, abandon, boardScale, setBoardScale, logWidth, setLogWidth } = useGames()
-  // A user setting rather than a per-game one: this is how you like to play, not a property of
-  // this game. Per-game is the upgrade path, the same one chats have.
+  // A user setting rather than a per-game one: this is how you like to play. Per-game is the
+  // upgrade path, the same one chats have.
   const chatBack = useSettings((s) => s.gameChatBack)
   const setChatBack = useSettings((s) => s.setGameChatBack)
   const chatBackReply = useSettings((s) => s.gameChatBackReply)
@@ -25,13 +25,13 @@ export default function GameSettingsPanel() {
   const setAutoSend = useSettings((s) => s.setGameAutoSend)
   const stepMode = useSettings((s) => s.gameStepMode)
   const setStepMode = useSettings((s) => s.setGameStepMode)
-  // Difficulty is per game, not a user setting: it is a property of this match, and changing it
-  // halfway through a game you are losing should not rewrite the ones you already played.
+  // Difficulty is per game: a property of this match. Changing it halfway through a game you are
+  // losing should not rewrite the ones you already played.
   const setDifficulty = useGames((s) => s.setDifficulty)
   const setAuthorNote = useGames((s) => s.setAuthorNote)
 
-  // Typed but not yet written. Null until the first keystroke, so the box shows the stored note
-  // and a game that appends events while the panel is open does not fight the field.
+  // Typed but not yet written. Null until the first keystroke. The box shows the stored note, and
+  // a game that appends events while the panel is open does not fight the field.
   const [draft, setDraft] = useState<string | null>(null)
   useEffect(() => {
     if (draft === null) return
@@ -61,7 +61,7 @@ export default function GameSettingsPanel() {
         </span>
       </div>
 
-      {/* Blackjack's dealer draws to 17 and has nothing to decide, so there is no skill to set. */}
+      {/* Blackjack's dealer draws to 17 and has nothing to decide. There is no skill to set. */}
       {game.kind === 'goFish' && (
         <label className="gamesRailField">
           <span className="gamesRailRow">Difficulty</span>
@@ -77,8 +77,8 @@ export default function GameSettingsPanel() {
         </label>
       )}
 
-      {/* This game's note, not the character's and not the stack's. It reaches the prompt through
-          the stack's Author's note block, which is where its position is set. */}
+      {/* This game's own note, separate from the character's and the stack's. It reaches the
+          prompt through the stack's Author's note block, which is where its position is set. */}
       <label className="gamesRailField">
         <span className="gamesRailRow">Author's note</span>
         <textarea
@@ -156,7 +156,7 @@ export default function GameSettingsPanel() {
         />
       </label>
 
-      {/* The score itself is the marquee at the top of the rail, so it is not repeated here. */}
+      {/* The score itself is the marquee at the top of the rail. It is not repeated here. */}
       <p className="gamesRailRow">Cards left {state.deck.length}</p>
       {game.status === 'playing' && (
         <button type="button" className="gamesRailButton" onClick={() => void abandon()}>

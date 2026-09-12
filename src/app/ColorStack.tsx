@@ -5,8 +5,8 @@ import { ColorInput } from './ColorInput'
 import './ColorStack.css'
 
 // The draggable marker-color list: one row per marker kind, top-first precedence, with the Text
-// baseline pinned at the bottom. Chat and Write each keep their own colors and their own order, so
-// this holds no settings of its own, the panel that renders it says which fields it writes.
+// baseline pinned at the bottom. Chat and Write each keep their own colors and their own order.
+// This holds no settings of its own. The panel that renders it says which fields it writes.
 
 const kindLabel: Record<MarkerKind, string> = {
   emphasis: 'Emphasis',

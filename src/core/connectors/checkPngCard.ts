@@ -4,7 +4,7 @@ import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 import { parsePngCard, pngDataUrl } from './pngCard.ts'
 
-/** The file as an ArrayBuffer, the shape both functions take. Base64 in, so no Buffer typing. */
+/** The file as an ArrayBuffer, the shape both functions take. Base64 in, no Buffer typing. */
 function readPng(name: string): ArrayBuffer {
   const b64 = readFileSync(new URL(`../../assets/testAssets/${name}`, import.meta.url), 'base64')
   const binary = atob(b64)

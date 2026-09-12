@@ -2,7 +2,7 @@
 import { autoTokenizerFor } from './autoTokenizer.ts'
 
 /**
- * The tokenizer library, as data. A family is a row here, not code, so adding one is a line.
+ * The tokenizer library, as data. A family is a row here rather than code. Adding one is a line.
  *
  * Two kinds:
  * - `tiktoken`: a BPE table from `gpt-tokenizer`, already a dependency. Code-split, no download.
@@ -36,7 +36,7 @@ export interface TokenizerDef {
   bytes?: number
 }
 
-/** Pinned: a version in the URL is immutable, so a cached vocab never goes stale against it. */
+/** Pinned: a version in the URL is immutable. A cached vocab never goes stale against it. */
 export const vocabVersion = '3.7.2'
 
 export const tokenizerDefs: TokenizerDef[] = [
@@ -61,7 +61,7 @@ export function tokenizerDef(id: ResolvedTokenizerId): TokenizerDef {
   return tokenizerDefs.find((t) => t.id === id) ?? tokenizerDefs[0]
 }
 
-/** The one place `auto` is unwrapped, so no caller repeats the branch. */
+/** The one place `auto` is unwrapped: no caller repeats the branch. */
 export function tokenizerFor(connection: {
   tokenizer?: TokenizerId
   model: string

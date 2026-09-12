@@ -1,5 +1,5 @@
 // Pure tree ops for the stack editor. Every function returns new arrays: the draft is replaced,
-// never mutated, so React sees the change and undo stays possible later.
+// never mutated. React sees the change and undo stays possible later.
 import type { PromptBlock } from '../../core/storage/types'
 
 /** A block plus where it sits, so the editor can render a flat list of indented rows. */
@@ -42,7 +42,7 @@ export function removeBlock(list: PromptBlock[], id: string): PromptBlock[] {
     )
 }
 
-/** A block that lost its last child is a plain block again, so its closing text goes with it. */
+/** A block that lost its last child is a plain block again. Its closing text goes with it. */
 function unparent(block: PromptBlock): PromptBlock {
   if (block.children && block.children.length > 0) return block
   const { children: _children, closeContent: _closeContent, ...rest } = block
@@ -119,7 +119,7 @@ export function moveByKey(list: PromptBlock[], id: string, dir: MoveDir): Prompt
 
   if (dir === 'right') {
     const target = siblings[i - 1]
-    // Chat History can neither move inside a block nor hold one, so it's out of both roles here.
+    // Chat History can neither move inside a block nor hold one. It's out of both roles here.
     if (!target || block.source === 'chatHistory' || target.source === 'chatHistory') return null
     return addChild(removeBlock(list, id), target.id, block)
   }

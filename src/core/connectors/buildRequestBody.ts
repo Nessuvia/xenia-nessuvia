@@ -1,5 +1,3 @@
-// Extension-ful imports on purpose: checkRequestBody.ts runs this under
-// `node --experimental-strip-types`, which can't resolve extensionless app imports.
 import type { ChatMessage } from './connectorInterface'
 import type { Connection } from '../stores/settingsStore'
 import type { ParamDef } from '../params/paramDef.ts'
@@ -8,12 +6,11 @@ import { flattenPrompt, sequencesOf } from '../prompt/flattenPrompt.ts'
 
 /**
  * The one place a request body is shaped. The preview, the inspector and the send path all call
- * this, so none of them can drift from the others. Nothing else in the app builds a body.
+ * this. Nothing else in the app builds a body.
  *
  * Every sampler in the body comes from `connection.params`, resolved against the def library.
- * A param the connection does not carry is not sent at all. That omission is the point, since it
- * lets the backend apply its own default and keeps picky endpoints from choking on keys they
- * don't know.
+ * A param the connection does not carry is not sent at all. The backend applies its own default
+ * instead.
  */
 export function buildRequestBody(
   messages: ChatMessage[],
@@ -21,7 +18,7 @@ export function buildRequestBody(
   /** The param library, for the key → shape lookup. */
   defs: ParamDef[],
   /** Per-request fields the connection has no setting for: today only `response_format`, on the
-   *  palette request. Applied last, so it wins over the connection's params. */
+   *  palette request. Applied last. */
   extra?: Record<string, unknown>,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = { model: connection.model, stream: true }
@@ -29,8 +26,7 @@ export function buildRequestBody(
   if (connection.type === 'text') {
     const template = connection.template ?? defaultTemplate()
     body.prompt = flattenPrompt(messages, template)
-    // The format's own stops, plus every sequence when the template asks for it: without them a
-    // model that ignores its stop token writes the user's next turn as well as its own.
+    // The format's own stops, plus every sequence when the template asks for it.
     const stops = new Set([
       ...template.stopSequences,
       ...(template.sequencesAsStops ? sequencesOf(template) : []),
@@ -43,13 +39,11 @@ export function buildRequestBody(
   const byKey = new Map(defs.map((d) => [d.key, d]))
   for (const param of connection.params) {
     const def = byKey.get(param.key)
-    // A def deleted out from under a connection is skipped rather than sent raw: a send must not
-    // break because the library changed.
+    // A def deleted out from under a connection is skipped rather than sent raw.
     if (!def) continue
     const value = coerceValue(def, param.value)
     if (value === undefined) continue
-    // A `stop` param merges with the template's sequences rather than replacing them: the
-    // template's are what close the model's turn, and losing them means it never stops.
+    // A `stop` param merges with the template's sequences rather than replacing them.
     if (def.key === 'stop' && Array.isArray(body.stop) && Array.isArray(value)) {
       body.stop = [...new Set([...(body.stop as string[]), ...(value as string[])])]
     } else {
@@ -92,8 +86,8 @@ export interface RedactedRequest {
 
 /**
  * The request as it can safely be rendered or stored: body plus headers, key removed.
- * The key is stripped by value rather than by field name, so a copy of it that reached the body
- * through a param doesn't leak either.
+ * The key is stripped by value rather than by field name. A copy of it that reached the body
+ * through a param gets scrubbed too.
  */
 export function redact(body: Record<string, unknown>, connection: Connection): RedactedRequest {
   const request: RedactedRequest = {

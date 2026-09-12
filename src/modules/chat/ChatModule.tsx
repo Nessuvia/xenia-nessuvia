@@ -4,15 +4,15 @@ import CharacterSheet from './CharacterSheet'
 import ChatView from './ChatView'
 import TagsPage from './TagsPage'
 
-// The module owns its subroutes. Split out of index.ts so index can register a lazy component
+// The module owns its subroutes. Split out of index.ts: index registers a lazy component
 // without importing the views.
 export default function ChatModule() {
   return (
     <Routes>
       <Route index element={<CharacterPicker />} />
-      {/* The open character lives in the URL, so clicking Chat in the sidebar closes it. */}
+      {/* The open character lives in the URL: clicking Chat in the sidebar closes it. */}
       <Route path="c/new" element={<CharacterSheet />} />
-      {/* Reading and editing are the same page; /edit only survives so an open bookmark lands. */}
+      {/* Reading and editing are the same page. /edit survives only for an open bookmark to land. */}
       <Route path="c/:characterId/edit" element={<Navigate to=".." replace />} />
       <Route path="c/:characterId" element={<CharacterSheet />} />
       {/* Above :chatId, which would otherwise swallow it. */}

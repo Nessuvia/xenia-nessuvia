@@ -1,7 +1,7 @@
 import { localOwnerId } from '../storage/storageInterface.ts'
 import type { ConnectionType, ParamDef } from './paramDef.ts'
 
-/** Shorthand so the table below looks like a table. */
+/** Shorthand for one row in the table below. */
 function def(
   key: string,
   label: string,
@@ -107,7 +107,7 @@ export function builtinParamDefs(): ParamDef[] {
     }),
     def('ban_eos_token', 'Ban EOS token', {
       kind: 'bool', default: false, appliesTo: ['text'],
-      hint: 'Forbids the end token, so the reply runs to the token cap.',
+      hint: 'Forbids the end token. The reply runs to the token cap.',
     }),
     def('skip_special_tokens', 'Skip special tokens', {
       kind: 'bool', default: true, appliesTo: ['text'],

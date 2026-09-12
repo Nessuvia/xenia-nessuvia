@@ -50,8 +50,8 @@ export interface GateStage extends StageBase {
 /**
  * Mechanical edits, then a targeted edit request to the model that wrote the reply.
  *
- * The hammer's `strip` and `replace` rules and the punctuation sweep run with no request at all,
- * so text can change here for free. What is left over becomes notes, and the notes become one
+ * The hammer's `strip` and `replace` rules and the punctuation sweep run with no request at all:
+ * text can change here for free. What is left over becomes notes, and the notes become one
  * request quoting the exact slices to fix.
  */
 export interface CleanStage extends StageBase {
@@ -96,7 +96,7 @@ export interface RewriteStage extends StageBase {
 /**
  * Judge what the stage before it produced, and decide what is kept.
  *
- * Whole-message length ratio first, then per-paragraph scoring against the original, so a rewrite
+ * Whole-message length ratio first, then per-paragraph scoring against the original. A rewrite
  * that improved two paragraphs and wrecked a third contributes only the two. Without a score
  * stage, a rewrite is taken whole.
  */
@@ -121,10 +121,10 @@ export interface Pipeline {
   label: string
   /** Free text the author writes for whoever imports the file. Not sent to any model. */
   description: string
-  /** Shared by the gate, the clean stage and the score stage, so the three cannot disagree about
+  /** Shared by the gate, the clean stage and the score stage: the three cannot disagree about
    *  what counts as a problem. */
   detect: DetectSettings
-  /** Worn phrases this pipeline scores against. Nothing is shipped, so an empty list means the
+  /** Worn phrases this pipeline scores against. Nothing is shipped: an empty list means the
    *  slop signal is off. Feeds the banned list and the score stage. */
   lexicon: LexiconEntry[]
   /** How the chat's own overused phrasing is counted. */
@@ -238,7 +238,7 @@ export function activeStages(pipeline: Pipeline): Stage[] {
  * Whether the pipeline would change anything if it ran.
  *
  * A rewrite stage with no preset or no connection is not armed, and a pipeline whose only stages
- * are unarmed rewrites has nothing to do. Checked before running so a settings problem is never
+ * are unarmed rewrites has nothing to do. Checked before running: a settings problem is never
  * recorded on a message as a failure.
  */
 export function pipelineArmed(pipeline: Pipeline): boolean {

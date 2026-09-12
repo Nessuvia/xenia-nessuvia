@@ -135,14 +135,14 @@ export const useSync = create<SyncState>()((set, get) => ({
     }
 
     const queue = Object.entries(decisions) as [TableName, Direction][]
-    set({ status: 'applying', error: '', progress: { label: 'Starting…', done: 0, total: queue.length, failed: false } })
+    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: queue.length, failed: false } })
     const settings = useSettings.getState()
     const pulled: TableName[] = []
     try {
       for (const [index, [name, direction]] of queue.entries()) {
         const table = name as TableName
         if (direction === 'push') {
-          step(`Uploading ${table}…`, index, queue.length)
+          step(`Uploading ${table}...`, index, queue.length)
           const { json, hash } = await buildTablePayload(table)
           const bytes = new Blob([json]).size
           if (bytes > maxPayloadBytes) {
@@ -154,7 +154,7 @@ export const useSync = create<SyncState>()((set, get) => ({
           settings.setTableSynced(table, hash)
           step(`Uploaded ${table}, ${size(bytes)}.`, index + 1, queue.length)
         } else {
-          step(`Downloading ${table}…`, index, queue.length)
+          step(`Downloading ${table}...`, index, queue.length)
           const object = await client.pullTable(table)
           if (!object) {
             step(`${table} is not in the bucket. Skipped.`, index + 1, queue.length)
@@ -193,8 +193,8 @@ export const useSync = create<SyncState>()((set, get) => ({
     if (pulled.includes('characters')) settings.markCharactersSeeded()
     if (pulled.includes('palettes')) settings.markPalettesSeeded()
     if (pulled.includes('paramDefs')) settings.markParamDefsSeeded()
-    // Stacks matter twice over: stacksStore.load seeds two rows and calls setActiveId for them, so
-    // without this a pulled promptStacks table comes back with two extras and the active stack
+    // Stacks matter twice over: stacksStore.load seeds two rows and calls setActiveId for them.
+    // Without this a pulled promptStacks table comes back with two extras and the active stack
     // pointing at one of them.
     if (pulled.includes('promptStacks')) settings.markStacksSeeded()
 
@@ -212,13 +212,13 @@ export const useSync = create<SyncState>()((set, get) => ({
    * the device that has the keys" rather than a merge.
    */
   pushSettings: async () => {
-    set({ status: 'applying', error: '', progress: { label: 'Starting…', done: 0, total: 2, failed: false } })
+    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: 2, failed: false } })
     try {
       const plain = localStorage.getItem(settingsKey) ?? '{}'
       const { passphrase } = useSettings.getState().bucket
-      step(passphrase ? 'Encrypting settings…' : 'Uploading settings as plain text…', 0, 2)
+      step(passphrase ? 'Encrypting settings...' : 'Uploading settings as plain text...', 0, 2)
       const json = passphrase ? await encryptText(plain, passphrase) : plain
-      step('Uploading settings…', 1, 2)
+      step('Uploading settings...', 1, 2)
       await client.pushTable('settings', json, await hashPayload(json))
       step(`Uploaded settings, ${size(new Blob([json]).size)}.`, 2, 2)
       set({ status: 'idle' })
@@ -229,9 +229,9 @@ export const useSync = create<SyncState>()((set, get) => ({
   },
 
   pullSettings: async () => {
-    set({ status: 'applying', error: '', progress: { label: 'Starting…', done: 0, total: 2, failed: false } })
+    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: 2, failed: false } })
     try {
-      step('Downloading settings…', 0, 2)
+      step('Downloading settings...', 0, 2)
       const object = await client.pullTable('settings')
       if (!object) {
         fail('The bucket has no settings to download.')
@@ -245,7 +245,7 @@ export const useSync = create<SyncState>()((set, get) => ({
       let json = object.json
       if (isEncrypted(json)) {
         if (!passphrase) throw new Error('The settings in this bucket are encrypted. Enter the passphrase.')
-        step('Decrypting settings…', 1, 2)
+        step('Decrypting settings...', 1, 2)
         json = await decryptText(json, passphrase)
       }
       localStorage.setItem(settingsKey, keepDeviceFields(json, localStorage.getItem(settingsKey)))

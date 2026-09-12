@@ -13,7 +13,7 @@ export interface LexiconEntry {
   weight: number
 }
 
-/** A lexicon hit. A `Note`, so it can be handed to `buildPassPrompt` unchanged when the passes
+/** A lexicon hit. A `Note`: it can be handed to `buildPassPrompt` unchanged when the passes
  *  merge, with the weight riding along for the scorer. */
 export interface SlopHit extends Note {
   weight: number
@@ -30,7 +30,7 @@ function escape(phrase: string): string {
  * Compile an entry, or null if the user typed a regex that does not parse. Skipped rather than
  * thrown, the same call the free-text rules make: a half-typed entry must never break a send.
  *
- * A literal gets word boundaries where its edges are word characters, so "delve" does not fire on
+ * A literal gets word boundaries where its edges are word characters: "delve" does not fire on
  * "delved into" being spelled inside another word, while a phrase ending in punctuation still
  * matches.
  */

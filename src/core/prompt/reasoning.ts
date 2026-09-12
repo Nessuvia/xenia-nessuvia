@@ -3,7 +3,7 @@
 import type { ReasoningConfig } from '../params/paramDef.ts'
 
 /** Where a think block sits in a reply: `start` is the first character of the opening marker and
- *  `end` the character after the closing one, so `text.slice(end)` is the reply proper. */
+ *  `end` the character after the closing one. `text.slice(end)` is the reply proper. */
 export interface ReasoningSpan {
   start: number
   end: number
@@ -12,7 +12,7 @@ export interface ReasoningSpan {
 /**
  * The think block in a reply, or null when there isn't one.
  *
- * Only a block at the very front counts. A model writes its thinking before it answers, so a
+ * Only a block at the very front counts. A model writes its thinking before it answers: a
  * `<think>` appearing later is the model quoting the marker inside its reply, and cutting there
  * would eat the answer. Leading whitespace before the marker is allowed and nothing else is.
  *
@@ -41,9 +41,9 @@ export function withoutReasoning(text: string, config: ReasoningConfig): string 
 
 /**
  * A stored reply as it should go back into a later prompt. `distance` is how far back the turn is,
- * newest being 1, so `maxSendBack` can keep the last turn's thinking and drop the rest. Past
- * thinking is expensive and models rarely need their own, which is why `sendBack` is off by
- * default; it is a send-time choice and the stored text is left whole either way.
+ * newest being 1: `maxSendBack` can keep the last turn's thinking and drop the rest. Past
+ * thinking is expensive and models rarely need their own. `sendBack` is off by
+ * default. It is a send-time choice and the stored text is left whole either way.
  */
 export function stripReasoning(text: string, config: ReasoningConfig, distance: number): string {
   if (!config.sendBack) return withoutReasoning(text, config)

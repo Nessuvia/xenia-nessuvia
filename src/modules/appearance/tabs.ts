@@ -1,5 +1,5 @@
-// Its own file so the module's index can register the tab list without pulling in the view, which
-// is lazily loaded.
+// Its own file: the module's index registers the tab list without pulling in the view. The view
+// loads lazily.
 export const tabs = [
   ['themes', 'Themes'],
   ['backgrounds', 'Backgrounds'],

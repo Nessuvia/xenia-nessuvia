@@ -37,7 +37,7 @@ import { effectiveFont, resolveBackground } from '../palette/palette'
 import { downscaleAvatar } from './rosterAvatar'
 import { displayName } from '../stores/charactersStore'
 
-/** The host's participant id. One host per room, so it needs no uniqueness beyond the room. */
+/** The host's participant id. One host per room: it needs no uniqueness beyond the room. */
 const hostId = 'host'
 
 /** The roster cap. The Narrator sits outside it and is never in `chat.participantIds`. */
@@ -49,7 +49,7 @@ const maxPersonaDescription = 2000
 /** A base64 data URI from a stranger, already downscaled by the sender. */
 const maxAvatarBytes = 256 * 1024
 
-/** ~5 stream events a second, so a reply costs roughly 50 events per recipient. */
+/** ~5 stream events a second: a reply costs roughly 50 events per recipient. */
 const streamIntervalMs = 200
 
 /** A `state` carries a recent window, not the whole transcript. `append` keeps guests current. */
@@ -99,12 +99,12 @@ export function activeSession(): HostSession | undefined {
  * Open a room. Creates the Chat row, opens the channel, and takes authority.
  * Throws when the user is not signed in or sync is not configured.
  */
-/** What the host chose on the start screen. Every field has a default, so the object is optional. */
+/** What the host chose on the start screen. Every field has a default: the object is optional. */
 export interface SessionOptions {
   /** True to forbid guests editing their own persona from the outset. */
   personaLock?: boolean
   /** Which relay this session runs over. Defaults to the stored setting. Passed per session rather
-   *  than read here so the landing's picker stays a per-session choice: picking a relay for one
+   *  than read here: the landing's picker stays a per-session choice. Picking a relay for one
    *  room must not rewrite the global default. */
   relay?: RelayConfig
 }
@@ -142,10 +142,10 @@ export async function createSession(
   const hostAvatar = await downscaleAvatar(persona.avatar)
 
   // Every await finishes before the store is touched. `phase` leaving 'idle' is what swaps the
-  // landing page for the room, so nothing may flip it until there is a roster to draw and a
+  // landing page for the room. Nothing may flip it until there is a roster to draw and a
   // `session` to act on: an await in the middle of the store writes renders the room against an
   // empty store, and a throw or a hang in one leaves that empty room up with the error going
-  // nowhere, because the Landing that would have shown it is already unmounted.
+  // nowhere: the Landing that would have shown it is already unmounted.
   const roster = await Promise.all(characters.map(rosterCharacter))
 
   const store = useMultiplayer.getState()
@@ -177,7 +177,7 @@ export async function createSession(
     onEvent: (event) => handleGuestEvent(event as GuestEvent),
     onJoin: () => {
       // Presence alone admits nobody. A guest is in the room once it says `hello` and the host
-      // admits it, so a fresh `state` is all a new arrival gets.
+      // admits it. A fresh `state` is all a new arrival gets.
       broadcastState()
     },
     onLeave: (member) => dropParticipant(member.id),
@@ -200,7 +200,7 @@ export async function createSession(
 
   session = {
     sessionId,
-    // The link carries the relay, because a guest has no other way to learn where the room is.
+    // The link carries the relay: a guest has no other way to learn where the room is.
     link: inviteLink(window.location.origin, sessionId, relay),
     admit,
     deny,
@@ -215,8 +215,8 @@ export async function createSession(
     close,
   }
 
-  // Last: the room is only shown once the store holds the roster and `activeSession()` answers, so
-  // the panels never render against a half-built session. Only from 'idle': if the channel came
+  // Last: the room is only shown once the store holds the roster and `activeSession()` answers.
+  // The panels never render against a half-built session. Only from 'idle': if the channel came
   // up in the meantime, 'live' is the newer truth and must not be walked back to 'connecting'.
   if (useMultiplayer.getState().phase === 'idle') store.setPhase('connecting')
   return session
@@ -334,7 +334,7 @@ function kick(guestId: string) {
 
 /**
  * A departure, however it arrives. `bye` and a presence leave are the same handling and both can
- * arrive for one guest, so the second is a no-op.
+ * arrive for one guest: the second is a no-op.
  */
 function dropParticipant(id: string) {
   if (id === hostId) return
@@ -352,7 +352,7 @@ function dropParticipant(id: string) {
 
 /**
  * Personas a guest has sent but which have not taken effect yet, keyed by participant id. A change
- * lands on the guest's next turn, so a rewrite cannot change who was speaking in a line already
+ * lands on the guest's next turn: a rewrite cannot change who was speaking in a line already
  * said or in a reply being generated for it.
  */
 const pendingPersonas = new Map<string, Participant>()
@@ -426,7 +426,7 @@ function writePersona(id: string, persona: GuestPersona) {
  */
 let hostPersonaOverride = false
 
-/** Last stored persona pushed into the room, so an unrelated settings write does not re-broadcast. */
+/** Last stored persona pushed into the room. Keeps an unrelated settings write from re-broadcasting. */
 let lastStoredPersona = ''
 
 /**
@@ -468,7 +468,7 @@ function watchHostPersona(): () => void {
 function clearHostPersona() {
   if (!hostPersonaOverride) return
   hostPersonaOverride = false
-  // The stored persona has not changed, so the key would otherwise suppress the push putting it back.
+  // The stored persona has not changed. The key would otherwise suppress the push putting it back.
   lastStoredPersona = ''
   void syncHostPersona()
 }
@@ -506,7 +506,7 @@ function advanceTurn() {
  * handed to `chatStore` to fill {{personas}}. Characters are not in here: the stack already reaches
  * them through {{char1}}…{{char4}}, and listing them twice would just spend the budget twice.
  *
- * Every instruction the Narrator gets now comes from the prompt stack, so this is the only thing
+ * Every instruction the Narrator gets now comes from the prompt stack. This is the only thing
  * the session pushes into the prompt layer.
  */
 function pushSessionPersonas() {
@@ -609,8 +609,8 @@ function sendEvent(event: HostEvent) {
 // --- the stream relay ---------------------------------------------------
 
 /**
- * Relays `streamingText` as `stream` events, throttled trailing-edge so the last chunk before
- * completion is not lost. `text` is the full text so far rather than a delta, so a dropped event
+ * Relays `streamingText` as `stream` events, throttled trailing-edge: the last chunk before
+ * completion is not lost. `text` is the full text so far rather than a delta: a dropped event
  * self-heals. Returns the unsubscribe.
  */
 /**
@@ -641,7 +641,7 @@ function startStreamRelay(chatId: number): () => void {
   }
 
   const unsubscribe = useChats.subscribe((state, previous) => {
-    // A turn's message is stored and reloaded before the request goes out, so this fires while the
+    // A turn's message is stored and reloaded before the request goes out. This fires while the
     // reply is still being waited on: guests see the line as soon as it is said rather than when
     // the reply lands. Whoever said it, host or guest, it arrives through the same `send`.
     if (state.chat?.id === chatId && state.messages.length > previous.messages.length) {
@@ -652,7 +652,7 @@ function startStreamRelay(chatId: number): () => void {
     }
 
     // An edit, a delete or a swipe change rewrites lines guests already have, and `append` can only
-    // add. A fresh `state` is the whole window, so it corrects whatever moved without a new event
+    // add. A fresh `state` is the whole window: it corrects whatever moved without a new event
     // type. Only the window's worth: guests never held anything older.
     if (state.chat?.id === chatId && revised(previous.messages, state.messages)) {
       broadcastState()

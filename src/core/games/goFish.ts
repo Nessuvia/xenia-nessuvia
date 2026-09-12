@@ -30,7 +30,7 @@ export type GoFishEvent =
   | { kind: 'book'; by: Side; rank: Rank }
   | { kind: 'turn'; to: Side }
   | { kind: 'end' }
-  /** The character's line. Carries no rules meaning, which is why the reducer ignores it. */
+  /** The character's line. Carries no rules meaning: the reducer ignores it. */
   | { kind: 'say'; by: Side; text: string }
 
 export interface GoFishState {
@@ -41,8 +41,8 @@ export interface GoFishState {
   asked: Record<Side, Rank[]>
   /** What each side can prove the *other* side holds right now, oldest first. Asking reveals a
    *  rank; a failed ask, a drained give and a book all take one back off the list. This is what
-   *  `chooseMove` plays off, and reading `asked` instead is the bug it replaced: an ask that came
-   *  back empty stayed "known" forever, so the opponent asked for the same rank every turn. */
+   *  `chooseMove` plays off. Reading `asked` instead is the bug it replaced: an ask that came
+   *  back empty stayed "known" forever, and the opponent asked for the same rank every turn. */
   known: Record<Side, Rank[]>
   turn: Side
   over: boolean
@@ -86,14 +86,14 @@ function forget(known: Record<Side, Rank[]>, side: Side, rank: Rank): Record<Sid
 export function reduce(state: GoFishState, event: GoFishEvent): GoFishState {
   switch (event.kind) {
     case 'ask': {
-      // You must hold what you ask for, so the ask tells the other side one card. It also puts
+      // You must hold what you ask for: the ask tells the other side one card. It also puts
       // your own read on trial: until a `give` arrives, assume it came back empty.
       const known = forget(learn(state.known, other(event.by), event.rank), event.by, event.rank)
       return { ...state, known, asked: { ...state.asked, [event.by]: [...state.asked[event.by], event.rank] } }
     }
     case 'give': {
       const moving = state.hands[event.from].filter((c) => c.rank === event.rank)
-      // Every card of the rank moved, so the giver is empty of it and the taker is holding it.
+      // Every card of the rank moved: the giver is empty of it and the taker is holding it.
       const known = forget(learn(state.known, event.from, event.rank), event.to, event.rank)
       return {
         ...state,
@@ -117,7 +117,7 @@ export function reduce(state: GoFishState, event: GoFishEvent): GoFishState {
     case 'book':
       return {
         ...state,
-        // All four are off the table: neither side holds the rank any more.
+        // All four are off the table. Neither side holds the rank any more.
         known: forget(forget(state.known, 'player', event.rank), 'char', event.rank),
         hands: { ...state.hands, [event.by]: state.hands[event.by].filter((c) => c.rank !== event.rank) },
         books: { ...state.books, [event.by]: [...state.books[event.by], event.rank] },
@@ -170,12 +170,12 @@ export function resolveAsk(state: GoFishState, side: Side, rank: Rank, text?: st
     keepsTurn = false
   }
 
-  // Only the asker's hand grew, so only the asker can have completed a book.
+  // Only the asker's hand grew: only the asker can have completed a book.
   for (const booked of completedBooks(current.hands[side])) emit({ kind: 'book', by: side, rank: booked })
 
-  // An empty hand draws one, so a side is never stuck holding nothing while cards remain. Both
+  // An empty hand draws one: a side is never stuck holding nothing while cards remain. Both
   // sides: giving your last card away empties a hand that is not the asker's. One card cannot
-  // complete a book, so there is nothing to check afterwards.
+  // complete a book: nothing to check afterwards.
   for (const who of [side, opponent]) {
     if (current.hands[who].length === 0 && current.deck.length > 0) {
       emit({ kind: 'draw', by: who, rank: current.deck[0].rank })
@@ -184,7 +184,7 @@ export function resolveAsk(state: GoFishState, side: Side, rank: Rank, text?: st
 
   let next = keepsTurn ? side : opponent
   // Whoever is up must have something to ask with. With an empty hand and an empty deck they
-  // cannot move, so the turn goes back; if neither side can move, `isOver` catches it below.
+  // cannot move: the turn goes back. If neither side can move, `isOver` catches it below.
   if (current.hands[next].length === 0) next = other(next)
   emit({ kind: 'turn', to: next })
 
@@ -201,7 +201,7 @@ export function chooseMove(state: GoFishState, side: Side, quality: MoveQuality)
   const all = legalAsks(state, side)
   if (all.length === 0) return null
   // The last ask, when it came back empty, is the one rank known *not* to be over there. Drop it
-  // unless it is all that is left, or a hand of one rank asks for that rank until the game ends.
+  // unless it is all that is left: a hand of one rank would ask for that rank until the game ends.
   const lastAsk = state.asked[side][state.asked[side].length - 1]
   const stale = lastAsk !== undefined && !state.known[side].includes(lastAsk) ? lastAsk : undefined
   const fresh = all.filter((rank) => rank !== stale)
@@ -226,7 +226,7 @@ export function chooseMove(state: GoFishState, side: Side, quality: MoveQuality)
 
 export function isOver(state: GoFishState): boolean {
   if (state.books.player.length + state.books.char.length === ranks.length) return true
-  // Deck spent and a hand empty: that side can never ask again, so nothing more can happen.
+  // Deck spent and a hand empty: that side can never ask again. Nothing more can happen.
   return state.deck.length === 0 && (state.hands.player.length === 0 || state.hands.char.length === 0)
 }
 

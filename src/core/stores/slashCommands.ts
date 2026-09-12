@@ -75,7 +75,7 @@ function matchName(rest: string, names: string[]): string | undefined {
  * first column counts, and `//` escapes it, `//me` is a message that starts with a slash, which
  * `stripEscape` below takes care of.
  *
- * An unknown command name is not an error: it parses to null and sends verbatim, so a message that
+ * An unknown command name is not an error: it parses to null and sends verbatim. A message that
  * happens to open with a slash is never eaten.
  *
  * `names` is the roster. A command that takes a character matches greedily against it because
@@ -91,7 +91,7 @@ export function parseCommand(raw: string, names: string[]): ParsedCommand | null
   if (!command) return null
 
   const rest = (nameEnd === -1 ? '' : body.slice(nameEnd + 1)).replace(/^\s+/, '')
-  // An alias reports the canonical name, so callers only ever switch on one string.
+  // An alias reports the canonical name: callers only ever switch on one string.
   if (!command.takesCharacter) return { name: command.name, text: rest }
 
   const matched = matchName(rest, names)
@@ -138,7 +138,7 @@ export function menuFor(raw: string, targets: CharacterTarget[]): CommandMenu | 
   if (!command || !command.takesCharacter) return null
 
   const rest = body.slice(nameEnd + 1).replace(/^\s+/, '')
-  // A complete name followed by a space means the argument is settled; the menu's job is done.
+  // A complete name followed by a space means the argument is settled. The menu's job is done.
   const matched = matchName(rest, targets.map((t) => t.name))
   if (matched && /\s/.test(rest.slice(matched.length))) return null
 

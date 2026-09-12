@@ -30,7 +30,7 @@ export default function PersonasView() {
   }
 
   // The one write path: the debounce below and Ctrl+S both go through it. An unnamed persona is
-  // never written, a blank name is what the list shows, so it would read as a broken row.
+  // never written. A blank name is what the list shows, and it would read as a broken row.
   async function persist() {
     if (!draft?.name.trim()) return
     await save(draft)
@@ -44,7 +44,7 @@ export default function PersonasView() {
     return () => clearTimeout(timer)
   }, [saved, draft, save])
 
-  // Closing or switching drafts can't wait out the debounce, so write the pending edit first.
+  // Closing or switching drafts can't wait out the debounce. Write the pending edit first.
   async function flush() {
     if (!saved && draft?.name.trim()) await save(draft)
   }

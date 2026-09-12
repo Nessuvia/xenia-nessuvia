@@ -19,7 +19,7 @@ export default function Tour({ tour, onClose }: Props) {
   )
 
   const [index, setIndex] = useState(0)
-  // Which way the user was going, so a step whose target has gone missing is skipped in the same
+  // Which way the user was going: a step whose target has gone missing is skipped in the same
   // direction rather than bouncing back into the step they just left.
   const direction = useRef(1)
 

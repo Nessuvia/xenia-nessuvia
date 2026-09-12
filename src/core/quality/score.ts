@@ -36,7 +36,7 @@ export interface QualityScore {
   parts: Record<keyof QualityWeights, number>
 }
 
-/** Sentence-length spread past this is as varied as prose gets; more is noise, not craft. */
+/** Sentence-length spread past this is as varied as prose gets; more is noise rather than craft. */
 const VARIETY_CAP = 10
 
 /** Self-repetition is measured on 4-grams: three words repeat innocently, four rarely do. */
@@ -46,7 +46,7 @@ const SELF_N = 4
  * Measure a passage. Lower is better.
  *
  * Everything here already existed as a detector; what is new is turning the findings into
- * one comparable number so an original and a rewrite can be put side by side. That comparison is
+ * one comparable number: an original and a rewrite can be put side by side. That comparison is
  * the whole fix for a bare rewrite: a local model handed a clean paragraph will sometimes hand back a
  * worse one, and until now nothing measured the difference.
  *
@@ -66,7 +66,7 @@ export function scoreText(
   const per100 = 100 / words.length
 
   const parts = { ...zero }
-  // Weighted by how loud each phrase is, so one "delve" costs more than one "swallowed hard".
+  // Weighted by how loud each phrase is: one "delve" costs more than one "swallowed hard".
   parts.slop = findSlop(text, ctx.lexicon).reduce((n, h) => n + h.weight, 0) * per100
   parts.census = countCensusHits(text, ctx.census) * per100
   parts.selfRepeat = countSelfRepeats(text) * per100
@@ -86,7 +86,7 @@ export function scoreText(
 /**
  * Phrases this text shares with the chat's census, counted once each.
  *
- * Longest first with the matched span consumed, so a six-word repeat is one hit rather than one for
+ * Longest first with the matched span consumed: a six-word repeat is one hit rather than one for
  * every window inside it.
  */
 export function countCensusHits(text: string, census: Census): number {
@@ -131,8 +131,8 @@ export function countSelfRepeats(text: string): number {
 /**
  * Sentence-length spread, scaled to roughly the same size as one penalty per 100 words.
  *
- * A credit rather than a penalty because flat rhythm is not an error you can point at, it is the
- * absence of something. The cap matters: without it a passage with one sixty-word sentence among
+ * A credit rather than a penalty: flat rhythm is the absence of something rather than an error
+ * you can point at. The cap matters: without it a passage with one sixty-word sentence among
  * five short ones would score as maximally varied, and that distribution is bimodal rather than
  * varied. The cap is the whole defence against it now that nothing counts run-on sentences.
  */

@@ -80,7 +80,7 @@ export default function PalettesPanel() {
   const [editorOpen, setEditorOpen] = useState(true)
   const [bundledOpen, setBundledOpen] = useState(false)
   const bundledRef = useCloseOnOutside(bundledOpen, () => setBundledOpen(false))
-  // The files ship with the build, so parsing them once per mount is enough.
+  // The files ship with the build. Parsing them once per mount is enough.
   const bundled = useMemo(bundledPalettes, [])
 
   /** Store the images a set of palettes came with, then append the palettes pointed at the new
@@ -90,7 +90,7 @@ export default function PalettesPanel() {
     await add(incoming.map((p) => remapImages(p, map)))
   }
 
-  /** Selecting another palette always shows its editor, so the panel can't look empty. */
+  /** Selecting another palette always shows its editor. The panel can't look empty. */
   const pick = (id: number | null) => {
     setActive(id)
     setEditorOpen(true)
@@ -122,7 +122,7 @@ export default function PalettesPanel() {
       </button>
     ) : null
 
-  /** One rewind for a whole marker stack. ColorStack is shared by three panels, so its rows stay
+  /** One rewind for a whole marker stack. ColorStack is shared by three panels: its rows stay
    *  as they are and the group heading carries the control instead. */
   const rewindGroup = (fields: (keyof Palette)[]) => {
     const mine = fields.filter((f) => changed.includes(f))
@@ -171,7 +171,7 @@ export default function PalettesPanel() {
                     className={`card ${id === activeId ? 'active' : ''} ${open ? 'editing' : ''}`}
                     title={open ? 'Hide the editor' : undefined}
                     // Whole row opens the editor, clicking the open row closes it. The buttons
-                    // inside stop the click so they don't toggle the panel too.
+                    // inside stop the click: they don't toggle the panel too.
                     onClick={() => (id === activeId ? setEditorOpen(!editorOpen) : pick(id))}
                   >
                     <span className="paletteName">
@@ -270,8 +270,8 @@ export default function PalettesPanel() {
                         <button
                           key={key}
                           type="button"
-                          // Adding, not restoring: an existing copy stays as it is and the new row
-                          // takes a numbered name.
+                          // This adds a new palette: an existing copy stays as it is and the new
+                          // row takes a numbered name.
                           onClick={() => {
                             setBundledOpen(false)
                             addPalettes([p], images)
@@ -292,8 +292,8 @@ export default function PalettesPanel() {
 
               <button
                 type="button"
-                // The image library isn't needed to render this panel, so it may not be loaded yet;
-                // the export reads it fresh rather than subscribing.
+                // The image library isn't needed to render this panel and may not be loaded yet.
+                // The export reads it fresh rather than subscribing.
                 onClick={async () => {
                   const store = useBackgroundImages.getState()
                   if (!store.loaded) await store.load()
@@ -425,7 +425,7 @@ export default function PalettesPanel() {
                         })
                       }
                     />
-                    {/* Typed values take the same range as the slider, clamped on entry so a
+                    {/* Typed values take the same range as the slider. Clamped on entry: a
                         stray digit can't push a skin var out of what the skin supports. */}
                     <input
                       type="number"
@@ -478,7 +478,7 @@ export default function PalettesPanel() {
             {label === 'Accents' && (
               <div className="paletteColorRow">
                 <span>overlay</span>
-                {/* The one field that carries an alpha channel, so the swatch gets the alpha
+                {/* The one field that carries an alpha channel: the swatch gets the alpha
                     slider and stores 8-digit hex. */}
                 <ColorInput
                   value={palette.overlay}
@@ -563,8 +563,8 @@ export default function PalettesPanel() {
               max={560}
               value={palette.sidebarWidth}
               onChange={(e) => patch({ sidebarWidth: Number(e.target.value) })}
-              // Clamped on blur, not on change: clamping mid-typing eats the first digit. 0 means
-              // "use the default"; anything else gets the drag floor from Sidebar.tsx, since
+              // Clamped on blur rather than on change: clamping mid-typing eats the first digit.
+              // 0 means "use the default". Anything else gets the drag floor from Sidebar.tsx:
               // narrower clips the chat settings labels.
               onBlur={(e) => {
                 const n = Number(e.target.value)

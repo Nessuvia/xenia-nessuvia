@@ -71,7 +71,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
   generate: async (ask, palette, connection) => {
     if (get().generating || palette.id === undefined) return
     set({ generating: true, generateError: '', generateAttempt: null })
-    // one controller in module scope, since `generating` already forbids a second run.
+    // One controller in module scope. `generating` already forbids a second run.
     generateAbort = new AbortController()
     try {
       const { palette: next, mode } = await generatePalette(
@@ -81,7 +81,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
         connection,
         generateAbort.signal,
       )
-      // What the endpoint accepted, remembered, so the walk down the ladder happens once.
+      // What the endpoint accepted, remembered: the walk down the ladder happens once.
       if (mode !== connection.structuredOutput) {
         useSettings.getState().updateConnection({ ...connection, structuredOutput: mode })
       }
@@ -91,7 +91,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
       await get().update(palette.id, fields)
     } catch (err) {
       const failed = err as PaletteError
-      // A cancel is the user's own doing, so it leaves no error behind.
+      // A cancel is the user's own doing. It leaves no error behind.
       if (generateAbort?.signal.aborted) set({ generateError: '', generateAttempt: null })
       else set({ generateError: failed.message, generateAttempt: failed.attempt ?? null })
     } finally {
@@ -127,7 +127,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
       let order = 0
       for (const { palette, images } of bundledPalettes()) {
         // Per palette rather than per file: `importImages` reuses a row whose bytes it already
-        // holds, so two palettes out of one file still share the one image row.
+        // holds. Two palettes out of one file still share the one image row.
         const map = await useBackgroundImages.getState().importImages(images)
         const { id: _id, ...fields } = remapImages(palette, map)
         const id = await storage.put('palettes', {
@@ -178,8 +178,8 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
     const current = get().palettes.find((p) => p.id === id)
     if (!current) return
     const next = { ...current, ...patch, id, ownerId: currentOwnerId() }
-    // Optimistic: the editor writes on every keystroke and the whole app rerenders from this list,
-    // so waiting on Dexie before showing the change would lag every swatch drag.
+    // Optimistic: the editor writes on every keystroke and the whole app rerenders from this list.
+    // Waiting on Dexie before showing the change would lag every swatch drag.
     set({ palettes: get().palettes.map((p) => (p.id === id ? next : p)) })
     await storage.put('palettes', next as unknown as StoredRecord)
   },
@@ -205,7 +205,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
         orderId: nextOrder(get().palettes),
       }
       await storage.put('palettes', record as unknown as StoredRecord)
-      // Reloaded per row so the next name check sees the one just written.
+      // Reloaded per row. The next name check sees the one just written.
       await get().load()
     }
   },
@@ -231,7 +231,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
 }))
 
 
-/** `Name`, `Name (2)`, `Name (3)` … */
+/** `Name`, `Name (2)`, `Name (3)`, etc. */
 function uniqueName(wanted: string, existing: Palette[]): string {
   const taken = new Set(existing.map((p) => p.name))
   if (!taken.has(wanted)) return wanted
@@ -242,8 +242,8 @@ function uniqueName(wanted: string, existing: Palette[]): string {
 
 /**
  * Editing target for the appearance controls. `locked` is true when no palette row is active:
- * every one deleted, or a stale id, so the app is rendering the built-in constant and there is
- * nothing to write to. Every control that calls this disables itself and shows the same line.
+ * every one deleted, or a stale id. The app renders the built-in constant then, with nothing to
+ * write to. Every control that calls this disables itself and shows the same line.
  */
 export function usePaletteEditor(): {
   palette: Palette

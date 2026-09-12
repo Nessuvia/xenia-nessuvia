@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 /**
  * A searchable checkbox list of tags. Two callers: the picker header's filter dropdown (checked =
  * filtered on) and the card context menu (checked = the character has it). Same markup, different
- * meaning of "checked", so the caller owns the state and this owns the search box.
+ * meaning of "checked": the caller owns the state and this owns the search box.
  */
 export default function TagList({
   tags,

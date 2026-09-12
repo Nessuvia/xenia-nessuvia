@@ -5,54 +5,55 @@ Alternate Names: Xenia, X.N, Xen (/zɛn/, zen)
 
 # Xenia Nessuvia
 
-Xenia Nessuvia is character chat app inspired by SillyTavern. It runs entirely in the browser. Chats, characters, and settings live in IndexedDB. Model requests go from your browser to an OpenAI-compatible endpoint using the key you provide.
+Xenia Nessuvia is a character chat app inspired by SillyTavern. It runs entirely in the browser. Chats, characters, and settings live in IndexedDB. Model requests go from your browser to an OpenAI-compatible endpoint, using the key you provide.
 
-There's no backend and no accounts by design. You could download the source code and run it fully locally if you wish.
+There is no backend and no accounts. Download the source and run it fully locally if you prefer.
 
-On [xenia.nessuvia.com](https://xenia.nessuvia.com/), the site can install as a PWA and run in fullscreen.
+On [xenia.nessuvia.com](https://xenia.nessuvia.com/), the site installs as a PWA and runs in fullscreen.
 
-## Why?
-I made this for myself after a long time of using SillyTavern. I'll say straight up I have nothing but appreciation for everyone who's contributed to the codebase in any way. It's an amazing application. With that said, I made Xenia Nessuvia because I wanted a statically served frontend I could access from any device with internet access, and I wanted my saves to be easily portable. The portability is the main reason behind most of the weird limitations, like how the Character Gallery only accepts links and not uploading your own pictures. Keeping links is just way, way smaller in size (I'm not against some image uploads, like Persona or Character avatars).
+## Why
+
+I made this for myself after a long time using SillyTavern. I have plenty of appreciation for everyone who's contributed to that codebase. I wanted a statically served frontend, reachable from any device with internet access, with saves that stay portable. The Character Gallery accepts only links, not uploaded pictures. Persona and Character avatars still accept uploads.
 
 **Multiplayer**
 
-This is the one I haven't seen anywhere else, at least not built-in* in any frontend I've used. The host starts a session and shares a link; guests open it, make a persona, and join the same chat without installing anything or making an account. Everyone sees the same messages as they stream in. There's a turn order you can rearrange, and a Narrator role that fills the DM seat when nobody's character should be the one to answer. Only the host has an API key, and only the host talks to the model. The relay carries messages and presence between browsers and nothing else, so keys never leave the host's tab and nothing is stored on the way through. If you'd rather not use my relay, you can run your own; see [Where data goes](#where-data-goes).
+I haven't seen this built into any other frontend I've used. The host starts a session and shares a link. Guests open it, make a persona, and join the same chat without installing anything or making an account. Everyone sees the same messages stream in. A turn order can be rearranged. A Narrator role fills the DM seat when no character should be the one answering. Only the host holds an API key, and only the host talks to the model. The relay carries messages and presence between browsers, nothing more. Keys stay in the host's tab. Nothing is stored on the way through. To run your own relay instead of mine, see [Where data goes](#where-data-goes).
 
-*[STMP](https://github.com/RossAscends/STMP) exists as an extension, though the only time I used it was on the initial release version. It still lit a spark in me that echoed all the way down to this feature.
+*[STMP](https://github.com/RossAscends/STMP) exists as an extension. I used it once, on the initial release version.
 
 **Mobile**
 
-Mobile support was something that started small, but I fully intend to make it a first-class feature. Xenia Nessuvia is supported as a PWA, so you can add it to the home screen of your mobile devices and use it in full screen, inspired by ST-android.
+Mobile support started small and is planned to grow into a first-class feature. Xenia Nessuvia runs as a PWA: add it to a phone's home screen and use it full screen, in the style of ST-android.
 
 **Palette**
 
-The Palette feature was born from the fun I had making custom CSS in SillyTavern, extended into a technical menu with built-in font loading, app-wide text colors, panel style, etc. The custom HTML and CSS backgrounds were directly inspired by SillyTavern's custom CSS loading. As a web dev, I knew it could have more potential if we allowed some scoped CSS and the ability to place HTML elements, so that's where that came from.
+The Palette feature covers font loading, app-wide text colors, and panel styles, inspired by custom CSS in SillyTavern. Custom HTML and CSS backgrounds extend that: scoped CSS and placed HTML elements, on top of SillyTavern's custom CSS loading.
 
 **Chat**
 
-The Chat is the most "standard" feature I have. It's got support for everything in the TavernV2 specification, as well as some quality-of-life features I love, like Alternate Descriptions, a Gallery, per-character text coloring, etc. The lorebooks are intentionally simple today: keyword-triggered world info entries that inject when they match, with no advanced insertion strategies yet.
+Chat is the most conventional feature here. It supports the full TavernV2 specification, plus extras: Alternate Descriptions, a Gallery, per-character text coloring. Lorebooks stay simple today: keyword-triggered world info entries that inject on a match, with no advanced insertion strategies yet.
 
-Model output can be cleaned before it reaches the screen in two ways. The grammar hammer runs a quick rules pass over the displayed text while leaving the stored message untouched. For heavier cleanup, Second Pass lets you write your own post-processing rules — anything from stripping a repeated tic to long regex replacements — and again only changes what you see, not what is saved.
+Model output can be cleaned before it reaches the screen, two ways. The grammar hammer runs a rules pass over the displayed text and leaves the stored message untouched. Second Pass covers heavier cleanup: write post-processing rules, from stripping a repeated tic to long regex replacements. Both change only what you see, never what is saved.
 
 **Write**
 
-Write is the long-form half of the app, and it's the feature I've torn down and rebuilt the most. Exports come out as HTML, plain text, or JSON.
+Write is the long-form half of the app, and the most rebuilt. Exports come out as HTML, plain text, or JSON.
 
-The part I actually care about is the Plot Layout. A Chapter is a row of beats, each with a word target, so the model gets a plan instead of a shrug and the word "continue." A Premise sits before the first Chapter and an Ending after the last one, so it knows where this started and where it's supposed to land. Every Chapter also has a summary and a switch for what it hands over (summary and beats, beats only, summary only, or nothing at all), which is how old Chapters shrink down to a recap while the one you're in stays whole. There's a Direction box too, for the standing note that isn't a beat and isn't a prompt, the "stop having them sigh" kind of thing.
+The Plot Layout is the part I care about most. A Chapter is a row of beats, each with a word target: a plan for the model, not the word "continue." A Premise precedes the first Chapter and an Ending follows the last, marking where the story started and where it lands. Every Chapter also carries a summary and a switch for what it hands to the model (summary and beats, beats only, summary only, or nothing), the mechanism that lets old Chapters shrink to a recap while the current one stays whole. A Direction box holds the standing note that is neither a beat nor a prompt, the "stop having them sigh" kind of thing.
 
 **Prompts**
 
-The prompt handling is another feature inspired by SillyTavern. I wanted prompt "blocks" that were reusable, easily rearranged, and supported XML-style tagging (which I use heavily in my prompts, and see used in other community prompts). The scroll-type block was something I especially loved; I use it for changing how many words I want on the fly. In a chat, having the prompt live in a place outside of it at first felt awkward. But with the toggleable blocks and the scroll, it felt more polished to me. Yes, I know that's not quantifiable. No, I will not elaborate. ~~(I would absolutely elaborate if anyone asked)~~
+Prompt handling is another feature inspired by SillyTavern: reusable prompt "blocks," easily rearranged, with XML-style tagging. The scroll-type block adjusts a target word count on the fly.
 
-There's also a live prompt preview for testing a prompt stack, and Chat has a raw request inspector so you can see the exact array and payload your endpoint receives before it goes out.
+A live prompt preview tests a prompt stack, and Chat includes a raw request inspector showing the exact array and payload sent to your endpoint before it goes out.
 
 **Ask**
 
-The Ask mode is small and single-use, which is why it lives as a single icon at the bottom of the navbar. Basically, it's a no-frills way to just send a message to your LLM backend. It exists because I had a Narrator card in SillyTavern that I only used for asking questions, so I made it a feature. You may notice you can load a character to "be" the Assistant. If you remember Stella from the c.ai days, you're essentially putting your character in her role.
+Ask is small and single-use: a single icon at the bottom of the navbar. It sends a message to your LLM backend, nothing else. Loading a character to "be" the Assistant works the same way Stella did in the c.ai days: your character takes her seat.
 
 ## Models and samplers
 
-Xenia connects to any OpenAI-compatible endpoint, local or hosted, for chat or text completion. Sampler parameters are stored as data rows rather than hardcoded fields, so a backend-specific sampler — Mirostat, Min-P, DRY, quadratic sampling, dynamic temperature — can be added by writing a small JSON definition. No code release required; it shows up in the UI once the row exists.
+Xenia connects to any OpenAI-compatible endpoint, local or hosted, for chat or text completion. Sampler parameters are data rows rather than hardcoded fields. A backend-specific sampler (Mirostat, Min-P, DRY, quadratic sampling, dynamic temperature) is a small JSON definition, no code release. It appears in the UI once the row exists.
 
 Role-tag formatting for local backends (Llama-3 headers, `[INST]`, `<|im_start|>`, Command-R tags, and so on) is on the near-term roadmap.
 
@@ -79,7 +80,7 @@ pnpm build
 
 ## AI assistance
 
-Agentic LLM coding assistants were used on this codebase, and wrote a majority of it. The creative ideas like the feature set, the interaction design, what this app is and isn't are mine. I just wanted to be upfront with that.
+Agentic LLM coding assistants wrote most of this codebase. The feature set, the interaction design, and what this app is are mine.
 
 More on this in the [foreword](FOREWORD.md).
 

@@ -12,7 +12,7 @@
 
 /**
  * The first replies, in order, one per message. Every one has to answer "why is the model saying
- * this" on its own, because a user who sends one message and leaves sees only the first.
+ * this" on its own. A user who sends one message and leaves sees only the first.
  *
  * Order matters and randomness does not belong here: three sends should read as the app repeating
  * itself, not as something generating text.
@@ -25,7 +25,7 @@ export const explainers: string[] = [
 
 /**
  * Picked at random once the explainers run out. A user this far in has read the same instruction
- * four times, so these can be jokes. Every one still has to leave the fact intact: no model, no
+ * four times: these can be jokes. Every one still has to leave the fact intact: no model, no
  * request, go to Settings.
  */
 export const roulette: string[] = [

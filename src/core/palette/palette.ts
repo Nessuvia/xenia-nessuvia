@@ -8,13 +8,13 @@ export const backgroundSlots: BackgroundSlot[] = ['all', 'chat', 'write', 'promp
 export const backgroundFits: BackgroundFit[] = ['center', 'cover', 'contain', 'stretch', 'tile', 'none']
 
 /**
- * One page's background layer. `imageId` points at a row in the `backgroundImages` table (the bytes
- * live there, not here, so loading a palette list doesn't drag megabytes of base64 along); `url` is
- * an externally hosted image. They are exclusive â€” setting one clears the other.
+ * One page's background layer. `imageId` points at a row in the `backgroundImages` table: the bytes
+ * live there, not here, and loading a palette list doesn't drag megabytes of base64 along. `url` is
+ * an externally hosted image. They are exclusive: setting one clears the other.
  *
  * `css` is raw CSS, wrapped in `@scope` so it only reaches inside the background layer (see
  * scopeCss.ts). `html` is the user's own elements, placed inside `.pageBackground` for their CSS to
- * target â€” sanitized to a tight structural allowlist on render (see sanitizeHtml.ts), never trusted
+ * target: sanitized to a tight structural allowlist on render (see sanitizeHtml.ts), never trusted
  * as-is. Both are reject-the-whole-thing: anything off the allowlist, or CSS that closes its own
  * scope early, renders nothing rather than a half-applied result.
  *
@@ -92,7 +92,7 @@ export interface Palette {
   quoteColor: string
   colorOrder: MarkerKind[]
   // When on, per-character color overrides are ignored and the palette is the only source of marker
-  // color. The overrides stay stored â€” this hides them, it doesn't erase them.
+  // color. The overrides stay stored: this hides them and does not erase them.
   overwriteCharColor: boolean
 
   // Story markers
@@ -120,8 +120,8 @@ export interface Palette {
   // Base font weight for body text, set at :root. Elements with a weight of their own (headings,
   // buttons) keep it: this is the knob for text that would otherwise inherit 400.
   textWeight: number
-  // Unitless, so it scales with the font size. Text is pre-wrap, which makes a paragraph break a
-  // literal blank line â€” this knob sets the space between paragraphs as well as between lines.
+  // Unitless: it scales with the font size. Text is pre-wrap, which makes a paragraph break a
+  // literal blank line. This knob sets the space between paragraphs as well as between lines.
   lineHeight: number
 
   // Layout
@@ -132,7 +132,7 @@ export interface Palette {
   sidebarWidth: number // px, 0 = the stylesheet's default
   radius: number // px
 
-  // Structure. A skin id from app/skins/skins.ts â€” 'default' means no skin, the base stylesheet.
+  // Structure. A skin id from app/skins/skins.ts: 'default' means no skin, the base stylesheet.
   skin: string
   /**
    * Values for the active skin's knobs, keyed by CSS var name (`--glassBlur`). One loose map rather
@@ -155,7 +155,7 @@ const allKinds: MarkerKind[] = ['emphasis', 'bold', 'quotes']
  *
  * It plays three parts: seeded into the palettes table on first run as an ordinary, editable row;
  * the field values a new preset starts from; and the fallback the app renders with when no row is
- * active â€” which is what a user who deleted every palette sees.
+ * active: what a user who deleted every palette sees.
  */
 export const defaultPalette: Palette = {
   ownerId: 'local',
@@ -249,7 +249,7 @@ export const rootVarFields = [
 ] as const
 
 /**
- * Merge a stored row over the defaults so a partial or older row still resolves every field â€” the
+ * Merge a stored row over the defaults so a partial or older row still resolves every field: the
  * same defaults-merge-on-read shape `useAppearance()` used.
  */
 export function resolvePalette(p?: Partial<Palette> | null): Palette {
@@ -265,7 +265,7 @@ export function resolvePalette(p?: Partial<Palette> | null): Palette {
 
 /**
  * Numbers keyed by CSS var name, and nothing else. A row from a file can hold strings, nulls or
- * nested objects here, and these values go straight into a `style.setProperty` call â€” so junk is
+ * nested objects here, and these values go straight into a `style.setProperty` call. Junk is
  * dropped rather than coerced. Range is not checked: the knob that owns the key clamps it, and this
  * module has no access to the skin declarations.
  */
@@ -303,11 +303,11 @@ export function normalizeBackgrounds(
 }
 
 /**
- * A page's effective background: the slot's own fields over the baseline's, field by field, so a
+ * A page's effective background: the slot's own fields over the baseline's, field by field. A
  * page that sets only a fit still shows the baseline image. CSS and HTML replace rather than merge:
- * a page with either one non-empty renders its own and none of the baseline's, so a page background
+ * a page with either one non-empty renders its own and none of the baseline's. A page background
  * can't end up painted over the baseline's. Empty falls back to the baseline. They fall back
- * independently â€” a page can set only CSS and still get the baseline's elements to style.
+ * independently: a page can set only CSS and still get the baseline's elements to style.
  */
 export function resolveBackground(
   backgrounds: Record<BackgroundSlot, Background>,
@@ -326,7 +326,7 @@ export function resolveBackground(
   return {
     imageId: hasOwnImage ? own.imageId : base.imageId,
     url: hasOwnImage ? own.url : base.url,
-    // A slot with no image of its own is showing the baseline's, so it uses the baseline's fit too.
+    // A slot with no image of its own is showing the baseline's. It uses the baseline's fit too.
     fit: hasOwnImage ? own.fit : base.fit,
     // Layer geometry, not an image property: a slot that sets only css/html still owns its own box.
     excludeNav: own.imageId || own.url || own.css || own.html ? own.excludeNav : base.excludeNav,
@@ -336,8 +336,8 @@ export function resolveBackground(
 }
 
 /**
- * How one fit mode paints. Applied inline, and only when there is an image â€” a slot with no image
- * leaves `.pageBackground` with no background properties at all, so custom CSS starts from nothing.
+ * How one fit mode paints. Applied inline, and only when there is an image: a slot with no image
+ * leaves `.pageBackground` with no background properties at all. Custom CSS starts from nothing.
  */
 export function fitStyle(fit: BackgroundFit): {
   backgroundSize: string
@@ -345,7 +345,7 @@ export function fitStyle(fit: BackgroundFit): {
   backgroundPosition: string
 } {
   const at = { backgroundPosition: 'center' }
-  // 'none' hides the image entirely, so the caller skips the style object; this is just a safe value.
+  // 'none' hides the image entirely. The caller skips the style object; this is just a safe value.
   if (fit === 'none') return { backgroundSize: 'auto', backgroundRepeat: 'no-repeat', ...at }
   if (fit === 'tile') return { backgroundSize: 'auto', backgroundRepeat: 'repeat', ...at }
   if (fit === 'stretch') return { backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', ...at }
@@ -422,7 +422,7 @@ export function matchAppFontPatch(p: Palette, on: boolean): Partial<Palette> {
   }
 }
 
-/** `--name` â†’ value for every var applied at the root element. A cleared color is left out, so
+/** `--name` -> value for every var applied at the root element. A cleared color is left out:
  *  the `:root` block in index.css shows through as the fallback. */
 export function paletteVars(p: Palette): Record<string, string> {
   const vars: Record<string, string> = {}
@@ -433,15 +433,15 @@ export function paletteVars(p: Palette): Record<string, string> {
   // chrome is precisely what sits outside those views. Empty means the index.css fallback wins.
   vars['--appFont'] = effectiveAppFont(p)
   vars['--textWeight'] = String(p.textWeight || 400)
-  // Derived, not a knob: the browser paints scrollbars and form controls from `color-scheme`, and
-  // a light palette with dark controls looks broken. Any palette with a light background gets it.
+  // Derived, not a knob: the browser paints scrollbars and form controls from `color-scheme`.
+  // A light palette with dark controls looks broken. Any palette with a light background gets it.
   vars['--colorScheme'] = isLight(p.bg) ? 'light' : 'dark'
   return vars
 }
 
 /**
- * Which fields differ between two palettes â€” what the rewind controls render from. `id`,
- * `ownerId` and `orderId` are identity and list position, not appearance, so they never count as
+ * Which fields differ between two palettes: what the rewind controls render from. `id`,
+ * `ownerId` and `orderId` are identity and list position, not appearance. They never count as
  * a change.
  */
 export function changedFields(before: Palette, after: Palette): (keyof Palette)[] {

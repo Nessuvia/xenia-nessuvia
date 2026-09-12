@@ -4,8 +4,8 @@ import { sequencesOf } from '../../core/prompt/flattenPrompt'
 
 /**
  * The template's own stop strings. A connection can also carry a `stop` sampler param, and the two
- * are merged rather than one replacing the other; this panel says which is which, because a user
- * who edits the wrong one loses the sequence that closes the model's turn.
+ * are merged rather than one replacing the other. This panel says which is which: a user who
+ * edits the wrong one loses the sequence that closes the model's turn.
  */
 export default function StopStringsPanel({
   template,
@@ -29,7 +29,7 @@ export default function StopStringsPanel({
           onChange={(e) => onChange({ ...template, stopSequences: parseList(e.target.value) })}
         />
         <span className="templateHint">
-          Comma-separated. These close the model's turn, so the format needs them. Write a newline
+          Comma-separated. These close the model's turn and the format needs them. Write a newline
           as \n and a literal comma as \,.
         </span>
       </label>

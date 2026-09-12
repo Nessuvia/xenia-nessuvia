@@ -67,7 +67,7 @@ assert.equal(mbt.length, 1)
 assert.equal(mbt[0].tokenFrom, 1)
 assert.equal(mbt[0].tokenTo, 3) // big, red
 
-// Optional [adj]? greedily takes the adjective when present, so "red car" matches from index 2.
+// Optional [adj]? greedily takes the adjective when present. "red car" matches from index 2.
 const opt = compilePattern('[adj]? [noun]')
 const mo = findMatches(qtokens, opt)
 assert.equal(mo.length, 1)

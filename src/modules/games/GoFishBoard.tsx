@@ -11,14 +11,14 @@ import type { HandFit } from './gamesStore'
 import { useDiffOrigin } from './useDiffOrigin'
 
 /**
- * How long the box counts down before it sends itself. The bar reads the same number as a CSS var,
- * so the animation and the timer cannot drift apart.
+ * How long the box counts down before it sends itself. The bar reads the same number as a CSS
+ * var. The animation and the timer cannot drift apart.
  */
 const autoSendMs = 1500
 
 /**
  * The play space: the character speaks at the top, you speak at the bottom, and the cards sit in
- * the field between. Those two rows are pinned, so nothing a card does moves them. Whose turn it
+ * the field between. Those two rows are pinned. Nothing a card does moves them. Whose turn it
  * is shows as a ring on that avatar and nowhere else.
  *
  * Read-only is the same component with the input hidden, which is what History's scrubber renders.
@@ -75,7 +75,7 @@ export default function GoFishBoard({
   onNext?: () => void
 }) {
   const [text, setText] = useState('')
-  // With chat back on the box stays live off your turn: what you type there is speech, not a move.
+  // With chat back on the box stays live off your turn: what you type there counts as speech.
   const locked =
     readOnly || streaming || state.over || awaitingNext || (state.turn !== 'player' && !chatBack)
   const myTurn = state.turn === 'player'
@@ -85,8 +85,8 @@ export default function GoFishBoard({
   ]
 
   // Where a card that is new to the board came from: the zone that just lost one. The whole
-  // arrival animation hangs off this, and it is a diff rather than a message from the store
-  // because the board is the only thing that knows where it drew the zones.
+  // arrival animation hangs off this, and it is a diff rather than a message from the store:
+  // the board is the only thing that knows where it drew the zones.
   const table = useRef<HTMLDivElement>(null)
   const origin = useDiffOrigin(state, (previous, next) =>
     previous.deck.length > next.deck.length
@@ -145,11 +145,11 @@ export default function GoFishBoard({
 
       <div className="cardTableField">
         {/* Face down: a hand you may not see stays out of the DOM. The id is a seeded token rather
-            than the card or its position, so a card leaving the middle of the hand animates from
+            than the card or its position. A card leaving the middle of the hand animates from
             where it sat without its rank ever being in the markup. */}
         {/* --handCount drives the overlap: the stylesheet works out how much the cards have to
-            close up to fit the row, and starts scrolling once they cannot. data-noSwipe because a
-            sideways drag on a scrolling row is a scroll, not a pull on the log drawer. */}
+            close up to fit the row, and starts scrolling once they cannot. data-noSwipe: a
+            sideways drag on a scrolling row is a scroll on the log drawer. */}
         <div
           className="cardTableHandRow"
           data-zone="charHand"
@@ -161,8 +161,8 @@ export default function GoFishBoard({
           ))}
         </div>
 
-        {/* Always rendered, empty until they have asked for something: the line holds its height so
-            the pool below it does not move down the first time it fills. */}
+        {/* Always rendered, empty until they have asked for something: the line holds its height.
+            The pool below it does not move down the first time it fills. */}
         <p className="goFishKnown">
           {known.length > 0 ? `They have asked for ${known.join(', ')}` : ''}
         </p>
@@ -208,7 +208,7 @@ export default function GoFishBoard({
         </div>
       </div>
 
-      {/* Sits under your hand, so the control that changes how the cards are drawn is next to the
+      {/* Sits under your hand: the control that changes how the cards are drawn is next to the
           cards it changes. */}
       {onHandFit && (
         <div className="goFishFitToggle">
@@ -256,9 +256,9 @@ export default function GoFishBoard({
                 if (e.key === 'Enter') send()
               }}
             />
-            {/* The countdown, drawn as a border filling in from the left. Keyed by the nonce so a
-                second click restarts the animation rather than continuing the old one, and over
-                the input rather than on it so the text underneath stays readable. */}
+            {/* The countdown, drawn as a border filling in from the left. Keyed by the nonce: a
+                second click restarts the animation rather than continuing the old one. Sits over
+                the input rather than on it, and the text underneath stays readable. */}
             {armed > 0 && (
               <span
                 key={armed}

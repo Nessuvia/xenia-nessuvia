@@ -65,7 +65,7 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
       blocks.push(
         stBlock({
           source,
-          // characterPostHistory falls back to the block's own text when the card has none, so
+          // characterPostHistory falls back to the block's own text when the card has none.
           // ST's jailbreak wording is worth keeping.
           content: source === 'characterPostHistory' ? (prompt.content ?? '') : '',
           ...(disabled ? { disabled: true, toggleable: true } : {}),
@@ -80,8 +80,8 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
       continue
     }
     // injection_position 1 means ST splices this into the chat at a depth. The only depth block we
-    // have is the author's note, and it takes its text from the chat rather than from the stack, so
-    // the prompt's own wording has nowhere to live there. It goes in where it sits in the order.
+    // have is the author's note, and it takes its text from the chat rather than from the stack.
+    // The prompt's own wording has nowhere to live there. It goes in where it sits in the order.
     if (prompt.injection_position === 1) {
       depthPrompts.push(prompt.name?.trim() || (entry.identifier ?? 'a prompt'))
     }

@@ -115,7 +115,7 @@ const messages = [
   assert.ok(out.includes('[LAST]three'), 'last assistant turn kept the plain prefix')
   // The open turn at the end uses the last override too.
   assert.ok(out.endsWith('[LAST]'), out.slice(-20))
-  // With only firstModelPrefix set, one turn is both first and last: last is unset, so first wins.
+  // With only firstModelPrefix set, one turn is both first and last: last is unset and first wins.
   const firstOnly = { ...defaultTemplate(), firstModelPrefix: '[FIRST]' }
   assert.ok(flattenPrompt(long, firstOnly).includes('[FIRST]one'))
 }
@@ -135,7 +135,7 @@ const messages = [
   // The open turn names who has to answer. ChatML trims the trailing space off the label.
   assert.ok(always.endsWith('Xenia:'), always.slice(-20))
 
-  // One assistant speaker is not a group, so 'group' stays quiet.
+  // One assistant speaker is not a group: 'group' stays quiet.
   const solo = flattenPrompt(named, { ...defaultTemplate(), names: 'group' })
   assert.ok(!solo.includes('Dom: hello'))
   // Two of them is.
@@ -175,7 +175,7 @@ const messages = [
   const template = { ...defaultTemplate(), prefill: 'Certainly, ' }
   const out = flattenPrompt(messages, { ...template, trimTrailingSpace: false })
   assert.ok(out.endsWith('<|im_start|>assistant\nCertainly, '), out.slice(-40))
-  // trimTrailingSpace still applies to it, since the trailing space is the same lost token.
+  // trimTrailingSpace still applies to it: the trailing space is the same lost token.
   assert.ok(flattenPrompt(messages, template).endsWith('Certainly,'))
 }
 
