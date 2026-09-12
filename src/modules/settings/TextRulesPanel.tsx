@@ -3,7 +3,7 @@ import {
   newTextRule,
   type DetectSettings,
   type TextRule,
-} from '../../core/nessuPass/detectSettings'
+} from '../../core/secondSweep/detectSettings'
 import RuleCardHead from './RuleCardHead'
 import './settings.css'
 

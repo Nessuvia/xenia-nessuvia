@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: checkLexicon.ts runs this under `node --experimental-strip-types`.
-import type { Note } from '../nessuPass/note.ts'
+import type { Note } from '../secondSweep/note.ts'
 import { computeExclusions, type Range } from '../hammer/exclusions.ts'
 
 export interface LexiconEntry {

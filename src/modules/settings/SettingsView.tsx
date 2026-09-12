@@ -6,7 +6,7 @@ import ConnectionEditor from './ConnectionEditor'
 import TagRulesPanel from './TagRulesPanel'
 import FindReplacePanel from './FindReplacePanel'
 import LegacyPassImport from './LegacyPassImport'
-import NessuPassPanel from './NessuPassPanel'
+import SecondSweepPanel from './SecondSweepPanel'
 import RelayPanel from './RelayPanel'
 import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
@@ -311,8 +311,8 @@ export default function SettingsView() {
         </div>
       ) : tab === 'relay' ? (
         <RelayPanel />
-      ) : tab === 'nessuPass' ? (
-        <NessuPassPanel />
+      ) : tab === 'secondSweep' ? (
+        <SecondSweepPanel />
       ) : (
         <div className="textRulesCards">
           <TagRulesPanel />

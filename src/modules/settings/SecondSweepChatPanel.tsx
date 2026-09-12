@@ -2,27 +2,27 @@ import { Link } from 'react-router-dom'
 import { useChats } from '../../core/stores/chatStore'
 import { usePipelines } from '../../core/stores/pipelineStore'
 import { useSettings } from '../../core/stores/settingsStore'
-import { resolveNessuPass } from '../../core/nessuPass/resolve'
+import { resolveSecondSweep } from '../../core/secondSweep/resolve'
 import './settings.css'
 
 /**
- * Nessu's Pass for the open chat, in the chat sidebar.
+ * Second Sweep for the open chat, in the chat sidebar.
  *
  * Both controls write the **chat** record, never the global default and never the pipeline:
  * turning the pass on here must not change the next new chat, and picking a pipeline here must
  * not edit the pipeline. A chat that touches neither inherits global.
  */
-export default function NessuPassChatPanel() {
+export default function SecondSweepChatPanel() {
   const chat = useChats((s) => s.chat)
   const patchChat = useChats((s) => s.patchChat)
-  const global = useSettings((s) => s.nessuPass)
+  const global = useSettings((s) => s.secondSweep)
   const pipelines = usePipelines((s) => s.pipelines)
   if (!chat) return null
 
-  const override = chat.nessuPass
-  const settings = resolveNessuPass(global, override)
+  const override = chat.secondSweep
+  const settings = resolveSecondSweep(global, override)
   const pipeline = pipelines.find((p) => p.id === settings.pipelineId)
-  const set = (patch: typeof override) => patchChat({ nessuPass: { ...override, ...patch } })
+  const set = (patch: typeof override) => patchChat({ secondSweep: { ...override, ...patch } })
 
   return (
     <div className="passChatPanel">
@@ -32,7 +32,7 @@ export default function NessuPassChatPanel() {
           checked={settings.enabled}
           onChange={(e) => set({ enabled: e.target.checked })}
         />
-        Pass replies in this chat
+        Sweep replies in this chat
       </label>
 
       <label className="passChatPipeline">
@@ -57,14 +57,14 @@ export default function NessuPassChatPanel() {
       </p>
       {override === undefined && <p className="hint">Using the global settings.</p>}
       <p className="hint">
-        <Link to="/settings#nessuPass">Nessu's Pass settings</Link>
+        <Link to="/settings#secondSweep">Second Sweep settings</Link>
       </p>
 
       <button
         type="button"
         className="secondary"
         disabled={override === undefined}
-        onClick={() => patchChat({ nessuPass: undefined })}
+        onClick={() => patchChat({ secondSweep: undefined })}
       >
         Use the global settings
       </button>

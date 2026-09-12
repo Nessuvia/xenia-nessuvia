@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { findTextMatches, standingNotes } from '../../core/nessuPass/textRules'
-import type { DetectSettings } from '../../core/nessuPass/detectSettings'
+import { findTextMatches, standingNotes } from '../../core/secondSweep/textRules'
+import type { DetectSettings } from '../../core/secondSweep/detectSettings'
 import { previewStrips, stripText } from '../../core/hammer/strip'
 import './settings.css'
 

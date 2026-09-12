@@ -1,6 +1,6 @@
 import type { MoveQuality } from '../games/goFish'
 import type { GameEvent, GameKind } from '../games/gameEvent'
-import type { NessuPassOverride } from '../nessuPass/resolve.ts'
+import type { SecondSweepOverride } from '../secondSweep/resolve.ts'
 
 export interface Character {
   id?: number
@@ -203,10 +203,10 @@ export interface Chat {
   /** Pinned to the sidebar for quick access. Absent = not bookmarked. */
   bookmarked?: boolean
   paramOverrides?: ParamOverrides
-  /** Per-chat Nessu's Pass override: whether the pass runs here, and which pipeline it runs.
+  /** Per-chat Second Sweep override: whether the pass runs here, and which pipeline it runs.
    *  The chat toggle writes *this* record, never the pipeline and never the global default. A
    *  chat that never touches the override inherits global. */
-  nessuPass?: NessuPassOverride
+  secondSweep?: SecondSweepOverride
   createdAt: number
   updatedAt: number
 }
@@ -244,7 +244,7 @@ export interface Message {
    *  snapshot was never taken or was past ~256 KB. The field is unindexed, so its shape can change
    *  without a schema version. */
   requestSnapshots?: (string | undefined)[]
-  /** The text as the writing model produced it, for each swipe Nessu's Pass changed. `content`
+  /** The text as the writing model produced it, for each swipe Second Sweep changed. `content`
    *  and `swipes[i]` hold what the pass produced; this holds what was said first. Kept so a
    *  manual re-run always starts from the original rather than compounding, and so the user can
    *  revert. Holes on swipes the pass left alone. Unindexed, like the other parallel arrays.

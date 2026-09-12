@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RiAddLine, RiCheckLine } from '@remixicon/react'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
-import type { Pipeline } from '../../core/nessuPass/pipeline'
+import type { Pipeline } from '../../core/secondSweep/pipeline'
 import type { Finding } from './analyse'
 import { canAddRule, hasRuleFor } from './addRule'
 

@@ -572,7 +572,7 @@
   }
 }
 
-/* Nessu's Pass. One tab's content at a time, with the shared preview under it. Unlike
+/* Second Sweep. One tab's content at a time, with the shared preview under it. Unlike
    .textRulesCards this is a single column, so the tab content takes the leftover height and scrolls
    inside its own frame. */
 .passPanel {
@@ -612,7 +612,7 @@
   font-size: 11px;
 }
 
-/* Nessu's Pass. The panel reuses .textRules/.screenBody for its frame; these are the parts it adds.
+/* Second Sweep. The panel reuses .textRules/.screenBody for its frame; these are the parts it adds.
    .screenBody only handles scrolling, so the stacked controls need their own column and gap. */
 .passBody {
   display: flex;

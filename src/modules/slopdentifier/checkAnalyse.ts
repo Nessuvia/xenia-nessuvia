@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import { analyseText, buildStats } from './analyse.ts'
 import { canAddRule, hasRuleFor, ruleFromFinding } from './addRule.ts'
-import { resolveDetect, type TextRule } from '../../core/nessuPass/detectSettings.ts'
-import { compileRule } from '../../core/nessuPass/textRules.ts'
+import { resolveDetect, type TextRule } from '../../core/secondSweep/detectSettings.ts'
+import { compileRule } from '../../core/secondSweep/textRules.ts'
 import type { LexiconEntry } from '../../core/quality/lexicon.ts'
 
 const detect = resolveDetect()

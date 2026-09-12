@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkCollect.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkCollect.ts
 import assert from 'node:assert/strict'
 import { collectFindings } from './collect.ts'
 import { resolveDetect, type DetectSettings } from './detectSettings.ts'

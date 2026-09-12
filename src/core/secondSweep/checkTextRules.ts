@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkTextRules.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkTextRules.ts
 import assert from 'node:assert/strict'
 import { compileRule, findTextMatches, standingNotes } from './textRules.ts'
 import type { TextRule } from './detectSettings.ts'

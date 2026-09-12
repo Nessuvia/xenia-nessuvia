@@ -24,7 +24,7 @@ export default function App() {
   // Seeds the default chat and Story stacks on a fresh install, so they are there before the first
   // visit to Prompts.
   const loadStacks = useStacks((s) => s.load)
-  // Nessu's Pass pipelines load on boot for the same reason the samplers do: the send path reads
+  // Second Sweep pipelines load on boot for the same reason the samplers do: the send path reads
   // the library synchronously after every reply.
   const loadPipelines = usePipelines((s) => s.load)
   useEffect(() => {

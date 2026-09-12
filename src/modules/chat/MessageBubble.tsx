@@ -100,7 +100,7 @@ export default function MessageBubble({
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
-  /** Run Nessu's Pass over this message, and the retry on a failed one. Omitted by views that
+  /** Run Second Sweep over this message, and the retry on a failed one. Omitted by views that
    *  have no pass (Ask, and a multiplayer guest). */
   onPass?: () => void
   /** Put the pre-rewrite text back. */
@@ -206,8 +206,8 @@ export default function MessageBubble({
               type="button"
               title={
                 showOriginal
-                  ? 'Show the passed text'
-                  : passSummary || "Show the text before Nessu's Pass"
+                  ? 'Show the swept text'
+                  : passSummary || "Show the text before Second Sweep"
               }
               aria-pressed={showOriginal}
               onClick={() => setShowOriginal(!showOriginal)}
@@ -311,7 +311,7 @@ export default function MessageBubble({
                     setQuickActions(false)
                   }}
                 >
-                  {passOriginal === undefined ? "Nessu's Pass" : "Pass again"}
+                  {passOriginal === undefined ? "Second Sweep" : "Sweep again"}
                 </button>
               )}
               {assistant && onPassRevert && passOriginal !== undefined && (
@@ -323,7 +323,7 @@ export default function MessageBubble({
                     setQuickActions(false)
                   }}
                 >
-                  Revert the pass
+                  Revert the sweep
                 </button>
               )}
               {assistant && count > 1 && (

@@ -1157,7 +1157,7 @@
   color: var(--textDim);
 }
 
-/* Nessu's Pass: a quiet line under the reply saying why a stage's candidate was not used. The
+/* Second Sweep: a quiet line under the reply saying why a stage's candidate was not used. The
    reply itself is untouched, so this is a note rather than an error banner. */
 .passMarker {
   display: flex;

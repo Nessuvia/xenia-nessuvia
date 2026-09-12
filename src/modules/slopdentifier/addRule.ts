@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkAnalyse.ts runs `ruleFromFinding` under
 // `node --experimental-strip-types`. The storage half lives in the component, not here.
-import type { TextRule } from '../../core/nessuPass/detectSettings.ts'
+import type { TextRule } from '../../core/secondSweep/detectSettings.ts'
 import type { Finding } from './analyse.ts'
 
 /** Label length. Long enough to recognise the phrase in a rules list, short enough to fit a row. */

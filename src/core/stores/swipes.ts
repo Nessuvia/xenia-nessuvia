@@ -15,7 +15,7 @@ export interface Swipeable {
   /** What the user asked for when producing each swipe. Parallel to `swipes`, holes where a swipe
    *  was a plain re-roll with nothing typed. */
   instructions?: (string | undefined)[]
-  /** The text as the writing model produced it, before Nessu's Pass worked it over. Parallel to
+  /** The text as the writing model produced it, before Second Sweep worked it over. Parallel to
    *  `swipes`, a hole where the pass was off or changed nothing. Survives a reload, which the
    *  Grammar Hammer's old "show original" toggle did not. */
   passOriginals?: (string | undefined)[]
@@ -125,7 +125,7 @@ export function reasoningFor(message: Swipeable): string | undefined {
   return message.reasonings?.[swipeIndex(message)]
 }
 
-/** The text before Nessu's Pass, for the selected swipe, when the pass actually changed it. */
+/** The text before Second Sweep, for the selected swipe, when the pass actually changed it. */
 export function passOriginalFor(message: Swipeable): string | undefined {
   return message.passOriginals?.[swipeIndex(message)]
 }
@@ -135,7 +135,7 @@ export function passFailedFor(message: Swipeable): string | undefined {
   return message.passFailed?.[swipeIndex(message)]
 }
 
-/** What Nessu's Pass did to the selected swipe, in one line. Absent when it never ran on it. */
+/** What Second Sweep did to the selected swipe, in one line. Absent when it never ran on it. */
 export function passSummaryFor(message: Swipeable): string | undefined {
   return message.passSummaries?.[swipeIndex(message)]
 }

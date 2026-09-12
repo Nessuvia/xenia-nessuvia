@@ -233,7 +233,7 @@ function mirrors(m: Message) {
   assert.deepStrictEqual(instructionChain(on), ['less dialogue'])
 }
 
-// --- Nessu's Pass arrays run parallel to swipes ---------------------------
+// --- Second Sweep arrays run parallel to swipes ---------------------------
 {
   // A fresh take has not been passed: `regenerated` only pads, and the pass writes its own slot.
   const fresh = regenerated(reply(1, 'one'), 'two')!

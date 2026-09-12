@@ -29,7 +29,7 @@ import {
 } from './pipeline'
 
 /**
- * Nessu's Pass: run a pipeline over a finished assistant reply.
+ * Second Sweep: run a pipeline over a finished assistant reply.
  *
  * The reply is already written when this is called. That is the shape the merge settled on: the
  * send path streams the model's own text, the user reads it, and the pass works it over

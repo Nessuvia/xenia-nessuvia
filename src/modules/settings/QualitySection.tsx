@@ -1,7 +1,7 @@
 import { RiDeleteBinLine } from '@remixicon/react'
 import { newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
 import type { QualityWeights } from '../../core/quality/score'
-import type { ScoreStage } from '../../core/nessuPass/pipeline'
+import type { ScoreStage } from '../../core/secondSweep/pipeline'
 import './settings.css'
 
 /** The weight rows, in the order they read best rather than alphabetically. */

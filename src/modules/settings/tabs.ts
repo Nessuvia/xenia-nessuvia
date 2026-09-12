@@ -5,7 +5,7 @@ export const tabs = [
   ['textRules', 'Text'],
   // Its own tab rather than a card under Text: the rules under Text change what you see, and this
   // changes what gets stored and sent back to the model on the next turn.
-  ['nessuPass', "Nessu's Pass"],
+  ['secondSweep', "Second Sweep"],
   ['relay', 'Multiplayer'],
   ['debug', 'Misc'],
 ] as const

@@ -51,7 +51,7 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
     /params     the sampler library: params as data, not code
     /hammer     grammar rules run over model output
-    /nessuPass  Nessu's Pass: pipelines that work a finished reply over before it is stored
+    /secondSweep  Second Sweep: pipelines that work a finished reply over before it is stored
     /quality    scoring a candidate against the text it would replace
     /multiplayer  relay channels, session protocol, turn order, narrator
     /sync       S3 bucket push/pull and dirty-table tracking
@@ -101,7 +101,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   the structural layer.
 - **Sampler params** live in `core/params`. A param def is a row, not code, so a new sampler needs
   no release.
-- **Nessu's Pass** lives in `core/nessuPass`. A pipeline is a Dexie row holding an ordered list of
+- **Second Sweep** lives in `core/secondSweep`. A pipeline is a Dexie row holding an ordered list of
   stages (`gate`, `clean`, `rewrite`, `score`), each a kind plus a config blob, so a new way of
   working a reply over is a JSON file rather than a release. `runPipeline` is the only entry point
   and it is chat-only; `pipeline.ts` holds the shapes, `pipelineJson` imports and exports them,
@@ -111,15 +111,15 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   and nothing else. The checks that counted rather than matched (sentence sprawl, tricolons,
   phrases repeated from earlier replies) were deleted along with their settings and score weights;
   what a chat has actually overused is measured by `quality/census.ts`, and `quality/sentences.ts`
-  is all that is left of the sentence splitter. Which pipeline runs is a setting: global in `settingsStore.nessuPass`,
-  overridden per chat on `Chat.nessuPass`.
+  is all that is left of the sentence splitter. Which pipeline runs is a setting: global in `settingsStore.secondSweep`,
+  overridden per chat on `Chat.secondSweep`.
   Nothing ships. There are no bundled pipelines, no bundled rule set and no bundled slop list; a
   fresh install has an empty library. A pipeline is written in Settings, imported from a file, or
   built a rule at a time from the Slop-dentifier.
 - **Slop-dentifier** is `modules/slopdentifier`. It runs the same detectors read-only over pasted
   text and turns a finding into a `TextRule` on a pipeline the user picks. `analyse.ts` is pure and
   composes what already exists; it adds no detection of its own and makes no request.
-  A 0.0.42 install's Second Pass and Gold Pass settings convert through `nessuPass/legacy.ts`
+  A 0.0.42 install's Second Pass and Gold Pass settings convert through `secondSweep/legacy.ts`
   (pure) and `stores/importLegacyPass.ts` (the storage side), behind a button in Settings › Misc.
   It is one-shot by erasing what it read rather than by setting a flag, so restoring an old backup
   offers it again. That is the one migration in this codebase and it stays opt-in.

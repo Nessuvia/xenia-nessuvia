@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkPipeline.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkPipeline.ts
 import assert from 'node:assert/strict'
 import {
   activeStages,
@@ -12,7 +12,7 @@ import {
   type ScoreStage,
   type Stage,
 } from './pipeline.ts'
-import { defaultNessuPass, resolveNessuPass } from './resolve.ts'
+import { defaultSecondSweep, resolveSecondSweep } from './resolve.ts'
 
 // --- stages carry the defaults for their kind -----------------------------
 {
@@ -98,18 +98,18 @@ import { defaultNessuPass, resolveNessuPass } from './resolve.ts'
 
 // --- the chat override sits on top of global ------------------------------
 {
-  assert.deepEqual(resolveNessuPass(undefined, undefined), defaultNessuPass)
+  assert.deepEqual(resolveSecondSweep(undefined, undefined), defaultSecondSweep)
 
   const global = { enabled: true, pipelineId: 3 }
-  assert.deepEqual(resolveNessuPass(global, undefined), global)
+  assert.deepEqual(resolveSecondSweep(global, undefined), global)
   // A chat that only turns the pass off keeps the global pipeline.
-  assert.deepEqual(resolveNessuPass(global, { enabled: false }), { enabled: false, pipelineId: 3 })
+  assert.deepEqual(resolveSecondSweep(global, { enabled: false }), { enabled: false, pipelineId: 3 })
   // ...and one that only names a pipeline keeps the global toggle.
-  assert.deepEqual(resolveNessuPass(global, { pipelineId: 9 }), { enabled: true, pipelineId: 9 })
+  assert.deepEqual(resolveSecondSweep(global, { pipelineId: 9 }), { enabled: true, pipelineId: 9 })
   // An empty override object inherits both: undefined means "not said", not "off".
-  assert.deepEqual(resolveNessuPass(global, {}), global)
+  assert.deepEqual(resolveSecondSweep(global, {}), global)
   // false is a value, not an absence, so it has to win over a global true.
-  assert.equal(resolveNessuPass({ enabled: true, pipelineId: 1 }, { enabled: false }).enabled, false)
+  assert.equal(resolveSecondSweep({ enabled: true, pipelineId: 1 }, { enabled: false }).enabled, false)
 }
 
 console.log('checkPipeline ok')

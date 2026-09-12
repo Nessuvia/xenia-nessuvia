@@ -39,7 +39,7 @@ export default function LegacyPassImport() {
         <p className="debugHint">
           Converted {done.pipelines} {done.pipelines === 1 ? 'pipeline' : 'pipelines'},{' '}
           {done.chats} {done.chats === 1 ? 'chat' : 'chats'} and {done.messages}{' '}
-          {done.messages === 1 ? 'message' : 'messages'}. Check the stages in Nessu's Pass.
+          {done.messages === 1 ? 'message' : 'messages'}. Check the stages in Second Sweep.
         </p>
       ) : (
         <>

@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkPipelineJson.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkPipelineJson.ts
 import assert from 'node:assert/strict'
 import { exportPipelines, parsePipelineFile } from './pipelineJson.ts'
 import { newPipeline, newStage, type RewriteStage } from './pipeline.ts'

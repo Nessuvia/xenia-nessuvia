@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkLegacy.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkLegacy.ts
 import assert from 'node:assert/strict'
 import {
   legacyEnabled,

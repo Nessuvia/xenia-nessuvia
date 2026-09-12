@@ -3,12 +3,12 @@ import { storage } from '../storage/db'
 import { currentOwnerId } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { Chat } from '../storage/types'
-import { newPipeline, resolvePipeline, type Pipeline } from '../nessuPass/pipeline'
-import { resolveNessuPass, type NessuPassSettings } from '../nessuPass/resolve'
+import { newPipeline, resolvePipeline, type Pipeline } from '../secondSweep/pipeline'
+import { resolveSecondSweep, type SecondSweepSettings } from '../secondSweep/resolve'
 import { useSettings } from './settingsStore'
 
 /**
- * The pipeline library: every Nessu's Pass pipeline this install has, loaded once.
+ * The pipeline library: every Second Sweep pipeline this install has, loaded once.
  *
  * A table rather than an array inside settings, because a pipeline is a document. It gets named,
  * duplicated, exported, traded and picked per chat, and none of that is comfortable inside a
@@ -70,13 +70,13 @@ export function pipelineList(): Pipeline[] {
 }
 
 /** Global settings with this chat's override on top. A chat with no override inherits global. */
-export function nessuPassFor(chat: Chat | null | undefined): NessuPassSettings {
-  return resolveNessuPass(useSettings.getState().nessuPass, chat?.nessuPass)
+export function secondSweepFor(chat: Chat | null | undefined): SecondSweepSettings {
+  return resolveSecondSweep(useSettings.getState().secondSweep, chat?.secondSweep)
 }
 
 /** The pipeline a chat would run, or undefined when none is chosen or the chosen one is gone. */
 export function pipelineFor(chat: Chat | null | undefined): Pipeline | undefined {
-  const { pipelineId } = nessuPassFor(chat)
+  const { pipelineId } = secondSweepFor(chat)
   if (pipelineId == null) return undefined
   return pipelineList().find((p) => p.id === pipelineId)
 }

@@ -8,12 +8,12 @@ import {
   type LegacyGoldPass,
   type LegacyMessageFields,
   type LegacySecondPass,
-} from '../nessuPass/legacy'
+} from '../secondSweep/legacy'
 import { usePipelines } from './pipelineStore'
 import { useSettings } from './settingsStore'
 
 /**
- * The 0.0.42 to 0.0.43 importer: Second Pass and Gold Pass into Nessu's Pass.
+ * The 0.0.42 to 0.0.43 importer: Second Pass and Gold Pass into Second Sweep.
  *
  * Behind a button, like every other import. Nothing is lost by never pressing it: a 0.0.42 message
  * still displays, it just cannot show what it looked like before the pass ran until its arrays are
@@ -60,7 +60,7 @@ export async function importLegacyPass(): Promise<ImportReport> {
   report.pipelines = ids.length
 
   if (ids.length) {
-    useSettings.getState().setNessuPass({
+    useSettings.getState().setSecondSweep({
       enabled: legacyEnabled(second, gold),
       pipelineId: ids[activeIndex] ?? ids[0],
     })
@@ -79,14 +79,14 @@ export async function importLegacyPass(): Promise<ImportReport> {
     // user touching the chat. Importing would otherwise reorder every chat they own.
     const next = { ...chat } as Chat & { goldPass?: unknown }
     delete next.goldPass
-    next.nessuPass = {
+    next.secondSweep = {
       ...(old.enabled === undefined ? {} : { enabled: old.enabled }),
       ...(at === undefined ? {} : { pipelineId: ids[at] }),
     }
     // An override that said nothing this version can express is dropped rather than stored empty:
     // an empty object and an absent one both mean "inherit global", and one of them reads as a
     // setting the user made.
-    if (!Object.keys(next.nessuPass).length) delete next.nessuPass
+    if (!Object.keys(next.secondSweep).length) delete next.secondSweep
     await storage.put('chats', next as unknown as StoredRecord)
     report.chats++
   }

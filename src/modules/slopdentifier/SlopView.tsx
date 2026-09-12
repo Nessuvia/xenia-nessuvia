@@ -3,7 +3,7 @@ import { RiSearchEyeLine } from '@remixicon/react'
 import { usePipelines } from '../../core/stores/pipelineStore'
 import { useSettings } from '../../core/stores/settingsStore'
 import { useSlopSample } from '../../core/stores/slopStore'
-import { resolveDetect } from '../../core/nessuPass/detectSettings'
+import { resolveDetect } from '../../core/secondSweep/detectSettings'
 import { countTokens, loadTokenizer } from '../../core/prompt/budget'
 import { analyseText, type Finding } from './analyse'
 import { ruleFromFinding } from './addRule'
@@ -15,7 +15,7 @@ import './slopdentifier.css'
 export default function SlopView() {
   const pipelines = usePipelines((s) => s.pipelines)
   const updatePipeline = usePipelines((s) => s.update)
-  const activeId = useSettings((s) => s.nessuPass.pipelineId)
+  const activeId = useSettings((s) => s.secondSweep.pipelineId)
   const takeSample = useSlopSample((s) => s.takeSample)
 
   const [text, setText] = useState('')

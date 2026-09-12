@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkInvariants.ts runs this under `node --experimental-strip-types`.
 import nlp from 'compromise'
-import { lengthGuard } from '../nessuPass/lengthGuard.ts'
+import { lengthGuard } from '../secondSweep/lengthGuard.ts'
 import { normalizeWords, proseSegments } from './census.ts'
 
 export type InvariantKind = 'properNoun' | 'dialogue' | 'lengthBand' | 'paragraphCount'

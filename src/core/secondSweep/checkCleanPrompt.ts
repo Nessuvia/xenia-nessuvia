@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/nessuPass/checkCleanPrompt.ts
+// Run: node --experimental-strip-types src/core/secondSweep/checkCleanPrompt.ts
 import assert from 'node:assert/strict'
 import { buildCleanPrompt, shouldRunClean } from './buildCleanPrompt.ts'
 import type { Note } from './note.ts'

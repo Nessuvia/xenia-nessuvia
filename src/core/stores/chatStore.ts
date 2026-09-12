@@ -26,9 +26,9 @@ import {
   swipeIndex,
   withPass,
 } from './swipes'
-import { runPipeline, type RunContext } from '../nessuPass/runPipeline'
-import { pipelineArmed } from '../nessuPass/pipeline'
-import { nessuPassFor, pipelineFor } from './pipelineStore'
+import { runPipeline, type RunContext } from '../secondSweep/runPipeline'
+import { pipelineArmed } from '../secondSweep/pipeline'
+import { secondSweepFor, pipelineFor } from './pipelineStore'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
@@ -119,7 +119,7 @@ function runContext(
 }
 
 /**
- * Nessu's Pass around one finished generation, in one place rather than pasted at each call site.
+ * Second Sweep around one finished generation, in one place rather than pasted at each call site.
  *
  * The reply has already streamed and the user has read it. This runs the chat's pipeline over it,
  * streaming a stage's candidate over what is on screen through `onProgress`, and reports what
@@ -129,7 +129,7 @@ function runContext(
  * Abort throws through, so the caller's existing stop handling fires. Nothing else throws: a pass
  * that fails is worth less than the reply that already exists.
  */
-async function nessuPass(
+async function secondSweep(
   chat: Chat,
   character: Character | undefined,
   priorMessages: Message[],
@@ -142,7 +142,7 @@ async function nessuPass(
 ): Promise<PassResult> {
   const pipeline = pipelineFor(chat)
   if (!pipeline || !pipelineArmed(pipeline)) return { text }
-  if (!force && !nessuPassFor(chat).enabled) return { text }
+  if (!force && !secondSweepFor(chat).enabled) return { text }
 
   const run = runPipeline(text, pipeline, runContext(priorMessages, character, userName), signal)
   let shown = ''
@@ -328,7 +328,7 @@ interface ChatState {
   swipeTo(messageId: number, index: number): Promise<void>
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
-  /** Run Nessu's Pass over an assistant message by hand. Always starts from the stored original, so
+  /** Run Second Sweep over an assistant message by hand. Always starts from the stored original, so
    *  running it twice does not compound, and replaces the previous rewrite. */
   passMessage(messageId: number): Promise<void>
   /** Put the pre-Gold-Pass text back and forget the rewrite. */
@@ -677,11 +677,11 @@ export const useChats = create<ChatState>()((set, get) => ({
           if (chunk.finishReason) finishReason = chunk.finishReason
         }
 
-        // Nessu's Pass. The reply is finished and has been read; a stage's candidate streams over
+        // Second Sweep. The reply is finished and has been read; a stage's candidate streams over
         // it, and the stages after it decide whether that is what gets stored.
         if (text && !controller.signal.aborted) {
           set({ passing: true })
-          const pass = await nessuPass(
+          const pass = await secondSweep(
             chat,
             speaker,
             get().messages,
@@ -814,11 +814,11 @@ export const useChats = create<ChatState>()((set, get) => ({
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Nessu's Pass. The reply is finished and has been read; a stage's candidate streams over
+      // Second Sweep. The reply is finished and has been read; a stage's candidate streams over
       // it, and the stages after it decide whether that is what gets stored.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await nessuPass(
+        const pass = await secondSweep(
           chat,
           speaker,
           get().messages,
@@ -986,11 +986,11 @@ export const useChats = create<ChatState>()((set, get) => ({
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Nessu's Pass, same as the send path. A re-roll's history is everything before this message,
+      // Second Sweep, same as the send path. A re-roll's history is everything before this message,
       // which is what the window gets: the turns after it are not context for what it says.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await nessuPass(
+        const pass = await secondSweep(
           chat,
           speaker,
           get().messages.slice(0, at),
@@ -1185,7 +1185,7 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     const pipeline = pipelineFor(chat)
     if (!pipeline || !pipelineArmed(pipeline)) {
-      set({ error: "No pipeline is set for this chat. Pick one in Settings > Nessu's Pass." })
+      set({ error: "No pipeline is set for this chat. Pick one in Settings > Second Sweep." })
       return
     }
 
@@ -1217,7 +1217,7 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     let result: PassResult
     try {
-      result = await nessuPass(
+      result = await secondSweep(
         chat,
         speaker,
         get().messages.slice(0, at),

@@ -3,7 +3,7 @@
 // this file may reach the store; the hooks that do live in `stores/pipelineStore.ts`.
 
 /**
- * What a chat may say about Nessu's Pass, over the global default.
+ * What a chat may say about Second Sweep, over the global default.
  *
  * Two fields, not a partial pipeline. A pipeline is a record with an id, so a chat overriding it
  * names the one it wants rather than carrying a copy that drifts from the original. The wider
@@ -11,7 +11,7 @@
  * specificity call this feature makes: picking a pipeline in a chat changes that chat, and
  * editing a pipeline changes every chat using it.
  */
-export interface NessuPassOverride {
+export interface SecondSweepOverride {
   /** The auto toggle for this chat. Undefined inherits the global one. */
   enabled?: boolean
   /** Which pipeline runs here. Undefined inherits the global choice; an id whose pipeline was
@@ -20,7 +20,7 @@ export interface NessuPassOverride {
 }
 
 /** The global half, in `settingsStore`. */
-export interface NessuPassSettings {
+export interface SecondSweepSettings {
   /** Whether replies are passed automatically. Off by default: the feature spends at least one
    *  extra request on every generation. The manual action on a message runs either way. */
   enabled: boolean
@@ -29,15 +29,15 @@ export interface NessuPassSettings {
   pipelineId: number | null
 }
 
-export const defaultNessuPass: NessuPassSettings = { enabled: false, pipelineId: null }
+export const defaultSecondSweep: SecondSweepSettings = { enabled: false, pipelineId: null }
 
 /** Global settings with a chat's override on top, the whole resolution order. */
-export function resolveNessuPass(
-  global: Partial<NessuPassSettings> | undefined,
-  override: NessuPassOverride | undefined,
-): NessuPassSettings {
+export function resolveSecondSweep(
+  global: Partial<SecondSweepSettings> | undefined,
+  override: SecondSweepOverride | undefined,
+): SecondSweepSettings {
   return {
-    enabled: override?.enabled ?? global?.enabled ?? defaultNessuPass.enabled,
-    pipelineId: override?.pipelineId ?? global?.pipelineId ?? defaultNessuPass.pipelineId,
+    enabled: override?.enabled ?? global?.enabled ?? defaultSecondSweep.enabled,
+    pipelineId: override?.pipelineId ?? global?.pipelineId ?? defaultSecondSweep.pipelineId,
   }
 }

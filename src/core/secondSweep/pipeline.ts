@@ -6,7 +6,7 @@ import type { LexiconEntry } from '../quality/lexicon.ts'
 import { resolveDetect, type DetectSettings } from './detectSettings.ts'
 
 /**
- * Nessu's Pass: what happens to an assistant reply between the model finishing it and the app
+ * Second Sweep: what happens to an assistant reply between the model finishing it and the app
  * storing it.
  *
  * A pipeline is data, not code. It is an ordered list of stages, each one of a fixed kind with a

@@ -12,10 +12,10 @@ import {
   type ScoreStage,
   type Stage,
   type StageKind,
-} from '../../core/nessuPass/pipeline'
-import type { DetectSettings } from '../../core/nessuPass/detectSettings'
-import { standingNotes } from '../../core/nessuPass/textRules'
-import { downloadPipelines, parsePipelineFile } from '../../core/nessuPass/pipelineJson'
+} from '../../core/secondSweep/pipeline'
+import type { DetectSettings } from '../../core/secondSweep/detectSettings'
+import { standingNotes } from '../../core/secondSweep/textRules'
+import { downloadPipelines, parsePipelineFile } from '../../core/secondSweep/pipelineJson'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import GrammarHammerPanel from './GrammarHammerPanel'
 import PassPreview from './PassPreview'
@@ -41,7 +41,7 @@ const STAGE_KINDS: Array<[StageKind, string]> = [
 ]
 
 /**
- * Nessu's Pass: the pipeline library, and an editor for whichever pipeline is open.
+ * Second Sweep: the pipeline library, and an editor for whichever pipeline is open.
  *
  * The tab state is a `useState` on purpose: the Settings sidebar keeps one flat entry for the
  * pass, so there is nothing to link to and no hash to read.
@@ -50,9 +50,9 @@ const STAGE_KINDS: Array<[StageKind, string]> = [
  * and pipeline choice are the **global** default, which a chat can override in its own sidebar.
  * Everything else edits the **pipeline record**, which every chat using it sees.
  */
-export default function NessuPassPanel() {
-  const settings = useSettings((s) => s.nessuPass)
-  const setSettings = useSettings((s) => s.setNessuPass)
+export default function SecondSweepPanel() {
+  const settings = useSettings((s) => s.secondSweep)
+  const setSettings = useSettings((s) => s.setSecondSweep)
   const { pipelines, loaded, load, create, update, remove } = usePipelines()
   const [tab, setTab] = useState<Tab>('setup')
   const [openId, setOpenId] = useState<number | null>(null)
@@ -103,7 +103,7 @@ export default function NessuPassPanel() {
       {tab === 'setup' && (
         <section className="textRules screenFrame">
           <span className="titleContainer">
-            <h3>Nessu's Pass</h3>
+            <h3>Second Sweep</h3>
             <label className="checkboxRow">
               <input
                 type="checkbox"
