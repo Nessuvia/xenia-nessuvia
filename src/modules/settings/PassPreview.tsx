@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { findTextMatches, standingNotes } from '../../core/secondSweep/textRules'
+import { flagMessage, standingRules } from '../../core/secondSweep/rules'
 import type { DetectSettings } from '../../core/secondSweep/detectSettings'
-import { previewStrips, stripText } from '../../core/hammer/strip'
+import { findFlags, previewStrips, stripText } from '../../core/hammer/strip'
 import './settings.css'
 
 /**
- * One preview for the whole panel: sample text run through the Hammer and the free-text rules, in
- * one list labelled by what reported each row.
+ * One preview for the whole panel: sample text run through the pipeline's rules, in one list
+ * labelled by what each row did, an edit or a report.
  *
  * It sits outside the tab strip and is reachable from any tab. It runs whether or not the
  * pass is enabled: the point of it is deciding what to enable.
@@ -18,7 +18,7 @@ export default function PassPreview({ detect }: { detect: DetectSettings }) {
   const settings = detect
   const [text, setText] = useState('')
 
-  const hammer = useMemo(() => {
+  const edits = useMemo(() => {
     if (!text.trim()) return null
     return previewStrips(text, settings.rules, 'assistant')
   }, [text, settings.rules])
@@ -31,23 +31,23 @@ export default function PassPreview({ detect }: { detect: DetectSettings }) {
 
   const rows = useMemo(() => {
     if (!text.trim()) return []
-    // The checks and the free-text rules see the stripped text, the same string the model is shown.
+    // The flag rules see the edited text, the same string the model is shown.
     const cleaned = stripText(text, settings.rules, 'assistant').text
     const out: Array<{ source: string; slice?: string; message: string }> = []
-    for (const r of hammer?.removed ?? []) {
+    for (const r of edits?.removed ?? []) {
       out.push({
-        source: 'Hammer',
+        source: 'Edit',
         slice: r.slice,
         message: r.replacement ? `Replaced with "${r.replacement}"` : 'Removed',
       })
     }
-    for (const n of findTextMatches(cleaned, settings.textRules, 'assistant')) {
-      out.push({ source: 'Rule', slice: n.slice, message: n.message })
+    for (const flag of findFlags(cleaned, settings.rules, 'assistant')) {
+      out.push({ source: 'Report', slice: flag.slice, message: flagMessage(flag.rule, flag.slice) })
     }
     return out
-  }, [text, hammer, settings.rules, settings.textRules])
+  }, [text, edits, settings.rules])
 
-  const standing = standingNotes(settings.textRules, 'assistant')
+  const standing = standingRules(settings.rules, 'assistant')
 
   return (
     <div className="grammarPreview passPreview">
@@ -57,9 +57,9 @@ export default function PassPreview({ detect }: { detect: DetectSettings }) {
         rows={4}
         onChange={(e) => setText(e.target.value)}
       />
-      {hammer && hammer.removed.length > 0 && (
+      {edits && edits.removed.length > 0 && (
         <>
-          <div className="previewOut">{renderPreview(hammer.text, hammer.removed)}</div>
+          <div className="previewOut">{renderPreview(edits.text, edits.removed)}</div>
           <p className="previewLabel">Result</p>
           <div className="previewOut previewResult">{resultText}</div>
         </>

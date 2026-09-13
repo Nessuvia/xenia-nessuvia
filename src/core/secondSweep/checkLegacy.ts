@@ -53,7 +53,12 @@ const gold: LegacyGoldPass = {
 
   // Every pipeline carries the same checks and lexicon, and its own stage objects.
   for (const p of pipelines) {
-    assert.equal(p.detect.textRules[0].note, 'no hedging')
+    // The two old lists merged into one, hammer rules first and then the free-text ones.
+    assert.deepEqual(p.detect.rules.map((r) => r.match), ['pattern', 'literal'])
+    assert.equal(p.detect.rules[0].find, 'with a [adj] [noun]')
+    assert.equal(p.detect.rules[0].action, 'strip')
+    assert.equal(p.detect.rules[1].note, 'no hedging')
+    assert.equal(p.detect.rules[1].action, 'flag')
     assert.equal(p.detect.punctuation.dashes, false)
     // A check the old blob never wrote still resolves, rather than arriving undefined.
     assert.equal(p.lexicon[0].phrase, 'a beat passed')

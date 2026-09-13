@@ -9,8 +9,7 @@ import { canAddRule, hasRuleFor } from './addRule'
 const CONTEXT = 40
 
 const groupLabels: Record<Finding['group'], string> = {
-  hammer: 'hammer',
-  text: 'text',
+  rule: 'rule',
   slop: 'slop',
   standing: 'standing',
 }
@@ -56,13 +55,13 @@ export default function FindingRow({
                   key={p.id}
                   type="button"
                   className="slopAddMenuItem"
-                  disabled={hasRuleFor(p.detect.textRules, finding)}
+                  disabled={hasRuleFor(p.detect.rules, finding)}
                   onClick={() => {
                     onAdd(p)
                     setOpen(false)
                   }}
                 >
-                  {hasRuleFor(p.detect.textRules, finding) && <RiCheckLine size={14} />}
+                  {hasRuleFor(p.detect.rules, finding) && <RiCheckLine size={14} />}
                   {p.label || 'Untitled pipeline'}
                 </button>
               ))}

@@ -5,7 +5,7 @@ export type RuleScope = 'assistant' | 'user' | 'both'
 
 /**
  * The top row every rule card shares: on/off, a name, who it applies to, copy and delete. Pulled
- * out of GrammarHammerPanel when the free-text rules became a second list with the same chrome.
+ * out of the hammer's panel when the free-text rules became a second list with the same chrome.
  *
  * What the rule actually matches stays with each panel: that is the part that differs.
  */

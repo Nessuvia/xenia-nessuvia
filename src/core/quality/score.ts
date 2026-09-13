@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: checkScore.ts runs this under `node --experimental-strip-types`.
-import type { GrammarHammerRule } from '../hammer/rule.ts'
+import type { Rule } from '../secondSweep/rules.ts'
 import { findFlags } from '../hammer/strip.ts'
 import { sentences } from './sentences.ts'
 import { findSlop, type LexiconEntry } from './lexicon.ts'
@@ -26,7 +26,7 @@ export const defaultWeights: QualityWeights = {
 export interface ScoreContext {
   census: Census
   lexicon: LexiconEntry[]
-  rules: GrammarHammerRule[]
+  rules: Rule[]
   role: 'user' | 'assistant'
 }
 

@@ -5,7 +5,7 @@ import type { Note } from './note.ts'
 import type { PassContext } from './passContext.ts'
 import type { DetectSettings } from './detectSettings.ts'
 import { normalizePunctuation } from './punctuation.ts'
-import { findTextMatches, standingNotes } from './textRules.ts'
+import { flagMessage, standingRules } from './rules.ts'
 
 /** What the detectors made of a passage: the text after the mechanical edits, what is still wrong
  *  with it, and the rules that apply to every passage regardless. */
@@ -43,12 +43,16 @@ export function collectFindings(
   )
 
   const notes: Note[] = findFlags(cleaned, detect.rules, role).map((flag) => ({
-    source: `hammer:${flag.rule.label || flag.rule.id}`,
+    source: `rule:${flag.rule.label || flag.rule.find || flag.rule.id}`,
     span: { start: flag.start, end: flag.end },
     slice: flag.slice,
-    message: `Matches the "${flag.rule.label || flag.rule.pattern}" pattern, which looks like filler. Rewrite it or cut it, whichever keeps the meaning.`,
+    message: flagMessage(flag.rule, flag.slice),
   }))
-  notes.push(...findTextMatches(cleaned, detect.textRules, role))
 
-  return { cleaned, edited: cleaned !== text, notes, standing: standingNotes(detect.textRules, role) }
+  const standing: Note[] = standingRules(detect.rules, role).map((rule) => ({
+    source: `rule:${rule.label || rule.id}`,
+    message: rule.note.trim(),
+  }))
+
+  return { cleaned, edited: cleaned !== text, notes, standing }
 }

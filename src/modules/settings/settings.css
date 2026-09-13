@@ -369,7 +369,7 @@
   color: var(--danger);
 }
 
-/* Grammar Hammer panel. */
+/* Rules panel. */
 .titleContainer {
   display: flex;
   justify-content: space-between;
@@ -377,13 +377,7 @@
   align-items: center;
 }
 
-/* Row layout is the global .checkboxRow baseline; these are the panel's own spacing. */
-.grammarHammer .checkboxRow {
-  flex-grow: 0;
-  margin: 0 0 12px;
-}
-
-/* Grammar Hammer rules as a card list. */
+/* The rules as a card list. */
 .ruleCards {
   list-style: none;
   margin: 0 0 12px;
@@ -610,16 +604,6 @@
   background: var(--surface);
 }
 
-.passTabs {
-  display: flex;
-  gap: 8px;
-}
-
-.passTabOn {
-  background: var(--surfaceActive);
-  border-color: var(--borderAccent);
-}
-
 /* The preview sits outside the scrolling frame, so it keeps its own bottom margin off it. */
 .passPreview {
   flex: 0 0 auto;
@@ -628,51 +612,6 @@
 .passPreviewSource {
   color: var(--textDim);
   font-size: 11px;
-}
-
-/* Second Sweep. The panel reuses .textRules/.screenBody for its frame; these are the parts it adds.
-   .screenBody only handles scrolling, so the stacked controls need their own column and gap. */
-.passBody {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 8px;
-}
-
-.passPrompt {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--textMuted);
-}
-
-.passPromptInput {
-  width: 100%;
-  resize: vertical;
-}
-
-.passSectionTitle {
-  font-size: 12px;
-  color: var(--textMuted);
-}
-
-.passNumbers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.passNumber {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--textMuted);
-}
-
-.passNumberInput {
-  width: 72px;
 }
 
 /* A row that is a checkbox, a name and a delete on one line: pipelines in the library, and
@@ -695,9 +634,8 @@
   gap: 8px;
 }
 
-/* Free-text rules. The cards reuse .ruleCard/.ruleCardHead/.ruleField from the Grammar Hammer; these
-   are the two parts that list has and the Hammer's does not. Scoped to .ruleField and carrying
-   min-width like .patternInput does, so both fields in a card size the same way. */
+/* The note field on a rule card. Scoped to .ruleField and carrying min-width like .patternInput
+   does, so both fields in a card size the same way. */
 .ruleField .ruleNoteInput {
   width: 100%;
   min-width: 0;

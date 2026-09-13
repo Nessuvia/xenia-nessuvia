@@ -77,6 +77,37 @@ const minimal = {
   )
 }
 
+// --- a file written before the rule merge still imports --------------------
+{
+  const [p] = parsePipelineFile(
+    JSON.stringify({
+      ...minimal,
+      detect: {
+        rules: [{ pattern: 'with a [adj] [noun]', action: 'strip' }],
+        textRules: [{ find: 'perhaps', note: 'no hedging' }],
+      },
+    }),
+  )
+  assert.equal(p.detect.rules.length, 2)
+  assert.deepEqual(p.detect.rules.map((r) => r.match), ['pattern', 'literal'])
+  // `pattern` was the hammer's name for the field the merged rule calls `find`.
+  assert.equal(p.detect.rules[0].find, 'with a [adj] [noun]')
+  assert.equal(p.detect.rules[0].action, 'strip')
+  // A text rule had no action and could only report.
+  assert.equal(p.detect.rules[1].action, 'flag')
+  assert.equal(p.detect.rules[1].note, 'no hedging')
+
+  // The current shape imports as written, action included.
+  const [q] = parsePipelineFile(
+    JSON.stringify({
+      ...minimal,
+      detect: { rules: [{ match: 'literal', find: 'perhaps', action: 'strip' }] },
+    }),
+  )
+  assert.equal(q.detect.rules[0].action, 'strip')
+  assert.equal(q.detect.rules[0].match, 'literal')
+}
+
 // --- export drops this install's bookkeeping ------------------------------
 {
   const p = newPipeline('Round trip')

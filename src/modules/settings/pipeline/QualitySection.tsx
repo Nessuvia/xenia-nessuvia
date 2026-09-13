@@ -1,15 +1,15 @@
 import { RiDeleteBinLine } from '@remixicon/react'
-import { newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
-import type { QualityWeights } from '../../core/quality/score'
-import type { ScoreStage } from '../../core/secondSweep/pipeline'
-import './settings.css'
+import { newLexiconEntry, type LexiconEntry } from '../../../core/quality/lexicon'
+import type { QualityWeights } from '../../../core/quality/score'
+import type { ScoreStage } from '../../../core/secondSweep/pipeline'
+import './pipeline.css'
 
 /** The weight rows, in the order they read best rather than alphabetically. */
 const WEIGHTS: Array<[keyof QualityWeights, string]> = [
   ['slop', 'Worn phrasing'],
   ['census', 'Reused in this chat'],
   ['selfRepeat', 'Repeats itself'],
-  ['flags', 'Hammer flags'],
+  ['flags', 'Rule flags'],
   ['variety', 'Sentence variety'],
 ]
 

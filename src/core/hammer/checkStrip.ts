@@ -1,18 +1,20 @@
 import assert from 'node:assert/strict'
 import { stripText, stripWith, findFlags } from './strip.ts'
-import type { GrammarHammerRule } from './rule.ts'
+import type { Rule } from '../secondSweep/rules.ts'
 import { CompromiseTagger } from './tagger.ts'
 
 const tagger = new CompromiseTagger()
 
-function rule(pattern: string, opts: Partial<GrammarHammerRule> = {}): GrammarHammerRule {
+function rule(pattern: string, opts: Partial<Rule> = {}): Rule {
   return {
     id: pattern,
     enabled: true,
-    pattern,
+    match: 'pattern',
+    find: pattern,
     action: 'strip',
     scope: 'assistant',
     caseSensitive: false,
+    note: '',
     ...opts,
   }
 }

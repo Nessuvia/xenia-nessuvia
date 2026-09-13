@@ -25,7 +25,7 @@ This codebase is a WIP. Treat imported data and existing IndexedDB contents as d
 
 Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (IndexedDB) · pnpm
 
-Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for the grammar hammer), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
+Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules and `quality/invariants.ts`), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
 
 There is no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
 `itemProps` makes the whole row draggable and suits a row of plain content. A row holding an `input`
@@ -48,7 +48,7 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /prompt     prompt assembly: buildPrompt, buildStoryPrompt, budget, worldInfo, conditions
     /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
     /params     the sampler library: params as data, not code
-    /hammer     grammar rules run over model output
+    /hammer     the matching engine behind pattern-mode rules
     /secondSweep  Second Sweep: pipelines that work a finished reply over before it is stored
     /quality    scoring a candidate against the text it would replace
     /multiplayer  relay channels, session protocol, turn order, narrator
@@ -117,24 +117,36 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   chat-only. `pipeline.ts` holds the shapes, `pipelineJson` imports and exports them, `collect.ts`
   runs every detector once for the gate and the clean stage, and `core/quality` scores a candidate
   against what it would replace. The folder is flat. There is no `detect/`.
-  A detector matches text: hammer patterns, free-text rules, the punctuation sweep. The checks that
+  A detector matches text: the pipeline's rules and the punctuation sweep. The checks that
   counted rather than matched (sentence sprawl, tricolons, phrases repeated from earlier replies)
   were deleted along with their settings and score weights. What a chat has actually overused is
   measured by `quality/census.ts`. `quality/sentences.ts` is all that remains of the sentence
   splitter. Which pipeline runs is a setting: global in `settingsStore.secondSweep`, overridden per
   chat on `Chat.secondSweep`.
+  The editor is `modules/settings/pipeline/`: a vertical node diagram on the left, an inspector for
+  the selected node on the right, one `pipeline.css`. A pinned Detectors node at the top holds
+  `detect`, `lexicon` and `census`, which every stage below reads. `Settings#secondSweep` shows the
+  library and swaps to the editor when one is opened. There is no route or hash per pipeline: an id
+  is a Dexie row number and means nothing on another machine.
   Nothing ships. There are no bundled pipelines, no bundled rule set, no bundled slop list. A fresh
   install has an empty library. A pipeline is written in Settings, imported from a file, or built a
   rule at a time from the Slop-dentifier.
 - **Slop-dentifier** is `modules/slopdentifier`. It runs the same detectors read-only over pasted
-  text and turns a finding into a `TextRule` on a pipeline the user picks. `analyse.ts` is pure and
+  text and turns a finding into a `Rule` on a pipeline the user picks. `analyse.ts` is pure and
   composes what already exists. It adds no detection of its own and makes no request.
   A 0.0.42 install's Second Pass and Gold Pass settings convert through `secondSweep/legacy.ts`
   (pure) and `stores/importLegacyPass.ts` (the storage side), behind a button in Settings › Misc.
   It is one-shot by erasing what it read rather than by setting a flag, and restoring an old backup
   offers it again. That is the one migration in this codebase and it stays opt-in.
-- **Grammar hammer** lives in `core/hammer`. `tagger`, then `pattern`, then `matcher`, then
-  `repair`/`strip`, with `exclusions` marking spans a rule may not touch.
+- **Detection rules** are one type, `Rule` in `core/secondSweep/rules.ts`, on `Pipeline.detect`.
+  A rule has a match mode (`literal`, `regex`, `pattern`) and an action (`flag`, `strip`,
+  `replace`), and any mode works with any action. `pattern` is the part-of-speech DSL and cannot
+  cross a sentence; a regex can. This replaced two types, a Grammar Hammer rule and a free-text
+  rule, that were the same thing with different powers. A pipeline written before the merge is
+  converted on read by `mergeRules.ts`, which is lossless, so it runs silently.
+  The matching engine is still `core/hammer`: `tagger`, then `pattern`, then `matcher`, then
+  `repair`/`strip`, with `exclusions` marking spans a rule may not touch. `strip.ts` is the entry
+  point for every mode, and `compromise` is still what tags the text.
 
 ## Data
 

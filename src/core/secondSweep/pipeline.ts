@@ -50,7 +50,7 @@ export interface GateStage extends StageBase {
 /**
  * Mechanical edits, then a targeted edit request to the model that wrote the reply.
  *
- * The hammer's `strip` and `replace` rules and the punctuation sweep run with no request at all:
+ * The `strip` and `replace` rules and the punctuation sweep run with no request at all:
  * text can change here for free. What is left over becomes notes, and the notes become one
  * request quoting the exact slices to fix.
  */
@@ -264,7 +264,7 @@ export function stageArmed(stage: Stage): boolean {
 export function pipelineProblem(pipeline: Pipeline | undefined): string {
   if (!pipeline) return 'No pipeline is picked. Pick one in Settings > Second Sweep.'
   if (pipeline.stages.length === 0) {
-    return `${pipeline.label} has no stages. Add one in Settings > Second Sweep > Stages.`
+    return `${pipeline.label} has no stages. Add one in Settings > Second Sweep.`
   }
   const active = activeStages(pipeline)
   if (active.length === 0) return `Every stage in ${pipeline.label} is turned off.`

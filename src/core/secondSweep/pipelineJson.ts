@@ -1,9 +1,9 @@
 // Extension-ful imports on purpose: checkPipelineJson.ts runs this under
 // `node --experimental-strip-types`.
 import { tryCompile } from '../hammer/pattern.ts'
-import type { GrammarHammerRule } from '../hammer/rule.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
-import { resolveDetect, type TextRule } from './detectSettings.ts'
+import { resolveDetect, type DetectSettings } from './detectSettings.ts'
+import type { Rule } from './rules.ts'
 import {
   newPipeline,
   resolveStage,
@@ -20,9 +20,9 @@ import {
  * rules, the rewrite preset, the weights and the order they run in, all of which are opinions, and
  * authoring them through a form is miserable. The build ships two starters and no further opinion.
  *
- * Untrusted input. A text rule's `find` becomes a RegExp, a hammer rule's `pattern` is compiled, a
- * note goes into a prompt and a preset becomes a system prompt: all four are checked here
- * rather than where they are used. A bad file is rejected whole rather than half-imported.
+ * Untrusted input. A rule's `find` becomes a RegExp or a compiled pattern, a note goes into a
+ * prompt, and a preset becomes a system prompt. All of it is checked here rather than where it is
+ * used, and a bad file is rejected whole rather than half-imported.
  */
 
 /** What `exportPipelines` writes and `parsePipelineFile` recognises. */
@@ -70,24 +70,47 @@ function obj(raw: unknown, what: string): Record<string, unknown> {
   return raw as Record<string, unknown>
 }
 
-function oneTextRule(raw: unknown, index: number): TextRule {
-  const r = obj(raw, `Text rule ${index + 1}`)
-  const find = str(r.find)
+/**
+ * One rule from a pasted file.
+ *
+ * Three shapes arrive here. The current one carries `match`. A file written before the rule merge
+ * carries either `pattern` (a Grammar Hammer rule) or `regex` with no `match` (a free-text rule),
+ * and both are read into the merged shape rather than refused. What a user exported still imports.
+ */
+function oneRule(raw: unknown, index: number): Rule {
+  const r = obj(raw, `Rule ${index + 1}`)
+  const match = readMatch(r)
+  // `pattern` was the hammer's field name for the same thing.
+  const find = str(match === 'pattern' && r.find === undefined ? r.pattern : r.find)
   const note = str(r.note)
-  // A rule with neither has nothing to match and nothing to say. `textRules` skips it silently,
+  const caseSensitive = bool(r.caseSensitive, false)
+
+  // A rule with neither has nothing to match and nothing to say. The runner skips it silently,
   // which would make a typo in a pasted file look like a successful import.
   if (!find.trim() && !note.trim()) {
-    throw new Error(`Text rule ${index + 1} has no find and no note.`)
+    throw new Error(`Rule ${index + 1} has no find and no note.`)
   }
 
-  const regex = bool(r.regex, false)
-  if (regex && find.trim()) {
-    try {
-      new RegExp(find)
-    } catch (err) {
-      throw new Error(`Text rule ${index + 1} has a bad regex: ${(err as Error).message}`)
+  // Compiled here rather than at run time: a bad find in a pasted file should be an import error
+  // naming the rule, not a row that silently matches nothing.
+  if (find.trim()) {
+    if (match === 'pattern') {
+      const compiled = tryCompile(find.trim(), caseSensitive)
+      if ('error' in compiled) {
+        throw new Error(`Rule ${index + 1} has a bad pattern: ${compiled.error}`)
+      }
+    } else if (match === 'regex') {
+      try {
+        new RegExp(find)
+      } catch (err) {
+        throw new Error(`Rule ${index + 1} has a bad regex: ${(err as Error).message}`)
+      }
     }
   }
+
+  // A legacy text rule had no action and could only ever flag.
+  const action: Rule['action'] =
+    r.action === 'strip' || r.action === 'replace' || r.action === 'flag' ? r.action : 'flag'
 
   return {
     // Always a fresh id. An imported file may carry ids already in the list, and the same rule
@@ -95,37 +118,20 @@ function oneTextRule(raw: unknown, index: number): TextRule {
     id: crypto.randomUUID(),
     enabled: bool(r.enabled, true),
     label: str(r.label) || undefined,
-    find,
-    regex,
-    caseSensitive: bool(r.caseSensitive, false),
+    match,
+    find: match === 'pattern' ? find.trim() : find,
+    caseSensitive,
     scope: r.scope === 'user' || r.scope === 'both' ? r.scope : 'assistant',
+    action,
+    ...(action === 'replace' ? { replacement: str(r.replacement) } : {}),
     note,
   }
 }
 
-function oneHammerRule(raw: unknown, index: number): GrammarHammerRule {
-  const r = obj(raw, `Hammer rule ${index + 1}`)
-  const pattern = str(r.pattern).trim()
-  if (!pattern) throw new Error(`Hammer rule ${index + 1} has no pattern.`)
-  const caseSensitive = bool(r.caseSensitive, false)
-  // Compiled here rather than at run time: a bad pattern in a pasted file should be an import
-  // error naming the rule, not a row that silently matches nothing.
-  const compiled = tryCompile(pattern, caseSensitive)
-  if ('error' in compiled) {
-    throw new Error(`Hammer rule ${index + 1} has a bad pattern: ${compiled.error}`)
-  }
-  const action =
-    r.action === 'replace' || r.action === 'flag' ? r.action : ('strip' as GrammarHammerRule['action'])
-  return {
-    id: crypto.randomUUID(),
-    enabled: bool(r.enabled, true),
-    label: str(r.label) || undefined,
-    pattern,
-    action,
-    ...(action === 'replace' ? { replacement: str(r.replacement) } : {}),
-    scope: r.scope === 'user' || r.scope === 'both' ? r.scope : 'assistant',
-    caseSensitive,
-  }
+function readMatch(r: Record<string, unknown>): Rule['match'] {
+  if (r.match === 'literal' || r.match === 'regex' || r.match === 'pattern') return r.match
+  if (typeof r.pattern === 'string') return 'pattern'
+  return bool(r.regex, false) ? 'regex' : 'literal'
 }
 
 function oneLexiconEntry(raw: unknown, index: number): LexiconEntry {
@@ -171,11 +177,12 @@ function onePipeline(raw: unknown, index: number): Pipeline {
   if (!stages.length) throw new Error(`Pipeline ${index + 1} has no stages.`)
 
   const rawDetect = p.detect && typeof p.detect === 'object' ? (p.detect as Record<string, unknown>) : {}
+  // Both lists in a pre-merge file, in the order they ran: hammer rules, then free-text rules.
   const rawText = rawDetect.textRules ?? []
-  const rawHammer = rawDetect.rules ?? []
+  const rawRules = rawDetect.rules ?? []
   const rawLexicon = p.lexicon ?? []
   if (!Array.isArray(rawText)) throw new Error(`Pipeline ${index + 1}: "textRules" is not a list.`)
-  if (!Array.isArray(rawHammer)) throw new Error(`Pipeline ${index + 1}: "rules" is not a list.`)
+  if (!Array.isArray(rawRules)) throw new Error(`Pipeline ${index + 1}: "rules" is not a list.`)
   if (!Array.isArray(rawLexicon)) throw new Error(`Pipeline ${index + 1}: "lexicon" is not a list.`)
 
   const base = newPipeline(str(p.label).trim() || `Pipeline ${index + 1}`)
@@ -183,9 +190,8 @@ function onePipeline(raw: unknown, index: number): Pipeline {
     ...base,
     description: str(p.description),
     detect: resolveDetect({
-      ...rawDetect,
-      rules: rawHammer.map(oneHammerRule),
-      textRules: rawText.map(oneTextRule),
+      punctuation: rawDetect.punctuation as DetectSettings['punctuation'],
+      rules: [...rawRules, ...rawText].map(oneRule),
     }),
     lexicon: rawLexicon.map(oneLexiconEntry),
     census: { ...base.census, ...(p.census as object) },

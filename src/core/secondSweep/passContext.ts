@@ -6,7 +6,7 @@
  * connector and the whole send path behind it.
  */
 export interface PassContext {
-  /** Whose text this is. Grammar Hammer rules are scoped by it. */
+  /** Whose text this is. Rules are scoped by it. */
   role?: 'user' | 'assistant'
   /** Recent text from this conversation, oldest first. `quality/census.ts` counts the phrases this
    *  chat has worn out from it; the detectors themselves never read it. */

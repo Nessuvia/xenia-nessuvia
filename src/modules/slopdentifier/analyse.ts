@@ -10,7 +10,7 @@ import { scoreText, type QualityScore } from '../../core/quality/score.ts'
 
 /** Which detector produced a finding. Derived from `Note.source`, which is a free-text string with
  *  a prefix; the group is what the report sections on and what a chip shows. */
-export type FindingGroup = 'hammer' | 'text' | 'slop' | 'standing'
+export type FindingGroup = 'rule' | 'slop' | 'standing'
 
 export interface Finding extends Note {
   group: FindingGroup
@@ -23,7 +23,7 @@ export interface SlopStats {
 }
 
 export interface SlopReport {
-  /** The text after the hammer's strip/replace rules and the punctuation sweep. Spans index this,
+  /** The text after the strip and replace rules and the punctuation sweep. Spans index this,
    *  not what was pasted in. */
   cleaned: string
   /** Whether those mechanical edits changed anything. */
@@ -34,8 +34,7 @@ export interface SlopReport {
 }
 
 function groupOf(source: string): FindingGroup {
-  if (source.startsWith('hammer:')) return 'hammer'
-  if (source.startsWith('text:') || source.startsWith('rule:')) return 'text'
+  if (source.startsWith('rule:')) return 'rule'
   if (source.startsWith('slop:')) return 'slop'
   return 'standing'
 }
@@ -56,7 +55,7 @@ export function buildStats(text: string): SlopStats {
 /**
  * Everything the detectors can say about one passage, with nothing changed and nothing sent.
  *
- * The order is the order the report reads in: hammer flags, text rules, lexicon slop, then the
+ * The order is the order the report reads in: what the rules flagged, lexicon slop, then the
  * standing rules that apply to every passage. Everything with a span is a phrase, which is what
  * makes every finding here one a user can capture as a rule.
  */

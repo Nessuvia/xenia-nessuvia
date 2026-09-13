@@ -58,7 +58,7 @@ export default function SlopView() {
     if (!target) return
     const rule = ruleFromFinding(finding)
     await updatePipeline(targetId, {
-      detect: { ...target.detect, textRules: [...target.detect.textRules, rule] },
+      detect: { ...target.detect, rules: [...target.detect.rules, rule] },
     })
     setAdded(`Added "${rule.find}" to ${target.label || 'Untitled pipeline'}.`)
   }
@@ -132,7 +132,7 @@ export default function SlopView() {
 
               {report.edited && (
                 <p className="slopHint">
-                  Punctuation and the hammer&apos;s strip rules changed the text below. Spans are
+                  Punctuation and the strip rules changed the text below. Spans are
                   against that version.
                 </p>
               )}

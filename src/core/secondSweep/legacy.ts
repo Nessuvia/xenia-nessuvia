@@ -1,11 +1,11 @@
 // Extension-ful imports on purpose: checkLegacy.ts runs this under
 // `node --experimental-strip-types`. Nothing here may reach the store or Dexie; the side-effecting
 // half lives in `stores/importLegacyPass.ts`.
-import type { GrammarHammerRule } from '../hammer/rule.ts'
 import type { CensusOptions } from '../quality/census.ts'
 import type { QualitySettings } from '../quality/decide.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
-import { resolveDetect, type TextRule } from './detectSettings.ts'
+import { resolveDetect } from './detectSettings.ts'
+import { mergeRules } from './mergeRules.ts'
 import {
   newPipeline,
   newStage,
@@ -38,8 +38,9 @@ export interface LegacySecondPass {
   userPrompt?: string
   /** Write mode only, and Write has no pass now. Read so the shape is documented, never used. */
   passBeats?: boolean
-  rules?: GrammarHammerRule[]
-  textRules?: TextRule[]
+  /** Both lists are the pre-merge rule shapes. `mergeRules` owns what they looked like. */
+  rules?: unknown[]
+  textRules?: unknown[]
   punctuation?: { dashes?: boolean; quotes?: boolean }
 }
 
@@ -164,8 +165,7 @@ export function pipelinesFromLegacy(
   // settings; those checks are gone, so the numbers behind them are dropped rather than written
   // onto a record as fields nothing reads.
   const detect = resolveDetect({
-    rules: second?.rules ?? [],
-    textRules: second?.textRules ?? [],
+    rules: mergeRules(second?.rules, second?.textRules),
     punctuation: { ...newPipeline().detect.punctuation, ...second?.punctuation },
   })
   const shared = {

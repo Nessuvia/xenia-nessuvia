@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import { analyseText, buildStats } from './analyse.ts'
 import { canAddRule, hasRuleFor, ruleFromFinding } from './addRule.ts'
-import { resolveDetect, type TextRule } from '../../core/secondSweep/detectSettings.ts'
-import { compileRule } from '../../core/secondSweep/textRules.ts'
+import { resolveDetect } from '../../core/secondSweep/detectSettings.ts'
+import { compileRule, type Rule } from '../../core/secondSweep/rules.ts'
 import type { LexiconEntry } from '../../core/quality/lexicon.ts'
 
 const detect = resolveDetect()
@@ -33,7 +33,7 @@ const report = analyseText(passage, detect, lexicon)
 const groups = new Set(report.findings.map((f) => f.group))
 assert.ok(groups.has('slop'), 'the lexicon should catch "a shiver ran down her spine"')
 for (const f of report.findings) {
-  assert.ok(['hammer', 'text', 'slop', 'standing'].includes(f.group), `unknown group ${f.group}`)
+  assert.ok(['rule', 'slop', 'standing'].includes(f.group), `unknown group ${f.group}`)
 }
 
 // Sentence counting is gone: a tricolon and a run-on sentence are not findings.
@@ -49,7 +49,8 @@ for (const f of report.findings) {
 const slop = report.findings.find((f) => f.group === 'slop')
 assert.ok(slop && canAddRule(slop))
 const rule = ruleFromFinding(slop)
-assert.equal(rule.regex, false)
+assert.equal(rule.match, 'literal')
+assert.equal(rule.action, 'flag')
 assert.equal(rule.scope, 'assistant')
 assert.ok(rule.label && rule.label.length <= 40, 'the label is trimmed to fit a row')
 const re = compileRule(rule)
@@ -57,7 +58,7 @@ assert.ok(re, 'the built rule compiles')
 assert.ok(re!.test(report.cleaned), 'the built rule matches the passage it came from')
 
 // The same phrase is only added once.
-const rules: TextRule[] = [rule]
+const rules: Rule[] = [rule]
 assert.equal(hasRuleFor(rules, slop), true)
 assert.equal(hasRuleFor([], slop), false)
 

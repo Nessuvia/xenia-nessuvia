@@ -2,11 +2,12 @@
 import assert from 'node:assert/strict'
 import { collectFindings } from './collect.ts'
 import { resolveDetect, type DetectSettings } from './detectSettings.ts'
+import type { Rule } from './rules.ts'
 
 const base = resolveDetect()
 
 /** No rules, so a case only sees what it adds. */
-const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
+const quiet: DetectSettings = { ...base, rules: [] }
 
 // --- the mechanical edits happen with no request --------------------------
 {
@@ -26,16 +27,17 @@ const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
 // --- a standing rule is not a found problem -------------------------------
 {
   // No `find`: it applies to every passage rather than matching this one.
-  const standing = {
+  const standing: Rule = {
     id: 's1',
     enabled: true,
+    match: 'literal',
     find: '',
-    regex: false,
     caseSensitive: false,
-    scope: 'assistant' as const,
+    scope: 'assistant',
+    action: 'flag',
     note: 'Never name an emotion outright.',
   }
-  const out = collectFindings('She was fine.', { ...quiet, textRules: [standing] })
+  const out = collectFindings('She was fine.', { ...quiet, rules: [standing] })
   assert.equal(out.notes.length, 0)
   assert.equal(out.standing.length, 1)
   // The two lists are kept apart on purpose: the gate counts them separately, and the prompt
@@ -45,33 +47,35 @@ const quiet: DetectSettings = { ...base, rules: [], textRules: [] }
 
 // --- the detectors see the cleaned text, not the original -----------------
 {
-  const rule = {
+  const rule: Rule = {
     id: 'r1',
     enabled: true,
+    match: 'literal',
     find: 'waited — then',
-    regex: false,
     caseSensitive: false,
-    scope: 'assistant' as const,
+    scope: 'assistant',
+    action: 'flag',
     note: 'no',
   }
   // The em dash is gone by the time the rule runs. A rule written against the raw text misses.
   // That is the contract: the model is shown `cleaned`, and a note must quote what it will see.
-  const out = collectFindings('She waited — then left.', { ...quiet, textRules: [rule] })
+  const out = collectFindings('She waited — then left.', { ...quiet, rules: [rule] })
   assert.equal(out.notes.length, 0)
 }
 
 // --- a user turn is judged by the rules scoped to it ----------------------
 {
-  const rule = {
+  const rule: Rule = {
     id: 'r2',
     enabled: true,
+    match: 'literal',
     find: 'perhaps',
-    regex: false,
     caseSensitive: false,
-    scope: 'assistant' as const,
+    scope: 'assistant',
+    action: 'flag',
     note: 'no hedging',
   }
-  const detect = { ...quiet, textRules: [rule] }
+  const detect = { ...quiet, rules: [rule] }
   assert.equal(collectFindings('perhaps', detect, { role: 'assistant' }).notes.length, 1)
   assert.equal(collectFindings('perhaps', detect, { role: 'user' }).notes.length, 0)
   // No role given means assistant: the pass runs on replies, and that is the useful default.

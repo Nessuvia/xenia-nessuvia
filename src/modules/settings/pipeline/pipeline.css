@@ -1,0 +1,256 @@
+/* The Second Sweep pipeline editor: the node diagram and the inspector beside it. Nothing here is
+   shared with another Settings tab, which is why it is not in settings.css. The inspector forms
+   reuse .passBody/.passPrompt/.passNumbers from there, since those are the pass's own controls. */
+
+.pipelineEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+.pipelineEditorHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipelineBack {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.pipelineEditorLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.pipelineEditorDescription {
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* The frame TwoColumn scrolls inside. Without this the two columns have no height to divide. */
+.pipelineEditor .twoColumn {
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- the chain ---------------------------------------------------------- */
+
+.pipelineDiagram {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.pipelineStep {
+  display: flex;
+  flex-direction: column;
+}
+
+.pipelineNode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--surface);
+}
+
+.pipelineNodeOn {
+  border-color: var(--borderAccent);
+  background: var(--surfaceSelected);
+}
+
+.pipelineNodeOff {
+  color: var(--textDim);
+}
+
+/* The row being dragged over. An outline rather than a border: a border would move the card by a
+   pixel and shuffle the whole column under the cursor. */
+.pipelineNodeOver {
+  outline: 1px solid var(--borderAccent);
+}
+
+.pipelineNodeBody {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+}
+
+.pipelineNodeIcon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--textMuted);
+}
+
+.pipelineNodeText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pipelineNodeTitle {
+  color: var(--textBright);
+}
+
+.pipelineNodeSummary {
+  color: var(--textMuted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipelineNodeToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+/* --- the line between two nodes ----------------------------------------- */
+
+.pipelineConnector {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+/* The flow line itself, drawn behind the insert button rather than as an element of its own. */
+.pipelineConnector::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--border);
+}
+
+.pipelineInsert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  color: var(--textMuted);
+}
+
+.pipelineInsertMenu {
+  position: absolute;
+  top: 100%;
+  z-index: var(--layer-2);
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--surfaceRaised);
+}
+
+.pipelineInsertMenuItem {
+  text-align: left;
+  background: none;
+  border: none;
+}
+
+.pipelineEmpty {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+/* --- the inspector ------------------------------------------------------ */
+
+.pipelineInspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pipelineInspectorHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipelineInspectorLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.pipelineInspectorTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+}
+
+.pipelineInspectorDelete {
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+
+/* --- the stacked form controls the inspector uses ----------------------- */
+/* Moved out of settings.css with the editor: every one of these is used by the pipeline editor
+   alone. .passRow and .passRowLabelInput stayed there, shared with the lexicon rows. */
+
+/* .screenBody only handles scrolling, so the stacked controls need their own column and gap. */
+.passBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+}
+
+.passPrompt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.passPromptInput {
+  width: 100%;
+  resize: vertical;
+}
+
+.passSectionTitle {
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.passNumbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.passNumber {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.passNumberInput {
+  width: 72px;
+}
