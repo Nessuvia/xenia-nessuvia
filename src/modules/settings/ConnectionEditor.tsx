@@ -9,6 +9,7 @@ import { buildRequestBody, requestHeaders, completionUrl } from '../../core/conn
 import { describeFetchError } from '../../core/connectors/fetchError'
 import { parseSse } from '../../core/connectors/connectorInterface'
 import { isSentinel, sentinelHost } from '../../core/connectors/sentinel'
+import { mixedContentBlocked } from '../../core/connectors/mixedContent'
 import { useParamDefs } from '../../core/stores/paramDefsStore'
 import { recommendedParams } from '../../core/params/connectionParams'
 import ParamBuilder from './ParamBuilder'
@@ -36,6 +37,11 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
   const [contextNote, setContextNote] = useState('')
   const [reading, setReading] = useState(false)
   const defs = useParamDefs((s) => s.defs)
+
+  // A sentinel connection is answered in the browser and never fetched, so it cannot be blocked.
+  const blocked =
+    !isSentinel(draft.endpointUrl) &&
+    mixedContentBlocked(draft.endpointUrl, window.location.protocol)
 
   // A connection with no params sends nothing but the model and the prompt, which is never what
   // anyone means by a fresh connection. Filled once the library has loaded, not in newConnection().
@@ -194,6 +200,12 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
                 {testing ? 'Testing…' : 'Test connection'}
               </button>
             </span>
+            {blocked && (
+              <small className="mixedWarning">
+                This site is served over https, so the browser blocks a plain http address unless
+                it is localhost. Reach the model on http://localhost, or put https in front of it.
+              </small>
+            )}
           </label>
 
           <label>

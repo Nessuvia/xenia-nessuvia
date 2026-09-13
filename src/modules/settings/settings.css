@@ -289,6 +289,12 @@
   color: var(--textDim);
   font-size: 12px;
 }
+
+/* Endpoint URL the browser will block as mixed content. */
+.mixedWarning {
+  margin-top: 6px;
+  color: var(--danger);
+}
 /* Tag rules and Find & Replace share a section shell. */
 /* Text Rules: one card per rule set. Three to a row on desktop, single file on a phone.
    grid-auto-rows: 100% makes every row exactly the height of the page. The three rule sets are
