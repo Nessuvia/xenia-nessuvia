@@ -293,6 +293,20 @@ export function coerceValue(def: ParamDef, value: unknown): unknown {
   }
 }
 
+/** `'["\n", ":"]'` as `['\n', ':']`, or null when the text is not a JSON array of strings. */
+function parseJsonStringArray(text: string): string[] | null {
+  const trimmed = text.trim()
+  if (!trimmed.startsWith('[')) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(parsed) || !parsed.length) return null
+  return parsed.every((item) => typeof item === 'string') ? (parsed as string[]) : null
+}
+
 /** The kind and default a pasted JSON value implies, for the new-parameter modal. */
 export function inferKind(value: unknown): { kind: ParamKind; default: unknown } {
   if (typeof value === 'number') return { kind: 'number', default: value }
@@ -300,6 +314,12 @@ export function inferKind(value: unknown): { kind: ParamKind; default: unknown }
   if (Array.isArray(value)) return { kind: 'stringList', default: value.map(String) }
   if (value !== null && typeof value === 'object') {
     return { kind: 'json', default: JSON.stringify(value) }
+  }
+  // SillyTavern stores dry_sequence_breakers as a JSON array inside a string. Sent as a string it
+  // gets a 400: the backend wants an array. Read it as the list it is.
+  if (typeof value === 'string') {
+    const list = parseJsonStringArray(value)
+    if (list) return { kind: 'stringList', default: list }
   }
   return { kind: 'text', default: String(value ?? '') }
 }

@@ -145,6 +145,22 @@ const find = (key: string) => defs.find((d) => d.key === key)!
   assert.deepStrictEqual(coerceValue(def, '\\n'), ['\n'])
 }
 
+// --- a JSON array inside a string is a list ------------------------------
+{
+  // What a SillyTavern preset actually holds for dry_sequence_breakers. Read as text it was sent
+  // as a string and the backend answered 400 "must be a non-empty array of strings".
+  const inferred = inferKind('["\\n", ":", "\\"", "*"]')
+  assert.strictEqual(inferred.kind, 'stringList')
+  assert.deepStrictEqual(inferred.default, ['\n', ':', '"', '*'])
+
+  // Anything that isn't a JSON array of strings stays text.
+  assert.strictEqual(inferKind('hello').kind, 'text')
+  assert.strictEqual(inferKind('[1, 2]').kind, 'text')
+  assert.strictEqual(inferKind('[]').kind, 'text')
+  assert.strictEqual(inferKind('[not json').kind, 'text')
+  assert.strictEqual(inferKind('a, b').kind, 'text')
+}
+
 // --- the other escapes ----------------------------------------------------
 {
   const round = (list: string[]) => assert.deepStrictEqual(parseList(formatList(list)), list)
