@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkConditions.ts runs this under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.
-import type { Character } from '../storage/types'
+import type { Character, PromptBlock } from '../storage/types'
 import { isNarrator } from '../multiplayer/narrator.ts'
 import { castSlots } from './swapTokens.ts'
 
@@ -56,6 +56,42 @@ function directive(line: string): Directive | undefined {
   // [if] with no name, or [else] with one, is not a directive.
   if (needsName !== (name !== '')) return undefined
   return { keyword, name: name.toLowerCase(), negated }
+}
+
+/**
+ * True when `text` branches on `name` in a way `resolveConditions` would honour: an `[if name]` or
+ * `[elseif name]` line, negated or not. Written against `directive()` rather than a fresh regex so
+ * the two can never disagree about what counts, and a near-miss like `[if narrator` reads as prose
+ * to both. Comparison is case-insensitive, as `promptConditions` names are.
+ *
+ * Used to decide whether a prompt stack has already said something about the Narrator, in which
+ * case the global Narrator text in Settings stays out of the way.
+ */
+export function mentionsCondition(text: string, name: string): boolean {
+  if (!text.includes('[')) return false
+  const wanted = name.toLowerCase()
+  return text.split('\n').some((line) => {
+    const found = directive(line)
+    return found?.name === wanted && (found.keyword === 'if' || found.keyword === 'elseif')
+  })
+}
+
+/**
+ * The same question asked of a whole prompt stack. Walks children, reads the selected option of a
+ * block that has options, and skips a disabled block, which contributes nothing to a prompt and so
+ * should not count as the stack having an opinion.
+ *
+ * Only text a block carries itself is scanned. A card field pulled in by a non-text block cannot
+ * hold directives anyway: `resolveConditions` runs over the stack's own text.
+ */
+export function blocksMentionCondition(blocks: PromptBlock[], name: string): boolean {
+  return blocks.some((block) => {
+    if (block.disabled) return false
+    const own = block.options ? (block.options[block.activeOption ?? 0]?.content ?? '') : block.content
+    if (mentionsCondition(own, name)) return true
+    if (mentionsCondition(block.closeContent ?? '', name)) return true
+    return blocksMentionCondition(block.children ?? [], name)
+  })
 }
 
 /** A parsed line: literal text, or a conditional. */

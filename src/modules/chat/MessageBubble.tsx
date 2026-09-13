@@ -7,6 +7,7 @@ import {
   RiMoreLine,
   RiPencilLine,
   RiRefreshLine,
+  RiRobot2Line,
   RiSendPlaneLine,
   RiSparkling2Line,
 } from '@remixicon/react'
@@ -14,6 +15,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import { useNavigate } from 'react-router-dom'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
+import { isNarrator } from '../../core/multiplayer/narrator'
 import {
   passFailedFor,
   passOriginalFor,
@@ -29,6 +31,7 @@ import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
 import SelectionEditDialog from './SelectionEditDialog'
+import { useMediaQuery } from '../../app/useMediaQuery'
 import SelectionMenu from './SelectionMenu'
 import { cutSpan, locate, occurrenceBefore, replaceSpan, textOffset, type Span } from './selectionEdit'
 import PromptInspector from '../../app/PromptInspector'
@@ -146,6 +149,7 @@ export default function MessageBubble({
   // edit writes the whole stored string back.
   const bodyOffset = message.content.length - bodyText.length
 
+  const onPhone = useMediaQuery('(max-width: 700px)')
   const bodyRef = useRef<HTMLDivElement>(null)
   const [selectionMenu, setSelectionMenu] = useState<
     { x: number; y: number; span: Span; text: string } | null
@@ -169,36 +173,57 @@ export default function MessageBubble({
   // Right-click on a run of selected text in a reply. Shift falls through to the browser's own
   // menu, and so does anything the selection can't be traced back to: a selection that leaves this
   // body, the pre-sweep preview, a reply that's still streaming.
-  const onBodyContextMenu = (e: MouseEvent) => {
-    if (e.shiftKey || !assistant || readOnly || showOriginal || streamingText !== null) return
+  const openSelectionMenu = (x: number, y: number): boolean => {
+    if (!assistant || readOnly || showOriginal || streamingText !== null) return false
     const root = bodyRef.current
     const selection = window.getSelection()
-    if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return
+    if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return false
     const range = selection.getRangeAt(0)
-    if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return
+    if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return false
     const text = selection.toString()
-    if (!text.trim()) return
+    if (!text.trim()) return false
 
     const rendered = root.textContent ?? ''
     const start = textOffset(root, range.startContainer, range.startOffset)
-    if (start < 0) return
+    if (start < 0) return false
     const span = locate(bodyText, text, occurrenceBefore(rendered, text, start))
-    if (!span) return
+    if (!span) return false
 
-    e.preventDefault()
     setSelectionMenu({
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y,
       span: { start: span.start + bodyOffset, end: span.end + bodyOffset },
       text: message.content.slice(span.start + bodyOffset, span.end + bodyOffset),
     })
+    return true
+  }
+
+  const onBodyContextMenu = (e: MouseEvent) => {
+    if (e.shiftKey) return
+    if (openSelectionMenu(e.clientX, e.clientY)) e.preventDefault()
+  }
+
+  // Touch has no right-click, and the OS selection handles make a long press mean something else.
+  // On a phone, lifting a finger with text selected opens the same menu: it catches the end of a
+  // drag on the handles and a tap on the selection alike.
+  const onBodyPointerUp = (e: React.PointerEvent) => {
+    if (!onPhone || e.pointerType === 'mouse') return
+    const { clientX, clientY } = e
+    // The selection is not final until the browser settles the handles.
+    window.setTimeout(() => openSelectionMenu(clientX, clientY), 0)
   }
 
   return (
     <div className={`bubble message ${message.role}`} style={colorVars(colors, palette.overwriteCharColor)}>
       <div className="messageHeader">
         <span className="messageWho">
-          <Avatar of={avatar} className="avatar messageAvatar" />
+          {/* The Narrator has no card and so no avatar. The same icon the responder picker uses
+              stands in, otherwise the slot is empty and the name sits where no other name does. */}
+          {isNarrator(message.speakerId) ? (
+            <RiRobot2Line className="avatar messageAvatar narratorAvatar" size={18} />
+          ) : (
+            <Avatar of={avatar} className="avatar messageAvatar" />
+          )}
           {name}
         </span>
         {!readOnly && (
@@ -411,6 +436,7 @@ export default function MessageBubble({
         <div
           ref={bodyRef}
           onContextMenu={onBodyContextMenu}
+          onPointerUp={onBodyPointerUp}
           className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}
         >
           {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {

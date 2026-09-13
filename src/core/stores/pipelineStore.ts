@@ -4,6 +4,7 @@ import { currentOwnerId } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { Chat } from '../storage/types'
 import { newPipeline, resolvePipeline, type Pipeline } from '../secondSweep/pipeline'
+import { defaultPipeline } from '../secondSweep/defaultPipeline'
 import { resolveSecondSweep, type SecondSweepSettings } from '../secondSweep/resolve'
 import { useSettings } from './settingsStore'
 
@@ -14,8 +15,9 @@ import { useSettings } from './settingsStore'
  * duplicated, exported, traded and picked per chat. None of that is comfortable inside a
  * settings blob that the whole app rewrites on every unrelated toggle.
  *
- * Nothing is seeded and nothing ships. A pipeline is written here, imported from a file, or built
- * a rule at a time from the Slop-dentifier.
+ * One pipeline ships, "Default", and it is seeded once into an empty library. It is a worked
+ * example rather than a rule set to live by: see `secondSweep/defaultPipeline.ts`. Everything else
+ * is written here, imported from a file, or built a rule at a time from the Slop-dentifier.
  */
 interface PipelineState {
   pipelines: Pipeline[]
@@ -34,6 +36,10 @@ export const usePipelines = create<PipelineState>()((set, get) => ({
   load: async () => {
     const rows = (await storage.getAll('pipelines')) as unknown as Pipeline[]
     set({ pipelines: rows.map(resolvePipeline), loaded: true })
+    if (rows.length === 0 && !seeded()) {
+      markSeeded()
+      await get().create(defaultPipeline())
+    }
   },
 
   create: async (pipeline = newPipeline('New pipeline')) => {
@@ -63,6 +69,27 @@ export const usePipelines = create<PipelineState>()((set, get) => ({
     await get().load()
   },
 }))
+
+/**
+ * Whether this browser has already been offered the shipped example.
+ *
+ * A non-portable preference: straight to localStorage, no store, no Dexie table, out of the export.
+ * It belongs to this browser rather than to the user's data, and restoring a backup on another
+ * machine should not carry it.
+ *
+ * The marker is what makes deleting the example stick. Seeding on an empty library alone would
+ * bring it back on the next load, which is the worst version of a bundled anything. Written before
+ * the insert rather than after: a failed write must not seed twice on the next load.
+ */
+const SEEDED_KEY = 'nessuTavern.defaultPipelineSeeded'
+
+function seeded(): boolean {
+  return localStorage.getItem(SEEDED_KEY) === '1'
+}
+
+function markSeeded() {
+  localStorage.setItem(SEEDED_KEY, '1')
+}
 
 /** The library outside React, for the send path, which reads it once per reply. */
 export function pipelineList(): Pipeline[] {

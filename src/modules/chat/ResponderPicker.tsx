@@ -18,7 +18,7 @@ export default function ResponderPicker({
   chat,
   characters,
   onPick,
-  /** Show the Narrator first and make it the default. Multiplayer only. */
+  /** Show the Narrator first in the menu. Set in ordinary chat and in multiplayer. */
   withNarrator,
 }: {
   chat: Chat

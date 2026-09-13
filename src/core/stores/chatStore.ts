@@ -6,6 +6,7 @@ import type { Character, Chat, Message, PromptStack, SpeakerAs } from '../storag
 import { sendMessage } from '../connectors/openaiCompatible'
 import { snapshotOf } from '../connectors/snapshot'
 import { buildPrompt } from '../prompt/buildPrompt'
+import { blocksMentionCondition } from '../prompt/conditions'
 import { loadTokenizer } from '../prompt/budget'
 import { reasoningSpan } from '../prompt/reasoning'
 import { tokenizerFor } from '../prompt/tokenizers'
@@ -39,7 +40,8 @@ import { emptyWorldInfo, resolveWorldInfo, type ResolvedWorldInfo } from '../pro
 import { useWorldInfo } from './worldInfoStore'
 import { bookIdsFor, useLorebooks } from './lorebooksStore'
 import { useBlips } from './blipStore'
-import { isNarrator, narratorCharacter } from '../multiplayer/narrator'
+import { isNarrator, narratorCharacter, narratorId } from '../multiplayer/narrator'
+import { narratorBookIds } from './narratorBooks'
 import { budgetOf, maxTokensOf } from '../params/connectionParams'
 
 /**
@@ -232,9 +234,24 @@ function characterAt(chat: Chat, index: number, fallback: Character): Character 
 }
 
 /**
+ * Every roster member's lorebooks, for a Narrator turn. The store lookup lives here; the union
+ * itself is `narratorBookIds`, which is pure and checked. A participant whose card has been
+ * deleted contributes nothing rather than throwing.
+ */
+function rosterBookIds(chat: Chat | null): number[] {
+  if (!chat) return []
+  const cards = useCharacters.getState().characters
+  return narratorBookIds(participants(chat).map((id) => cards.find((c) => c.id === id)?.lorebookIds))
+}
+
+/**
  * The lorebook content for a turn, from three attachment levels at once: every global book, the
  * *speaker's* books, in a group chat the character replying brings their own, not the chat's first
  * participant, and the books attached to this chat.
+ *
+ * The Narrator is the one speaker with no books of its own, so it borrows the whole roster's
+ * instead. Narrating a world the characters can see and the Narrator cannot is the failure this
+ * avoids, and in a group there is no single character whose books are the right ones.
  */
 export async function worldInfoFor(
   speaker: Character,
@@ -249,7 +266,8 @@ export async function worldInfoFor(
   // global books at all.
   if (!state.books.length && !state.loading) await state.load()
   const books = useLorebooks.getState().books
-  const ids = bookIdsFor(books, speaker.lorebookIds, chat?.lorebookIds)
+  const own = isNarrator(speaker.id) ? rosterBookIds(chat) : speaker.lorebookIds
+  const ids = bookIdsFor(books, own, chat?.lorebookIds)
   if (!ids.length) return emptyWorldInfo
   const entries = await useWorldInfo.getState().fetchForBooks(ids)
   if (!entries.length) return emptyWorldInfo
@@ -594,8 +612,17 @@ export const useChats = create<ChatState>()((set, get) => ({
     }
     // `/noreply` is an ordinary user turn with the command word taken off; everything else
     // (decoration, tokens, the record itself) is the same, and only the reply is skipped below.
-    const body = command?.name === 'noreply' ? command.text : stripEscape(text)
+    // `/narrate` is an ordinary user turn with the command word taken off, same as `/noreply`.
+    // Only who replies changes, and that is decided below. Bare `/narrate` posts nothing and
+    // simply asks the Narrator for a beat on the transcript as it stands.
+    const narrating = command?.name === 'narrate'
+    const body = command?.name === 'noreply' || narrating ? command!.text : stripEscape(text)
     if (command?.name === 'noreply' && !body.trim()) return
+    if (narrating && !body.trim()) {
+      stopped = false
+      await get().retry(character, narratorId)
+      return
+    }
     const withBlock = [body, ...blocks].join('\n')
     const content = swapTokens(withBlock, chatTokens(character, persona))
     // Persisted before the request goes out: a failure can never lose what you typed.
@@ -615,6 +642,12 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     // A chosen speaker is one reply from that participant, no round robin, no self-reply run.
     stopped = false
+    // `/narrate` is exactly that, aimed at the Narrator, and it overrides a pinned responder for
+    // this one turn. The next ordinary send goes back to whoever was pinned.
+    if (narrating) {
+      await get().retry(character, narratorId)
+      return
+    }
     if (speakerId !== undefined) {
       await get().retry(character, speakerId)
       return
@@ -655,6 +688,13 @@ export const useChats = create<ChatState>()((set, get) => ({
       let passSummary: string | undefined
       try {
         const stack = await stackFor(chat)
+        // Stack first, Settings second. A stack with an `[if Narrator]` branch has already said
+        // what the Narrator is, and handing it the global text as well would be two voices
+        // arguing. Only a stack that never mentions the Narrator gets the fallback, which rides
+        // in on the card's systemPrompt so it lands where a character's own would.
+        const told = blocksMentionCondition(stack.active, 'narrator')
+          ? speaker
+          : narratorCharacter(useSettings.getState().narratorPrompt)
         const persona = await usePersonas.getState().ensureActive()
         await loadTokenizer(tokenizerFor(connection))
         const promptMessages = buildPrompt(
@@ -663,7 +703,7 @@ export const useChats = create<ChatState>()((set, get) => ({
             character,
             persona,
             chat,
-            speaker,
+            speaker: told,
             messages: get().messages,
             worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
             tagRules: useSettings.getState().appearance.tagRules,

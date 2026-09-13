@@ -105,6 +105,17 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   implementation. Nothing above it touches the relay client. `protocol.ts` holds the event shapes,
   `protocolVersion` (guests reject a mismatch) and the 240 KB event cap. `hostSession`,
   `turnOrder`, `narrator`, `rosterAvatar` sit on top.
+- **Narrator** is `core/multiplayer/narrator.ts` and is not multiplayer-only: it sits there by
+  origin. `narratorId` is -1, `narratorCharacter()` is a synthetic card, and `isNarrator` is how
+  you test for it. It answers in an ordinary chat two ways: pinned in `ResponderPicker`
+  (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
+  `chatStore.retry` branches on it before the round-robin maths and never moves
+  `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack
+  first, Settings second. A stack with an `[if Narrator]` branch owns the Narrator outright;
+  only a stack without one gets `settingsStore.narratorPrompt`, passed to `narratorCharacter()`
+  as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/conditions.ts` decides which.
+  The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
+  (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
 - **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
   decides what needs pushing.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for
@@ -128,9 +139,13 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   `detect`, `lexicon` and `census`, which every stage below reads. `Settings#secondSweep` shows the
   library and swaps to the editor when one is opened. There is no route or hash per pipeline: an id
   is a Dexie row number and means nothing on another machine.
-  Nothing ships. There are no bundled pipelines, no bundled rule set, no bundled slop list. A fresh
-  install has an empty library. A pipeline is written in Settings, imported from a file, or built a
-  rule at a time from the Slop-dentifier.
+  One pipeline ships, "Default", in `defaultPipeline.ts`. It is a worked example rather than an
+  opinion to live by: every match mode and every action appears exactly once, all four stage kinds
+  are present in run order, and the rewrite stage ships turned off because it has no connection.
+  Six rules, two lexicon entries. `pipelineStore.load` seeds it into an empty library once, guarded
+  by `nessuTavern.defaultPipelineSeeded` in localStorage so deleting it sticks, and a button in the
+  library adds it back. Nothing else ships: no further rule set and no slop list. A pipeline is
+  written in Settings, imported from a file, or built a rule at a time from the Slop-dentifier.
 - **Slop-dentifier** is `modules/slopdentifier`. It runs the same detectors read-only over pasted
   text and turns a finding into a `Rule` on a pipeline the user picks. `analyse.ts` is pure and
   composes what already exists. It adds no detection of its own and makes no request.
@@ -171,8 +186,9 @@ Three Zustand stores persist to localStorage rather than Dexie, via `zustand/mid
 data: whether a panel is collapsed, which rail is open, an example section dismissed. Write it
 straight to `localStorage` under a `nessuTavern.*` key, with no store and no Dexie table, and leave
 it out of the export. `backup.ts` reads only the three keys it names, and a new key stays out of a
-backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`) and
-`nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) are the pattern. The test is
+backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`),
+`nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) and
+`nessuTavern.defaultPipelineSeeded` (`core/stores/pipelineStore.ts`) are the pattern. The test is
 whether restoring a backup on another machine should carry it. If it shouldn't, it's a preference.
 
 ## Conventions

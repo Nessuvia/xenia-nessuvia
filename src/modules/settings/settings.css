@@ -284,6 +284,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The card is a flex column with align-items: flex-start, which shrink-wraps a textarea to its
+   cols default. Stretch this one back to the card's width. */
+.narratorPrompt {
+  align-self: stretch;
+  margin-top: 8px;
+  resize: vertical;
+}
+
+.narratorActions {
+  margin-top: 8px;
+}
+
 .debugHint {
   margin: 6px 0 0;
   color: var(--textDim);

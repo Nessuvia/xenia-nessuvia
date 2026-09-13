@@ -33,6 +33,12 @@ export const slashCommands: SlashCommand[] = [
     takesCharacter: false,
   },
   {
+    name: 'narrate',
+    hint: 'Post your message and have the Narrator reply once.',
+    usage: '/narrate <text>',
+    takesCharacter: false,
+  },
+  {
     name: 'break',
     alias: 'br',
     hint: 'Draw a line across the chat.',

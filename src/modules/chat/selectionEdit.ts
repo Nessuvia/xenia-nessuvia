@@ -14,7 +14,7 @@
 const markerChars = '*_`'
 
 /** How long a selection may be before the tolerant pass gives up. Keeps the regex bounded. */
-export const tolerantLimit = 400
+export const tolerantLimit = 2000
 
 /**
  * Index of (node, offset) within root's text content, counting only text nodes. Returns -1 when
@@ -62,10 +62,33 @@ function escapeChar(ch: string): string {
   return ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** `abc` → /a[*_`]{0,3}b[*_`]{0,3}c/ so a selection that crossed a dropped marker still lands. */
+/**
+ * `abc` → /a[*_`]{0,3}b[*_`]{0,3}c/ so a selection that crossed a dropped marker still lands.
+ *
+ * Whitespace is its own case. A selection spanning paragraphs comes back from the DOM with
+ * whatever the browser put between two block elements: one newline, two, or none at all, none of
+ * which has to match the stored text. So any run of whitespace in the selection matches any run of
+ * whitespace in the content, and markers may sit in it.
+ */
 function tolerantPattern(selected: string): RegExp {
   const gap = `[${markerChars.replace(/[\]\\^-]/g, '\\$&')}]{0,3}`
-  const body = Array.from(selected).map(escapeChar).join(gap)
+  const parts: string[] = []
+  const chars = Array.from(selected)
+  for (let i = 0; i < chars.length; i++) {
+    if (/\s/.test(chars[i])) {
+      while (i + 1 < chars.length && /\s/.test(chars[i + 1])) i++
+      parts.push(`[\\s${markerChars.replace(/[\]\\^-]/g, '\\$&')}]+`)
+    } else {
+      parts.push(escapeChar(chars[i]))
+    }
+  }
+  // A whitespace class already swallows its neighbours' gaps: joining with one more would let two
+  // adjacent classes overlap and blow the match up.
+  let body = ''
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0 && !parts[i].startsWith('[\\s') && !parts[i - 1].startsWith('[\\s')) body += gap
+    body += parts[i]
+  }
   return new RegExp(body, 'g')
 }
 
@@ -103,8 +126,9 @@ export function locate(content: string, selected: string, occurrence: number): S
 }
 
 /**
- * Cut a span out. A cut between two spaces leaves one, and a cut that empties a line leaves no
- * trailing blank. Nothing else is tidied: the stored text is the model's.
+ * Cut a span out. A cut between two spaces leaves one, a cut that empties a line leaves no
+ * trailing blank, and a cut that took whole paragraphs leaves one paragraph break rather than the
+ * pile of newlines from both sides. Nothing else is tidied: the stored text is the model's.
  */
 export function cutSpan(content: string, span: Span): string {
   let { start, end } = span
@@ -112,7 +136,15 @@ export function cutSpan(content: string, span: Span): string {
   const after = content[end]
   if (before === ' ' && after === ' ') end += 1
   else if (before === ' ' && (after === undefined || after === '\n')) start -= 1
-  return content.slice(0, start) + content.slice(end)
+
+  const cut = content.slice(0, start) + content.slice(end)
+  // Collapse the newline run sitting across the join, and only that one.
+  let from = start
+  let to = start
+  while (from > 0 && cut[from - 1] === '\n') from--
+  while (to < cut.length && cut[to] === '\n') to++
+  if (to - from < 3) return cut
+  return cut.slice(0, from) + '\n\n' + cut.slice(to)
 }
 
 /** Put `text` in place of a span. */

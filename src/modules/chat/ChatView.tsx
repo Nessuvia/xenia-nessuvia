@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { RiDeleteBinLine, RiSparkling2Line } from '@remixicon/react'
+import { RiDeleteBinLine, RiRobot2Line, RiSparkling2Line } from '@remixicon/react'
 import { useParams } from 'react-router-dom'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
@@ -13,6 +13,7 @@ import MessageBubble, { colorVars } from './MessageBubble'
 import Composer from './Composer'
 import RosterBar from './RosterBar'
 import ResponderPicker from './ResponderPicker'
+import { isNarrator } from '../../core/multiplayer/narrator'
 import DeleteRangeDialog from './DeleteRangeDialog'
 import { renderText } from './renderText'
 import { oldMessageInstruction } from '../../core/prompt/rewrite'
@@ -240,10 +241,19 @@ export default function ChatView() {
           // starts typing.
           <div className="bubble message assistant" style={colorVars(speakerOf(speakingId ?? undefined)?.colors ?? emptyColors(), palette.overwriteCharColor)}>
             <div className="messageHeader">
-              <span className="messageWho">{speakingName || character.name}</span>
+              <span className="messageWho">
+                {/* Matches MessageBubble's header: the icon is there from the first token rather
+                    than appearing once the reply is stored. */}
+                {isNarrator(speakingId ?? undefined) && (
+                  <RiRobot2Line className="avatar messageAvatar narratorAvatar" size={18} />
+                )}
+                {speakingName || character.name}
+              </span>
             </div>
+            {/* Collapsed from the start: an open block grows as tokens arrive and shoves the
+                summary out from under the pointer. */}
             {appearance.showReasoning && streamingReasoning && (
-              <details className="taggedBlock reasoningBlock" open>
+              <details className="taggedBlock reasoningBlock">
                 <summary>Reasoning</summary>
                 {renderText(streamingReasoning, { tagRules: appearance.tagRules, order: palette.colorOrder })}
               </details>
@@ -299,13 +309,14 @@ export default function ChatView() {
         />
 
         <div className="chatToolbar">
-          {participants(chat).length > 1 && (
-            <ResponderPicker
-              chat={chat}
-              characters={characters}
-              onPick={(id) => patchChat({ respondWith: id })}
-            />
-          )}
+          {/* Shown in a solo chat too, not only a group: the Narrator is always a choice, and
+              picking it is how you hold a narrated stretch without retyping /narrate. */}
+          <ResponderPicker
+            chat={chat}
+            characters={characters}
+            withNarrator
+            onPick={(id) => patchChat({ respondWith: id })}
+          />
           <button
             type="button"
             title="Delete a range of messages"

@@ -6,6 +6,7 @@ import type { ConnectionType, InstructTemplate, ParamValue } from '../params/par
 import { tableNames, type TableName } from '../storage/storageInterface.ts'
 import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
+import { defaultNarratorPrompt } from '../multiplayer/narrator.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import {
   defaultSecondSweep,
@@ -212,7 +213,11 @@ interface SettingsState {
   /** Second Sweep: whether replies are passed, and which pipeline does it. The pipelines
    *  themselves are Dexie rows; this only names one. A chat's override lives on the Chat record. */
   secondSweep: SecondSweepSettings
+  /** What the Narrator is told when the prompt stack says nothing about it. Global: a stack is
+   *  the narrower level, and a stack with an `[if Narrator]` branch overrides this outright. */
+  narratorPrompt: string
   setSecondSweep(patch: Partial<SecondSweepSettings>): void
+  setNarratorPrompt(prompt: string): void
   setAsk(patch: {
     askSystemPrompt?: string
     askSuffix?: string
@@ -299,6 +304,7 @@ export const useSettings = create<SettingsState>()(
       askAssistantPrompt: '',
       appearance: defaultAppearance,
       secondSweep: defaultSecondSweep,
+      narratorPrompt: defaultNarratorPrompt,
 
       setAsk: (patch) => set(patch),
 
@@ -308,6 +314,8 @@ export const useSettings = create<SettingsState>()(
 
       setSecondSweep: (patch) =>
         set((s) => ({ secondSweep: { ...defaultSecondSweep, ...s.secondSweep, ...patch } })),
+
+      setNarratorPrompt: (narratorPrompt) => set({ narratorPrompt }),
 
       setDebugMode: (debugMode) => set({ debugMode }),
 

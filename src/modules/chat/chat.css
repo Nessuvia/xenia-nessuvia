@@ -852,6 +852,12 @@
   height: 20px;
 }
 
+/* The Narrator's stand-in for an avatar. An icon has no image to fill the box, so it takes the
+   muted text color rather than sitting at full contrast next to the real portraits. */
+.narratorAvatar {
+  color: var(--textMuted);
+}
+
 /* The roster and the chat toolbar share the row above the composer. */
 /* The right edge lines up with the composer's textarea: leave the Send button's column empty. */
 .chatBottomBar {

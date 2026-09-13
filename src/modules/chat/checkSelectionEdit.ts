@@ -38,4 +38,20 @@ assert.equal(cutSpan('"cat"', { start: 1, end: 4 }), '""')
 assert.equal(replaceSpan('the cat sat', { start: 4, end: 7 }, 'dog'), 'the dog sat')
 assert.equal(replaceSpan('the cat sat', { start: 4, end: 7 }, ''), 'the  sat')
 
+// A selection spanning paragraphs. The DOM hands back one newline between two blocks where the
+// stored text has a blank line, and Chrome sometimes hands back none.
+const twoParas = 'He left the room.\n\nThe door stayed open.'
+assert.deepEqual(locate(twoParas, 'the room.\nThe door', 0), { start: 8, end: 27 })
+assert.deepEqual(locate(twoParas, 'the room.The door', 0), null)
+assert.deepEqual(locate(twoParas, 'the room.\n\nThe door', 0), { start: 8, end: 27 })
+
+// Three paragraphs, with a dropped marker in the middle one.
+const threeParas = 'One.\n\n*Two* here.\n\nThree.'
+assert.deepEqual(locate(threeParas, 'One.\nTwo here.\nThree.', 0), { start: 0, end: 25 })
+
+// Cutting a whole middle paragraph leaves one blank line, not two stacked.
+assert.equal(cutSpan(threeParas, { start: 6, end: 17 }), 'One.\n\nThree.')
+// A cut inside one line still leaves its newlines alone.
+assert.equal(cutSpan('One.\n\nTwo three.', { start: 6, end: 10 }), 'One.\n\nthree.')
+
 console.log('checkSelectionEdit ok')

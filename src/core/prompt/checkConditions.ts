@@ -3,7 +3,14 @@ import assert from 'node:assert'
 import type { Character } from '../storage/types'
 import { emptyColors } from '../storage/types.ts'
 import { narratorCharacter, narratorId } from '../multiplayer/narrator.ts'
-import { promptConditions, resolveConditions, type PromptConditions } from './conditions.ts'
+import {
+  blocksMentionCondition,
+  mentionsCondition,
+  promptConditions,
+  resolveConditions,
+  type PromptConditions,
+} from './conditions.ts'
+import type { PromptBlock } from '../storage/types'
 
 function character(name: string, id: number): Character {
   return {
@@ -194,6 +201,80 @@ const speaking: PromptConditions = { narrator: false, char1: true, char2: false 
   assert.strictEqual(resolveConditions(text, dealing), 'deal')
   assert.strictEqual(resolveConditions(text, fishing), 'ask')
   assert.strictEqual(resolveConditions(text, off), 'chat')
+}
+
+// --- mentionsCondition ---------------------------------------------------
+{
+  assert.strictEqual(mentionsCondition('[if Narrator]\nx\n[endif]', 'narrator'), true)
+  assert.strictEqual(mentionsCondition('[if not narrator]\nx\n[endif]', 'narrator'), true)
+  assert.strictEqual(mentionsCondition('[if game]\nx\n[elseif Narrator]\ny\n[endif]', 'narrator'), true)
+  assert.strictEqual(mentionsCondition('  [if narrator]  ', 'narrator'), true, 'the line is trimmed')
+
+  assert.strictEqual(mentionsCondition('plain prose about a narrator', 'narrator'), false)
+  assert.strictEqual(mentionsCondition('', 'narrator'), false)
+  // The same near-misses resolveConditions treats as prose.
+  assert.strictEqual(mentionsCondition('[if narrator', 'narrator'), false)
+  assert.strictEqual(mentionsCondition('[if narrator] and then', 'narrator'), false)
+  // [else] and [endif] carry no name, so neither counts as branching on one.
+  assert.strictEqual(mentionsCondition('[else]\n[endif]', 'narrator'), false)
+  assert.strictEqual(mentionsCondition('[if game]\nx\n[endif]', 'narrator'), false)
+}
+
+// --- blocksMentionCondition ----------------------------------------------
+{
+  const block = (patch: Partial<PromptBlock>): PromptBlock => ({
+    id: 'b',
+    label: 'Block',
+    source: 'text',
+    role: 'system',
+    content: '',
+    ...patch,
+  })
+
+  assert.strictEqual(blocksMentionCondition([], 'narrator'), false)
+  assert.strictEqual(blocksMentionCondition([block({ content: '[if narrator]' })], 'narrator'), true)
+  assert.strictEqual(blocksMentionCondition([block({ content: 'nothing' })], 'narrator'), false)
+  assert.strictEqual(
+    blocksMentionCondition([block({ closeContent: '[if narrator]' })], 'narrator'),
+    true,
+    'the closing half counts',
+  )
+
+  // A disabled block contributes nothing to the prompt, so it is not the stack having an opinion.
+  assert.strictEqual(
+    blocksMentionCondition([block({ content: '[if narrator]', disabled: true })], 'narrator'),
+    false,
+  )
+
+  // Nested, and past a sibling that says nothing.
+  assert.strictEqual(
+    blocksMentionCondition(
+      [block({ content: 'a' }), block({ children: [block({ content: '[if narrator]' })] })],
+      'narrator',
+    ),
+    true,
+  )
+  // A disabled container takes its children with it.
+  assert.strictEqual(
+    blocksMentionCondition(
+      [block({ disabled: true, children: [block({ content: '[if narrator]' })] })],
+      'narrator',
+    ),
+    false,
+  )
+
+  // Only the selected variant of an options block is read: the others are not in the prompt.
+  const options = [
+    { name: 'plain', content: 'nothing' },
+    { name: 'narrated', content: '[if narrator]' },
+  ]
+  assert.strictEqual(blocksMentionCondition([block({ options })], 'narrator'), false, 'defaults to 0')
+  assert.strictEqual(blocksMentionCondition([block({ options, activeOption: 1 })], 'narrator'), true)
+  assert.strictEqual(
+    blocksMentionCondition([block({ options, activeOption: 9, content: '[if narrator]' })], 'narrator'),
+    false,
+    'an out-of-range option reads as empty rather than falling back to content',
+  )
 }
 
 console.log('ok')

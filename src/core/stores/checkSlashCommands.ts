@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { completeWith, menuFor, parseCommand, stripEscape } from './slashCommands.ts'
+import { completeWith, menuFor, parseCommand, slashCommands, stripEscape } from './slashCommands.ts'
 
 const roster = [
   { id: 1, name: 'Anna' },
@@ -18,6 +18,12 @@ assert.equal(stripEscape('//sendas Anna hi'), '/sendas Anna hi')
 assert.equal(stripEscape('plain'), 'plain')
 
 assert.deepEqual(parseCommand('/noreply hi there', names), { name: 'noreply', text: 'hi there' })
+assert.deepEqual(parseCommand('/narrate the storm breaks', names), {
+  name: 'narrate',
+  text: 'the storm breaks',
+})
+// Bare: send treats an empty text as a Narrator beat on the transcript as it stands.
+assert.deepEqual(parseCommand('/narrate', names), { name: 'narrate', text: '' })
 assert.deepEqual(parseCommand('/noreply', names), { name: 'noreply', text: '' })
 assert.deepEqual(parseCommand('/NoReply hi', names), { name: 'noreply', text: 'hi' })
 assert.deepEqual(parseCommand('/br', names), { name: 'break', text: '' }, 'an alias reports the canonical name')
@@ -66,7 +72,7 @@ assert.equal(menuFor('//x', roster), null)
 
 const all = menuFor('/', roster)
 assert.equal(all?.kind, 'commands')
-assert.equal(all?.items.length, 4, 'a bare slash lists everything')
+assert.equal(all?.items.length, slashCommands.length, 'a bare slash lists everything')
 
 const continues = menuFor('/c', roster)
 assert.deepEqual(
@@ -78,8 +84,15 @@ const narrowed = menuFor('/n', roster)
 assert.equal(narrowed?.kind, 'commands')
 assert.deepEqual(
   narrowed?.kind === 'commands' ? narrowed.items.map((c) => c.name) : [],
-  ['noreply'],
+  ['noreply', 'narrate'],
   'typing narrows the list',
+)
+
+const narrated = menuFor('/nar', roster)
+assert.deepEqual(
+  narrated?.kind === 'commands' ? narrated.items.map((c) => c.name) : [],
+  ['narrate'],
+  'one more letter separates the two n commands',
 )
 assert.equal(menuFor('/zz', roster), null, 'no match closes the menu')
 

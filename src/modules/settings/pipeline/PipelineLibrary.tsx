@@ -3,6 +3,7 @@ import { RiDeleteBinLine, RiFileCopyLine, RiPencilLine } from '@remixicon/react'
 import { useSettings } from '../../../core/stores/settingsStore'
 import { usePipelines } from '../../../core/stores/pipelineStore'
 import { newPipeline, type Pipeline } from '../../../core/secondSweep/pipeline'
+import { defaultPipeline } from '../../../core/secondSweep/defaultPipeline'
 import { downloadPipelines, parsePipelineFile } from '../../../core/secondSweep/pipelineJson'
 import './pipeline.css'
 
@@ -32,10 +33,9 @@ export default function PipelineLibrary({ onOpen }: { onOpen: (id: number) => vo
     }
   }
 
-  const openNew = async () => {
-    // Straight into the editor: a fresh pipeline has no stages, and the library row says nothing
-    // about what to do next.
-    onOpen(await create(newPipeline('New pipeline')))
+  // Straight into the editor: the library row says nothing about what to do next.
+  const openNew = async (pipeline = newPipeline('New pipeline')) => {
+    onOpen(await create(pipeline))
   }
 
   return (
@@ -120,6 +120,9 @@ export default function PipelineLibrary({ onOpen }: { onOpen: (id: number) => vo
         <div className="grammarActions">
           <button type="button" onClick={() => void openNew()}>
             New pipeline
+          </button>
+          <button type="button" onClick={() => void openNew(defaultPipeline())}>
+            Add the example
           </button>
           <button
             type="button"
