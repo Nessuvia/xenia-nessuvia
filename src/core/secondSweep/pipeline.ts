@@ -242,12 +242,39 @@ export function activeStages(pipeline: Pipeline): Stage[] {
  * recorded on a message as a failure.
  */
 export function pipelineArmed(pipeline: Pipeline): boolean {
-  return activeStages(pipeline).some((stage) => {
-    if (stage.kind === 'rewrite') {
-      return !!stage.config.connectionId && !!stage.config.preset.trim()
-    }
-    // A gate alone changes nothing, and a score stage with no candidate before it has nothing to
-    // judge. Only a clean stage is worth running on its own: its mechanical edits need no model.
-    return stage.kind === 'clean'
-  })
+  return activeStages(pipeline).some(stageArmed)
+}
+
+/** Whether this one stage would do something. */
+export function stageArmed(stage: Stage): boolean {
+  if (stage.kind === 'rewrite') {
+    return !!stage.config.connectionId && !!stage.config.preset.trim()
+  }
+  // A gate alone changes nothing, and a score stage with no candidate before it has nothing to
+  // judge. Only a clean stage is worth running on its own: its mechanical edits need no model.
+  return stage.kind === 'clean'
+}
+
+/**
+ * Why the pipeline would do nothing, in words a user can act on. Empty when it is armed.
+ *
+ * `pipelineArmed` answers yes or no, and a no has four different causes. Telling someone with a
+ * rewrite stage and a blank preset to go pick a pipeline sends them to the wrong screen.
+ */
+export function pipelineProblem(pipeline: Pipeline | undefined): string {
+  if (!pipeline) return 'No pipeline is picked. Pick one in Settings > Second Sweep.'
+  if (pipeline.stages.length === 0) {
+    return `${pipeline.label} has no stages. Add one in Settings > Second Sweep > Stages.`
+  }
+  const active = activeStages(pipeline)
+  if (active.length === 0) return `Every stage in ${pipeline.label} is turned off.`
+  if (active.some(stageArmed)) return ''
+
+  const rewrites = active.filter((s): s is RewriteStage => s.kind === 'rewrite')
+  const unset = rewrites.filter((s) => !s.config.connectionId)
+  const blank = rewrites.filter((s) => s.config.connectionId && !s.config.preset.trim())
+  if (blank.length > 0) return `${blank[0].label} has no preset. Write one, or the stage never runs.`
+  if (unset.length > 0) return `${unset[0].label} has no connection. Pick one on the stage.`
+  // Gates and score stages only, so there is nothing for them to gate or judge.
+  return `${pipeline.label} has nothing that changes the reply. Add a clean or rewrite stage.`
 }

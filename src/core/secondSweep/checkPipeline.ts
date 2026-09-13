@@ -5,6 +5,7 @@ import {
   newPipeline,
   newStage,
   pipelineArmed,
+  pipelineProblem,
   resolvePipeline,
   resolveStage,
   type Pipeline,
@@ -110,6 +111,35 @@ import { defaultSecondSweep, resolveSecondSweep } from './resolve.ts'
   assert.deepEqual(resolveSecondSweep(global, {}), global)
   // false is a value, not an absence: it has to win over a global true.
   assert.equal(resolveSecondSweep({ enabled: true, pipelineId: 1 }, { enabled: false }).enabled, false)
+}
+
+// --- the problem naming tells the four causes apart -----------------------
+{
+  assert.match(pipelineProblem(undefined), /No pipeline is picked/)
+
+  const p = newPipeline('Nightly')
+  assert.match(pipelineProblem(p), /has no stages/)
+
+  p.stages = [{ ...newStage('clean'), enabled: false }]
+  assert.match(pipelineProblem(p), /turned off/)
+
+  // A connection but no preset: the message points at the preset, not at the pipeline picker.
+  const rewrite = newStage('rewrite') as RewriteStage
+  rewrite.config.connectionId = 'local'
+  p.stages = [rewrite]
+  assert.match(pipelineProblem(p), /no preset/)
+
+  // Neither set.
+  p.stages = [newStage('rewrite')]
+  assert.match(pipelineProblem(p), /no connection/)
+
+  // Gate and score only: nothing edits the reply.
+  p.stages = [newStage('gate'), newStage('score')]
+  assert.match(pipelineProblem(p), /nothing that changes the reply/)
+
+  // Armed pipelines report nothing.
+  p.stages = [newStage('clean')]
+  assert.equal(pipelineProblem(p), '')
 }
 
 console.log('checkPipeline ok')

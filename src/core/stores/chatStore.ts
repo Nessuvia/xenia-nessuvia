@@ -28,7 +28,7 @@ import {
   withPass,
 } from './swipes'
 import { runPipeline, type RunContext } from '../secondSweep/runPipeline'
-import { pipelineArmed } from '../secondSweep/pipeline'
+import { pipelineArmed, pipelineProblem } from '../secondSweep/pipeline'
 import { secondSweepFor, pipelineFor } from './pipelineStore'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
@@ -1199,8 +1199,9 @@ export const useChats = create<ChatState>()((set, get) => ({
     if (!target || target.role !== 'assistant') return
 
     const pipeline = pipelineFor(chat)
-    if (!pipeline || !pipelineArmed(pipeline)) {
-      set({ error: "No pipeline is set for this chat. Pick one in Settings > Second Sweep." })
+    const problem = pipelineProblem(pipeline)
+    if (problem) {
+      set({ error: problem })
       return
     }
 

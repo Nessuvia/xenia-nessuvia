@@ -5,6 +5,8 @@ import { usePipelines } from '../../core/stores/pipelineStore'
 import {
   newPipeline,
   newStage,
+  pipelineProblem,
+  stageArmed,
   type CleanStage,
   type GateStage,
   type Pipeline,
@@ -224,6 +226,7 @@ export default function SecondSweepPanel() {
             <p className="hint">
               Stages run top to bottom. Each one is handed what the stage before it produced.
             </p>
+            {pipelineProblem(open) && <p className="hint">{pipelineProblem(open)}</p>}
             <ul className="ruleCards">
               {open.stages.map((stage, i) => (
                 <li className="card ruleCard" key={stage.id}>
@@ -494,6 +497,11 @@ function RewriteEditor({
           onChange={(e) => set({ preset: e.target.value })}
         />
       </label>
+      {!stageArmed(stage) && (
+        <p className="hint">
+          This stage does not run until it has both a connection and a preset.
+        </p>
+      )}
       <div className="passNumbers">
         <label className="passNumber">
           Messages of history

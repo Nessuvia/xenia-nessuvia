@@ -3,6 +3,7 @@ import { useChats } from '../../core/stores/chatStore'
 import { usePipelines } from '../../core/stores/pipelineStore'
 import { useSettings } from '../../core/stores/settingsStore'
 import { resolveSecondSweep } from '../../core/secondSweep/resolve'
+import { activeStages, pipelineProblem } from '../../core/secondSweep/pipeline'
 import './settings.css'
 
 /**
@@ -22,6 +23,7 @@ export default function SecondSweepChatPanel() {
   const override = chat.secondSweep
   const settings = resolveSecondSweep(global, override)
   const pipeline = pipelines.find((p) => p.id === settings.pipelineId)
+  const problem = pipelineProblem(pipeline)
   const set = (patch: typeof override) => patchChat({ secondSweep: { ...override, ...patch } })
 
   return (
@@ -51,9 +53,9 @@ export default function SecondSweepChatPanel() {
       </label>
 
       <p className="hint">
-        {pipeline
-          ? `${pipeline.stages.filter((s) => s.enabled).length} stages run on each reply.`
-          : 'No pipeline is selected. Nothing runs.'}
+        {pipeline && !problem
+          ? `${activeStages(pipeline).length} stages run on each reply.`
+          : problem}
       </p>
       {override === undefined && <p className="hint">Using the global settings.</p>}
       <p className="hint">

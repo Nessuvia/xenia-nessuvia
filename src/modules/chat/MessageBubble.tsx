@@ -10,7 +10,7 @@ import {
   RiSendPlaneLine,
   RiSparkling2Line,
 } from '@remixicon/react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
@@ -28,6 +28,9 @@ import { reasoningSpan } from '../../core/prompt/reasoning'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
+import SelectionEditDialog from './SelectionEditDialog'
+import SelectionMenu from './SelectionMenu'
+import { cutSpan, locate, occurrenceBefore, replaceSpan, textOffset, type Span } from './selectionEdit'
 import PromptInspector from '../../app/PromptInspector'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import { useSlopSample } from '../../core/stores/slopStore'
@@ -139,6 +142,16 @@ export default function MessageBubble({
     ? message.content.slice(inline.end).replace(/^\s+/, '')
     : message.content
 
+  // Offset of bodyText inside message.content: renderText only ever sees the body, while every
+  // edit writes the whole stored string back.
+  const bodyOffset = message.content.length - bodyText.length
+
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [selectionMenu, setSelectionMenu] = useState<
+    { x: number; y: number; span: Span; text: string } | null
+  >(null)
+  const [editingSelection, setEditingSelection] = useState<{ span: Span; text: string } | null>(null)
+
   const assistant = message.role === 'assistant'
   const count = swipeCount(message)
   const at = swipeIndex(message)
@@ -152,6 +165,34 @@ export default function MessageBubble({
   const passOriginal = passOriginalFor(message)
   const passFailure = passFailedFor(message)
   const passSummary = passSummaryFor(message)
+
+  // Right-click on a run of selected text in a reply. Shift falls through to the browser's own
+  // menu, and so does anything the selection can't be traced back to: a selection that leaves this
+  // body, the pre-sweep preview, a reply that's still streaming.
+  const onBodyContextMenu = (e: MouseEvent) => {
+    if (e.shiftKey || !assistant || readOnly || showOriginal || streamingText !== null) return
+    const root = bodyRef.current
+    const selection = window.getSelection()
+    if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return
+    const range = selection.getRangeAt(0)
+    if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return
+    const text = selection.toString()
+    if (!text.trim()) return
+
+    const rendered = root.textContent ?? ''
+    const start = textOffset(root, range.startContainer, range.startOffset)
+    if (start < 0) return
+    const span = locate(bodyText, text, occurrenceBefore(rendered, text, start))
+    if (!span) return
+
+    e.preventDefault()
+    setSelectionMenu({
+      x: e.clientX,
+      y: e.clientY,
+      span: { start: span.start + bodyOffset, end: span.end + bodyOffset },
+      text: message.content.slice(span.start + bodyOffset, span.end + bodyOffset),
+    })
+  }
 
   return (
     <div className={`bubble message ${message.role}`} style={colorVars(colors, palette.overwriteCharColor)}>
@@ -367,7 +408,11 @@ export default function MessageBubble({
           <span className="caret">▌</span>
         </div>
       ) : draft === null ? (
-        <div className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}>
+        <div
+          ref={bodyRef}
+          onContextMenu={onBodyContextMenu}
+          className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}
+        >
           {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
             tagRules,
             replaceRules,
@@ -404,6 +449,32 @@ export default function MessageBubble({
           }}
         />
       )}
+      {selectionMenu && (
+        <SelectionMenu
+          at={selectionMenu}
+          onClose={() => setSelectionMenu(null)}
+          onDelete={() => {
+            onEdit(cutSpan(message.content, selectionMenu.span))
+            setSelectionMenu(null)
+          }}
+          onEdit={() => {
+            setEditingSelection({ span: selectionMenu.span, text: selectionMenu.text })
+            setSelectionMenu(null)
+          }}
+        />
+      )}
+
+      {editingSelection && (
+        <SelectionEditDialog
+          text={editingSelection.text}
+          onClose={() => setEditingSelection(null)}
+          onSave={(text) => {
+            onEdit(replaceSpan(message.content, editingSelection.span, text))
+            setEditingSelection(null)
+          }}
+        />
+      )}
+
       {passing && streamingText !== null && (
         <p className="passMarker">
           <RiSparkling2Line size={14} />

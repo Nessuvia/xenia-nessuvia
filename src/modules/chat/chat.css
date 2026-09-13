@@ -1816,3 +1816,31 @@
 .chatBreakDelete:hover {
   color: var(--danger);
 }
+
+/* ---- Selection right-click menu ------------------------------------------ */
+
+.selectionMenu {
+  position: fixed;
+  z-index: var(--layer-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 140px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--borderStrong);
+  border-radius: var(--radius);
+}
+
+.selectionMenu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.selectionEditText {
+  width: 100%;
+  resize: vertical;
+}
