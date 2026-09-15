@@ -1,16 +1,10 @@
 # Foreword
 
-This project was built with agentic coding tools. I'm saying so up front, plainly, because it's true and it shapes how you should read what's here.
-
-## What that means
-
-An AI agent wrote much of the implementation. I directed it: I decided what to build, how it should be structured, what the constraints were, and what "done" meant. The agent turned those decisions into code, and I reviewed and corrected what it produced.
-
-I won't pretend this is hand-crafted line by line. I also won't call the agent a co-author. It's a tool that does what I tell it to.
+An AI agent wrote the implementation. I directed it: I decided what to build, how it should be structured, what the constraints were, and what "done" meant. The agent turned those decisions into code, and I reviewed and corrected what it produced.
 
 ## Where my attention went
 
-For me, the implementation is the part I hold loosely. If an agent wrote a function that transforms Data A into Data B and it holds up under review, I'm satisfied. That's how I weigh it, personally.
+For me, the implementation is the part I hold loosely. If an agent wrote a function that transforms Data A into Data B and it holds up under review, I'm satisfied. That's how I personally weigh it.
 
 Where I put my own attention is the design: the architecture, the boundaries between components, the tradeoffs, what to build first, what to leave out. That's the part of this project I care most about, and the part I'd point you to first. The agent is fast at writing code; the decisions about what the code should be are the ones I wanted to own.
 
