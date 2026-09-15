@@ -11,24 +11,6 @@ export const narratorId = -1
 /** Shown in the roster and the responder picker. Not editable in Phase 1. */
 export const narratorName = 'Narrator'
 
-/**
- * The shipped Narrator instruction, and what Settings starts at. Only reaches the model when the
- * active prompt stack has no `[if Narrator]` branch of its own; see `narratorCharacter`.
- *
- * Written against the two things that distinguish a narrated turn: the voice is outside the cast,
- * and the user's line is an instruction to the storyteller rather than dialogue aimed at anyone.
- */
-export const defaultNarratorPrompt = [
-  'You are the Narrator. You are not one of the characters and you are not the user.',
-  '',
-  'Write the scene: what happens, what the place is like, what time and weather and distance are',
-  'doing. You may write the characters, including their dialogue and what they do, when the scene',
-  'calls for it. Stay in the same tense and person the chat is already using.',
-  '',
-  "The user's last message is direction for you, not speech to a character. Do not answer it, do",
-  'not quote it back, and do not write the user acting or speaking. Turn it into what happens next.',
-].join('\n')
-
 /** A person the prompt needs to describe, for the persona block. */
 export interface CastMember {
   name: string
@@ -53,7 +35,7 @@ export function castBlock(members: CastMember[]): string {
  *
  * `systemPrompt` is the one exception, and it is a fallback rather than a second voice. A stack
  * that has an `[if Narrator]` branch owns the Narrator, and the caller passes nothing here. Only
- * a stack that never mentions the Narrator gets the global text from Settings, which lands in the
+ * a stack that never mentions the Narrator gets its `narrator` misc prompt, which lands in the
  * same slot a character's own system prompt would. The caller decides which case it is; see
  * `mentionsCondition` in core/prompt/conditions.ts and the narrator branch of `chatStore.retry`.
  * Description, personality and scenario stay empty on purpose: those would be invisible narrator

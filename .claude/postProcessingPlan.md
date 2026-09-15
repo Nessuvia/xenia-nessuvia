@@ -29,12 +29,22 @@ three things instead:
 | Acrostic display | Hold, then show |
 | Acrostic draw | Weighted letters, never reusing the previous reply's first letter or shape, and shape taken from recent replies with jitter |
 | After acrostic | The full pass runs. Rules may break letters |
-| Stalling | A "Suggest beats" button in chat that produces chips on demand |
+| Stalling | Replaced by Ideas (settled 2026-09-15): a feature separate from post-processing, chat-only. A global switch and its own connection in the Chat sidebar's Ideas section. "Suggest ideas" above the input makes three chips, with an X to clear them. The request and the "Next, develop this" line are misc prompts (`ideas`, `ideaNext`), editable per stack. Part E below describes the first version |
 | Detection, labels, metrics, pace | Dropped |
 | Rule engine | Extend Word types (pattern). Words mode is removed. Regex stays |
 | Rule builder | One builder. Start from a sample sentence. Each word chip cycles exact, word type, or any, with a per-chip count. All fields visible, no "More" section |
 | Default rules | Convert to Word types where they can be expressed. The rest stay regex |
 | Tester | Pick a chat and run the stack over it. Hit counts per rule, nothing stored |
+| Tester acrostic fit | Skipped. Revisit after acrostic lands (settled 2026-09-15) |
+| Slot classification | Dialogue: the sentence contains a quotation. Thought: wrapped whole in `*…*` or `_…_`. Action: the rest |
+| Alternation in default rules | Rules that need either/or stay one regex rule, not split into several Word types rules |
+| Acrostic connection | The chat's own connection |
+| Acrostic seed | Stored per swipe, alongside the template and fit |
+| Acrostic scope | Continue skips it. Narrator, multiplayer turns and self-reply runs treat it like any other reply |
+| Acrostic retry | Once, same template, with a note that the last reply lost its tags. Then normal generation, noted in `passSummaries` |
+| Acrostic on text completion | Prefill the first tag. JSON mode is hidden |
+| GBNF | Per-connection switch with the field name (`grammar`, `grammar_string`, `guided_grammar`). Grammar built from the template forces tags in order and each lettered line's opening letter, sent through `extra` |
+| GBNF backup | Instruction, prefilled first tag, and the parser. The parser runs either way |
 
 ---
 

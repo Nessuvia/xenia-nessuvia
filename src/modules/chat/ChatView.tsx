@@ -24,6 +24,7 @@ import { resolveChatAgent } from '../../core/agent/agentConfig'
 import { agentSegments } from './agentSegments'
 import { TrackerFloat } from './TrackerPanel'
 import AgentStream from './AgentStream'
+import IdeaChips from './IdeaChips'
 
 export default function ChatView() {
   const chatId = Number(useParams().chatId)
@@ -56,6 +57,7 @@ export default function ChatView() {
     passing,
     streamingPending,
     streamingStage,
+    holding,
     passMessage,
     revertMessagePass,
     dismissPassFailure,
@@ -67,6 +69,7 @@ export default function ChatView() {
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const appearance = useAppearance()
   const agentConfig = useSettings((s) => s.agent)
+  const ideasEnabled = useSettings((s) => s.ideas.enabled)
   const palette = usePalette()
   const activePersona = personas.find((p) => p.id === activePersonaId)
   const [titleDraft, setTitleDraft] = useState<string | null>(null)
@@ -120,8 +123,10 @@ export default function ChatView() {
   // Stylized hands over its own marks and streams plainly until they arrive. A manual pass in a
   // chat with the agent off streams plainly too.
   const stylized = (agentConfig.style ?? 'stylized') === 'stylized'
-  const segments =
-    streamingStage?.marks ?? agentSegments(streamingText, streamingPending, agent.enabled && !stylized ? agent.display : 'blur', passing)
+  // An acrostic reply is held whatever the display mode: its half-written lines are tags.
+  const segments = holding
+    ? null
+    : streamingStage?.marks ?? agentSegments(streamingText, streamingPending, agent.enabled && !stylized ? agent.display : 'blur', passing)
 
   /** The card a message was written by, when it's still around, for the avatar and the re-roll. */
   const speakerOf = (speakerId?: number) =>
@@ -243,9 +248,11 @@ export default function ChatView() {
             onDelete={() => deleteMessage(m.id!)}
             onRegenerate={() => regenerate(character, m.id!)}
             onRewrite={(instruction) => regenerate(character, m.id!, instruction)}
+            onRandomSwipe={agent.enabled ? () => regenerate(character, m.id!, undefined, { acrostic: true }) : undefined}
             onSwipe={(index) => swipeTo(m.id!, index)}
             onDeleteSwipes={(indices) => deleteSwipes(m.id!, indices)}
             onPass={m.role === 'assistant' && !streaming ? () => passMessage(m.id!) : undefined}
+            onPassClean={m.role === 'assistant' && !streaming ? () => passMessage(m.id!, true) : undefined}
             onPassRevert={() => revertMessagePass(m.id!)}
             onPassDismiss={() => dismissPassFailure(m.id!)}
             passing={regeneratingId === m.id && passing}
@@ -357,6 +364,7 @@ export default function ChatView() {
       )}
 
       <div className={editingId !== null ? 'chatComposerSlot editingOpen' : 'chatComposerSlot'}>
+        {ideasEnabled && <IdeaChips disabled={streaming} />}
         <Composer
           streaming={streaming}
           disabledReason={connection ? '' : 'No active connection, set one up in Settings.'}

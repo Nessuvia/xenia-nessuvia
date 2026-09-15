@@ -6,14 +6,20 @@ import { RiArrowDownSLine, RiArrowUpSLine, RiErrorWarningLine } from '@remixicon
  */
 export default function RuleCardHead({
   enabled,
+  hits,
   label,
+  placeholder,
   error,
   open,
   onChange,
   onToggle,
 }: {
   enabled: boolean
+  /** Tester hits for this rule. Undefined until the tester has run. */
+  hits?: number
   label: string
+  /** Shown while the label is blank: the name the rule goes by until renamed. */
+  placeholder: string
   error: string | null
   open: boolean
   onChange: (patch: { enabled?: boolean; label?: string }) => void
@@ -27,9 +33,10 @@ export default function RuleCardHead({
       <input
         className={`labelInput${enabled ? '' : ' ruleLabelOff'}`}
         value={label}
-        placeholder="Untitled rule"
-        onChange={(e) => onChange({ label: e.target.value })}
+        placeholder={placeholder}
+        onChange={(e) => onChange({ label: e.target.value || undefined })}
       />
+      {hits !== undefined && <span className="postHitCount">{hits === 1 ? '1 hit' : `${hits} hits`}</span>}
       {error && <RiErrorWarningLine size={16} className="ruleErrorIcon" aria-label="Rule has an error" />}
       {/* Not CollapseButton: that one points sideways for panel rails. */}
       <button

@@ -1,4 +1,11 @@
-import { negations } from '../../core/agent/example.ts'
+const negations: [string, string][] = [
+  ['will not', "won't"], ['cannot', "can't"], ['can not', "can't"], ['shall not', "shan't"],
+  ['do not', "don't"], ['does not', "doesn't"], ['did not', "didn't"],
+  ['is not', "isn't"], ['are not', "aren't"], ['was not', "wasn't"], ['were not', "weren't"],
+  ['have not', "haven't"], ['has not', "hasn't"], ['had not', "hadn't"],
+  ['would not', "wouldn't"], ['should not', "shouldn't"], ['could not', "couldn't"],
+  ['must not', "mustn't"], ['need not', "needn't"],
+]
 
 const pronouns = '(I|you|he|she|it|we|they|that|there|here|what|who)'
 const helpers: [string, string][] = [['am', "'m"], ['are', "'re"], ['is', "'s"], ['will', "'ll"], ['would', "'d"]]

@@ -132,6 +132,50 @@ What the chapter says:
     kind: 'story',
   },
   {
+    id: 'ideas',
+    label: 'Suggest ideas',
+    hint: 'Sent by Suggest ideas above the chat input. The chips are read from the [1] [2] [3] lines.',
+    text: `Suggest 3 different things {{user}} could say or do next, like the choices in a choose-your-own-adventure. {{user}} is not {{char}}: every choice is an action by {{user}}. Each is under 12 words. Use only people, objects and threads already in the story. Introduce nothing new.
+
+The story so far:
+
+{{replies}}
+{{message}}
+Reply with three lines and nothing else:
+[1] idea
+[2] idea
+[3] idea`,
+    slots: [
+      { token: 'replies', hint: 'The last 10 messages since the last break, both sides, oldest first, each as "Name: text".' },
+      { token: 'message', hint: 'Your last message under a "Last message from" line. Empty when there is none.' },
+      { token: 'char', hint: 'The character who replied last.' },
+      { token: 'user', hint: 'The persona name on your last message.' },
+    ],
+    kind: 'chat',
+  },
+  {
+    id: 'ideaNext',
+    label: 'Picked idea',
+    hint: 'Added to the next reply when you send with an idea picked.',
+    text: 'Next, develop this: {{idea}}',
+    slots: [{ token: 'idea', hint: 'The idea you picked.' }],
+    kind: 'chat',
+  },
+  {
+    id: 'narrator',
+    label: 'Narrator',
+    hint: "Used when this stack has no [if Narrator] block. It goes where a character's system prompt goes, so a stack with no system prompt block sends nothing.",
+    // Written against the two things that distinguish a narrated turn: the voice is outside the
+    // cast, and the user's line is an instruction to the storyteller rather than dialogue.
+    text: `You are the Narrator. You are not one of the characters and you are not the user.
+
+Write the scene: what happens, what the place is like, what time and weather and distance are doing. You may write the characters, including their dialogue and what they do, when the scene calls for it. Stay in the same tense and person the chat is already using.
+
+The user's last message is direction for you, not speech to a character. Do not answer it, do not quote it back, and do not write the user acting or speaking. Turn it into what happens next.`,
+    slots: [],
+    kind: 'chat',
+  },
+  {
     id: 'nextSpeaker',
     label: 'Next speaker',
     hint: 'The trailing turn naming who is up. Group chats and sessions only.',

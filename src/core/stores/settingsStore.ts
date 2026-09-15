@@ -6,12 +6,24 @@ import type { ConnectionType, InstructTemplate, ParamValue } from '../params/par
 import { tableNames, type TableName } from '../storage/storageInterface.ts'
 import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
-import { defaultNarratorPrompt } from '../multiplayer/narrator.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import { defaultAgentConfig, type AgentConfig } from '../agent/agentConfig.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
+
+/** Idea suggestions above the chat input. Global: one switch and one connection for every chat.
+ *  Separate from post-processing. A per-chat switch on `Chat` is the upgrade path. */
+export interface IdeasConfig {
+  enabled: boolean
+  /** null uses the active connection. */
+  connectionId: string | null
+}
+
+const defaultIdeasConfig: IdeasConfig = { enabled: false, connectionId: null }
+
+/** The request field a backend reads a GBNF grammar from: llama.cpp and KoboldCpp, TabbyAPI, vLLM and Aphrodite. */
+export type GrammarField = 'grammar' | 'grammar_string' | 'guided_grammar'
 
 export interface Connection {
   id: string
@@ -42,6 +54,9 @@ export interface Connection {
   /** How much structure this endpoint accepts on a request, learned on the first palette ask
    *  rather than configured. Undefined means it has not been tried yet. */
   structuredOutput?: StructuredMode
+  /** Where an acrostic reply's GBNF grammar goes. Undefined sends none, and the reply relies on the
+   *  instruction and the parser alone. */
+  grammarField?: GrammarField
 }
 
 export function newConnection(): Connection {
@@ -210,11 +225,9 @@ interface SettingsState {
   appearance: Appearance
   /** The agent pass. Global. A per-chat override is the upgrade path. */
   agent: AgentConfig
-  /** What the Narrator is told when the prompt stack says nothing about it. Global: a stack is
-   *  the narrower level, and a stack with an `[if Narrator]` branch overrides this outright. */
-  narratorPrompt: string
+  ideas: IdeasConfig
+  setIdeas(patch: Partial<IdeasConfig>): void
   setAgent(patch: Partial<AgentConfig>): void
-  setNarratorPrompt(prompt: string): void
   setAsk(patch: {
     askSystemPrompt?: string
     askSuffix?: string
@@ -303,7 +316,9 @@ export const useSettings = create<SettingsState>()(
       askAssistantPrompt: '',
       appearance: defaultAppearance,
       agent: defaultAgentConfig,
-      narratorPrompt: defaultNarratorPrompt,
+      ideas: defaultIdeasConfig,
+
+      setIdeas: (patch) => set((s) => ({ ideas: { ...defaultIdeasConfig, ...s.ideas, ...patch } })),
 
       setAsk: (patch) => set(patch),
 
@@ -312,8 +327,6 @@ export const useSettings = create<SettingsState>()(
         set((s) => ({ appearance: { ...defaultAppearance, ...s.appearance, ...patch } })),
 
       setAgent: (patch) => set((s) => ({ agent: { ...defaultAgentConfig, ...s.agent, ...patch } })),
-
-      setNarratorPrompt: (narratorPrompt) => set({ narratorPrompt }),
 
       setDebugMode: (debugMode) => set({ debugMode }),
 

@@ -8,7 +8,6 @@ import FindReplacePanel from './FindReplacePanel'
 import RelayPanel from './RelayPanel'
 import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
-import { defaultNarratorPrompt } from '../../core/multiplayer/narrator'
 import { wipeEverything } from '../../core/storage/wipe'
 import { useHashTab } from '../../app/useHashTab'
 import '../../app/formPage.css'
@@ -39,8 +38,6 @@ export default function SettingsView() {
     setPluginEnabled,
     exportKeys,
     setExportKeys,
-    narratorPrompt,
-    setNarratorPrompt,
   } = useSettings()
   const pluginModules = modules.filter((mod) => mod.plugin)
   const [editing, setEditing] = useState<Connection | null>(null)
@@ -187,28 +184,6 @@ export default function SettingsView() {
             </label>
             <p className="debugHint">
               Replies come from a local lorem ipsum generator. Requests are not sent to the connection.
-            </p>
-          </section>
-          <section className="settingsCard">
-            <h3>Narrator</h3>
-            <textarea
-              className="narratorPrompt"
-              rows={10}
-              value={narratorPrompt}
-              onChange={(e) => setNarratorPrompt(e.target.value)}
-            />
-            <div className="narratorActions">
-              <button
-                type="button"
-                disabled={narratorPrompt === defaultNarratorPrompt}
-                onClick={() => setNarratorPrompt(defaultNarratorPrompt)}
-              >
-                Use default
-              </button>
-            </div>
-            <p className="debugHint">
-              Used only when the chat's prompt stack has no [if Narrator] block. It goes where a
-              character's system prompt goes, so a stack with no system prompt block sends nothing.
             </p>
           </section>
           <section className="settingsCard">

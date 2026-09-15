@@ -25,10 +25,8 @@ import {
   swipeCount,
   swipeIndex,
 } from '../../core/stores/swipes'
-import { useActiveConnection, useAppearance, useSettings } from '../../core/stores/settingsStore'
-import { usePostStacks } from '../../core/stores/postStackStore'
-import { newRule } from '../../core/agent/rules'
-import { useNavigate } from 'react-router-dom'
+import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
+import MakeRulePopover from './MakeRulePopover'
 import { reasoningSpan } from '../../core/prompt/reasoning'
 import { stripState } from '../../core/trackers/trackerState'
 import { usePalette } from '../../core/stores/palettesStore'
@@ -76,9 +74,11 @@ export default function MessageBubble({
   onDelete,
   onRegenerate,
   onRewrite,
+  onRandomSwipe,
   onSwipe,
   onDeleteSwipes,
   onPass,
+  onPassClean,
   onPassRevert,
   onPassDismiss,
   passing = false,
@@ -111,12 +111,16 @@ export default function MessageBubble({
   onDelete: () => void
   onRegenerate: () => void
   onRewrite: (instruction: string) => void
+  /** A new swipe drawn as an acrostic. Omitted when post-processing is off for the chat. */
+  onRandomSwipe?: () => void
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
   /** Run the agent pass over this message, and the retry on a failed one. Omitted by views that
    *  have no pass (Ask, and a multiplayer guest). */
   onPass?: () => void
+  /** The pass without rewrite rules: only what runs in code, no request. */
+  onPassClean?: () => void
   /** Put the pre-rewrite text back. */
   onPassRevert?: () => void
   /** Hide the failed-pass notice. */
@@ -167,8 +171,8 @@ export default function MessageBubble({
     { x: number; y: number; span: Span; text: string } | null
   >(null)
   const [editingSelection, setEditingSelection] = useState<{ span: Span; text: string } | null>(null)
+  const [makingRule, setMakingRule] = useState<{ x: number; y: number; text: string } | null>(null)
 
-  const navigate = useNavigate()
   const assistant = message.role === 'assistant'
   const count = swipeCount(message)
   const at = swipeIndex(message)
@@ -373,6 +377,18 @@ export default function MessageBubble({
                   Regen with instructions
                 </button>
               )}
+              {assistant && onRandomSwipe && (
+                <button
+                  type="button"
+                  disabled={!modelRegen}
+                  onClick={() => {
+                    onRandomSwipe()
+                    setQuickActions(false)
+                  }}
+                >
+                  Randomized swipe
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -391,6 +407,17 @@ export default function MessageBubble({
                   }}
                 >
                   Delete swipe
+                </button>
+              )}
+              {assistant && onPassClean && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassClean()
+                    setQuickActions(false)
+                  }}
+                >
+                  Post-process (clean only)
                 </button>
               )}
               {assistant && onPass && (
@@ -513,21 +540,13 @@ export default function MessageBubble({
             setSelectionMenu(null)
           }}
           onMakeRule={() => {
-            // Stack scope: the rule lands in the global default stack, which is wider than this
-            // chat when the chat has picked its own. Step 5 of the v2 plan replaces this with a
-            // popover that writes to the chat's resolved stack.
-            const { defaultStackId } = useSettings.getState().agent
-            const { stacks, patchConfig } = usePostStacks.getState()
-            const stack = stacks.find((s) => s.id === defaultStackId) ?? stacks[0]
-            const find = selectionMenu.text.trim()
-            if (stack?.id) {
-              patchConfig(stack.id, { rules: { ...stack.config.rules, list: [...stack.config.rules.list, { ...newRule(), label: find, find }] } })
-            }
+            setMakingRule({ x: selectionMenu.x, y: selectionMenu.y, text: selectionMenu.text })
             setSelectionMenu(null)
-            navigate('/post-processing')
           }}
         />
       )}
+
+      {makingRule && <MakeRulePopover at={makingRule} text={makingRule.text} onClose={() => setMakingRule(null)} />}
 
       {editingSelection && (
         <SelectionEditDialog

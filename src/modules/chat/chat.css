@@ -1204,6 +1204,50 @@
   align-items: flex-end;
 }
 
+/* "Suggest ideas" and its chips, above the input. */
+.chatIdeas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chatIdeasSuggest {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatIdeaChip {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.chatIdeaChip.picked {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 80%, var(--accent));
+}
+
+/* Icon-only. */
+.chatIdeasClear {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+  line-height: 0;
+}
+
+/* The chat sidebar's Ideas section. */
+.chatIdeasPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Slash-command list, anchored above the input the way .personaSwitchMenu is above its avatar. */
 .commandMenu {
   position: absolute;
@@ -1848,6 +1892,41 @@
   gap: 6px;
   justify-content: flex-start;
   width: 100%;
+}
+
+/* "Make rule": opens where the selection menu was, and escapes the message like it. */
+.chatMakeRule {
+  position: fixed;
+  z-index: var(--layer-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  /* A window shorter than the popover scrolls it rather than cutting off the buttons. */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--borderStrong);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.chatMakeRuleField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--textMuted);
+}
+
+.chatMakeRuleText {
+  width: 100%;
+  resize: vertical;
+}
+
+.chatMakeRuleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .selectionEditText {

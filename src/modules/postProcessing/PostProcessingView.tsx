@@ -1,39 +1,57 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { RiAddLine, RiDeleteBinLine, RiDownloadLine, RiFileCopyLine, RiStarFill, RiUploadLine } from '@remixicon/react'
 import { useAppearance, useSettings } from '../../core/stores/settingsStore'
 import { usePostStacks } from '../../core/stores/postStackStore'
-import { defaultPostStackConfig, runStages, type PostStackConfig } from '../../core/agent/postStack'
+import { useChats } from '../../core/stores/chatStore'
+import { passOriginalFor } from '../../core/stores/swipes'
+import { defaultPostStackConfig, runStages, type AcrosticConfig, type PostStackConfig } from '../../core/agent/postStack'
 import type { AgentStyle } from '../../core/agent/agentConfig'
 import { newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
 import type { IgnorePair } from '../../core/hammer/exclusions'
-import { explainAgent, type ExplainedOperation } from '../../core/agent/explain'
+import { testReplies, type TesterHit } from '../../core/agent/explain'
 import { lintRules, type LintConfig, type LintProfile } from '../../core/agent/lintRules'
-import { arousalLoaded, loadArousal } from '../../core/quality/arousal'
+import { ruleName } from '../../core/agent/rules'
+import { loadArousal } from '../../core/quality/arousal'
+import type { Chat } from '../../core/storage/types'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import RulesPanel from './RulesPanel'
 import { exportPostStack, parsePostStack } from './postStackFile'
 import './postProcessing.css'
 
-const operationLabels: Record<ExplainedOperation, string> = {
-  keep: 'Keep',
-  rewriteSentence: 'Rewrite sentence',
-  rewriteParagraph: 'Rewrite paragraph',
-  delete: 'Delete',
-}
-
 /** The stages, in the order the pass runs them. */
 type StageId = 'acrostic' | 'swaps' | 'lint' | 'rules' | 'ignore'
+
+/** Which stage a tester key belongs to. */
+const stageOf: Record<string, StageId> = { swap: 'swaps', lint: 'lint', rule: 'rules' }
+
+const splitKey = (key: string) => {
+  const at = key.indexOf(':')
+  return [key.slice(0, at), key.slice(at + 1)] as const
+}
+
+const scrollNearest = (el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' })
+
+const hitsLabel = (n: number) => (n === 1 ? '1 hit' : `${n} hits`)
 
 export default function PostProcessingView() {
   const agent = useSettings((s) => s.agent)
   const setAgent = useSettings((s) => s.setAgent)
   const { stacks, load, create, duplicate, remove, rename, patchConfig, save, usage } = usePostStacks()
   const tagRules = useAppearance().tagRules
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  // "Open in Post-processing" from a chat names the stack and the rule to land on.
+  const target = useLocation().state as { stackId?: number; ruleId?: string } | null
+  const [selectedId, setSelectedId] = useState<number | null>(target?.stackId ?? null)
   const [counts, setCounts] = useState<Record<number, number>>({})
-  const [open, setOpen] = useState<StageId | null>(null)
+  const [open, setOpen] = useState<StageId | null>(target?.ruleId ? 'rules' : null)
+  const [openRuleId, setOpenRuleId] = useState<string | null>(target?.ruleId ?? null)
+  // A swap or style check a tester hit pointed at, scrolled into view.
+  const [focusKey, setFocusKey] = useState<string | null>(null)
   const [error, setError] = useState('')
+
+  // The tester: a chat's replies, and what the stack finds in them.
+  const [replies, setReplies] = useState<string[] | null>(null)
+  const [tested, setTested] = useState<ReturnType<typeof testReplies> | null>(null)
 
   useEffect(() => {
     load()
@@ -41,9 +59,48 @@ export default function PostProcessingView() {
   }, [load, usage])
 
   const stack = stacks.find((s) => s.id === selectedId) ?? stacks.find((s) => s.id === agent.defaultStackId) ?? stacks[0]
-  const config = stack?.config ?? defaultPostStackConfig()
+  const config = useMemo(() => stack?.config ?? defaultPostStackConfig(), [stack])
+  const ignore = useMemo(() => runStages(config, tagRules).ignore ?? [], [config, tagRules])
   const patch = (over: Partial<PostStackConfig>) => stack?.id && patchConfig(stack.id, over)
   const toggle = (id: StageId) => setOpen(open === id ? null : id)
+
+  // Debounced: every keystroke in a rule re-runs the whole chat otherwise.
+  useEffect(() => {
+    if (!replies) return
+    const timer = setTimeout(() => setTested(testReplies(replies, config, ignore)), 300)
+    return () => clearTimeout(timer)
+  }, [replies, config, ignore])
+
+  const hits = tested?.counts
+  const fired = (prefix: string, ids: string[]) => ids.filter((id) => hits?.[`${prefix}:${id}`]).length
+  const firedNote = (prefix: string, ids: string[]) => (hits ? ` · ${fired(prefix, ids)} fired` : '')
+
+  const nameOf = (key: string) => {
+    const [kind, id] = splitKey(key)
+    if (kind === 'swap') {
+      const entry = config.swaps.lexicon.find((e) => e.id === id)
+      return entry ? `Word swap: ${entry.phrase} → ${entry.replacement || 'removed'}` : id
+    }
+    if (kind === 'lint') return lintRules.find((r) => r.id === id)?.label ?? id
+    const rule = config.rules.list.find((r) => r.id === id)
+    if (!rule) return id
+    return `${ruleName(rule)} · would ${rule.action === 'swap' ? 'replace' : rule.action}`
+  }
+
+  const pickHit = (key: string) => {
+    const [kind, id] = splitKey(key)
+    setOpen(stageOf[kind])
+    if (kind === 'rule') setOpenRuleId(id)
+    else setFocusKey(key)
+  }
+
+  const runTester = async (chatId: number) => {
+    const messages = await useChats.getState().messagesOf(chatId)
+    // The style checks' arousal term reads a lexicon that loads on demand.
+    await loadArousal()
+    // As the model wrote them: a reply the pass already cleaned would hide what the rules catch.
+    setReplies(messages.filter((m) => m.role === 'assistant').map((m) => passOriginalFor(m) ?? m.content.slice(m.reasoningEnd ?? 0)))
+  }
 
   const importFile = async (file: File) => {
     try {
@@ -187,15 +244,18 @@ export default function PostProcessingView() {
                 <StageHead
                   id="acrostic"
                   title="Acrostic"
-                  summary={`Every reply · ${config.acrostic.beatSlots} beat`}
+                  summary={`Every reply · ${config.acrostic.paragraphs.join('-')} paragraphs · ${config.acrostic.beatSlots} ${config.acrostic.beatSlots === 1 ? 'beat' : 'beats'}`}
                   enabled={config.acrostic.enabled}
-                  open={false}
+                  open={open === 'acrostic'}
+                  onOpen={() => toggle('acrostic')}
                   onToggleEnabled={(enabled) => patch({ acrostic: { ...config.acrostic, enabled } })}
-                />
+                >
+                  <AcrosticEditor acrostic={config.acrostic} onChange={(acrostic) => patch({ acrostic })} />
+                </StageHead>
                 <StageHead
                   id="swaps"
                   title="Word swaps"
-                  summary={`${config.swaps.lexicon.length} swaps`}
+                  summary={`${config.swaps.lexicon.length} swaps${firedNote('swap', config.swaps.lexicon.map((e) => e.id))}`}
                   enabled={config.swaps.enabled}
                   open={open === 'swaps'}
                   onOpen={() => toggle('swaps')}
@@ -203,30 +263,38 @@ export default function PostProcessingView() {
                 >
                   <SwapsEditor
                     lexicon={config.swaps.lexicon}
+                    hits={hits}
+                    focusKey={focusKey}
                     onChange={(lexicon) => patch({ swaps: { ...config.swaps, lexicon } })}
                   />
                 </StageHead>
                 <StageHead
                   id="lint"
                   title="Style checks"
-                  summary={`${lintRules.length - config.lint.off.length} on · ${config.lint.mode === 'fix' ? 'fix' : 'report'}`}
+                  summary={`${lintRules.length - config.lint.off.length} on · ${config.lint.mode === 'fix' ? 'fix' : 'report'}${firedNote('lint', lintRules.map((r) => r.id))}`}
                   enabled={config.lint.enabled}
                   open={open === 'lint'}
                   onOpen={() => toggle('lint')}
                   onToggleEnabled={(enabled) => patch({ lint: { ...config.lint, enabled } })}
                 >
-                  <LintEditor lint={config.lint} onChange={(lint) => patch({ lint })} />
+                  <LintEditor lint={config.lint} hits={hits} focusKey={focusKey} onChange={(lint) => patch({ lint })} />
                 </StageHead>
                 <StageHead
                   id="rules"
                   title="Rules"
-                  summary={`${config.rules.list.length} rules`}
+                  summary={`${config.rules.list.length} rules${firedNote('rule', config.rules.list.map((r) => r.id))}`}
                   enabled={config.rules.enabled}
                   open={open === 'rules'}
                   onOpen={() => toggle('rules')}
                   onToggleEnabled={(enabled) => patch({ rules: { ...config.rules, enabled } })}
                 >
-                  <RulesPanel rules={config.rules.list} onChange={(list) => patch({ rules: { ...config.rules, list } })} />
+                  <RulesPanel
+                    rules={config.rules.list}
+                    openId={openRuleId}
+                    onOpen={setOpenRuleId}
+                    counts={hits}
+                    onChange={(list) => patch({ rules: { ...config.rules, list } })}
+                  />
                 </StageHead>
               </ul>
 
@@ -285,7 +353,15 @@ export default function PostProcessingView() {
           )}
         </section>
 
-        <Tester config={config} />
+        <Tester
+          replies={replies}
+          hits={tested?.hits ?? null}
+          only={open === 'rules' && openRuleId ? `rule:${openRuleId}` : null}
+          onlyName={openRuleId ? nameOf(`rule:${openRuleId}`) : ''}
+          nameOf={nameOf}
+          onRun={runTester}
+          onPick={pickHit}
+        />
       </div>
     </div>
   )
@@ -331,7 +407,17 @@ function StageHead({
   )
 }
 
-function SwapsEditor({ lexicon, onChange }: { lexicon: LexiconEntry[]; onChange: (list: LexiconEntry[]) => void }) {
+function SwapsEditor({
+  lexicon,
+  hits,
+  focusKey,
+  onChange,
+}: {
+  lexicon: LexiconEntry[]
+  hits?: Record<string, number>
+  focusKey: string | null
+  onChange: (list: LexiconEntry[]) => void
+}) {
   const patchEntry = (id: string, over: Partial<LexiconEntry>) =>
     onChange(lexicon.map((e) => (e.id === id ? { ...e, ...over } : e)))
   return (
@@ -339,10 +425,15 @@ function SwapsEditor({ lexicon, onChange }: { lexicon: LexiconEntry[]; onChange:
       <p className="hint">Runs in code. A blank replacement removes the phrase.</p>
       <ul className="postSwapList">
         {lexicon.map((entry) => (
-          <li key={entry.id} className="postSwapRow">
+          <li
+            key={entry.id}
+            className={`postSwapRow${hits && !hits[`swap:${entry.id}`] ? ' postRuleNoHits' : ''}`}
+            ref={focusKey === `swap:${entry.id}` ? scrollNearest : undefined}
+          >
             <input type="checkbox" checked={entry.enabled} onChange={(e) => patchEntry(entry.id, { enabled: e.target.checked })} />
             <input value={entry.phrase} placeholder="utilize" onChange={(e) => patchEntry(entry.id, { phrase: e.target.value })} />
             <input value={entry.replacement} placeholder="use" onChange={(e) => patchEntry(entry.id, { replacement: e.target.value })} />
+            {hits && <span className="postHitCount">{hitsLabel(hits[`swap:${entry.id}`] ?? 0)}</span>}
             <button
               type="button"
               className="danger"
@@ -392,7 +483,82 @@ function IgnoreEditor({ pairs, onChange }: { pairs: IgnorePair[]; onChange: (pai
   )
 }
 
-function LintEditor({ lint, onChange }: { lint: LintConfig; onChange: (lint: LintConfig) => void }) {
+/** A whole number from an input, held to 1..12. */
+const smallCount = (value: string) => Math.min(12, Math.max(1, Math.round(Number(value)) || 1))
+
+function AcrosticEditor({ acrostic, onChange }: { acrostic: AcrosticConfig; onChange: (acrostic: AcrosticConfig) => void }) {
+  const patch = (over: Partial<AcrosticConfig>) => onChange({ ...acrostic, ...over })
+  const range = (key: 'paragraphs' | 'sentencesPerParagraph', label: string) => {
+    const [min, max] = acrostic[key]
+    return (
+      <label className="postGlobalField">
+        {label}
+        <input
+          type="number"
+          className="postAcrosticNumber"
+          min={1}
+          max={12}
+          value={min}
+          onChange={(e) => {
+            const next = smallCount(e.target.value)
+            patch({ [key]: [next, Math.max(next, max)] })
+          }}
+        />
+        to
+        <input
+          type="number"
+          className="postAcrosticNumber"
+          min={1}
+          max={12}
+          value={max}
+          onChange={(e) => {
+            const next = smallCount(e.target.value)
+            patch({ [key]: [Math.min(min, next), next] })
+          }}
+        />
+      </label>
+    )
+  }
+  return (
+    <>
+      <p className="hint">
+        Each reply gets a paragraph and sentence shape, sentence types and starting letters drawn from the chat's recent
+        replies, and the model fills them in. The reply shows when it is finished. Needs post-processing on in the chat.
+      </p>
+      {range('paragraphs', 'Paragraphs')}
+      {range('sentencesPerParagraph', 'Sentences per paragraph')}
+      <label className="postGlobalField">
+        Beats
+        <input
+          type="number"
+          className="postAcrosticNumber"
+          min={0}
+          max={4}
+          value={acrostic.beatSlots}
+          onChange={(e) => patch({ beatSlots: Math.min(4, Math.max(0, Math.round(Number(e.target.value)) || 0)) })}
+        />
+      </label>
+      <p className="hint">A beat is a sentence that introduces a new event, choice or reveal.</p>
+      <label className="checkboxRow">
+        <input type="checkbox" checked={acrostic.jsonMode} onChange={(e) => patch({ jsonMode: e.target.checked })} />
+        Ask for JSON
+      </label>
+      <p className="hint">Chat completion connections only. Text completion connections write tagged lines.</p>
+    </>
+  )
+}
+
+function LintEditor({
+  lint,
+  hits,
+  focusKey,
+  onChange,
+}: {
+  lint: LintConfig
+  hits?: Record<string, number>
+  focusKey: string | null
+  onChange: (lint: LintConfig) => void
+}) {
   const patch = (over: Partial<LintConfig>) => onChange({ ...lint, ...over })
   return (
     <>
@@ -413,7 +579,11 @@ function LintEditor({ lint, onChange }: { lint: LintConfig; onChange: (lint: Lin
       </label>
       <ul className="postLintList">
         {lintRules.map((rule) => (
-          <li key={rule.id}>
+          <li
+            key={rule.id}
+            className={hits && !hits[`lint:${rule.id}`] ? 'postRuleNoHits' : undefined}
+            ref={focusKey === `lint:${rule.id}` ? scrollNearest : undefined}
+          >
             <label className="checkboxRow">
               <input
                 type="checkbox"
@@ -421,6 +591,7 @@ function LintEditor({ lint, onChange }: { lint: LintConfig; onChange: (lint: Lin
                 onChange={(e) => patch({ off: e.target.checked ? lint.off.filter((id) => id !== rule.id) : [...lint.off, rule.id] })}
               />
               {rule.label}
+              {hits && <span className="postHitCount">{hitsLabel(hits[`lint:${rule.id}`] ?? 0)}</span>}
             </label>
             <p className="hint">{rule.description}</p>
           </li>
@@ -430,50 +601,104 @@ function LintEditor({ lint, onChange }: { lint: LintConfig; onChange: (lint: Lin
   )
 }
 
-/** Pasted text, run through the stack with no request. Step 6 of the v2 plan replaces this with a
- *  run over a chat's replies, with per-rule hit counts. */
-function Tester({ config }: { config: PostStackConfig }) {
-  const [sample, setSample] = useState('')
-  const tagRules = useAppearance().tagRules
-  const run = useMemo(() => runStages(config, tagRules), [config, tagRules])
-  const [loaded, setLoaded] = useState(arousalLoaded)
-  const lintOn = config.lint.enabled
+/**
+ * A chat's replies, run through the stack with no request. While a rule is open only its hits show.
+ * Clicking a hit opens the item that found it.
+ */
+function Tester({
+  replies,
+  hits,
+  only,
+  onlyName,
+  nameOf,
+  onRun,
+  onPick,
+}: {
+  replies: string[] | null
+  hits: TesterHit[][] | null
+  /** The open rule's key, or null for every hit. */
+  only: string | null
+  onlyName: string
+  nameOf: (key: string) => string
+  onRun: (chatId: number) => void
+  onPick: (key: string) => void
+}) {
+  const [chats, setChats] = useState<Chat[]>([])
+  const [chatId, setChatId] = useState<number | null>(null)
   useEffect(() => {
-    if (lintOn && !loaded) loadArousal().then(() => setLoaded(true))
-  }, [lintOn, loaded])
-  const explained = useMemo(() => (sample.trim() ? explainAgent(sample, run) : null), [sample, run, loaded])
+    useChats.getState().allChats().then(setChats)
+  }, [])
+
+  const shown = (replies ?? [])
+    .map((text, i) => ({ text, i, hits: (hits?.[i] ?? []).filter((h) => !only || h.key === only) }))
+    .filter((r) => r.hits.length)
+  const total = shown.reduce((n, r) => n + r.hits.length, 0)
 
   return (
     <section className="postTester">
       <h3>Tester</h3>
-      <textarea className="postTesterSample" rows={6} value={sample} placeholder="Paste a reply." onChange={(e) => setSample(e.target.value)} />
-      {explained && explained.swapped !== sample && <p className="hint">After word swaps: {explained.swapped}</p>}
-      {explained && explained.lint.length > 0 && (
+      <div className="postTesterPick">
+        <select
+          className="postTesterChat"
+          value={chatId ?? ''}
+          onChange={(e) => setChatId(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">Pick a chat</option>
+          {chats.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </select>
+        <button type="button" disabled={chatId === null} onClick={() => chatId !== null && onRun(chatId)}>
+          Run
+        </button>
+      </div>
+      <p className="hint">Runs this stack over the chat's replies as the model wrote them. Switched-off items are counted too. Nothing is sent or saved.</p>
+
+      {replies && hits && (
         <>
-          {explained.linted !== explained.swapped && <p className="hint">After style checks: {explained.linted}</p>}
+          <p className="hint">
+            {only ? `${onlyName}: ` : ''}
+            {hitsLabel(total)} in {shown.length} of {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+          </p>
           <ul className="postTesterResults">
-            {explained.lint.map((hit, i) => (
-              <li key={i} className="postTesterResult postTesterHit">
-                <span>{hit.note}</span>
-                <span className="hint">{lintRules.find((r) => r.id === hit.ruleId)?.label}</span>
+            {shown.map((r) => (
+              <li key={r.i} className="postTesterResult postTesterReply">
+                <Highlighted text={r.text} hits={r.hits} nameOf={nameOf} onPick={onPick} />
               </li>
             ))}
           </ul>
         </>
       )}
-      {explained && (
-        <ul className="postTesterResults">
-          {explained.sentences.map((s, i) => (
-            <li key={i} className={s.operation === 'keep' ? 'postTesterResult' : 'postTesterResult postTesterHit'}>
-              <span>{s.text}</span>
-              <span className="hint">
-                {operationLabels[s.operation]}
-                {s.rules.length > 0 && ` · ${s.rules.join(', ')}`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   )
+}
+
+/** A reply with its hits marked. Overlapping hits show the first; the counts still include the rest. */
+function Highlighted({
+  text,
+  hits,
+  nameOf,
+  onPick,
+}: {
+  text: string
+  hits: TesterHit[]
+  nameOf: (key: string) => string
+  onPick: (key: string) => void
+}) {
+  const out: React.ReactNode[] = []
+  let at = 0
+  hits.forEach((h, k) => {
+    if (h.start < at) return
+    out.push(text.slice(at, h.start))
+    out.push(
+      <button key={k} type="button" className="postTesterMark" title={nameOf(h.key)} onClick={() => onPick(h.key)}>
+        {text.slice(h.start, h.end)}
+      </button>,
+    )
+    at = h.end
+  })
+  out.push(text.slice(at))
+  return <>{out}</>
 }

@@ -43,6 +43,16 @@ export function applyLexicon(text: string, entries: LexiconEntry[], ignore: Igno
   return out
 }
 
+/** Where one swap matches, changing nothing. The tester's counts. */
+export function lexiconSpans(text: string, entry: LexiconEntry, ignore: IgnorePair[] = []): Array<{ start: number; end: number }> {
+  const phrase = entry.phrase.trim()
+  if (!phrase) return []
+  const exclusions = computeExclusions(text, ignore)
+  return [...text.matchAll(compileEntry(phrase, false))]
+    .map((m) => ({ start: m.index, end: m.index + m[0].length }))
+    .filter(({ start, end }) => !exclusions.some(([from, to]) => start < to && end > from))
+}
+
 export function newLexiconEntry(): LexiconEntry {
   return { id: crypto.randomUUID(), phrase: '', replacement: '', enabled: true }
 }

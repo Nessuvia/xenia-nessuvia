@@ -1,5 +1,6 @@
 // Extension-ful imports on purpose: checkSwipes.ts runs this under `node --experimental-strip-types`.
 import type { StateParse } from '../trackers/parseState.ts'
+import type { AcrosticRecord } from '../agent/acrostic/parse.ts'
 
 /**
  * What these functions need off a record: the selected text, the alternates, and the two arrays
@@ -26,6 +27,8 @@ export interface Swipeable {
   passFailed?: (string | undefined)[]
   /** The `<state>` parse of each swipe, parallel to `swipes`. */
   trackerUpdates?: (StateParse | undefined)[]
+  /** The acrostic behind each swipe, parallel to `swipes`. Holes where a swipe was generated normally. */
+  acrostics?: (AcrosticRecord | undefined)[]
 }
 
 /** How many alternates a message has. No swipes array = the one thing it says. */
@@ -172,6 +175,16 @@ export function withPass<T extends Swipeable>(
   return { ...message, passOriginals, passFailed, passSummaries }
 }
 
+/** Record the acrostic behind the selected swipe, or a hole when it was generated normally. Padded like `withPass`. */
+export function withAcrostic<T extends Swipeable>(message: T, record?: AcrosticRecord): T {
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  const acrostics = [...(message.acrostics ?? [])]
+  acrostics.length = swipes.length
+  acrostics[at] = record
+  return { ...message, acrostics }
+}
+
 /**
  * A finished pass over an existing message: the passed text replaces the selected swipe in place,
  * and `original` is what it replaced. Not a new swipe: a pass is the same take worked over,
@@ -235,6 +248,7 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     passSummaries: keep(message.passSummaries),
     passFailed: keep(message.passFailed),
     trackerUpdates: keep(message.trackerUpdates),
+    acrostics: keep(message.acrostics),
   }
 }
 

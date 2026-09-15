@@ -109,10 +109,10 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   you test for it. It answers in an ordinary chat two ways: pinned in `ResponderPicker`
   (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
   `chatStore.retry` branches on it before the round-robin maths and never moves
-  `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack
-  first, Settings second. A stack with an `[if Narrator]` branch owns the Narrator outright;
-  only a stack without one gets `settingsStore.narratorPrompt`, passed to `narratorCharacter()`
-  as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/conditions.ts` decides which.
+  `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack's
+  blocks first, the stack's `narrator` misc prompt second. A stack with an `[if Narrator]` branch
+  owns the Narrator outright; only a stack without one gets `miscPrompt('narrator', stack.miscPrompts)`,
+  passed to `narratorCharacter()` as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/conditions.ts` decides which.
   The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
   (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
 - **Trackers** live in `core/trackers`. Defs ride on the card (`Character.trackers`,

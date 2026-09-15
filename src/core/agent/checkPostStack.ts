@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { defaultPostStackConfig, resolvePostStack, runStages } from './postStack.ts'
+import { defaultPostStackConfig, resolvePostStack, resolvePostStackRow, runStages } from './postStack.ts'
 
 const stackA = { id: 1, config: { ...defaultPostStackConfig(), maxTries: 7 } }
 const stackB = { id: 2, config: { ...defaultPostStackConfig(), maxTries: 9 } }
@@ -14,6 +14,10 @@ assert.equal(resolvePostStack(99, 98, stacks).maxTries, 3)
 assert.equal(resolvePostStack(undefined, null, []).maxTries, 3)
 // A dangling chat stack still falls through to the default rather than to the built-in.
 assert.equal(resolvePostStack(99, 2, stacks).maxTries, 9)
+// The row a write targets follows the same order, and is absent when only the built-in is left.
+assert.equal(resolvePostStackRow(99, 2, stacks)?.id, 2)
+assert.equal(resolvePostStackRow(1, 2, stacks)?.id, 1)
+assert.equal(resolvePostStackRow(99, 98, stacks), undefined)
 
 // Stage switches empty the list they guard, and leave the rest alone.
 const config = defaultPostStackConfig()

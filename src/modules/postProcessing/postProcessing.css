@@ -1,6 +1,6 @@
 /* The rule cards, the pattern inputs and the cheat sheet still live in settings.css, where they
-   were written. RulesPanel imports that file directly. Step 5 of the v2 plan rewrites the rule
-   editor, which is the point to move those rules here. */
+   were written, and the Settings panels use some of the same classes. RulesPanel imports that file
+   directly. The builder's classes are below. */
 
 .postProcessing {
   padding: 16px;
@@ -187,9 +187,45 @@
   gap: 4px;
 }
 
-.postTesterSample {
-  width: 100%;
-  resize: vertical;
+.postTesterPick {
+  display: flex;
+  gap: 6px;
+}
+
+.postTesterChat {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.postTesterReply {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* A hit inside reply text: reads as marked text, clicks through to the item that found it. */
+.postTesterMark {
+  display: inline;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surfaceSunken) 75%, var(--accent));
+  color: inherit;
+  font: inherit;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.postHitCount {
+  flex: 0 0 auto;
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+/* After a tester run: an item that caught nothing in that chat. */
+.postRuleNoHits {
+  opacity: 0.6;
 }
 
 .postTesterResults {
@@ -210,8 +246,65 @@
   background: var(--surfaceSunken);
 }
 
-.postTesterHit {
-  border-left: 2px solid var(--borderAccent);
+.postAcrosticNumber {
+  width: 56px;
+}
+
+/* The rule builder: one chip per word or mark of the sample. */
+.postRuleChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.postRuleChipWrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.postRuleChip {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surfaceSunken);
+  color: var(--text);
+  font-family: var(--mono, monospace);
+}
+
+.postRuleChipType,
+.postRuleChipAny {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surfaceSunken) 80%, var(--accent));
+}
+
+.postRuleChipAny {
+  border-style: dashed;
+}
+
+.postRuleChipIgnored {
+  border-style: dashed;
+  color: var(--textDim);
+}
+
+.postRuleChipSelect {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.postRuleChipRef {
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+.postRulePattern {
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  background: var(--codeBg);
+  color: var(--codeText);
+  font-family: var(--mono, monospace);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* The columns stack, tester last: it is the one you consult rather than edit. */

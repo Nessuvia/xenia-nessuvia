@@ -109,7 +109,17 @@ export function resolvePostStack(
   defaultStackId: number | null | undefined,
   stacks: StackLike[],
 ): PostStackConfig {
+  return resolvePostStackRow(chatStackId, defaultStackId, stacks)?.config ?? defaultPostStackConfig()
+}
+
+/** The stored stack `resolvePostStack` reads, or undefined when it falls back to the built-in. What
+ *  a write aimed at "this chat's stack" targets. */
+export function resolvePostStackRow<S extends StackLike>(
+  chatStackId: number | undefined,
+  defaultStackId: number | null | undefined,
+  stacks: S[],
+): S | undefined {
   const byId = (id: number | null | undefined) =>
     id == null ? undefined : stacks.find((s) => s.id === id)
-  return (byId(chatStackId) ?? byId(defaultStackId))?.config ?? defaultPostStackConfig()
+  return byId(chatStackId) ?? byId(defaultStackId)
 }

@@ -4,7 +4,7 @@ import type { AgentRun } from './postStack.ts'
 import type { Rule } from './rules.ts'
 
 const rule = (find: string, action: Rule['action'], over: Partial<Rule> = {}): Rule => ({
-  id: find, enabled: true, match: 'literal', find, caseSensitive: false, action, note: '', ...over,
+  id: find, enabled: true, match: 'pattern', find, caseSensitive: false, action, note: '', ...over,
 })
 const config = (rules: Rule[], maxTries = 2): AgentRun => ({
   maxTries, rules,

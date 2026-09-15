@@ -284,18 +284,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The card is a flex column with align-items: flex-start, which shrink-wraps a textarea to its
-   cols default. Stretch this one back to the card's width. */
-.narratorPrompt {
-  align-self: stretch;
-  margin-top: 8px;
-  resize: vertical;
-}
-
-.narratorActions {
-  margin-top: 8px;
-}
-
 .debugHint {
   margin: 6px 0 0;
   color: var(--textDim);
@@ -548,45 +536,6 @@
 .ruleActionRow .patternInput {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-/* A Words rule's example: each word is a toggle, and a clicked run carries a size picker. */
-.ruleExampleWords {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.ruleExampleUnlinked {
-  opacity: 0.5;
-}
-
-.ruleExampleWordWrap {
-  display: flex;
-  gap: 2px;
-  align-items: center;
-}
-
-.ruleExampleWord {
-  padding: 2px 6px;
-  border: 1px dashed transparent;
-  border-radius: calc(var(--radius) - 2px);
-  background: var(--surfaceSunken);
-  font-family: var(--mono, monospace);
-}
-
-.ruleExampleSlot {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--surfaceSunken) 80%, var(--accent));
-}
-
-.ruleExampleSize {
-  padding: 2px 4px;
-  font-size: 11px;
-}
-
-.ruleExampleRebuild {
-  align-self: flex-start;
 }
 
 .replacedSpan {

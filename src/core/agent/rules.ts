@@ -1,5 +1,5 @@
 // Imported by check scripts under `node --experimental-strip-types`. Nothing here may reach the store.
-import { exampleRegex, type Slots } from './example.ts'
+import type { Chip } from './builder.ts'
 
 /**
  * One agent rule: a match mode and an action.
@@ -7,20 +7,20 @@ import { exampleRegex, type Slots } from './example.ts'
 export interface Rule {
   id: string
   enabled: boolean
+  /** Absent reads as the sample: a rule is named after the sentence it was built from until renamed. */
   label?: string
   /**
    * How `find` is read.
-   * - `literal`: the string itself, escaped.
-   * - `regex`: a raw JS pattern.
-   * - `pattern`: the part-of-speech DSL, `with a [adj] [noun]`, `[word]`, `[adj]+`, `{n,m}`.
+   * - `pattern`: the part-of-speech DSL, `with a [adj] [noun]`, `[word]`, `[clause]`, `{n,m}`.
+   * - `regex`: a raw JS pattern. The only mode that can cross a sentence.
    */
   match: MatchMode
-  /** What to look for. A blank find matches nothing. */
+  /** What to look for. A blank find matches nothing. For a built rule it is generated from the chips. */
   find: string
-  /** `literal` only: words of `find` that match other words. See `example.ts`. */
-  slots?: Slots
-  /** `literal` only: a hand-edited regex that no longer reads back as the example. Wins over `find`. */
-  regexOverride?: string
+  /** `pattern` only: the sentence the builder tags into chips. Absent on a pattern written by hand. */
+  sample?: string
+  /** `pattern` only: one choice per chip of `sample`. See `builder.ts`. */
+  chips?: Chip[]
   caseSensitive: boolean
   /**
    * What the agent does with a match.
@@ -29,7 +29,7 @@ export interface Rule {
    * - `delete`: the sentence is removed.
    */
   action: 'swap' | 'rewrite' | 'delete'
-  /** `swap` only. `$0` is the whole match, `$1..$n` the capture groups. Blank removes the match. */
+  /** `swap` only. `$0` is the whole match, `$1..$n` the chips or capture groups. Blank removes the match. */
   replacement?: string
   /** `rewrite` only: one hit sends the whole paragraph to the model, not just the sentence. */
   wholeParagraph?: boolean
@@ -37,43 +37,53 @@ export interface Rule {
   note: string
 }
 
-export type MatchMode = 'literal' | 'regex' | 'pattern'
+export type MatchMode = 'regex' | 'pattern'
 
 export function newRule(): Rule {
   return {
     id: crypto.randomUUID(),
     enabled: true,
-    match: 'literal',
+    match: 'pattern',
     find: '',
+    sample: '',
+    chips: [],
     caseSensitive: false,
     action: 'rewrite',
     note: '',
   }
 }
 
-/** The regex source a `literal` or `regex` rule runs as. */
-export function ruleSource(rule: Rule): string {
-  if (rule.match === 'regex') return rule.find
-  return rule.regexOverride ?? exampleRegex(rule.find, rule.slots)
-}
-
 /**
- * Compile a `literal` or `regex` rule, or null if it has no find or does not compile. An invalid
- * regex is skipped rather than thrown: the panel surfaces the syntax error, and a send must never
- * break because a rule is half-typed. `pattern` rules compile through `hammer/pattern.ts` instead
- * and return null here.
+ * Compile a `regex` rule, or null if it has no find or does not compile. An invalid regex is skipped
+ * rather than thrown: the panel surfaces the syntax error, and a send must never break because a
+ * rule is half-typed. `pattern` rules compile through `hammer/pattern.ts` instead and return null here.
  */
 export function compileRule(rule: Rule): RegExp | null {
-  if (!rule.find || rule.match === 'pattern') return null
-  const source = ruleSource(rule)
-  if (!source) return null
+  if (!rule.find || rule.match !== 'regex') return null
   try {
-    return new RegExp(source, rule.caseSensitive ? 'g' : 'gi')
+    return new RegExp(rule.find, rule.caseSensitive ? 'g' : 'gi')
   } catch {
     return null
   }
 }
 
+/** The action select's options and the line under it. Shared by the rules panel and "Make rule". */
+export const actionLabels: [Rule['action'], string][] = [
+  ['swap', 'Replace with'],
+  ['rewrite', 'Rewrite sentence'],
+  ['delete', 'Delete whole sentence'],
+]
+
+export const actionHints: Record<Rule['action'], string> = {
+  swap: 'Replaces only the matched words. A blank replacement removes them, and the spacing, commas and capital letter around them are fixed.',
+  rewrite: 'Sends the sentence the match is in to the model to rewrite.',
+  delete: 'Removes the whole sentence the match is in. To remove only the matched words, use Replace with and leave it blank.',
+}
+
+/** The name a rule shows: its label, else its sample, else its find. */
+export function ruleName(rule: Rule): string {
+  return rule.label || rule.sample || rule.find
+}
 
 /** What the model is told about a match: the author's note, or a line quoting it. */
 export function flagMessage(rule: Rule, slice: string): string {

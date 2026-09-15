@@ -2,6 +2,7 @@ import type { StateParse, TrackerDef, TrackerValue } from '../trackers/parseStat
 import type { MoveQuality } from '../games/goFish'
 import type { ChatAgent } from '../agent/agentConfig.ts'
 import type { PostStackConfig } from '../agent/postStack.ts'
+import type { AcrosticRecord } from '../agent/acrostic/parse.ts'
 import type { GameEvent, GameKind } from '../games/gameEvent'
 
 export interface Character {
@@ -250,6 +251,9 @@ export interface Message {
   passFailed?: (string | undefined)[]
   /** The `<state>` parse of each swipe, parallel to `swipes`. Holes where the card had no trackers. */
   trackerUpdates?: (StateParse | undefined)[]
+  /** The acrostic behind each swipe: seed, template and letter fit. Parallel to `swipes`, holes where
+   *  a swipe was generated normally. Unindexed. */
+  acrostics?: (AcrosticRecord | undefined)[]
   /** Player tracker edits made while this was the last message. Survive swipes. */
   trackerOverrides?: Record<string, TrackerValue>
   /** A `/break` row: a rule drawn across the chat, with empty content. `buildPrompt` drops it. */

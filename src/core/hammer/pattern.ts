@@ -28,7 +28,7 @@ export type TokenMatcher =
   | ({ kind: 'pos'; tag: SlotTag; min: number; max: number } & Grouped)
 
 /** A part made only of punctuation marks, which becomes a literal punctuation matcher. */
-const ALL_PUNCT = /^[,;:.!?…—–"“”‘’()]+$/
+export const ALL_PUNCT =/^[,;:.!?…—–"“”‘’()]+$/
 
 // Expanding a contraction literal needs the same tagger the text goes through, so the two agree on
 // what "didn't" is. Memoized: this runs per rule per pass over a handful of short strings.
