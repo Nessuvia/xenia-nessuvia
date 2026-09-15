@@ -1,6 +1,7 @@
 import type { StateParse, TrackerDef, TrackerValue } from '../trackers/parseState.ts'
 import type { MoveQuality } from '../games/goFish'
 import type { ChatAgent } from '../agent/agentConfig.ts'
+import type { PostStackConfig } from '../agent/postStack.ts'
 import type { GameEvent, GameKind } from '../games/gameEvent'
 
 export interface Character {
@@ -197,6 +198,8 @@ export interface Chat {
   paramOverrides?: ParamOverrides
   /** Per-chat agent override: on/off and display mode. */
   agent?: ChatAgent
+  /** This chat's post-processing stack, overriding the global default. Absent = use the default. */
+  postStackId?: number
   createdAt: number
   updatedAt: number
 }
@@ -436,6 +439,16 @@ export interface PromptStack {
   /** Overrides for the small utility prompts (`core/prompt/miscPrompts.ts`), keyed by def id.
    *  Absent, or a blank entry, means the built-in wording. */
   miscPrompts?: Record<string, string>
+}
+
+/** A named post-processing config. Shareable: it carries no connection and no key. */
+export interface PostStack {
+  id?: number
+  ownerId: string
+  name: string
+  config: PostStackConfig
+  createdAt: number
+  updatedAt: number
 }
 
 /**

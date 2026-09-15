@@ -1,13 +1,13 @@
 import assert from 'node:assert'
 import { explainAgent } from './explain.ts'
-import type { AgentConfig } from './agentConfig.ts'
+import type { AgentRun } from './postStack.ts'
 import type { Rule } from './rules.ts'
 
 const rule = (find: string, action: Rule['action'], label = ''): Rule => ({
   id: find, enabled: true, label, match: 'literal', find, caseSensitive: false, action, note: '',
 })
-const config: AgentConfig = {
-  enabled: true, connectionId: null, maxTries: 2,
+const config: AgentRun = {
+  maxTries: 2,
   rules: [rule('testament', 'rewrite', 'Testament'), rule('time will tell', 'delete')],
   lexicon: [{ id: 'u', phrase: 'utilize', replacement: 'use', enabled: true }],
 }

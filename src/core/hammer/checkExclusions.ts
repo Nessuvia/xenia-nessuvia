@@ -50,3 +50,34 @@ assert.deepEqual(starts, sorted)
 void ranges
 
 console.log('checkExclusions OK')
+
+// Ignored tag pairs: the delimiters go too, and the match is case-insensitive.
+assert.deepEqual(computeExclusions('Hi [ OOC: skip me ] there', [{ id: 'a', open: '[', close: ']' }]), [[3, 19]])
+assert.deepEqual(
+  computeExclusions('a <THINK>x</THINK> b', [{ id: 't', open: '<think>', close: '</think>' }]),
+  [[2, 18]],
+)
+
+// Several occurrences, and several pairs at once.
+assert.deepEqual(
+  computeExclusions('[a] mid [b]', [{ id: 'a', open: '[', close: ']' }]),
+  [[0, 3], [8, 11]],
+)
+assert.deepEqual(
+  computeExclusions('[a] <think>b</think>', [
+    { id: 'a', open: '[', close: ']' },
+    { id: 't', open: '<think>', close: '</think>' },
+  ]),
+  [[0, 3], [4, 20]],
+)
+
+// An unclosed opener runs to the end, the same call the fence scanner makes.
+assert.deepEqual(computeExclusions('ok [ never closed', [{ id: 'a', open: '[', close: ']' }]), [[3, 17]])
+
+// A blank delimiter is skipped rather than matching everywhere.
+assert.deepEqual(computeExclusions('plain text', [{ id: 'x', open: '', close: ']' }]), [])
+
+// No pairs configured is the old behaviour exactly.
+assert.deepEqual(computeExclusions('Hi [ OOC: keep ] there'), [])
+
+console.log('checkExclusions ignore-pairs OK')

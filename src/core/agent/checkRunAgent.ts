@@ -1,13 +1,13 @@
 import assert from 'node:assert'
 import { runAgent, type Complete } from './runAgent.ts'
-import type { AgentConfig } from './agentConfig.ts'
+import type { AgentRun } from './postStack.ts'
 import type { Rule } from './rules.ts'
 
 const rule = (find: string, action: Rule['action'], over: Partial<Rule> = {}): Rule => ({
   id: find, enabled: true, match: 'literal', find, caseSensitive: false, action, note: '', ...over,
 })
-const config = (rules: Rule[], maxTries = 2): AgentConfig => ({
-  enabled: true, connectionId: null, maxTries, rules,
+const config = (rules: Rule[], maxTries = 2): AgentRun => ({
+  maxTries, rules,
   lexicon: [{ id: 'u', phrase: 'utilize', replacement: 'use', enabled: true }],
 })
 

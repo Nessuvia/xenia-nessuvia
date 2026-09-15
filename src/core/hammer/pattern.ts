@@ -1,20 +1,44 @@
-import type { PosTag } from './tagger.ts'
+import { CompromiseTagger, memoizeTagger, type PosTag } from './tagger.ts'
 
+/** The parts of speech a pattern can name. `punct` is deliberately absent: punctuation is written
+ *  as itself, not as a slot. */
 export const POS_TAGS: readonly PosTag[] = ['adj', 'verb', 'noun', 'adv', 'det', 'prep', 'conj', 'pron']
 
 /** `[word]` is a wildcard slot: any single token, whatever the tagger made of it. Kept out of
  *  POS_TAGS because it isn't a part of speech: the panel lists it separately. */
 export const WILDCARD_TAG = 'word'
 
-export type SlotTag = PosTag | typeof WILDCARD_TAG
+/** `[clause]` is the rest of the clause: one or more words, stopping at punctuation or the end of
+ *  the sentence. It is `[word]+` with a name that says what it is for. */
+export const CLAUSE_TAG = 'clause'
+
+export type SlotTag = PosTag | typeof WILDCARD_TAG | typeof CLAUSE_TAG
+
+/** Which written part of the DSL a matcher came from. One part is one chip in the builder and one
+ *  `$n` in a replacement, however many matchers it compiled to: "didn't" is one chip and one group
+ *  even though it matches as two words. */
+interface Grouped {
+  group: number
+}
 
 export type TokenMatcher =
-  | { kind: 'literal'; value: string; caseSensitive: boolean }
-  | { kind: 'pos'; tag: SlotTag; min: number; max: number }
+  /** `punct` matches a punctuation token. Only a matcher written as punctuation gets it, and only
+   *  such a matcher is exempt from the punctuation-skipping between matchers. */
+  | ({ kind: 'literal'; value: string; caseSensitive: boolean; punct?: boolean } & Grouped)
+  | ({ kind: 'pos'; tag: SlotTag; min: number; max: number } & Grouped)
+
+/** A part made only of punctuation marks, which becomes a literal punctuation matcher. */
+const ALL_PUNCT = /^[,;:.!?…—–"“”‘’()]+$/
+
+// Expanding a contraction literal needs the same tagger the text goes through, so the two agree on
+// what "didn't" is. Memoized: this runs per rule per pass over a handful of short strings.
+const literalTagger = memoizeTagger(new CompromiseTagger())
 
 export interface CompiledPattern {
   matchers: TokenMatcher[]
   sourceDsl: string
+  /** How many `$n` groups the pattern has, one per written part. */
+  groupCount: number
 }
 
 /** A parse error carries a human message for the settings row, same affordance as F&R regex errors. */
@@ -38,10 +62,18 @@ export function compilePattern(dsl: string, caseSensitive = false): CompiledPatt
   const parts = dsl
     .trim()
     .split(/\s+/)
-    .map((p) => p.replace(/^[.,;:!"'()]+|[.,;:!"'()]+$/g, ''))
+    // A part that is nothing but punctuation is a matcher in its own right. Punctuation still
+    // stuck to a word or a slot (`[noun],`) is stripped as it always was, so it stays optional:
+    // a required comma is written with a space in front of it.
+    .map((p) => (ALL_PUNCT.test(p) ? p : p.replace(/^[.,;:!"'()]+|[.,;:!"'()]+$/g, '')))
     .filter(Boolean)
+  // One group per written part, so `$n` and the builder's chips line up whatever a part compiles to.
+  let group = -1
   for (const part of parts) {
-    if (part.startsWith('[')) {
+    group += 1
+    if (ALL_PUNCT.test(part)) {
+      for (const mark of part) matchers.push({ kind: 'literal', value: mark, caseSensitive: false, punct: true, group })
+    } else if (part.startsWith('[')) {
       if (!part.endsWith(']') && !hasQuantifierSuffix(part)) {
         throw new PatternError(`Unclosed slot: ${part}`)
       }
@@ -50,20 +82,39 @@ export function compilePattern(dsl: string, caseSensitive = false): CompiledPatt
       if (close < 0) throw new PatternError(`Unclosed slot: ${part}`)
       const tag = part.slice(1, close)
       const suffix = part.slice(close + 1)
-      if (tag !== WILDCARD_TAG && !POS_TAGS.includes(tag as PosTag)) {
+      if (tag !== WILDCARD_TAG && tag !== CLAUSE_TAG && !POS_TAGS.includes(tag as PosTag)) {
         throw new PatternError(`Unknown POS tag: [${tag}]`)
       }
-      const { min, max } = parseQuantifier(suffix, part)
-      matchers.push({ kind: 'pos', tag: tag as SlotTag, min, max })
+      // A bare `[clause]` is one or more words. A quantifier on it still means what it says.
+      const { min, max } = suffix === '' && tag === CLAUSE_TAG ? { min: 1, max: Infinity } : parseQuantifier(suffix, part)
+      matchers.push({ kind: 'pos', tag: tag as SlotTag, min, max, group })
     } else {
       if (part.includes('[') || part.includes(']')) {
         throw new PatternError(`Brackets must wrap a whole token: ${part}`)
       }
-      matchers.push({ kind: 'literal', value: part, caseSensitive })
+      // "didn't" becomes the two words compromise reads it as, so it matches both the contraction
+      // and "did not" written out. Anything else is one literal.
+      for (const word of expandContraction(part)) matchers.push({ kind: 'literal', value: word, caseSensitive, group })
     }
   }
   if (matchers.length === 0) throw new PatternError('Pattern is empty.')
-  return { matchers, sourceDsl: dsl }
+  return { matchers, sourceDsl: dsl, groupCount: group + 1 }
+}
+
+/**
+ * A literal written as a fused form, as the words it stands for: "didn't" to did + not, "gonna" to
+ * going + to. Everything else comes back as itself, one word.
+ *
+ * Every literal goes through the tagger, not just the ones with an apostrophe, because "gonna" and
+ * "wanna" fuse without one. The tagger is memoized and a rule's literals are few and short.
+ *
+ * Read on its own, "it's" gets compromise's out-of-context reading, which is "is". A rule meant for
+ * "it has" is written `it has`, and it will match the occurrences compromise read that way.
+ */
+function expandContraction(part: string): string[] {
+  const tokens = literalTagger.tokenize(part)
+  if (tokens.length !== 2 || tokens[0].contraction !== 'head') return [part]
+  return [tokens[0].word ?? tokens[0].text, tokens[1].text]
 }
 
 function hasQuantifierSuffix(part: string): boolean {

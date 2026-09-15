@@ -1,20 +1,19 @@
 // Extension-ful imports on purpose: check scripts import this under `node --experimental-strip-types`.
 import type { Rule } from './rules.ts'
-import type { LexiconEntry } from '../quality/lexicon.ts'
-import { defaultLintConfig, type LintConfig } from './lintRules.ts'
 
-/** The global agent config. Lives in `settingsStore`. */
+/**
+ * The global agent config. Lives in `settingsStore`.
+ * What the pass actually does lives in a post-processing stack, so it can be exported and shared.
+ * What stays here is what must not travel: the master switch, the style, and the connection, which
+ * holds an API key.
+ */
 export interface AgentConfig {
   /** Runs on every assistant reply when on. The manual message action runs either way. */
   enabled: boolean
   /** null uses the chat's connection. */
   connectionId: string | null
-  /** Failed rewrites allowed per sentence or paragraph before the original stays. */
-  maxTries: number
-  rules: Rule[]
-  lexicon: LexiconEntry[]
-  /** Style checks, run in code after swaps. Absent on configs saved before it existed. */
-  lint?: LintConfig
+  /** The stack a chat with no stack of its own runs. null falls back to `defaultPostStackConfig`. */
+  defaultStackId: number | null
   /** Stylized animates the edits and ignores a chat's display mode. Absent reads as stylized. Global only. */
   style?: AgentStyle
 }
@@ -55,16 +54,20 @@ const ingNouns = '(?:nothing|something|anything|everything|morning|evening|durin
 const tailStop = 'I|you|he|she|it|we|they|him|her|them|me|us|said|says|asked|replied|whispered|and|or|but|so|then|too|very|really|right|now|last|next|this|that|each|every|all|in|on|at|to|for|of|from|by|with|again|anyway|though|please|thanks|sir|ma\'am'
 const physical ='(?:hung|hang(?:s|ing)?|sat|sits?|sitting|settled|settles?|settling|stretched|stretch(?:es|ing)?|tasted|tastes?|tasting)'
 
-/**
- * The Default flow, seeded as the store default.
- * Swaps run in panel order, so the paired em dash rule has to come before the single ones.
- * The persisted settings keep the user's edits after first load.
- */
 export const defaultAgentConfig: AgentConfig = {
   enabled: false,
   connectionId: null,
-  maxTries: 3,
-  rules: [
+  defaultStackId: null,
+  style: 'stylized',
+}
+
+/**
+ * The rules the Default stack starts with. A function, not a constant: every stack owns its own
+ * rule objects and edits them in place.
+ * Swaps run in list order, so the paired em dash rule has to come before the single ones.
+ */
+export function defaultRules(): Rule[] {
+  return [
     regex({ id: 'default-curly-double', label: 'Curly double quotes', find: '[\u201C\u201D]', action: 'swap', replacement: '"' }),
     regex({ id: 'default-curly-single', label: 'Curly single quotes', find: '[\u2018\u2019]', action: 'swap', replacement: "'" }),
     regex({ id: 'default-dash-pair', label: 'Paired em dashes to commas', find: '\\s*\u2014\\s*([^\u2014\\n]+?)\\s*\u2014\\s*', action: 'swap', replacement: ', $1, ' }),
@@ -107,8 +110,5 @@ export const defaultAgentConfig: AgentConfig = {
     regex({ id: 'default-adjective-lead', label: 'Slow, unhurried, ...', find: `${sentenceStart}[A-Z][a-z]+, [a-z-]+,`, caseSensitive: true, action: 'rewrite', note: 'Stacked adjectives as a fragment. Fold the description into a sentence with a verb.' }),
     regex({ id: 'default-adjective-pile', label: 'Was quiet, half-empty', find: '\\b(?:was|were|is|are|looked|felt|seemed) [a-z-]+, [a-z-]+[,.]', caseSensitive: true, action: 'rewrite', note: 'Stacked adjectives. Keep one, or show it through something happening.' }),
     regex({ id: 'default-made', label: 'The X made Y', find: '\\b(?:the|her|his|their|my|your) \\w+ made (?:her|him|them|me|my|his|their|your)\\b', action: 'delete' }),
-  ],
-  lexicon: [],
-  lint: defaultLintConfig,
-  style: 'stylized',
+  ]
 }

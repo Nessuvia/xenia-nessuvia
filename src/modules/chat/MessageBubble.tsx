@@ -26,6 +26,7 @@ import {
   swipeIndex,
 } from '../../core/stores/swipes'
 import { useActiveConnection, useAppearance, useSettings } from '../../core/stores/settingsStore'
+import { usePostStacks } from '../../core/stores/postStackStore'
 import { newRule } from '../../core/agent/rules'
 import { useNavigate } from 'react-router-dom'
 import { reasoningSpan } from '../../core/prompt/reasoning'
@@ -512,12 +513,18 @@ export default function MessageBubble({
             setSelectionMenu(null)
           }}
           onMakeRule={() => {
-            // Global scope: rules live in the one agent config. The user finishes it in Settings.
-            const { agent, setAgent } = useSettings.getState()
+            // Stack scope: the rule lands in the global default stack, which is wider than this
+            // chat when the chat has picked its own. Step 5 of the v2 plan replaces this with a
+            // popover that writes to the chat's resolved stack.
+            const { defaultStackId } = useSettings.getState().agent
+            const { stacks, patchConfig } = usePostStacks.getState()
+            const stack = stacks.find((s) => s.id === defaultStackId) ?? stacks[0]
             const find = selectionMenu.text.trim()
-            setAgent({ rules: [...agent.rules, { ...newRule(), label: find, find }] })
+            if (stack?.id) {
+              patchConfig(stack.id, { rules: { ...stack.config.rules, list: [...stack.config.rules.list, { ...newRule(), label: find, find }] } })
+            }
             setSelectionMenu(null)
-            navigate('/settings#agent')
+            navigate('/post-processing')
           }}
         />
       )}

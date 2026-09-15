@@ -33,6 +33,8 @@ import {
 } from './swipes'
 import { runAgent, type Complete } from '../agent/runAgent'
 import { resolveChatAgent } from '../agent/agentConfig'
+import { resolvePostStack, runStages } from '../agent/postStack'
+import { usePostStacks } from './postStackStore'
 import type { AgentStage } from '../agent/stage'
 import { isSentinel } from '../connectors/sentinel'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
@@ -96,6 +98,11 @@ async function agentPass(
   if (!force && !resolveChatAgent(config, chat.agent).enabled) return { text }
   const connection = resolveConnection(config.connectionId)
   if (!connection || isSentinel(connection.endpointUrl)) return { text }
+  // What the pass does comes from the stack; the global config only says whether and how.
+  const run = runStages(
+    resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks),
+    useSettings.getState().appearance.tagRules,
+  )
 
   const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), Math.ceil(text.length / 4) + 200))
   const complete: Complete = async (messages) => {
@@ -109,7 +116,7 @@ async function agentPass(
     return out
   }
   const wait = (config.style ?? 'stylized') === 'stylized' ? (ms: number) => new Promise<void>((done) => setTimeout(done, ms)) : undefined
-  const outcome = await runAgent(text, config, complete, onProgress, wait).finally(() => onProgress(text, []))
+  const outcome = await runAgent(text, run, complete, onProgress, wait).finally(() => onProgress(text, []))
   return {
     text: outcome.text,
     original: outcome.text === text ? undefined : text,

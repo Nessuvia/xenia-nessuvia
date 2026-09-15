@@ -1,0 +1,229 @@
+/* The rule cards, the pattern inputs and the cheat sheet still live in settings.css, where they
+   were written. RulesPanel imports that file directly. Step 5 of the v2 plan rewrites the rule
+   editor, which is the point to move those rules here. */
+
+.postProcessing {
+  padding: 16px;
+  gap: 12px;
+}
+
+.postColumns {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 320px;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Each column scrolls on its own: the pipeline is long and the stack list is short, and one
+   shared scrollbar would push the tester off screen. */
+.postStacks,
+.postPipeline,
+.postTester {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.postStackList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postStackRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.postStackRow.active {
+  border-color: var(--borderAccent);
+  background: var(--surfaceSelected);
+}
+
+.postStackName {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--textBright);
+}
+
+.postStackStar {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--textDim);
+}
+
+.postStackStar.current {
+  color: var(--accent);
+}
+
+.postStackUsed {
+  grid-column: 1 / -1;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postStackActions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+}
+
+.postStackButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.postStackImport {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.postStackImport input[type='file'] {
+  display: none;
+}
+
+.postGlobal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.postGlobalField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--textMuted);
+}
+
+.postStageSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.postChip {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+.postStages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postStage {
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.postStageHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.postStageTitle {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--textBright);
+}
+
+.postStageCount {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postStageBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.postSwapList,
+.postLintList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postSwapRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.postTesterSample {
+  width: 100%;
+  resize: vertical;
+}
+
+.postTesterResults {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postTesterResult {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  background: var(--surfaceSunken);
+}
+
+.postTesterHit {
+  border-left: 2px solid var(--borderAccent);
+}
+
+/* The columns stack, tester last: it is the one you consult rather than edit. */
+@media (max-width: 1300px) {
+  .postColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .postStacks,
+  .postPipeline,
+  .postTester {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

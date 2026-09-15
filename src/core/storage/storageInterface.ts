@@ -25,6 +25,7 @@ export type TableName =
   | 'chats'
   | 'messages'
   | 'promptStacks'
+  | 'postStacks'
   | 'stories'
   | 'chapters'
   | 'palettes'
@@ -61,6 +62,9 @@ export const tableNames: TableName[] = [
   'chats',
   'messages',
   'promptStacks',
+  // Post-processing stacks. A chat references one by id, so a restore without them would leave
+  // every chat falling back to the built-in config.
+  'postStacks',
   'stories',
   'chapters',
   // Backup reads this list. Background images ride along with everything else. Full-size

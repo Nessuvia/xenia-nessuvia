@@ -4,7 +4,9 @@ import { newRule, ruleSource, type Rule } from '../../core/agent/rules'
 import RuleCardHead from './RuleCardHead'
 import ExampleEditor from './ExampleEditor'
 import { tryCompile, POS_TAGS } from '../../core/hammer/pattern'
-import './settings.css'
+// The rule-card CSS still lives in the settings stylesheet. See the note at the top of
+// postProcessing.css.
+import '../settings/settings.css'
 
 /** The syntax error for a rule's find, or null. A literal is escaped and cannot fail. */
 function ruleError(rule: Rule): string | null {
@@ -257,7 +259,16 @@ export default function RulesPanel({
             <strong>Word-type slots:</strong> {POS_TAGS.map((t) => `[${t}]`).join(' ')}
           </p>
           <p>
-            <strong>[word]</strong> matches any one word.
+            <strong>[word]</strong> matches any one word. <strong>[clause]</strong> matches the rest of the clause,
+            stopping at punctuation or the end of the sentence.
+          </p>
+          <p>
+            <strong>Punctuation</strong> written on its own, <code>,</code> or <code>—</code>, has to be there.
+            Punctuation stuck to a word is ignored, and marks between two parts are skipped.
+          </p>
+          <p>
+            <strong>Contractions:</strong> <code>did not</code> matches "didn't", and <code>didn't</code> matches
+            both. A match never covers half of one.
           </p>
           <p>
             <strong>Quantifiers:</strong> <code>[adj]?</code> optional · <code>[adj]+</code> one or more ·{' '}

@@ -151,6 +151,8 @@ interface SettingsState {
   seededParamDefs: boolean
   /** Whether the default chat and story stacks have been written. Set once, so a delete sticks. */
   seededStacks: boolean
+  /** Whether the Default post-processing stack has been written. Set once, so a delete sticks. */
+  seededPostStacks: boolean
   /** The prompt we send to the LLM. '' means `defaultPalettePrompt`, so Reset is a clear. */
   palettePrompt: string
   /** Replies come from a local lorem generator instead of the connection, so nothing is sent. */
@@ -247,6 +249,7 @@ interface SettingsState {
   markCharactersSeeded(): void
   markParamDefsSeeded(): void
   markStacksSeeded(): void
+  markPostStacksSeeded(): void
   setPalettePrompt(prompt: string): void
   markTableDirty(table: TableName): void
   markTablesClean(tables: TableName[]): void
@@ -275,6 +278,7 @@ export const useSettings = create<SettingsState>()(
       seededCharacters: false,
       seededParamDefs: false,
       seededStacks: false,
+      seededPostStacks: false,
       palettePrompt: '',
       debugMode: false,
       personaTitleOff: false,
@@ -363,6 +367,7 @@ export const useSettings = create<SettingsState>()(
       markCharactersSeeded: () => set({ seededCharacters: true }),
       markParamDefsSeeded: () => set({ seededParamDefs: true }),
       markStacksSeeded: () => set({ seededStacks: true }),
+      markPostStacksSeeded: () => set({ seededPostStacks: true }),
       setPalettePrompt: (palettePrompt) => set({ palettePrompt }),
 
       // Returns the same array when the table is already flagged. A run of writes to one table

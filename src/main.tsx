@@ -12,6 +12,7 @@ import './modules/personas'
 import './modules/games'
 import './modules/lorebooks'
 import './modules/prompts'
+import './modules/postProcessing'
 import './modules/appearance'
 import './modules/settings'
 // Sits under Import/Export in the rail, not in the main nav, Sidebar guards its two sync entries

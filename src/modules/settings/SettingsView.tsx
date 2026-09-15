@@ -5,7 +5,6 @@ import { newConnection, useSettings } from '../../core/stores/settingsStore'
 import ConnectionEditor from './ConnectionEditor'
 import TagRulesPanel from './TagRulesPanel'
 import FindReplacePanel from './FindReplacePanel'
-import AgentPanel from './AgentPanel'
 import RelayPanel from './RelayPanel'
 import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
@@ -332,8 +331,6 @@ export default function SettingsView() {
         </div>
       ) : tab === 'relay' ? (
         <RelayPanel />
-      ) : tab === 'agent' ? (
-        <AgentPanel />
       ) : (
         <div className="textRulesCards">
           <TagRulesPanel />

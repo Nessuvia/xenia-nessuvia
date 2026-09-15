@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
-import { defaultAgentConfig as config } from './agentConfig.ts'
+import { defaultPostStackConfig, runStages } from './postStack.ts'
 import { explainAgent } from './explain.ts'
+
+const config = runStages(defaultPostStackConfig())
 
 const ops = (text: string) => explainAgent(text, config).sentences.map((s) => s.operation)
 const swapped = (text: string) => explainAgent(text, config).swapped

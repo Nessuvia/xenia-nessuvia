@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkExplain.ts runs this under `node --experimental-strip-types`.
 import { sentences } from '../quality/sentences.ts'
-import type { AgentConfig } from './agentConfig.ts'
+import type { AgentRun } from './postStack.ts'
 import { applyLint, defaultLintConfig, type LintHit } from './lintRules.ts'
 import { agentSwap, operationFor, rewritesParagraph, sentenceFlags } from './runAgent.ts'
 
@@ -16,10 +16,10 @@ export interface ExplainedSentence {
 /** What the agent would do to a text, with no request. Mirrors `runAgent`. */
 export function explainAgent(
   text: string,
-  config: AgentConfig,
+  config: AgentRun,
 ): { swapped: string; linted: string; lint: LintHit[]; sentences: ExplainedSentence[] } {
   const swapped = agentSwap(text, config)
-  const { text: linted, hits: lint } = applyLint(swapped, config.lint ?? defaultLintConfig)
+  const { text: linted, hits: lint } = applyLint(swapped, config.lint ?? defaultLintConfig, config.ignore ?? [])
   const out: ExplainedSentence[] = []
   for (const para of linted.split(/\n\s*\n/)) {
     const sents = sentences(para)

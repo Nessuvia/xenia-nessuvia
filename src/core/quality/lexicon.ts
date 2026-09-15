@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: check scripts run this under `node --experimental-strip-types`.
-import { computeExclusions } from '../hammer/exclusions.ts'
+import { computeExclusions, type IgnorePair } from '../hammer/exclusions.ts'
 
 /** One word swap, applied in code before any rule runs. */
 export interface LexiconEntry {
@@ -27,12 +27,12 @@ function compileEntry(phrase: string, removal: boolean): RegExp {
  * A match starting with a capital keeps the capital.
  * Code spans, URLs and link targets are skipped.
  */
-export function applyLexicon(text: string, entries: LexiconEntry[]): string {
+export function applyLexicon(text: string, entries: LexiconEntry[], ignore: IgnorePair[] = []): string {
   let out = text
   for (const entry of entries) {
     const phrase = entry.phrase.trim()
     if (!entry.enabled || !phrase) continue
-    const exclusions = computeExclusions(out)
+    const exclusions = computeExclusions(out, ignore)
     out = out.replace(compileEntry(phrase, !entry.replacement), (match: string, at: number) => {
       if (exclusions.some(([from, to]) => at < to && at + match.length > from)) return match
       const rep = entry.replacement

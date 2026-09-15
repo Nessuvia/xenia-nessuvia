@@ -4,7 +4,7 @@ import type { ChatMessage } from '../connectors/connectorInterface'
 import { findFlags, stripText, type Flag } from '../hammer/strip.ts'
 import { applyLexicon } from '../quality/lexicon.ts'
 import { sentences } from '../quality/sentences.ts'
-import type { AgentConfig } from './agentConfig.ts'
+import type { AgentRun } from './postStack.ts'
 import { flagMessage } from './rules.ts'
 import { applyLint, defaultLintConfig } from './lintRules.ts'
 import { loadArousal } from '../quality/arousal.ts'
@@ -30,20 +30,21 @@ export function operationFor(flags: Flag[]): Operation {
 }
 
 /** The in-code edits: lexicon, then `swap` rules. */
-export function agentSwap(text: string, config: AgentConfig): string {
-  return stripText(applyLexicon(text, config.lexicon), config.rules).text
+export function agentSwap(text: string, config: AgentRun): string {
+  const ignore = config.ignore ?? []
+  return stripText(applyLexicon(text, config.lexicon, ignore), config.rules, undefined, ignore).text
 }
 
 /** The `rewrite` and `delete` hits in a piece of text. */
-export function agentFlags(text: string, config: AgentConfig): Flag[] {
-  return findFlags(text, config.rules)
+export function agentFlags(text: string, config: AgentRun): Flag[] {
+  return findFlags(text, config.rules, undefined, config.ignore ?? [])
 }
 
 /**
  * Flags per sentence, matched against the whole paragraph. A rule can span sentences
  * ("She didn't cry. She screamed."), and such a hit lands on every sentence it touches.
  */
-export function sentenceFlags(para: string, sents: { start: number; end: number }[], config: AgentConfig): Flag[][] {
+export function sentenceFlags(para: string, sents: { start: number; end: number }[], config: AgentRun): Flag[][] {
   const flags = agentFlags(para, config)
   return sents.map((s) => flags.filter((f) => f.start < s.end && f.end > s.start))
 }
@@ -70,7 +71,7 @@ function problems(flags: Flag[]): string {
  */
 export async function runAgent(
   text: string,
-  config: AgentConfig,
+  config: AgentRun,
   complete: Complete,
   /**
    * The current text and the sentences still being worked on. Called before work and after each paragraph.
@@ -94,7 +95,7 @@ export async function runAgent(
 
   // Style checks run once on the reply, not on rewrite candidates.
   if (config.lint?.enabled) await loadArousal()
-  const linted = applyLint(swap(text), config.lint ?? defaultLintConfig)
+  const linted = applyLint(swap(text), config.lint ?? defaultLintConfig, config.ignore ?? [])
   const swapped = linted.text
   let rewritten = 0
   let deleted = 0

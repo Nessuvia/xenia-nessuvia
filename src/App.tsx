@@ -11,6 +11,7 @@ import { usePalettes } from './core/stores/palettesStore'
 import { usePersonas } from './core/stores/personasStore'
 import { useParamDefs } from './core/stores/paramDefsStore'
 import { useStacks } from './core/stores/stacksStore'
+import { usePostStacks } from './core/stores/postStackStore'
 import { useApplyPalette } from './core/palette/useApplyPalette'
 import { useApplyWebfont } from './core/palette/useApplyWebfont'
 
@@ -23,13 +24,17 @@ export default function App() {
   // Seeds the default chat and Story stacks on a fresh install, so they are there before the first
   // visit to Prompts.
   const loadStacks = useStacks((s) => s.load)
+  // The send path reads post-processing stacks synchronously, so they load on boot rather than on
+  // the first visit to the module.
+  const loadPostStacks = usePostStacks((s) => s.load)
   useEffect(() => {
     loadPalettes()
     loadParamDefs()
     loadStacks()
+    loadPostStacks()
     // A fresh install gets its "User" persona on boot, not on the first visit to Personas.
     ensurePersona()
-  }, [loadPalettes, loadParamDefs, loadStacks, ensurePersona])
+  }, [loadPalettes, loadParamDefs, loadStacks, loadPostStacks, ensurePersona])
   useApplyPalette()
   useApplyWebfont()
 

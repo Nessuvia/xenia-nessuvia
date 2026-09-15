@@ -1,7 +1,9 @@
 // Extension-ful imports on purpose: check scripts import this under `node --experimental-strip-types`.
-import { CompromiseTagger, memoizeTagger, type Token } from '../hammer/tagger.ts'
+import { CompromiseTagger, memoizeTagger, wordTokens, type Token } from '../hammer/tagger.ts'
+import { computeExclusions, type IgnorePair } from '../hammer/exclusions.ts'
 import { quotedRanges, sceneTemperature } from '../quality/temperature.ts'
 import { adverbPlacement } from './lint/adverbPlacement.ts'
+import { ambientFiller } from './lint/ambientFiller.ts'
 import { intensifierBudget } from './lint/intensifierBudget.ts'
 
 export type LintProfile = 'fiction' | 'fanfic'
@@ -44,14 +46,26 @@ export interface LintRule {
   check(paragraph: string, ctx: LintContext): LintHit[]
 }
 
-export const lintRules: LintRule[] = [adverbPlacement, intensifierBudget]
+export const lintRules: LintRule[] = [adverbPlacement, intensifierBudget, ambientFiller]
 
 const tagger = memoizeTagger(new CompromiseTagger())
 
 /** Run the enabled style checks per paragraph. Fix mode applies hits right to left, skipping overlaps. */
-export function applyLint(text: string, config: LintConfig): { text: string; hits: LintHit[] } {
+export function applyLint(
+  text: string,
+  config: LintConfig,
+  ignore: IgnorePair[] = [],
+): { text: string; hits: LintHit[] } {
   if (!config.enabled) return { text, hits: [] }
   const rules = lintRules.filter((r) => !config.off.includes(r.id))
+  // Ignored spans are filtered out of the hits rather than hidden from the rules. A rule reads its
+  // paragraph whole and counts the words in it; handing it a gapped string would shift every
+  // offset it reports. With nothing to ignore this costs a comparison and changes no behaviour.
+  const kept = (para: string) => {
+    if (!ignore.length) return () => true
+    const zones = computeExclusions(para, ignore)
+    return (h: LintHit) => !zones.some(([from, to]) => h.start < to && h.end > from)
+  }
   const all: LintHit[] = []
   let offset = 0
   const parts = text.split(/(\n\s*\n)/).map((para, p) => {
@@ -59,12 +73,14 @@ export function applyLint(text: string, config: LintConfig): { text: string; hit
     offset += para.length
     if (p % 2 || !para.trim()) return para
     const ctx: LintContext = {
-      tokens: tagger.tokenize(para),
+      // Words only. A check reads punctuation off `para` and treats token adjacency as "the next
+      // word", which the matcher's punctuation and contraction tokens would both break.
+      tokens: wordTokens(tagger.tokenize(para)),
       quoted: quotedRanges(para),
       temperature: sceneTemperature(para),
       profile: config.profile,
     }
-    const hits = rules.flatMap((r) => r.check(para, ctx)).sort((a, b) => b.start - a.start)
+    const hits = rules.flatMap((r) => r.check(para, ctx)).filter(kept(para)).sort((a, b) => b.start - a.start)
     all.push(...hits.map((h) => ({ ...h, start: h.start + base, end: h.end + base })))
     if (config.mode !== 'fix') return para
     let out = para
