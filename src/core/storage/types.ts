@@ -1,6 +1,7 @@
+import type { StateParse, TrackerDef, TrackerValue } from '../trackers/parseState.ts'
 import type { MoveQuality } from '../games/goFish'
+import type { ChatAgent } from '../agent/agentConfig.ts'
 import type { GameEvent, GameKind } from '../games/gameEvent'
-import type { SecondSweepOverride } from '../secondSweep/resolve.ts'
 
 export interface Character {
   id?: number
@@ -38,6 +39,12 @@ export interface Character {
   /** Lorebooks attached in every chat this character speaks in. An imported card's
    *  `character_book` lands here as a single id. Absent = none. */
   lorebookIds?: number[]
+  /** Card trackers, in display order. Rides in `extensions.nessu.trackers`. Absent = none. */
+  trackers?: TrackerDef[]
+  /** Creator CSS for the tracker widgets. Refused whole by `trackerCssProblem`. */
+  trackerCss?: string
+  /** A Fontsource slug for the tracker widgets. */
+  trackerFont?: string
   createdAt: number
   updatedAt: number
   colors: CharacterColors // per-speaker overrides; each '' = fall through to the global appearance color
@@ -181,13 +188,15 @@ export interface Chat {
   /** Lorebooks attached to this chat alone, on top of the speaker's and every global one. Absent =
    *  none. Never exported with the chat. */
   lorebookIds?: number[]
+  /** Player tracker edits made before any message. Messages carry later ones. */
+  trackerOverrides?: Record<string, TrackerValue>
   authorNote?: string
   authorNoteDepth?: number // messages from the end; default 2
   /** Pinned to the sidebar for quick access. Absent = not bookmarked. */
   bookmarked?: boolean
   paramOverrides?: ParamOverrides
-  /** Per-chat Second Sweep override: whether the pass runs here, and which pipeline it runs. */
-  secondSweep?: SecondSweepOverride
+  /** Per-chat agent override: on/off and display mode. */
+  agent?: ChatAgent
   createdAt: number
   updatedAt: number
 }
@@ -227,7 +236,7 @@ export interface Message {
    *  a key-free JSON string, undefined where no snapshot was taken or it was past ~256 KB.
    *  Unindexed. */
   requestSnapshots?: (string | undefined)[]
-  /** The text as the writing model produced it, for each swipe Second Sweep changed. `content`
+  /** The text as the writing model produced it, for each swipe the agent pass changed. `content`
    *  and `swipes[i]` hold what the pass produced; this holds what was said first. Holes on swipes
    *  the pass left alone. Unindexed. Original and final only, no intermediate stages. */
   passOriginals?: (string | undefined)[]
@@ -236,6 +245,10 @@ export interface Message {
   /** Why a stage's candidate was thrown away, parallel to `swipes`. Drives the marker and the
    *  retry action, cleared on a run that keeps something. */
   passFailed?: (string | undefined)[]
+  /** The `<state>` parse of each swipe, parallel to `swipes`. Holes where the card had no trackers. */
+  trackerUpdates?: (StateParse | undefined)[]
+  /** Player tracker edits made while this was the last message. Survive swipes. */
+  trackerOverrides?: Record<string, TrackerValue>
   /** A `/break` row: a rule drawn across the chat, with empty content. `buildPrompt` drops it. */
   divider?: boolean
   createdAt: number

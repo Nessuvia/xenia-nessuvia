@@ -26,7 +26,7 @@ export function useApplyWebfont() {
 }
 
 /** Points the `<link id=linkId>` at `fontId`'s Fontsource stylesheet, or removes it when off. */
-function loadWebfont(linkId: string, on: boolean, fontId: string, clearVar: string) {
+export function loadWebfont(linkId: string, on: boolean, fontId: string, clearVar: string) {
   if (!on || !fontId) {
     document.getElementById(linkId)?.remove()
     return

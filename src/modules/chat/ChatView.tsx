@@ -20,6 +20,10 @@ import { oldMessageInstruction } from '../../core/prompt/rewrite'
 import { emptyColors } from '../../core/storage/types'
 import { participants } from '../../core/stores/roster'
 import { useBlips } from '../../core/stores/blipStore'
+import { resolveChatAgent } from '../../core/agent/agentConfig'
+import { agentSegments } from './agentSegments'
+import { TrackerFloat } from './TrackerPanel'
+import AgentStream from './AgentStream'
 
 export default function ChatView() {
   const chatId = Number(useParams().chatId)
@@ -50,8 +54,11 @@ export default function ChatView() {
     deleteMessages,
     deleteSwipes,
     passing,
+    streamingPending,
+    streamingStage,
     passMessage,
     revertMessagePass,
+    dismissPassFailure,
   } = useChats()
   const { characters, load: loadCharacters } = useCharacters()
   const connection = useActiveConnection()
@@ -59,6 +66,7 @@ export default function ChatView() {
   const ensurePersona = usePersonas((s) => s.ensureActive)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const appearance = useAppearance()
+  const agentConfig = useSettings((s) => s.agent)
   const palette = usePalette()
   const activePersona = personas.find((p) => p.id === activePersonaId)
   const [titleDraft, setTitleDraft] = useState<string | null>(null)
@@ -108,6 +116,12 @@ export default function ChatView() {
   const character = characters.find((c) => c.id === chat?.characterId)
 
   if (!chat || !character) return <p className="placeholder">Loading…</p>
+  const agent = resolveChatAgent(agentConfig, chat.agent)
+  // Stylized hands over its own marks and streams plainly until they arrive. A manual pass in a
+  // chat with the agent off streams plainly too.
+  const stylized = (agentConfig.style ?? 'stylized') === 'stylized'
+  const segments =
+    streamingStage?.marks ?? agentSegments(streamingText, streamingPending, agent.enabled && !stylized ? agent.display : 'blur', passing)
 
   /** The card a message was written by, when it's still around, for the avatar and the re-roll. */
   const speakerOf = (speakerId?: number) =>
@@ -129,9 +143,11 @@ export default function ChatView() {
           '--emphasisColor': palette.emphasisColor || '',
           '--boldColor': palette.boldColor || '',
           '--quoteColor': palette.quoteColor || '',
+          '--agentBeat': streamingStage ? `${streamingStage.beat}ms` : '',
         } as CSSProperties
       }
     >
+      <TrackerFloat />
       <div className="chatViewHeader">
         {titleDraft === null ? (
           <h2 onClick={() => setTitleDraft(chat.title)} title="Rename chat">
@@ -231,7 +247,9 @@ export default function ChatView() {
             onDeleteSwipes={(indices) => deleteSwipes(m.id!, indices)}
             onPass={m.role === 'assistant' && !streaming ? () => passMessage(m.id!) : undefined}
             onPassRevert={() => revertMessagePass(m.id!)}
+            onPassDismiss={() => dismissPassFailure(m.id!)}
             passing={regeneratingId === m.id && passing}
+            streamingSegments={segments}
           />
           ),
         )}
@@ -269,8 +287,7 @@ export default function ChatView() {
             <div className="messageBody">
               {/* Mid-stream an opener has no closer yet. The block looks like plain text
                   until the model finishes it and folds away. */}
-              {renderText(streamingText, { tagRules: appearance.tagRules, order: palette.colorOrder })}
-              <span className="caret">▌</span>
+              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: appearance.tagRules, order: palette.colorOrder })} />
             </div>
           </div>
         )}

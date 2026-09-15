@@ -86,6 +86,19 @@ assert.deepStrictEqual(out.data.tags, ['sci-fi', 'Sci-Fi'])
 // Foreign extensions keys survive; ours are layered on top rather than replacing the object.
 assert.equal((out.data.extensions as Record<string, unknown>)['someapp/voice'], 'alto')
 assert.ok((out.data.extensions as Record<string, unknown>).nessu)
+// Trackers round-trip through extensions.nessu.
+{
+  const trackers = [{ key: 'affection', type: 'number' as const, min: 0, max: 100, initial: 10, display: 'bar' as const }]
+  const back = importCard(JSON.parse(JSON.stringify(buildCard({ ...c, trackers } as Character))))
+  assert.deepStrictEqual(back.trackers, [{ ...trackers[0], label: undefined, hidden: undefined }])
+  assert.deepStrictEqual(c.trackers, [])
+  const styled = (trackerCss: string, trackerFont: string) =>
+    importCard(JSON.parse(JSON.stringify(buildCard({ ...c, trackerCss, trackerFont } as Character))))
+  assert.equal(styled('.trackerBar { height: 4px; }', 'roboto-slab').trackerCss, '.trackerBar { height: 4px; }')
+  assert.equal(styled('.trackerBar { height: 4px; }', 'roboto-slab').trackerFont, 'roboto-slab')
+  assert.equal(styled('.a { background: url(x) }', 'Bad Font').trackerCss, undefined)
+  assert.equal(styled('.a { background: url(x) }', 'Bad Font').trackerFont, undefined)
+}
 // Book-level flags we don't model come back off the original.
 assert.equal(out.data.character_book?.recursive_scanning, true)
 assert.deepStrictEqual(out.data.character_book?.extensions, { 'someapp/bookflag': true })

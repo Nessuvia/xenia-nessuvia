@@ -277,4 +277,32 @@ const speaking: PromptConditions = { narrator: false, char1: true, char2: false 
   )
 }
 
+// --- tracker comparisons ---------------------------------------------------
+{
+  const flags: PromptConditions = { affection: 60, mood: 'Angry', inventory: ['rope', 'Sword'], narrator: false }
+  const r = (cond: string) => resolveConditions(`[if ${cond}]\nyes\n[else]\nno\n[endif]`, flags)
+  assert.strictEqual(r('affection > 50'), 'yes')
+  assert.strictEqual(r('affection>60'), 'no')
+  assert.strictEqual(r('affection >= 60'), 'yes')
+  assert.strictEqual(r('affection <= 59.5'), 'no')
+  assert.strictEqual(r('affection != 60'), 'no')
+  assert.strictEqual(r('not affection < 10'), 'yes')
+  assert.strictEqual(r('affection > lots'), 'no', 'a non-number never compares')
+  assert.strictEqual(r('mood = angry'), 'yes')
+  assert.strictEqual(r('mood = "angry"'), 'yes')
+  assert.strictEqual(r('mood > angry'), 'no', 'text takes = and != only')
+  assert.strictEqual(r('inventory = sword'), 'yes')
+  assert.strictEqual(r('inventory != rope'), 'no')
+  assert.strictEqual(r('inventory'), 'yes')
+  assert.strictEqual(r('charm > 1'), 'no', 'an unknown name is false')
+  assert.strictEqual(r('narrator = 1'), 'no', 'a boolean never compares')
+  // An operator with nothing after it is prose.
+  assert.strictEqual(resolveConditions('[if affection >]', flags), '[if affection >]')
+  // elseif compares too.
+  assert.strictEqual(
+    resolveConditions('[if affection > 80]\nlove\n[elseif affection > 40]\nlike\n[endif]', flags),
+    'like',
+  )
+}
+
 console.log('ok')

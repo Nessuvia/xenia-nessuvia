@@ -33,6 +33,8 @@ export function useApplyPalette() {
     // to beat them on the width property itself (index.css).
     if (palette.mobileFullWidth) root.dataset.mobileFullWidth = ''
     else delete root.dataset.mobileFullWidth
+    if (palette.halfFullWidth) root.dataset.halfFullWidth = ''
+    else delete root.dataset.halfFullWidth
 
     // Fade only on an actual swap to another palette, not while live-editing the current one:
     // editing wants instant feedback.

@@ -54,8 +54,7 @@ export function mergeConnections(mine: string | null, theirs: string | null): st
  *
  * Counting tables was the old test, and it was wrong in a way that got worse with every release.
  * A table added since the file was written made a full backup look sanitized. It restored in
- * add-to-what-is-here mode and kept rows the user expected to be replaced. Adding `pipelines` in
- * 0.0.43 broke every 0.0.42 file that way.
+ * add-to-what-is-here mode and kept rows the user expected to be replaced.
  *
  * Here rather than in backup.ts: checkShareable.ts can run it. backup.ts pulls in Dexie.
  */

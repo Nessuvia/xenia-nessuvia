@@ -155,6 +155,16 @@ export default function AppearancePanel({
         Use max width on mobile
       </label>
 
+      <label className="checkboxRow">
+        <input
+          type="checkbox"
+          checked={palette.halfFullWidth}
+          disabled={locked}
+          onChange={(e) => patch({ halfFullWidth: e.target.checked })}
+        />
+        Use max width at half-width
+      </label>
+
       {font === true && (
         <p className="hint webfontCredit">
           Fonts provided by{' '}

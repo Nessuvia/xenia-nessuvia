@@ -9,6 +9,8 @@ import type {
 // Explicit extension: this file runs under node in checkImportCard.ts. The entry mapper is shared
 // with the standalone-file import so the two paths can never read the same book differently.
 import { mapBook, type ImportedBook } from '../lorebooks/importLorebook.ts'
+import { readTrackers } from '../../core/trackers/trackerState.ts'
+import { isFontId, trackerCssProblem } from '../../core/trackers/trackerCss.ts'
 
 type Loose = Record<string, unknown>
 
@@ -42,6 +44,10 @@ function readNessu(ext: Loose) {
     // -1 is the default meaning "description is already the active variant", so an absent value
     // lands there on its own.
     activeDescriptionIndex: num(n.activeDescriptionIndex) ?? -1,
+    trackers: readTrackers(n.trackers),
+    // Unsafe CSS drops at import. The renderer checks again for CSS typed in the editor.
+    trackerCss: str(n.trackerCss) && !trackerCssProblem(str(n.trackerCss)) ? str(n.trackerCss) : undefined,
+    trackerFont: isFontId(str(n.trackerFont)) ? str(n.trackerFont) : undefined,
   }
 }
 

@@ -1,28 +1,23 @@
-import { RiDeleteBinLine, RiFileCopyLine } from '@remixicon/react'
-
-/** The scope a rule applies to. Both rule kinds carry the same three. */
-export type RuleScope = 'assistant' | 'user' | 'both'
+import { RiArrowDownSLine, RiArrowUpSLine, RiErrorWarningLine } from '@remixicon/react'
 
 /**
- * The top row every rule card shares: on/off, a name, who it applies to, copy and delete. Pulled
- * out of the hammer's panel when the free-text rules became a second list with the same chrome.
- *
- * What the rule actually matches stays with each panel: that is the part that differs.
+ * A rule's collapsed row: on/off, a name, an error flag, and the chevron. Copy and delete live in the
+ * open body. Rules only ever read model replies, so there is no scope picker.
  */
 export default function RuleCardHead({
   enabled,
   label,
-  scope,
+  error,
+  open,
   onChange,
-  onCopy,
-  onDelete,
+  onToggle,
 }: {
   enabled: boolean
   label: string
-  scope: RuleScope
-  onChange: (patch: { enabled?: boolean; label?: string; scope?: RuleScope }) => void
-  onCopy: () => void
-  onDelete: () => void
+  error: string | null
+  open: boolean
+  onChange: (patch: { enabled?: boolean; label?: string }) => void
+  onToggle: () => void
 }) {
   return (
     <div className="ruleCardHead">
@@ -30,25 +25,22 @@ export default function RuleCardHead({
         <input type="checkbox" checked={enabled} onChange={(e) => onChange({ enabled: e.target.checked })} />
       </label>
       <input
-        className="labelInput"
+        className={`labelInput${enabled ? '' : ' ruleLabelOff'}`}
         value={label}
         placeholder="Untitled rule"
         onChange={(e) => onChange({ label: e.target.value })}
       />
-      <select value={scope} onChange={(e) => onChange({ scope: e.target.value as RuleScope })}>
-        <option value="assistant">Model</option>
-        <option value="user">You</option>
-        <option value="both">Both</option>
-      </select>
-      {/* Icon plus label: the label is hidden at phone width, where the row has no space for two
-          words of button. */}
-      <button type="button" title="Copy" aria-label="Copy" onClick={onCopy}>
-        <RiFileCopyLine size={16} />
-        <span className="btnText">Copy</span>
-      </button>
-      <button type="button" className="danger" title="Delete" aria-label="Delete" onClick={onDelete}>
-        <RiDeleteBinLine size={16} />
-        <span className="btnText">Delete</span>
+      {error && <RiErrorWarningLine size={16} className="ruleErrorIcon" aria-label="Rule has an error" />}
+      {/* Not CollapseButton: that one points sideways for panel rails. */}
+      <button
+        type="button"
+        className="ruleChevron"
+        title={open ? 'Hide rule' : 'Show rule'}
+        aria-label={open ? 'Hide rule' : 'Show rule'}
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        {open ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
       </button>
     </div>
   )

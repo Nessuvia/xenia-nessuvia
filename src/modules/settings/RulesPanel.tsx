@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { RiTextSnippet } from '@remixicon/react'
-import type { DetectSettings } from '../../core/secondSweep/detectSettings'
-import { newRule, type Rule } from '../../core/secondSweep/rules'
+import { RiAddLine, RiDeleteBinLine, RiFileCopyLine, RiSearchLine, RiTextSnippet } from '@remixicon/react'
+import { newRule, ruleSource, type Rule } from '../../core/agent/rules'
 import RuleCardHead from './RuleCardHead'
+import ExampleEditor from './ExampleEditor'
 import { tryCompile, POS_TAGS } from '../../core/hammer/pattern'
 import './settings.css'
 
@@ -14,9 +14,9 @@ function ruleError(rule: Rule): string | null {
     const r = tryCompile(find, rule.caseSensitive)
     return 'error' in r ? r.error : null
   }
-  if (rule.match !== 'regex') return null
+  if (rule.match === 'literal' && rule.regexOverride === undefined) return null
   try {
-    new RegExp(rule.find)
+    new RegExp(ruleSource(rule))
     return null
   } catch (err) {
     return (err as Error).message
@@ -24,151 +24,228 @@ function ruleError(rule: Rule): string | null {
 }
 
 const modeHints: Record<Rule['match'], string> = {
-  literal: 'Matches the words as typed.',
+  literal: 'Matches the words as typed. Punctuation between words is optional, and "did not" also matches "didn\'t".',
   regex: 'A JS regular expression. It can match across a sentence break.',
   pattern: 'Matches parts of speech. Never crosses a sentence break.',
 }
 
-/**
- * The pipeline's detection rules: what to look for in a reply, and what to do about it.
- *
- * One list where there were two. A rule used to be either a Grammar Hammer rule, matching parts of
- * speech and able to edit the text, or a free-text rule, matching a string and only able to report.
- * They are the same thing with two knobs: how the find is read, and what happens to a match.
- *
- * Prop-driven: the rules belong to a pipeline record, and the panel edits whichever one is open.
- */
+/** In the order the pass runs them. */
+const groups: [Rule['action'], string][] = [
+  ['swap', 'Swap'],
+  ['delete', 'Delete'],
+  ['rewrite', 'Rewrite'],
+]
+
+/** A rule's body mounts when it opens and remounts when an action change moves it to another group. */
+const scrollNearest = (el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' })
+
+/** The agent's rules: what to look for in a reply, and what the agent does about it. */
 export default function RulesPanel({
-  detect,
-  patch,
+  rules,
+  onChange,
 }: {
-  detect: DetectSettings
-  patch: (over: Partial<DetectSettings>) => void
+  rules: Rule[]
+  onChange: (rules: Rule[]) => void
 }) {
-  const rules = detect.rules
+  const patch = (over: { rules: Rule[] }) => onChange(over.rules)
   const [cheat, setCheat] = useState(false)
+  // One rule open at a time.
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const patchRule = (id: string, over: Partial<Rule>) =>
     patch({ rules: rules.map((r) => (r.id === id ? { ...r, ...over } : r)) })
+
+  const q = query.trim().toLowerCase()
+  const shown = q
+    ? rules.filter((r) => (r.label ?? '').toLowerCase().includes(q) || r.find.toLowerCase().includes(q))
+    : rules
+
+  const addRule = (action: Rule['action']) => {
+    const rule = { ...newRule(), action }
+    patch({ rules: [...rules, rule] })
+    setOpenId(rule.id)
+    setQuery('')
+  }
+
+  const ruleItem = (rule: Rule) => {
+    const error = ruleError(rule)
+    const open = openId === rule.id
+    return (
+      <li key={rule.id} className="card ruleCard">
+        <RuleCardHead
+          enabled={rule.enabled}
+          label={rule.label ?? ''}
+          error={error}
+          open={open}
+          onChange={(over) => patchRule(rule.id, over)}
+          onToggle={() => setOpenId(open ? null : rule.id)}
+        />
+        {open && (
+          <div className="ruleCardBody" ref={scrollNearest}>
+            <label className="ruleField">
+              <span>Find</span>
+              <input
+                className="patternInput"
+                value={rule.find}
+                placeholder={rule.match === 'pattern' ? 'with a [adj] [noun]' : 'a testament to'}
+                onChange={(e) => patchRule(rule.id, { find: e.target.value })}
+              />
+            </label>
+
+            {rule.find && (
+              <div className="ruleField">
+                <span>Match</span>
+                <div className="ruleActionRow">
+                  <select
+                    value={rule.match}
+                    onChange={(e) => patchRule(rule.id, { match: e.target.value as Rule['match'] })}
+                  >
+                    <option value="literal">Words</option>
+                    <option value="regex">Regex</option>
+                    <option value="pattern">Word types</option>
+                  </select>
+                  <label className="checkboxRow">
+                    <input
+                      type="checkbox"
+                      checked={rule.caseSensitive}
+                      onChange={(e) => patchRule(rule.id, { caseSensitive: e.target.checked })}
+                    />
+                    Match case
+                  </label>
+                </div>
+                <p className="hint">{modeHints[rule.match]}</p>
+              </div>
+            )}
+
+            {rule.find && rule.match === 'literal' && (
+              <ExampleEditor rule={rule} onChange={(over) => patchRule(rule.id, over)} />
+            )}
+
+            <div className="ruleField">
+              <span>Action</span>
+              <div className="ruleActionRow">
+                <select
+                  value={rule.action}
+                  onChange={(e) => patchRule(rule.id, { action: e.target.value as Rule['action'] })}
+                >
+                  <option value="swap">Swap in code</option>
+                  <option value="rewrite">Rewrite sentence</option>
+                  <option value="delete">Delete sentence</option>
+                </select>
+                {rule.action === 'swap' && (
+                  <input
+                    className="patternInput"
+                    value={rule.replacement ?? ''}
+                    placeholder="Blank removes the match"
+                    onChange={(e) => patchRule(rule.id, { replacement: e.target.value })}
+                  />
+                )}
+                {rule.action === 'rewrite' && (
+                  <label className="checkboxRow">
+                    <input
+                      type="checkbox"
+                      checked={!!rule.wholeParagraph}
+                      onChange={(e) => patchRule(rule.id, { wholeParagraph: e.target.checked })}
+                    />
+                    Rewrite the paragraph
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {rule.action === 'rewrite' && (
+              <label className="ruleField">
+                <span>Tell the model</span>
+                <textarea
+                  className="ruleNoteInput"
+                  rows={3}
+                  value={rule.note}
+                  placeholder="Stop opening sentences on an adverb."
+                  onChange={(e) => patchRule(rule.id, { note: e.target.value })}
+                />
+              </label>
+            )}
+
+            {error && <p className="hint danger">{error}</p>}
+
+            <div className="ruleCardFoot">
+              <button
+                type="button"
+                title="Copy"
+                aria-label="Copy"
+                onClick={() => {
+                  const copy = { ...rule, id: crypto.randomUUID() }
+                  const i = rules.findIndex((r) => r.id === rule.id)
+                  patch({ rules: rules.toSpliced(i + 1, 0, copy) })
+                  setOpenId(copy.id)
+                }}
+              >
+                <RiFileCopyLine size={16} />
+              </button>
+              <button
+                type="button"
+                className="danger"
+                title="Delete"
+                aria-label="Delete"
+                onClick={() => patch({ rules: rules.filter((r) => r.id !== rule.id) })}
+              >
+                <RiDeleteBinLine size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </li>
+    )
+  }
 
   return (
     <section className="textRules screenFrame">
       <span className="titleContainer">
         <h3>
-          <RiTextSnippet size={14} className="hammerIcon" /> Rules
+          <RiTextSnippet size={14} className="hammerIcon" /> 3. Rules
         </h3>
       </span>
+      <p className="debugHint">Swap and delete run in code. Rewrite sends the sentence or paragraph to the model.</p>
 
-      <ul className="ruleCards screenBody">
-        {rules.map((rule) => {
-          const error = ruleError(rule)
+      <label className="ruleSearch">
+        <RiSearchLine size={16} className="ruleSearchIcon" />
+        <input
+          type="search"
+          className="ruleSearchInput"
+          value={query}
+          placeholder="Search names and find text"
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+
+      <div className="ruleGroups screenBody">
+        {groups.map(([action, title]) => {
+          const inGroup = shown.filter((r) => r.action === action)
+          if (q && inGroup.length === 0) return null
           return (
-            <li key={rule.id} className="card ruleCard">
-              <RuleCardHead
-                enabled={rule.enabled}
-                label={rule.label ?? ''}
-                scope={rule.scope}
-                onChange={(over) => patchRule(rule.id, over)}
-                onCopy={() => {
-                  const i = rules.findIndex((r) => r.id === rule.id)
-                  patch({ rules: rules.toSpliced(i + 1, 0, { ...rule, id: crypto.randomUUID() }) })
-                }}
-                onDelete={() => patch({ rules: rules.filter((r) => r.id !== rule.id) })}
-              />
-
-              <label className="ruleField">
-                <span>Find</span>
-                <input
-                  className="patternInput"
-                  value={rule.find}
-                  placeholder={
-                    rule.match === 'pattern'
-                      ? 'with a [adj] [noun]'
-                      : 'Leave blank to apply to every reply'
-                  }
-                  onChange={(e) => patchRule(rule.id, { find: e.target.value })}
-                />
-              </label>
-
-              {rule.find ? (
-                <div className="ruleField">
-                  <span>Match</span>
-                  <div className="ruleActionRow">
-                    <select
-                      value={rule.match}
-                      onChange={(e) =>
-                        patchRule(rule.id, { match: e.target.value as Rule['match'] })
-                      }
-                    >
-                      <option value="literal">Words</option>
-                      <option value="regex">Regex</option>
-                      <option value="pattern">Word types</option>
-                    </select>
-                    <label className="checkboxRow">
-                      <input
-                        type="checkbox"
-                        checked={rule.caseSensitive}
-                        onChange={(e) => patchRule(rule.id, { caseSensitive: e.target.checked })}
-                      />
-                      Match case
-                    </label>
-                  </div>
-                  <p className="hint">{modeHints[rule.match]}</p>
-                </div>
-              ) : (
-                <p className="hint">Applies to every reply.</p>
-              )}
-
-              {rule.find && (
-                <div className="ruleField">
-                  <span>Action</span>
-                  <div className="ruleActionRow">
-                    <select
-                      value={rule.action}
-                      onChange={(e) =>
-                        patchRule(rule.id, { action: e.target.value as Rule['action'] })
-                      }
-                    >
-                      <option value="flag">Report to the model</option>
-                      <option value="strip">Remove match</option>
-                      <option value="replace">Replace with…</option>
-                    </select>
-                    {rule.action === 'replace' && (
-                      <input
-                        className="patternInput"
-                        value={rule.replacement ?? ''}
-                        placeholder="It's not $1, but $2…"
-                        onChange={(e) => patchRule(rule.id, { replacement: e.target.value })}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {(rule.action === 'flag' || !rule.find) && (
-                <label className="ruleField">
-                  <span>Tell the model</span>
-                  <textarea
-                    className="ruleNoteInput"
-                    rows={3}
-                    value={rule.note}
-                    placeholder="Stop opening sentences on an adverb."
-                    onChange={(e) => patchRule(rule.id, { note: e.target.value })}
-                  />
-                </label>
-              )}
-
-              {error && <p className="hint danger">{error}</p>}
-            </li>
+            <div key={action} className="ruleGroup">
+              <div className="ruleGroupHead">
+                <span className="ruleGroupTitle">{title}</span>
+                <span className="ruleGroupCount">{inGroup.length}</span>
+                <button
+                  type="button"
+                  className="ruleGroupAdd"
+                  title={`Add ${title.toLowerCase()} rule`}
+                  aria-label={`Add ${title.toLowerCase()} rule`}
+                  onClick={() => addRule(action)}
+                >
+                  <RiAddLine size={16} />
+                </button>
+              </div>
+              <ul className="ruleCards">{inGroup.map(ruleItem)}</ul>
+            </div>
           )
         })}
-        {rules.length === 0 && <p className="hint">No rules.</p>}
-      </ul>
+        {q && shown.length === 0 && <p className="hint">No rules match.</p>}
+      </div>
 
       <div className="grammarActions">
-        <button type="button" onClick={() => patch({ rules: [...rules, newRule()] })}>
-          Add rule
-        </button>
         <button type="button" onClick={() => setCheat(!cheat)}>
           {cheat ? 'Hide cheat sheet' : 'Cheat sheet'}
         </button>

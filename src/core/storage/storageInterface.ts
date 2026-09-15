@@ -29,11 +29,8 @@ export type TableName =
   | 'chapters'
   | 'palettes'
   | 'backgroundImages'
-  | 'bodyTrackers'
-  | 'bodyMaps'
   | 'paramDefs'
   | 'games'
-  | 'pipelines'
 
 /** Every stored record carries an ownerId; id is assigned by Dexie on insert. */
 export interface StoredRecord {
@@ -70,11 +67,6 @@ export const tableNames: TableName[] = [
   // wallpapers as base64 make that file large; nothing trims them.
   'backgroundImages',
   'palettes',
-  // Body map trackers ride along in a full backup. They're per-chat and unrelated to stories.
-  // Story export never touches them (see body-map-widget-plan Section 6).
-  'bodyTrackers',
-  // The saved body-map library (man, woman, non-human, etc). Not per-chat: loaded into the author.
-  'bodyMaps',
   // The sampler library. Rides along in a backup: a connection references defs by key. A
   // restore without them would leave every custom param unresolvable.
   'paramDefs',

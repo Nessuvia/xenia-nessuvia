@@ -16,13 +16,14 @@ import {
   RiImageCircleLine,
 } from '@remixicon/react'
 import LorebookTab from './LorebookTab'
+import TrackersSection from './TrackersSection'
 import TagChips from './TagChips'
 import { useStacks } from '../../core/stores/stacksStore'
 import { hasSource } from '../prompts/stackKinds'
 
 // Identity and Metadata were Main and About: neither said what it held, and the labels are the
 // first thing anyone reads when working out what a card is made of.
-const sectionIds = ['Identity', 'Openings', 'Media', 'Lorebook', 'Prompt', 'Metadata'] as const
+const sectionIds = ['Identity', 'Openings', 'Media', 'Lorebook', 'Trackers', 'Prompt', 'Metadata'] as const
 type SectionId = (typeof sectionIds)[number]
 
 // Not persisted, which sections are open is a glance-level choice, not a setting. Everything
@@ -33,6 +34,7 @@ const allShut: Record<SectionId, boolean> = {
   Openings: false,
   Media: false,
   Lorebook: false,
+  Trackers: false,
   Prompt: false,
   Metadata: false,
 }
@@ -236,6 +238,7 @@ export default function CharacterEditor({
     Lorebook: (draft.lorebookIds ?? []).length
       ? plural((draft.lorebookIds ?? []).length, 'lorebook')
       : '',
+    Trackers: draft.trackers?.length ? plural(draft.trackers.length, 'tracker') : '',
     Prompt: promptFields ? plural(promptFields, 'override') : '',
     Metadata: (draft.tags ?? []).length ? plural((draft.tags ?? []).length, 'tag') : '',
   }
@@ -306,12 +309,12 @@ export default function CharacterEditor({
           {section(
             'Identity',
             <>
-              <label>
+              <label title="Sent to the model and swapped in for {{char}}.">
                 Name
                 <input value={draft.name} onChange={(e) => set('name', e.target.value)} />
               </label>
 
-              <label>
+              <label title="Shown in the app only.">
                 Display name
                 <input
                   value={draft.displayName ?? ''}
@@ -333,7 +336,7 @@ export default function CharacterEditor({
                     className="descriptionRowHeader"
                     onClick={() => set('activeDescriptionIndex', -1)}
                   >
-                    <span className="descriptionTitle">Default Description</span>
+                    <span className="descriptionTitle" title="Click a description to make it the one sent.">Default description</span>
                   </div>
                   <textarea
                     rows={12}
@@ -405,7 +408,7 @@ export default function CharacterEditor({
                 Add variant
               </button>
 
-              <label>
+              <label title="A short summary of how the character behaves. Sent through a Character personality block.">
                 Personality
                 <textarea
                   rows={4}
@@ -414,7 +417,7 @@ export default function CharacterEditor({
                 />
               </label>
 
-              <label>
+              <label title="The situation the chat starts in. Sent through a Character scenario block.">
                 Scenario
                 <textarea
                   rows={4}
@@ -423,7 +426,7 @@ export default function CharacterEditor({
                 />
               </label>
 
-              <label>
+              <label title="Sample exchanges that show the character's voice. Sent through a Character example dialogue block.">
                 Example dialogue
                 <textarea
                   rows={8}
@@ -444,7 +447,7 @@ export default function CharacterEditor({
               <div className="descriptionList openingsList">
                 <div className="descriptionRow">
                   <div className="descriptionRowHeader">
-                    <span className="descriptionTitle">First message</span>
+                    <span className="descriptionTitle" title="The character's opening line in a new chat. Alternate greetings become swipes on it.">First message</span>
                   </div>
                   <textarea
                     rows={10}
@@ -550,7 +553,7 @@ export default function CharacterEditor({
                 </span>
               </label>
 
-              <label>
+              <label title="An image address. Replaces the uploaded avatar.">
                 Avatar URL
                 <input
                   type="url"
@@ -588,7 +591,7 @@ export default function CharacterEditor({
                   </button>
                 </span>
               </label>
-              <p className="hint">Images are loaded from their URL. Nothing is stored to your device, but any link could break in the future. Image upload handling coming soon.</p>
+              <p className="hint">Images load from their URL each time. A broken link loses the image.</p>
 
               {galleryTiles.length === 0 ? (
                 <p className="placeholder">No images.</p>
@@ -680,10 +683,12 @@ export default function CharacterEditor({
             />,
           )}
 
+          {section('Trackers', <TrackersSection character={draft} onChange={(p) => change({ ...draft, ...p })} />)}
+
           {section(
             'Prompt',
             <>
-              <label>
+              <label title="Replaces the text of a Character system prompt block for this character.">
                 System prompt
                 <textarea
                   rows={4}
@@ -697,7 +702,7 @@ export default function CharacterEditor({
               </p>
               {missingBlock('characterSystemPrompt', draft.systemPrompt)}
 
-              <label>
+              <label title="Replaces the text of a Character post-history instructions block. Sent after the chat history.">
                 Post-history instructions
                 <textarea
                   rows={4}
@@ -728,17 +733,17 @@ export default function CharacterEditor({
           {section(
             'Metadata',
             <>
-              <label>
+              <label title="The first tag groups the character in the picker.">
                 Tags
                 <TagChips tags={draft.tags ?? []} onChange={(tags) => set('tags', tags)} />
               </label>
 
-              <label>
+              <label title="Who made the card. Not sent to the model.">
                 Creator
                 <input value={draft.creator ?? ''} onChange={(e) => set('creator', e.target.value)} />
               </label>
 
-              <label>
+              <label title="The card's version. Not sent to the model.">
                 Character version
                 <input
                   value={draft.characterVersion ?? ''}
@@ -746,7 +751,7 @@ export default function CharacterEditor({
                 />
               </label>
 
-              <label>
+              <label title="Notes for people using the card.">
                 Creator notes
                 <textarea
                   rows={4}

@@ -84,6 +84,9 @@ export function buildCard(c: Character, entries: WorldInfoEntry[] = [], book?: L
         gallery: c.gallery,
         avatarCrop: c.avatarCrop,
         paramOverrides: c.paramOverrides,
+        trackers: c.trackers ?? [],
+        trackerCss: c.trackerCss ?? '',
+        trackerFont: c.trackerFont ?? '',
       },
     },
   }

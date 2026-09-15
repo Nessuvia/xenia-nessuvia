@@ -32,6 +32,10 @@ assert.equal(repairAll('She  runs  fast .'), 'She runs fast.')
 assert.equal(repairAll('apples, , and oranges'), 'apples, and oranges')
 assert.equal(repairAll('He saw it, and . Then left.'), 'He saw it. Then left.')
 assert.equal(repairAll('The . Quick brown fox.'), 'The. Quick brown fox.')
+// Straight opening quotes keep the space before them; a stray space before a closer still goes.
+assert.equal(repairAll(`She said "Hello." He left. 'Fine,' he said`), `She said "Hello." He left. 'Fine,' he said`)
+assert.equal(repairAll('He said "Go" .'), 'He said "Go".')
+assert.equal(repairAll('"Go now ." "Fine ,"'), '"Go now." "Fine,"')
 
 // Property: stripped output never contains a double space or space-before-terminal-punct.
 const samples = [

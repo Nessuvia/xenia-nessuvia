@@ -262,6 +262,11 @@ query.
 /* Yes */ @media (max-width: 700px) { … }
 ```
 
+`max-width: 1300px` is the second tier, for a desktop window snapped to half a screen. It stays
+CSS-only: the `useMediaQuery` shape switches stay at 700px. At that width the layout keeps its
+desktop shape (sidebar, chat panel, hover, centered modals). Only list/detail stacking and
+icon-only header buttons change.
+
 A different width needs a comment saying what breaks at that width:
 
 ```css
@@ -359,7 +364,7 @@ Run through this on any diff that touches CSS:
 - [ ] Every new class has a module prefix and is not already defined elsewhere (grep it).
 - [ ] No bare-tag descendant selectors in new rules.
 - [ ] No `!important`, no `&` nesting, no unrequested motion.
-- [ ] Media queries are `max-width: 700px`, or commented.
+- [ ] Media queries are `max-width: 700px` or `max-width: 1300px`, or commented.
 - [ ] Anything two tabs now share moved to `/app` rather than being copied.
 
 Then `npx pnpm build` and the `check*` scripts, and **stop**. The user drives Chrome and tests in the

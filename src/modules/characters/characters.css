@@ -733,3 +733,106 @@
 .characters .tagChip button:hover {
   color: var(--danger);
 }
+
+/* Trackers section: row list beside the inspector, stacked on a phone. */
+.trackersSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trackersEditor {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 2fr;
+  gap: 12px;
+}
+
+.trackersRail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trackersRowList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trackersRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.trackersRowSelected {
+  background: var(--surfaceSelected);
+}
+
+.trackersRowHandle {
+  color: var(--textMuted);
+  cursor: grab;
+}
+
+.trackersRowKey {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackersAdd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trackersInspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trackersError {
+  color: var(--danger);
+}
+
+.trackersPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.trackersViews {
+  display: flex;
+  gap: 4px;
+}
+
+.trackersPromptText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.trackersParseList {
+  margin: 0;
+  padding-left: 16px;
+}
+
+@media (max-width: 700px) {
+  .trackersEditor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trackersViewButton[aria-selected='true'] {
+  background: var(--surfaceSelected);
+}

@@ -1,7 +1,6 @@
 // What the model is told. A tagged block of board state, then one plain line about what just
 // happened. Written from the character's side of the table: "you" is the character, "they" is the
-// player. Modelled on modules/bodyMap/output.ts::buildBlock, tag wrapper included: an appearance
-// tag rule can collapse it.
+// player. A tag wrapper goes around it: an appearance tag rule can collapse it.
 
 import { rankPlural, sortHand } from './deck.ts'
 import type { Card, Rank } from './deck.ts'

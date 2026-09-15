@@ -25,7 +25,7 @@ This codebase is a WIP. Treat imported data and existing IndexedDB contents as d
 
 Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (IndexedDB) · pnpm
 
-Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules and `quality/invariants.ts`), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
+Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
 
 There is no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
 `itemProps` makes the whole row draggable and suits a row of plain content. A row holding an `input`
@@ -49,8 +49,8 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
     /params     the sampler library: params as data, not code
     /hammer     the matching engine behind pattern-mode rules
-    /secondSweep  Second Sweep: pipelines that work a finished reply over before it is stored
-    /quality    scoring a candidate against the text it would replace
+    /agent      the agent pass: rules and runAgent
+    /quality    sentence splitter and lexicon
     /multiplayer  relay channels, session protocol, turn order, narrator
     /sync       S3 bucket push/pull and dirty-table tracking
     /settings   settings resolution helpers
@@ -68,9 +68,8 @@ Modules self-register by calling `registerModule` from their `index.ts`. The sid
 
 `component` is `lazy()` for route views. `chatPanels` stay eager and render inside the chat rather than behind a route.
 
-Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus four special cases:
+Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
 
-- `bodyMap` is a plugin. Registered, off until enabled in Settings.
 - `learn` is registered in every build. The sidebar shows its button on dev only
   (`import.meta.env.DEV` in `Sidebar.tsx`), and `/learn` resolves on live with no way in.
 - `sync` is registered and live. It sits under Import/Export in the rail rather than the main nav.
@@ -116,58 +115,53 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `slopdentifier`, `chara
   as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/conditions.ts` decides which.
   The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
   (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
+- **Trackers** live in `core/trackers`. Defs ride on the card (`Character.trackers`,
+  `extensions.nessu.trackers`). `parseState` reads a reply's `<state>` tag; each swipe's parse sits
+  in `Message.trackerUpdates`. `trackerValues` folds them down the history with player overrides,
+  so swiping rolls back. `buildPrompt` injects visible values and hands every value to
+  `conditions.ts` for `[if affection > 50]`. `stripState` hides the tag at render only.
 - **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
   decides what needs pushing.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for
   the structural layer.
 - **Sampler params** live in `core/params`. A param def is a row rather than code, and a new sampler
   needs no release.
-- **Second Sweep** lives in `core/secondSweep`. A pipeline is a Dexie row holding an ordered list of
-  stages (`gate`, `clean`, `rewrite`, `score`), each a kind plus a config blob. A new way of working
-  a reply over is a JSON file rather than a release. `runPipeline` is the only entry point and it is
-  chat-only. `pipeline.ts` holds the shapes, `pipelineJson` imports and exports them, `collect.ts`
-  runs every detector once for the gate and the clean stage, and `core/quality` scores a candidate
-  against what it would replace. The folder is flat. There is no `detect/`.
-  A detector matches text: the pipeline's rules and the punctuation sweep. The checks that
-  counted rather than matched (sentence sprawl, tricolons, phrases repeated from earlier replies)
-  were deleted along with their settings and score weights. What a chat has actually overused is
-  measured by `quality/census.ts`. `quality/sentences.ts` is all that remains of the sentence
-  splitter. Which pipeline runs is a setting: global in `settingsStore.secondSweep`, overridden per
-  chat on `Chat.secondSweep`.
-  The editor is `modules/settings/pipeline/`: a vertical node diagram on the left, an inspector for
-  the selected node on the right, one `pipeline.css`. A pinned Detectors node at the top holds
-  `detect`, `lexicon` and `census`, which every stage below reads. `Settings#secondSweep` shows the
-  library and swaps to the editor when one is opened. There is no route or hash per pipeline: an id
-  is a Dexie row number and means nothing on another machine.
-  One pipeline ships, "Default", in `defaultPipeline.ts`. It is a worked example rather than an
-  opinion to live by: every match mode and every action appears exactly once, all four stage kinds
-  are present in run order, and the rewrite stage ships turned off because it has no connection.
-  Six rules, two lexicon entries. `pipelineStore.load` seeds it into an empty library once, guarded
-  by `nessuTavern.defaultPipelineSeeded` in localStorage so deleting it sticks, and a button in the
-  library adds it back. Nothing else ships: no further rule set and no slop list. A pipeline is
-  written in Settings, imported from a file, or built a rule at a time from the Slop-dentifier.
-- **Slop-dentifier** is `modules/slopdentifier`. It runs the same detectors read-only over pasted
-  text and turns a finding into a `Rule` on a pipeline the user picks. `analyse.ts` is pure and
-  composes what already exists. It adds no detection of its own and makes no request.
-  A 0.0.42 install's Second Pass and Gold Pass settings convert through `secondSweep/legacy.ts`
-  (pure) and `stores/importLegacyPass.ts` (the storage side), behind a button in Settings › Misc.
-  It is one-shot by erasing what it read rather than by setting a flag, and restoring an old backup
-  offers it again. That is the one migration in this codebase and it stays opt-in.
-- **Detection rules** are one type, `Rule` in `core/secondSweep/rules.ts`, on `Pipeline.detect`.
-  A rule has a match mode (`literal`, `regex`, `pattern`) and an action (`flag`, `strip`,
-  `replace`), and any mode works with any action. `pattern` is the part-of-speech DSL and cannot
-  cross a sentence; a regex can. This replaced two types, a Grammar Hammer rule and a free-text
-  rule, that were the same thing with different powers. A pipeline written before the merge is
-  converted on read by `mergeRules.ts`, which is lossless, so it runs silently.
-  The matching engine is still `core/hammer`: `tagger`, then `pattern`, then `matcher`, then
-  `repair`/`strip`, with `exclusions` marking spans a rule may not touch. `strip.ts` is the entry
-  point for every mode, and `compromise` is still what tags the text.
+- **Agent pass** lives in `core/agent`. `runAgent` is the only entry point and it is chat-only.
+  It takes the reply, the global `AgentConfig` (`settingsStore.agent`) and a `complete` function the
+  store supplies, so the engine never touches a connector. Lexicon swaps (`quality/lexicon.ts`) and
+  `swap` rules run in code first. The reply splits into paragraphs, then sentences
+  (`quality/sentences.ts`). A sentence hit by a `delete` rule goes. One `rewrite` hit in a paragraph
+  gets a sentence rewrite; two or more get one paragraph rewrite. A candidate is accepted when no
+  rule flags it, and after `maxTries` the original stays. The stored message keeps final and
+  original through the `passOriginals` arrays in `stores/swipes.ts`. The worked example is
+  `defaultAgentConfig`, the store default. Settings › Agent holds the config form and a rule tester
+  (`agent/explain.ts`, no request). A chat overrides on/off and the display mode on `Chat.agent`,
+  resolved by `resolveChatAgent`. `AgentConfig.style` is global: Default or Stylized (the default).
+  Default's display modes (blur, hold, reveal) come from `runAgent`'s `onProgress` through
+  `chatStore.streamingPending` into `modules/chat/agentSegments.ts`. Stylized passes a `wait` to
+  `runAgent`, which then reports marked runs (`core/agent/stage.ts`) through
+  `chatStore.streamingStage`: deletes strike out on their own timer, rewrites fade in, swapped words
+  flash. The CSS in `chat.css` does the animating.
+- **Rules** are one type, `Rule` in `core/agent/rules.ts`, with a match mode (`literal`, `regex`,
+  `pattern`) and an action (`swap`, `rewrite`, `delete`). Any mode works with any action. `pattern`
+  is the part-of-speech DSL and cannot cross a sentence.
+  The matching engine is `core/hammer`: `tagger`, then `pattern`, then `matcher`, then
+  `repair`/`strip`, with `exclusions` marking spans a rule may not touch. `stripText` applies swaps
+  and `findFlags` reports rewrite and delete hits. `compromise` tags the text.
+- **Style checks** are the second kind of rule: code, not config. `core/agent/lintRules.ts` holds
+  `LintRule` and the registry. Each rule lives in `core/agent/lint/`, and `AgentConfig.lint` only
+  turns rules on, picks fix or report, and picks the rate profile. `applyLint` runs once per reply,
+  after swaps and before deletes, per paragraph, with tagged tokens, quoted ranges and
+  `quality/temperature.ts`'s `sceneTemperature`. Its arousal term reads the NRC VAD Lexicon from
+  `quality/arousalData.ts`, generated by `scripts/buildArousal.mjs` and loaded as its own chunk by
+  `loadArousal` (async) before `arousalOf` (sync) returns anything. The chunk stays out of precache. A new check is one file plus one registry entry.
+  The UI calls the whole pass "Post-processing". The code keeps the name `agent`.
 
 ## Data
 
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(16)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `bodyTrackers`, `bodyMaps`, `paramDefs`, `games`, `pipelines`.
+Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(18)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
 
-- One `db.version(N).stores({...})` block, currently 16, holding the **complete** schema. The old
+- One `db.version(N).stores({...})` block, currently 18, holding the **complete** schema. The old
   chain was deleted. No block ever carried an `upgrade()` callback, and an older local DB upgrades
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:
@@ -186,9 +180,8 @@ Three Zustand stores persist to localStorage rather than Dexie, via `zustand/mid
 data: whether a panel is collapsed, which rail is open, an example section dismissed. Write it
 straight to `localStorage` under a `nessuTavern.*` key, with no store and no Dexie table, and leave
 it out of the export. `backup.ts` reads only the three keys it names, and a new key stays out of a
-backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`),
-`nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) and
-`nessuTavern.defaultPipelineSeeded` (`core/stores/pipelineStore.ts`) are the pattern. The test is
+backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`) and
+`nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) are the pattern. The test is
 whether restoring a backup on another machine should carry it. If it shouldn't, it's a preference.
 
 ## Conventions
@@ -242,7 +235,7 @@ The headline, to carry the shape in before you open it: no hardcoded colors, no 
 
 Icons come from `@remixicon/react`. Never stand in an emoji or a unicode glyph for an icon. Typography characters (`...`, `·`, `→`) are fine.
 
-Shared UI patterns live in `/app` with their own `.css`, and modules import them: `CollapseButton` (chevron and rail), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
+Shared UI patterns live in `/app` with their own `.css`, and modules import them: `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
 
 ## UI copy
 

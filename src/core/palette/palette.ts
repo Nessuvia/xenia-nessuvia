@@ -129,6 +129,8 @@ export interface Palette {
   storyWidth: number // %, same for a Story
   // On at phone width, the chat and story widths are ignored and the view fills the screen.
   mobileFullWidth: boolean
+  // Same, between 701 and 1300px.
+  halfFullWidth: boolean
   sidebarWidth: number // px, 0 = the stylesheet's default
   radius: number // px
 
@@ -211,6 +213,7 @@ export const defaultPalette: Palette = {
   chatWidth: 100,
   storyWidth: 100,
   mobileFullWidth: true,
+  halfFullWidth: false,
   sidebarWidth: 0,
   radius: 6,
 

@@ -9,9 +9,11 @@ import { buildPrompt } from '../prompt/buildPrompt'
 import { blocksMentionCondition } from '../prompt/conditions'
 import { loadTokenizer } from '../prompt/budget'
 import { reasoningSpan } from '../prompt/reasoning'
+import { parseState, type StateParse, type TrackerValue } from '../trackers/parseState'
+import { trackerValues, withTrackerUpdate } from '../trackers/trackerState'
 import { tokenizerFor } from '../prompt/tokenizers'
 import type { Connection } from './settingsStore'
-import { activeConnection, useSettings } from './settingsStore'
+import { activeConnection, resolveConnection, useSettings } from './settingsStore'
 import { resolveParams } from '../settings/resolveParams'
 import { displayName, useCharacters } from './charactersStore'
 import { usePersonas } from './personasStore'
@@ -21,6 +23,7 @@ import {
   continued,
   deletedSwipes,
   passOriginalFor,
+  passSummaryFor,
   passed,
   regenerated,
   revertPass,
@@ -28,9 +31,10 @@ import {
   swipeIndex,
   withPass,
 } from './swipes'
-import { runPipeline, type RunContext } from '../secondSweep/runPipeline'
-import { pipelineArmed, pipelineProblem } from '../secondSweep/pipeline'
-import { secondSweepFor, pipelineFor } from './pipelineStore'
+import { runAgent, type Complete } from '../agent/runAgent'
+import { resolveChatAgent } from '../agent/agentConfig'
+import type { AgentStage } from '../agent/stage'
+import { isSentinel } from '../connectors/sentinel'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
@@ -42,7 +46,7 @@ import { bookIdsFor, useLorebooks } from './lorebooksStore'
 import { useBlips } from './blipStore'
 import { isNarrator, narratorCharacter, narratorId } from '../multiplayer/narrator'
 import { narratorBookIds } from './narratorBooks'
-import { budgetOf, maxTokensOf } from '../params/connectionParams'
+import { budgetOf, maxTokensOf, withParam } from '../params/connectionParams'
 
 /**
  * The active session's people as `Name: description` lines, filling {{personas}}, or undefined
@@ -63,113 +67,54 @@ export function setSessionCast(cast: Character[] | undefined): void {
 
 const byTime = (a: Message, b: Message) => a.createdAt - b.createdAt || a.id! - b.id!
 
-/**
- * How much recent chat the pass is shown. Only assistant turns go in: the census is looking for
- * the model repeating itself, and folding the user's own words in would count the reply for
- * quoting the person it is answering.
- *
- * Trimmed generously rather than exactly. The census applies its own window: this only has to
- * be at least as much as the largest a user might set.
- */
-const HISTORY_FOR_NOTES = 40
-
 /** What a pass leaves behind: the text to store, and the three parallel-array fields. */
 interface PassResult {
-  /** What goes in `content` and the selected swipe. The input text, unchanged, unless the pass
-   *  produced something better. */
+  /** What goes in `content` and the selected swipe. */
   text: string
   /** The pre-pass text, set only when the pass changed something. */
   original?: string
-  /** Why a stage's candidate was thrown away. Set only when one was. */
+  /** Rewrites that kept the original. */
   failed?: string
   /** What the pass did, in one line. Set only when it changed something. */
   summary?: string
 }
 
 /**
- * What the pipeline needs that the pipeline record does not carry: the chat's own text and the
- * names a rewrite is allowed to use.
- *
- * The history is assistant turns only, the same reasoning `passContext` gives: the census is
- * looking for the model repeating itself, and the user's own words are not that. `allowNames` is
- * every name the chat legitimately knows. The proper-noun invariant rejects an invented
- * character without rejecting one who simply is not in this paragraph.
+ * The agent pass around one finished generation.
+ * Off, or a sentinel connection, returns the text untouched.
+ * Abort throws through. A failed call counts as a rejected candidate.
  */
-function runContext(
-  messages: Message[],
-  character: Character | undefined,
-  userName: string,
-): RunContext {
-  const names = new Set<string>([userName])
-  if (character?.name) names.add(character.name)
-  // Every name the chat has actually used, on either side: other speakers in a group chat, and the
-  // persona a user turn was sent as.
-  for (const m of messages) {
-    if (m.speakerName) names.add(m.speakerName)
-    if (m.personaName) names.add(m.personaName)
-  }
-  return {
-    role: 'assistant',
-    character,
-    userName,
-    priorMessages: messages,
-    history: messages
-      .filter((m) => m.role === 'assistant')
-      .slice(-HISTORY_FOR_NOTES)
-      .map((m) => m.content),
-    allowNames: [...names],
-  }
-}
-
-/**
- * Second Sweep around one finished generation, in one place rather than pasted at each call site.
- *
- * The reply has already streamed and the user has read it. This runs the chat's pipeline over it,
- * streaming a stage's candidate over what is on screen through `onProgress`, and reports what
- * should be stored. No pipeline, or one that is not armed, returns the text untouched and marks
- * nothing: a missing connection or a deleted pipeline is a settings problem, not a failed pass.
- *
- * Abort throws through: the caller's existing stop handling fires. Nothing else throws: a pass
- * that fails is worth less than the reply that already exists.
- */
-async function secondSweep(
+async function agentPass(
   chat: Chat,
-  character: Character | undefined,
-  priorMessages: Message[],
   text: string,
-  userName: string,
   signal: AbortSignal,
-  onProgress: (partial: string) => void,
-  /** Set by the manual action, which runs an armed pipeline whether or not auto is on. */
+  onProgress: (text: string, pending: string[], stage?: AgentStage) => void,
+  /** Set by the manual action, which runs whether or not auto is on. */
   force = false,
 ): Promise<PassResult> {
-  const pipeline = pipelineFor(chat)
-  if (!pipeline || !pipelineArmed(pipeline)) return { text }
-  if (!force && !secondSweepFor(chat).enabled) return { text }
+  const config = useSettings.getState().agent
+  if (!force && !resolveChatAgent(config, chat.agent).enabled) return { text }
+  const connection = resolveConnection(config.connectionId)
+  if (!connection || isSentinel(connection.endpointUrl)) return { text }
 
-  const run = runPipeline(text, pipeline, runContext(priorMessages, character, userName), signal)
-  let shown = ''
-  // Stepped by hand rather than with `for await`: the outcome is the generator's *return* value,
-  // and a for-await loop discards it. The yielded chunks are a candidate as it arrives, which is
-  // display only until the stages after it have had their say.
-  for (;;) {
-    const step = await run.next()
-    if (step.done) {
-      const outcome = step.value
-      return {
-        text: outcome.text,
-        original: outcome.text === text ? undefined : outcome.original,
-        summary: outcome.summary,
-        failed: outcome.failed,
-      }
+  const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), Math.ceil(text.length / 4) + 200))
+  const complete: Complete = async (messages) => {
+    let out = ''
+    try {
+      for await (const chunk of sendMessage(messages, wide, signal)) out += chunk.content ?? ''
+    } catch (err) {
+      if (signal.aborted) throw err
+      return ''
     }
-    // A new stage starting replaces what the last one was showing: each stage rewrites the whole
-    // passage. Accumulating across them would render one after the other.
-    if (step.value.stage) shown = ''
-    if (step.value.content) {
-      shown += step.value.content
-      onProgress(shown)
-    }
+    return out
+  }
+  const wait = (config.style ?? 'stylized') === 'stylized' ? (ms: number) => new Promise<void>((done) => setTimeout(done, ms)) : undefined
+  const outcome = await runAgent(text, config, complete, onProgress, wait).finally(() => onProgress(text, []))
+  return {
+    text: outcome.text,
+    original: outcome.text === text ? undefined : text,
+    summary: outcome.summary,
+    failed: outcome.failed,
   }
 }
 
@@ -219,6 +164,17 @@ function reasoningEndOf(text: string, connection: Connection): number | undefine
   const config = connection.template?.reasoning
   if (!config?.autoParse) return undefined
   return reasoningSpan(text, config)?.end
+}
+
+/**
+ * The `<state>` parse of a reply against the chat card's trackers. Reads the text the writing model
+ * produced: an agent pass could rewrite the tag. Undefined when the card has no trackers.
+ */
+function trackerUpdate(character: Character, chat: Chat, history: Message[], text: string, connection: Connection): StateParse | undefined {
+  const defs = character.trackers ?? []
+  if (!defs.length) return undefined
+  const reply = text.slice(reasoningEndOf(text, connection) ?? 0)
+  return parseState(reply, defs, trackerValues(defs, history, chat.trackerOverrides))
 }
 
 /**
@@ -300,6 +256,10 @@ interface ChatState {
    *  `streamingText` is being replaced as it arrives, which is the intended feel; this is what
    *  lets the bubble say so. */
   passing: boolean
+  /** Sentences the agent is still reworking inside `streamingText`. */
+  streamingPending: string[]
+  /** Stylized runs only: the marked reply and its beat. Null otherwise. */
+  streamingStage: AgentStage | null
   /** Which chat the stream belongs to: opening another chat mid-generation doesn't show its
    *  reply there. Null when idle. */
   streamingChatId: number | null
@@ -359,13 +319,17 @@ interface ChatState {
   swipeTo(messageId: number, index: number): Promise<void>
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
-  /** Run Second Sweep over an assistant message by hand. Always starts from the stored original, so
+  /** Run the agent pass over an assistant message by hand. Always starts from the stored original, so
    *  running it twice does not compound, and replaces the previous rewrite. */
   passMessage(messageId: number): Promise<void>
   /** Put the pre-Gold-Pass text back and forget the rewrite. */
   revertMessagePass(messageId: number): Promise<void>
+  /** Hide the "kept after N tries" notice on the selected swipe. */
+  dismissPassFailure(messageId: number): Promise<void>
   stop(): void
   editMessage(id: number, content: string): Promise<void>
+  /** A player tracker edit. Lands on the last message, so it carries forward and outlives that message's swipes. */
+  setTrackerValue(key: string, value: TrackerValue): Promise<void>
   deleteMessage(id: number): Promise<void>
   deleteMessages(ids: number[]): Promise<void>
 }
@@ -380,6 +344,8 @@ export const useChats = create<ChatState>()((set, get) => ({
   streamingReasoning: '',
   streaming: false,
   passing: false,
+  streamingPending: [],
+  streamingStage: null,
   streamingChatId: null,
   viewingChatId: null,
   setViewing: (chatId) => set({ viewingChatId: chatId }),
@@ -730,19 +696,10 @@ export const useChats = create<ChatState>()((set, get) => ({
           if (chunk.finishReason) finishReason = chunk.finishReason
         }
 
-        // Second Sweep. The reply is finished and has been read; a stage's candidate streams over
-        // it, and the stages after it decide whether that is what gets stored.
+        // Agent pass over the finished reply.
         if (text && !controller.signal.aborted) {
           set({ passing: true })
-          const pass = await secondSweep(
-            chat,
-            speaker,
-            get().messages,
-            text,
-            persona.name,
-            controller.signal,
-            (partial) => set({ streamingText: partial }),
-          )
+          const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
           text = pass.text
           passOriginal = pass.original
           passFail = pass.failed
@@ -795,6 +752,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           passOriginals: [passOriginal],
           passFailed: [passFail],
           passSummaries: [passSummary],
+          trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
           createdAt: Date.now(),
         })
         // The cursor only moves on a reply that happened: a failed turn doesn't skip anyone.
@@ -868,19 +826,10 @@ export const useChats = create<ChatState>()((set, get) => ({
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Second Sweep. The reply is finished and has been read; a stage's candidate streams over
-      // it, and the stages after it decide whether that is what gets stored.
+      // Agent pass over the finished reply.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await secondSweep(
-          chat,
-          speaker,
-          get().messages,
-          text,
-          persona.name,
-          controller.signal,
-          (partial) => set({ streamingText: partial }),
-        )
+        const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
         text = pass.text
         passOriginal = pass.original
         passFail = pass.failed
@@ -933,6 +882,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         passOriginals: [passOriginal],
         passFailed: [passFail],
         passSummaries: [passSummary],
+        trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
         createdAt: Date.now(),
       })
       // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
@@ -1041,19 +991,10 @@ export const useChats = create<ChatState>()((set, get) => ({
         if (chunk.finishReason) finishReason = chunk.finishReason
       }
 
-      // Second Sweep, same as the send path. A re-roll's history is everything before this message,
-      // which is what the window gets: the turns after it are not context for what it says.
+      // Agent pass, same as the send path.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await secondSweep(
-          chat,
-          speaker,
-          get().messages.slice(0, at),
-          text,
-          persona.name,
-          controller.signal,
-          (partial) => set({ streamingText: partial }),
-        )
+        const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
         text = pass.text
         passOriginal = pass.original
         passFail = pass.failed
@@ -1091,7 +1032,9 @@ export const useChats = create<ChatState>()((set, get) => ({
     const regen = regenerated(target, text, snapshot, reasoning, instruction)
     // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
     // count itself. An older message's holes stay where they belong.
-    const updated = regen && withPass(regen, passOriginal, passFail, passSummary)
+    const passedRegen = regen && withPass(regen, passOriginal, passFail, passSummary)
+    const tracked = passedRegen && trackerUpdate(character, chat, get().messages.slice(0, at), passOriginal ?? text, connection)
+    const updated = tracked ? withTrackerUpdate(passedRegen, tracked) : passedRegen
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
       // Same as retry: don't reload if you've moved to another chat mid-stream, blip instead.
@@ -1221,7 +1164,10 @@ export const useChats = create<ChatState>()((set, get) => ({
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
     // Joined raw. What the model sent is what's stored, and it decides its own leading space.
-    const updated = added ? continued(target, prefix + added, snapshot, reasoning) : null
+    const joined = added ? continued(target, prefix + added, snapshot, reasoning) : null
+    // The whole reply parses again against the history before it: the continuation may carry the tag.
+    const tracked = joined && trackerUpdate(character, chat, get().messages.slice(0, -1), joined.content, connection)
+    const updated = tracked ? withTrackerUpdate(joined, tracked) : joined
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
       if (get().chat?.id === chat.id) await get().load(chat.id!)
@@ -1238,23 +1184,14 @@ export const useChats = create<ChatState>()((set, get) => ({
     const target = get().messages[at]
     if (!target || target.role !== 'assistant') return
 
-    const pipeline = pipelineFor(chat)
-    const problem = pipelineProblem(pipeline)
-    if (problem) {
-      set({ error: problem })
-      return
-    }
-
     // Always from the stored original: running this twice passes the reply again rather than
     // passing what the last run produced.
     const source = passOriginalFor(target) ?? target.content
     if (!source.trim()) return
 
-    // Passed in the voice of whoever said it, like a re-roll.
     const speaker = useCharacters
       .getState()
       .characters.find((c) => c.id === target.speakerId)
-    const persona = await usePersonas.getState().ensureActive()
 
     const controller = new AbortController()
     abort = controller
@@ -1273,15 +1210,7 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     let result: PassResult
     try {
-      result = await secondSweep(
-        chat,
-        speaker,
-        get().messages.slice(0, at),
-        source,
-        persona.name,
-        controller.signal,
-        (partial) => set({ streamingText: partial }),
-      )
+      result = await agentPass(chat, source, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), true)
     } catch {
       // Only an abort reaches here, and a stopped rewrite leaves the message exactly as it was.
       set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
@@ -1296,6 +1225,14 @@ export const useChats = create<ChatState>()((set, get) => ({
       : withPass(selectSwipe(target, swipeIndex(target)), passOriginalFor(target), result.failed)
     await storage.put('messages', updated as unknown as StoredRecord)
     if (get().chat?.id === chat.id) await get().load(chat.id!)
+  },
+
+  dismissPassFailure: async (messageId) => {
+    const message = get().messages.find((m) => m.id === messageId)
+    if (!message) return
+    // Clears the notice on the selected swipe only. The passed text and its original stay.
+    await storage.put('messages', withPass(message, passOriginalFor(message), undefined, passSummaryFor(message)) as unknown as StoredRecord)
+    await get().load(message.chatId)
   },
 
   revertMessagePass: async (messageId) => {
@@ -1326,6 +1263,15 @@ export const useChats = create<ChatState>()((set, get) => ({
   stop: () => {
     stopped = true
     abort?.abort()
+  },
+
+  setTrackerValue: async (key, value) => {
+    const chat = get().chat
+    if (!chat) return
+    const last = get().messages.at(-1)
+    if (!last) return get().patchChat({ trackerOverrides: { ...chat.trackerOverrides, [key]: value } })
+    await storage.put('messages', { ...last, trackerOverrides: { ...last.trackerOverrides, [key]: value } } as unknown as StoredRecord)
+    await get().load(chat.id!)
   },
 
   editMessage: async (id, content) => {

@@ -15,7 +15,8 @@ import { castSlots } from './swapTokens.ts'
  * game: the per-game half of the prompt is a branch in it rather than a stack each.
  */
 export interface PromptConditions {
-  [name: string]: boolean
+  /** Tracker values ride here too, behind `[if affection > 50]`. */
+  [name: string]: boolean | number | string | string[]
 }
 
 /**
@@ -24,8 +25,8 @@ export interface PromptConditions {
  * `game` is the `GameKind` string, taken as a plain string rather than the type: an unknown name is
  * false like any other. This file stays free of core/games, and a new game needs no edit here.
  */
-export function promptConditions(speaker: Character, cast?: Character[], game?: string): PromptConditions {
-  const flags: PromptConditions = { narrator: isNarrator(speaker.id), game: Boolean(game) }
+export function promptConditions(speaker: Character, cast?: Character[], game?: string): Record<string, boolean> {
+  const flags: Record<string, boolean> = { narrator: isNarrator(speaker.id), game: Boolean(game) }
   for (let i = 0; i < castSlots; i++) {
     flags[`char${i + 1}`] = Boolean(cast?.[i])
   }
@@ -38,9 +39,15 @@ interface Directive {
   keyword: 'if' | 'elseif' | 'else' | 'endif'
   name: string
   negated: boolean
+  /** A comparison: `[if affection > 50]`. Absent = truthiness. */
+  op?: Op
+  value?: string
 }
 
-const directivePattern = /^\[(if|elseif|else|endif)(?:\s+(?:(not)\s+)?([A-Za-z0-9_]+))?\]$/i
+type Op = '>' | '<' | '>=' | '<=' | '=' | '!='
+
+const directivePattern =
+  /^\[(if|elseif|else|endif)(?:\s+(?:(not)\s+)?([A-Za-z0-9_]+)(?:\s*(>=|<=|!=|=|>|<)\s*([^\]]*?))?)?\s*\]$/i
 
 /**
  * A directive only when the whole trimmed line is one. Prose on the same line, a missing name on
@@ -55,7 +62,11 @@ function directive(line: string): Directive | undefined {
   const needsName = keyword === 'if' || keyword === 'elseif'
   // [if] with no name, or [else] with one, is not a directive.
   if (needsName !== (name !== '')) return undefined
-  return { keyword, name: name.toLowerCase(), negated }
+  const op = match[4] as Op | undefined
+  const value = match[5]?.replace(/^"(.*)"$/, '$1')
+  // [if affection >] with nothing to compare against is prose.
+  if (op && !value) return undefined
+  return { keyword, name: name.toLowerCase(), negated, op, value }
 }
 
 /**
@@ -101,6 +112,8 @@ interface Branch {
   /** Absent on [else]: an else branch is always eligible. */
   name?: string
   negated: boolean
+  op?: Op
+  value?: string
   /** The directive line as written, for putting an unclosed conditional back verbatim. */
   line: string
   body: Node[]
@@ -133,7 +146,7 @@ function parse(lines: string[]): Node[] {
 
     if (found.keyword === 'if') {
       const node: Conditional = {
-        branches: [{ name: found.name, negated: found.negated, line, body: [] }],
+        branches: [{ name: found.name, negated: found.negated, op: found.op, value: found.value, line, body: [] }],
       }
       open.push({ node, parent: current() })
       continue
@@ -155,6 +168,8 @@ function parse(lines: string[]): Node[] {
     frame.node.branches.push({
       name: found.keyword === 'else' ? undefined : found.name,
       negated: found.negated,
+      op: found.op,
+      value: found.value,
       line,
       body: [],
     })
@@ -177,6 +192,24 @@ function flatten(node: Conditional): Node[] {
   return out
 }
 
+/**
+ * One condition. Numbers compare as numbers. Text takes `=` and `!=`, case-insensitive. A list
+ * `= x` means it holds x. A missing name is false, whatever the operator.
+ */
+function holds(flag: PromptConditions[string] | undefined, op?: Op, value?: string): boolean {
+  if (!op || value === undefined) return Array.isArray(flag) ? flag.length > 0 : Boolean(flag)
+  if (flag === undefined || typeof flag === 'boolean') return false
+  const want = value.trim().toLowerCase()
+  if (typeof flag === 'number') {
+    const n = Number(want)
+    if (!want || Number.isNaN(n)) return false
+    return { '>': flag > n, '<': flag < n, '>=': flag >= n, '<=': flag <= n, '=': flag === n, '!=': flag !== n }[op]
+  }
+  if (op !== '=' && op !== '!=') return false
+  const equal = Array.isArray(flag) ? flag.some((x) => x.toLowerCase() === want) : flag.toLowerCase() === want
+  return equal === (op === '=')
+}
+
 function render(nodes: Node[], flags: PromptConditions, out: string[]): void {
   for (const node of nodes) {
     if (!isConditional(node)) {
@@ -186,7 +219,7 @@ function render(nodes: Node[], flags: PromptConditions, out: string[]): void {
     // First eligible branch wins; an [else] has no name and always qualifies. No match emits
     // nothing at all: an [if] with no [else] simply drops.
     const branch = node.branches.find(
-      (b) => b.name === undefined || Boolean(flags[b.name]) !== b.negated,
+      (b) => b.name === undefined || holds(flags[b.name], b.op, b.value) !== b.negated,
     )
     if (branch) render(branch.body, flags, out)
   }

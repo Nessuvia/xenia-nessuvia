@@ -1,4 +1,4 @@
-import { RiDeleteBinLine, RiPencilLine } from '@remixicon/react'
+import { RiDeleteBinLine, RiFilter2Line, RiPencilLine } from '@remixicon/react'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 
 /** Right-click menu for a run of selected text inside a reply. */
@@ -6,11 +6,13 @@ export default function SelectionMenu({
   at,
   onDelete,
   onEdit,
+  onMakeRule,
   onClose,
 }: {
   at: { x: number; y: number }
   onDelete: () => void
   onEdit: () => void
+  onMakeRule: () => void
   onClose: () => void
 }) {
   const ref = useCloseOnOutside<HTMLDivElement>(true, onClose)
@@ -21,7 +23,7 @@ export default function SelectionMenu({
       className="panel selectionMenu"
       style={{
         left: Math.min(at.x, window.innerWidth - 160),
-        top: Math.min(at.y, window.innerHeight - 100),
+        top: Math.min(at.y, window.innerHeight - 140),
       }}
     >
       <button type="button" onClick={onDelete}>
@@ -31,6 +33,10 @@ export default function SelectionMenu({
       <button type="button" onClick={onEdit}>
         <RiPencilLine size={14} />
         Edit
+      </button>
+      <button type="button" onClick={onMakeRule}>
+        <RiFilter2Line size={14} />
+        Make rule
       </button>
     </div>
   )

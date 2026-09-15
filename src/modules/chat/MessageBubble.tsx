@@ -1,6 +1,7 @@
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
+  RiCloseLine,
   RiCodeSSlashLine,
   RiDeleteBinLine,
   RiErrorWarningLine,
@@ -12,7 +13,6 @@ import {
   RiSparkling2Line,
 } from '@remixicon/react'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import { isNarrator } from '../../core/multiplayer/narrator'
@@ -25,18 +25,24 @@ import {
   swipeCount,
   swipeIndex,
 } from '../../core/stores/swipes'
-import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
+import { useActiveConnection, useAppearance, useSettings } from '../../core/stores/settingsStore'
+import { newRule } from '../../core/agent/rules'
+import { useNavigate } from 'react-router-dom'
 import { reasoningSpan } from '../../core/prompt/reasoning'
+import { stripState } from '../../core/trackers/trackerState'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
+import TrackerWarning from './TrackerWarning'
+import AgentStream from './AgentStream'
+import type { Segment } from './agentSegments'
 import SelectionEditDialog from './SelectionEditDialog'
+import { contract } from './contract'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import SelectionMenu from './SelectionMenu'
 import { cutSpan, locate, occurrenceBefore, replaceSpan, textOffset, type Span } from './selectionEdit'
 import PromptInspector from '../../app/PromptInspector'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
-import { useSlopSample } from '../../core/stores/slopStore'
 
 
 /** Per-speaker color overrides as CSS vars. Only overridden fields are set. `overwrite` drops
@@ -73,7 +79,9 @@ export default function MessageBubble({
   onDeleteSwipes,
   onPass,
   onPassRevert,
+  onPassDismiss,
   passing = false,
+  streamingSegments,
   readOnly = false,
 }: {
   message: Message
@@ -105,13 +113,17 @@ export default function MessageBubble({
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
-  /** Run Second Sweep over this message, and the retry on a failed one. Omitted by views that
+  /** Run the agent pass over this message, and the retry on a failed one. Omitted by views that
    *  have no pass (Ask, and a multiplayer guest). */
   onPass?: () => void
   /** Put the pre-rewrite text back. */
   onPassRevert?: () => void
+  /** Hide the failed-pass notice. */
+  onPassDismiss?: () => void
   /** A pass stage's candidate is streaming over this message's text right now. */
   passing?: boolean
+  /** The re-roll under the agent's display mode. null shows a working marker. Omitted shows the plain stream. */
+  streamingSegments?: Segment[] | null
   /** No action buttons at all. A guest in a session owns none of the transcript. */
   readOnly?: boolean
 }) {
@@ -122,7 +134,6 @@ export default function MessageBubble({
   useEffect(() => editingCb.current?.(editing), [editing])
   const [pickingSwipes, setPickingSwipes] = useState(false)
   const [quickActions, setQuickActions] = useState(false)
-  const navigate = useNavigate()
   const quickRef = useCloseOnOutside<HTMLDetailsElement>(quickActions, () =>
     setQuickActions(false),
   )
@@ -156,6 +167,7 @@ export default function MessageBubble({
   >(null)
   const [editingSelection, setEditingSelection] = useState<{ span: Span; text: string } | null>(null)
 
+  const navigate = useNavigate()
   const assistant = message.role === 'assistant'
   const count = swipeCount(message)
   const at = swipeIndex(message)
@@ -226,6 +238,7 @@ export default function MessageBubble({
           )}
           {name}
         </span>
+        {assistant && <TrackerWarning failures={message.trackerUpdates?.[at]?.failures} />}
         {!readOnly && (
         <span className="messageActions">
           {assistant && (
@@ -273,7 +286,7 @@ export default function MessageBubble({
               title={
                 showOriginal
                   ? 'Show the swept text'
-                  : passSummary || "Show the text before Second Sweep"
+                  : passSummary || "Show the text before post-processing"
               }
               aria-pressed={showOriginal}
               onClick={() => setShowOriginal(!showOriginal)}
@@ -328,6 +341,28 @@ export default function MessageBubble({
               {assistant && (
                 <button
                   type="button"
+                  onClick={() => {
+                    onEdit(contract(message.content))
+                    setQuickActions(false)
+                  }}
+                >
+                  Use contractions
+                </button>
+              )}
+              {assistant && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInspecting(!inspecting)
+                    setQuickActions(false)
+                  }}
+                >
+                  {inspecting ? 'Hide prompt preview' : 'Prompt preview'}
+                </button>
+              )}
+              {assistant && (
+                <button
+                  type="button"
                   disabled={!modelRegen}
                   onClick={() => {
                     onRewriteOpen(true)
@@ -345,16 +380,6 @@ export default function MessageBubble({
                 }}
               >
                 Copy
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  useSlopSample.getState().setSample(message.content)
-                  navigate('/slopdentifier')
-                  setQuickActions(false)
-                }}
-              >
-                Send to Slop-dentifier
               </button>
               {assistant && (
                 <button
@@ -375,7 +400,7 @@ export default function MessageBubble({
                     setQuickActions(false)
                   }}
                 >
-                  {passOriginal === undefined ? "Second Sweep" : "Sweep again"}
+                  {passOriginal === undefined ? "Post-process" : "Post-process again"}
                 </button>
               )}
               {assistant && onPassRevert && passOriginal !== undefined && (
@@ -429,8 +454,7 @@ export default function MessageBubble({
 
       {streamingText !== null ? (
         <div className="messageBody">
-          {renderText(streamingText, { tagRules, replaceRules, order, role: message.role })}
-          <span className="caret">▌</span>
+          <AgentStream segments={streamingSegments === undefined ? [{ text: streamingText, mark: 'none' }] : streamingSegments} render={(t) => renderText(stripState(t), { tagRules, replaceRules, order, role: message.role })} />
         </div>
       ) : draft === null ? (
         <div
@@ -439,7 +463,7 @@ export default function MessageBubble({
           onPointerUp={onBodyPointerUp}
           className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}
         >
-          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
+          {renderText(stripState(showOriginal && passOriginal !== undefined ? passOriginal : bodyText), {
             tagRules,
             replaceRules,
             order,
@@ -487,6 +511,14 @@ export default function MessageBubble({
             setEditingSelection({ span: selectionMenu.span, text: selectionMenu.text })
             setSelectionMenu(null)
           }}
+          onMakeRule={() => {
+            // Global scope: rules live in the one agent config. The user finishes it in Settings.
+            const { agent, setAgent } = useSettings.getState()
+            const find = selectionMenu.text.trim()
+            setAgent({ rules: [...agent.rules, { ...newRule(), label: find, find }] })
+            setSelectionMenu(null)
+            navigate('/settings#agent')
+          }}
         />
       )}
 
@@ -515,6 +547,11 @@ export default function MessageBubble({
           {onPass && (
             <button type="button" className="passMarkerRetry" onClick={onPass}>
               Retry
+            </button>
+          )}
+          {onPassDismiss && (
+            <button type="button" className="passMarkerRetry" title="Dismiss" aria-label="Dismiss" onClick={onPassDismiss}>
+              <RiCloseLine size={14} />
             </button>
           )}
         </p>

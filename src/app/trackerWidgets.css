@@ -1,0 +1,65 @@
+.trackerWidgets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--trackerFont, inherit);
+}
+
+.trackerWidget {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trackerLabel {
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.trackerValue {
+  font-family: inherit;
+}
+
+.trackerBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surfaceSunken);
+  overflow: hidden;
+}
+
+.trackerBarFill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.trackerListItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trackerListItem {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.trackerListRemove {
+  display: flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--textMuted);
+}
+
+.trackerHiddenGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

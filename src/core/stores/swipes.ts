@@ -1,4 +1,5 @@
 // Extension-ful imports on purpose: checkSwipes.ts runs this under `node --experimental-strip-types`.
+import type { StateParse } from '../trackers/parseState.ts'
 
 /**
  * What these functions need off a record: the selected text, the alternates, and the two arrays
@@ -15,7 +16,7 @@ export interface Swipeable {
   /** What the user asked for when producing each swipe. Parallel to `swipes`, holes where a swipe
    *  was a plain re-roll with nothing typed. */
   instructions?: (string | undefined)[]
-  /** The text as the writing model produced it, before Second Sweep worked it over. Parallel to
+  /** The text as the writing model produced it, before the agent pass worked it over. Parallel to
    *  `swipes`, a hole where the pass was off or changed nothing. Survives a reload, which the
    *  Grammar Hammer's old "show original" toggle did not. */
   passOriginals?: (string | undefined)[]
@@ -23,6 +24,8 @@ export interface Swipeable {
   passSummaries?: (string | undefined)[]
   /** Why a stage's candidate was thrown away for a swipe, parallel to `swipes`. */
   passFailed?: (string | undefined)[]
+  /** The `<state>` parse of each swipe, parallel to `swipes`. */
+  trackerUpdates?: (StateParse | undefined)[]
 }
 
 /** How many alternates a message has. No swipes array = the one thing it says. */
@@ -125,7 +128,7 @@ export function reasoningFor(message: Swipeable): string | undefined {
   return message.reasonings?.[swipeIndex(message)]
 }
 
-/** The text before Second Sweep, for the selected swipe, when the pass actually changed it. */
+/** The text before the agent pass, for the selected swipe, when the pass actually changed it. */
 export function passOriginalFor(message: Swipeable): string | undefined {
   return message.passOriginals?.[swipeIndex(message)]
 }
@@ -135,7 +138,7 @@ export function passFailedFor(message: Swipeable): string | undefined {
   return message.passFailed?.[swipeIndex(message)]
 }
 
-/** What Second Sweep did to the selected swipe, in one line. Absent when it never ran on it. */
+/** What the agent pass did to the selected swipe, in one line. Absent when it never ran on it. */
 export function passSummaryFor(message: Swipeable): string | undefined {
   return message.passSummaries?.[swipeIndex(message)]
 }
@@ -216,7 +219,7 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
   const drop = new Set(indices)
   const swipes = seeded(message).filter((_, i) => !drop.has(i))
   if (!swipes.length) return null
-  const keep = (arr: (string | undefined)[] | undefined) =>
+  const keep = <V,>(arr: V[] | undefined) =>
     arr ? arr.filter((_, i) => !drop.has(i)) : undefined
   const before = [...drop].filter((i) => i < swipeIndex(message)).length
   const at = Math.min(Math.max(swipeIndex(message) - before, 0), swipes.length - 1)
@@ -231,6 +234,7 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     passOriginals: keep(message.passOriginals),
     passSummaries: keep(message.passSummaries),
     passFailed: keep(message.passFailed),
+    trackerUpdates: keep(message.trackerUpdates),
   }
 }
 

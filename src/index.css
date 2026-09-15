@@ -355,3 +355,11 @@ button:disabled {
     width: 100%;
   }
 }
+
+/* "Use max width at half-width": the same override for a desktop window snapped to half a screen. */
+@media (min-width: 701px) and (max-width: 1300px) {
+  :root[data-half-full-width] .chatView,
+  :root[data-half-full-width] .chapterEditor {
+    width: 100%;
+  }
+}

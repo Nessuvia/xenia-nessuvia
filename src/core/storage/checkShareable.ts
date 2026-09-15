@@ -48,7 +48,7 @@ assert.equal(mergeConnections(mine, null), mine)
 
   // The regression this replaced: a full backup missing a table added after it was written. The
   // old test counted tables and called this sanitized. It restored in add mode and kept rows
-  // the user meant to replace. Every 0.0.42 file looks like this now that `pipelines` exists.
+  // the user meant to replace.
   assert.equal(isPartialRestore({ tables: { chats: [], messages: [], characters: [] } }), false)
 }
 

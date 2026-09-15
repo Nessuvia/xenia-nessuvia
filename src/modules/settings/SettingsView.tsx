@@ -5,8 +5,7 @@ import { newConnection, useSettings } from '../../core/stores/settingsStore'
 import ConnectionEditor from './ConnectionEditor'
 import TagRulesPanel from './TagRulesPanel'
 import FindReplacePanel from './FindReplacePanel'
-import LegacyPassImport from './LegacyPassImport'
-import SecondSweepPanel from './SecondSweepPanel'
+import AgentPanel from './AgentPanel'
 import RelayPanel from './RelayPanel'
 import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
@@ -320,7 +319,6 @@ export default function SettingsView() {
               keys are always removed.
             </p>
           </section>
-          <LegacyPassImport />
           <section className="settingsCard">
             <h3>Clear all data</h3>
             <button type="button" className="secondary" onClick={() => setResetting(true)}>
@@ -334,8 +332,8 @@ export default function SettingsView() {
         </div>
       ) : tab === 'relay' ? (
         <RelayPanel />
-      ) : tab === 'secondSweep' ? (
-        <SecondSweepPanel />
+      ) : tab === 'agent' ? (
+        <AgentPanel />
       ) : (
         <div className="textRulesCards">
           <TagRulesPanel />

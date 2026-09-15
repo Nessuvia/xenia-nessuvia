@@ -8,11 +8,7 @@ import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import { defaultNarratorPrompt } from '../multiplayer/narrator.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
-import {
-  defaultSecondSweep,
-  resolveSecondSweep,
-  type SecondSweepSettings,
-} from '../secondSweep/resolve.ts'
+import { defaultAgentConfig, type AgentConfig } from '../agent/agentConfig.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
@@ -210,13 +206,12 @@ interface SettingsState {
   askCharacterId: number | null
   askAssistantPrompt: string
   appearance: Appearance
-  /** Second Sweep: whether replies are passed, and which pipeline does it. The pipelines
-   *  themselves are Dexie rows; this only names one. A chat's override lives on the Chat record. */
-  secondSweep: SecondSweepSettings
+  /** The agent pass. Global. A per-chat override is the upgrade path. */
+  agent: AgentConfig
   /** What the Narrator is told when the prompt stack says nothing about it. Global: a stack is
    *  the narrower level, and a stack with an `[if Narrator]` branch overrides this outright. */
   narratorPrompt: string
-  setSecondSweep(patch: Partial<SecondSweepSettings>): void
+  setAgent(patch: Partial<AgentConfig>): void
   setNarratorPrompt(prompt: string): void
   setAsk(patch: {
     askSystemPrompt?: string
@@ -303,7 +298,7 @@ export const useSettings = create<SettingsState>()(
       askCharacterId: null,
       askAssistantPrompt: '',
       appearance: defaultAppearance,
-      secondSweep: defaultSecondSweep,
+      agent: defaultAgentConfig,
       narratorPrompt: defaultNarratorPrompt,
 
       setAsk: (patch) => set(patch),
@@ -312,8 +307,7 @@ export const useSettings = create<SettingsState>()(
       setAppearance: (patch) =>
         set((s) => ({ appearance: { ...defaultAppearance, ...s.appearance, ...patch } })),
 
-      setSecondSweep: (patch) =>
-        set((s) => ({ secondSweep: { ...defaultSecondSweep, ...s.secondSweep, ...patch } })),
+      setAgent: (patch) => set((s) => ({ agent: { ...defaultAgentConfig, ...s.agent, ...patch } })),
 
       setNarratorPrompt: (narratorPrompt) => set({ narratorPrompt }),
 
@@ -421,13 +415,6 @@ export const useSettings = create<SettingsState>()(
 export function useAppearance(): Appearance {
   const appearance = useSettings((s) => s.appearance)
   return { ...defaultAppearance, ...appearance }
-}
-
-/** Second Sweep's global defaults for a component. A chat's override goes on top of this; see
- *  `secondSweepFor` in `pipelineStore.ts`, which is the whole resolution order. */
-export function useSecondSweep(): SecondSweepSettings {
-  const secondSweep = useSettings((s) => s.secondSweep)
-  return resolveSecondSweep(secondSweep, undefined)
 }
 
 /** Used when the user has not written an assistant prompt of their own. */

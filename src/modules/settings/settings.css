@@ -389,18 +389,99 @@
   align-items: center;
 }
 
-/* The rules as a card list. */
+/* The rules as a collapsed list, grouped by action. */
 .ruleCards {
   list-style: none;
-  margin: 0 0 12px;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+}
+
+.ruleSearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ruleSearchIcon {
+  flex: 0 0 auto;
+  color: var(--textMuted);
+}
+
+.ruleSearchInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ruleGroup {
+  margin-bottom: 12px;
+}
+
+.ruleGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ruleGroupTitle {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.ruleGroupCount {
+  color: var(--textDim);
+  font-size: 11px;
+}
+
+.ruleGroupAdd {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 4px 6px;
+  line-height: 0;
+}
+
+.ruleLabelOff {
+  color: var(--textDim);
+}
+
+.ruleErrorIcon {
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+
+.ruleChevron {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+  line-height: 0;
+}
+
+.ruleCardBody {
+  margin-top: 4px;
+}
+
+.ruleCardFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Icon-only buttons. */
+.ruleCardFoot button {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 8px;
+  line-height: 0;
 }
 
 .ruleCard {
-  padding: 10px 12px;
+  padding: 6px 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -412,12 +493,6 @@
   gap: 8px;
 }
 
-.ruleCardHead button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .ruleCardHead .ruleToggle {
   display: flex;
   align-items: center;
@@ -427,10 +502,6 @@
   flex: 1 1 auto;
   min-width: 0;
   font-weight: 600;
-}
-
-.ruleCardHead select {
-  flex: 0 0 auto;
 }
 
 /* #root to beat `.formPage label`, which is inline-flex and shrink-to-fit, collapsing a field to its
@@ -477,6 +548,45 @@
 .ruleActionRow .patternInput {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* A Words rule's example: each word is a toggle, and a clicked run carries a size picker. */
+.ruleExampleWords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ruleExampleUnlinked {
+  opacity: 0.5;
+}
+
+.ruleExampleWordWrap {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.ruleExampleWord {
+  padding: 2px 6px;
+  border: 1px dashed transparent;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surfaceSunken);
+  font-family: var(--mono, monospace);
+}
+
+.ruleExampleSlot {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surfaceSunken) 80%, var(--accent));
+}
+
+.ruleExampleSize {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.ruleExampleRebuild {
+  align-self: flex-start;
 }
 
 .replacedSpan {
@@ -573,20 +683,6 @@
 /* Phone width. The cards are already one per row by 900px; these keep the rows inside them from
    setting a minimum width the screen can't scroll to. */
 @media (max-width: 700px) {
-  .ruleCardHead {
-    flex-wrap: wrap;
-  }
-
-  .ruleCardHead .labelInput {
-    flex: 1 1 100%;
-  }
-
-  /* Icons only: the label span is hidden by .btnText in formPage.css. */
-  .ruleCardHead button {
-    padding: 7px 8px;
-    line-height: 0;
-  }
-
   .tagRules .checkboxRow {
     flex: 0 0 auto;
   }
@@ -596,20 +692,19 @@
   }
 }
 
-/* Second Sweep. One tab's content at a time, with the shared preview under it. Unlike
-   .textRulesCards this is a single column, so the tab content takes the leftover height and scrolls
-   inside its own frame. */
+/* Agent tab. A single column that scrolls as a whole. The page tabs sit outside it and stay put. */
 .passPanel {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
+}
+
+.passPanel > * {
+  flex: 0 0 auto;
 }
 
 .passPanel > .textRules {
   min-width: 0;
-  min-height: 0;
-  overflow: auto;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
@@ -689,4 +784,55 @@
 .stImportActions {
   display: flex;
   gap: 8px;
+}
+
+/* Agent tab: config cards, lexicon rows and the rule tester. */
+.settingsAgentTries {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.settingsAgentLexicon {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: stretch;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settingsAgentLexiconRow {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.settingsAgentSample {
+  align-self: stretch;
+  resize: vertical;
+}
+
+.settingsAgentResults {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: stretch;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settingsAgentResult {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-left: 2px solid var(--border);
+}
+
+.settingsAgentResultHit {
+  border-left-color: var(--accent);
 }

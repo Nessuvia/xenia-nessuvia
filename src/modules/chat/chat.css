@@ -1163,7 +1163,7 @@
   color: var(--textDim);
 }
 
-/* Second Sweep: a quiet line under the reply saying why a stage's candidate was not used. The
+/* Agent pass: a quiet line under the reply saying which sentences kept their original. The
    reply itself is untouched, so this is a note rather than an error banner. */
 .passMarker {
   display: flex;
@@ -1782,6 +1782,10 @@
     width: 100%;
   }
 
+}
+
+/* Icon-only header buttons from half-width down. */
+@media (max-width: 1300px) {
   .chatPicker .headerActions .btnLabel {
     display: none;
   }
@@ -1849,4 +1853,156 @@
 .selectionEditText {
   width: 100%;
   resize: vertical;
+}
+
+/* Agent pass, blur mode: a sentence the agent is still reworking. */
+.chatAgentPending {
+  filter: blur(3px);
+}
+
+/* Stylized post-processing. Asked for: the edits animate so the reader watches them happen.
+   --agentBeat is set on .chatView from the pass and shrinks when a reply has many hits.
+   A delete sharpens, a line draws through it, it fades, then the gap closes. The line is a
+   background so it can grow left to right across wrapped lines. */
+.chatAgentStrike {
+  background: linear-gradient(var(--danger), var(--danger)) no-repeat 0 55% / 0% 0.1em;
+  animation: chatAgentStrike var(--agentBeat, 600ms) ease-in forwards;
+}
+
+@keyframes chatAgentStrike {
+  0% { filter: blur(3px); }
+  25% { filter: blur(0); background-size: 0% 0.1em; opacity: 1; font-size: 1em; }
+  60% { background-size: 100% 0.1em; opacity: 1; }
+  85% { background-size: 100% 0.1em; opacity: 0; font-size: 1em; }
+  100% { background-size: 100% 0.1em; opacity: 0; font-size: 0; }
+}
+
+/* An accepted rewrite comes in from the blur the old text had. */
+.chatAgentFresh {
+  animation: chatAgentFresh var(--agentBeat, 600ms) ease-out;
+}
+
+@keyframes chatAgentFresh {
+  from { filter: blur(3px); opacity: 0.4; }
+  to { filter: blur(0); opacity: 1; }
+}
+
+/* A word a swap or a style fix changed tints once. */
+.chatAgentFlash {
+  border-radius: calc(var(--radius) - 2px);
+  animation: chatAgentFlash 1200ms ease-out;
+}
+
+@keyframes chatAgentFlash {
+  from { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+  to { background: transparent; }
+}
+
+/* Crossfades stay. The strike, the collapse and the tint go: a delete only fades. */
+@media (prefers-reduced-motion: reduce) {
+  .chatAgentStrike {
+    background: none;
+    animation-name: chatAgentFade;
+  }
+
+  .chatAgentFlash {
+    animation: none;
+  }
+}
+
+@keyframes chatAgentFade {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Trackers. The widgets' own rules live in app/trackerWidgets.css. */
+.trackerPanelDocked {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Floats over the chat, under menus that escape their container. */
+.trackerFloat {
+  position: fixed;
+  z-index: var(--layer-2);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  min-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  overflow: hidden;
+  resize: both;
+}
+
+.trackerFloatHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--textMuted);
+  cursor: move;
+  touch-action: none;
+}
+
+.trackerFloatTitle {
+  flex: 1;
+  font-size: 12px;
+}
+
+.trackerFloatDock {
+  display: flex;
+  padding: 2px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.trackerFloatBody {
+  flex: 1;
+  padding: 8px;
+  overflow: auto;
+}
+
+/* Auto margin keeps it beside the name rather than centred by space-between. */
+.trackerWarning {
+  position: relative;
+  margin-right: auto;
+  margin-left: 4px;
+}
+
+.trackerWarningButton {
+  display: flex;
+  padding: 2px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--danger);
+}
+
+.trackerWarningMenu {
+  position: absolute;
+  left: 0;
+  z-index: var(--layer-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 240px;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.trackerWarningItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trackerWarningError {
+  font-size: 12px;
+  color: var(--textMuted);
 }

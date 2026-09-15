@@ -112,7 +112,7 @@ export function defaultTemplate(): InstructTemplate {
 
 /**
  * Instruct formats for the models people actually run locally. These are facts about a model
- * rather than taste, and unlike a Second Sweep pipeline they ship: a user pointing at a Llama 3
+ * rather than taste, and unlike agent rules they ship: a user pointing at a Llama 3
  * build gets a first reply without retyping `<|start_header_id|>` from memory.
  */
 export const templatePresets: { name: string; template: () => InstructTemplate }[] = [

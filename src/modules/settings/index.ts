@@ -3,7 +3,7 @@ import { lazyView, registerModule } from '../../app/moduleRegistry'
 import { tabs } from './tabs'
 import FindReplacePanel from './FindReplacePanel'
 import TagRulesPanel from './TagRulesPanel'
-import SecondSweepChatPanel from './SecondSweepChatPanel'
+import AgentChatPanel from './AgentChatPanel'
 
 registerModule({
   id: 'settings',
@@ -16,6 +16,6 @@ registerModule({
   chatPanels: [
     { label: 'Find & Replace', component: FindReplacePanel },
     { label: 'Tags', component: TagRulesPanel },
-    { label: "Second Sweep", component: SecondSweepChatPanel },
+    { label: 'Post-processing', component: AgentChatPanel },
   ],
 })

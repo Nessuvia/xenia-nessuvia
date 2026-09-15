@@ -42,7 +42,8 @@ export function repairAll(text: string): string {
   return out
 }
 
-const SPACE_BEFORE = / +([,.;:!?)\]}"'’”])/g
+// A straight quote only counts as a closer when nothing word-like follows it: `said "Hi"` keeps its space.
+const SPACE_BEFORE = / +([,.;:!?)\]}’”]|["'](?![\p{L}\p{N}]))/gu
 const SPACE_AFTER = /([([{“‘]) +/g
 
 function collapseSpaces(s: string): string {

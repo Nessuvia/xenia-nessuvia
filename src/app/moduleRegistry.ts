@@ -15,8 +15,7 @@ export interface AppModule {
   // same as the sidebar. A panel that shouldn't show renders null; there is no visibility API.
   chatPanels?: readonly { label: string; component: ComponentType }[]
   // Text appended to the outgoing user message, before token substitution. '' contributes nothing.
-  // ctx is exactly what the one current caller (body map) needs. Widen it when a second
-  // contributor wants more. It's a compile error in one place. Guessing wider now buys nothing.
+  // No module uses it today. Widen ctx when one needs more.
   decorateMessage?(ctx: MessageContext): string | Promise<string>
 }
 

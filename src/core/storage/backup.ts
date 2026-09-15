@@ -35,10 +35,6 @@ const shareableTables: TableName[] = [
   'worldInfo',
   'promptStacks',
   'palettes',
-  // A pipeline is an opinion about prose and carries nothing personal. The connection ids in its
-  // rewrite stages will not resolve in another install, which reads as "not armed" rather than as
-  // a leak: the id names a row in the recipient's own settings, and the endpoint and key stay here.
-  'pipelines',
 ]
 
 export interface BackupOptions {
@@ -136,8 +132,7 @@ export async function restoreBackup(backup: Backup) {
       // A full restore means "make this browser match the file": a table the file does not
       // carry is emptied rather than skipped. That is the case for a table added after the file
       // was written: leaving the rows would mix a library from one install into a restore of
-      // another, and for `pipelines` specifically it would sit alongside whatever the 0.0.42
-      // importer then builds from the restored settings.
+      // another.
       if (!(name in backup.tables)) {
         if (!partial) await storage.clear(name)
         continue

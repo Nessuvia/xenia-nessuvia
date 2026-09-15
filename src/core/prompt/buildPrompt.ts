@@ -15,6 +15,7 @@ import { activeContent, activeDescription } from '../storage/types.ts'
 import { isGroup } from '../stores/roster.ts'
 import { chatTokens, swapBlockVals, swapTokens } from './swapTokens.ts'
 import { promptConditions, resolveConditions } from './conditions.ts'
+import { trackerPrompt, trackerValues } from '../trackers/trackerState.ts'
 import type { Budget } from './budget.ts'
 import { countMessages, countTokens, perMessageOverhead, trimHistory } from './budget.ts'
 import { fillSlots, miscPrompt } from './miscPrompts.ts'
@@ -304,7 +305,13 @@ export function buildPrompt(
   // branch never gets swapped, and no token's value can be read back as a condition name. A
   // conditional cannot span two blocks: each block's text is parsed on its own. An [if] in one
   // block and its [endif] in the next are both literal text.
-  const conditions = promptConditions(who, cast, gameKind)
+  // Trackers come off the chat's card, whoever speaks. Built-in names win a clash with a tracker key.
+  const trackers = character.trackers ?? []
+  const values = trackers.length ? trackerValues(trackers, messages, chat?.trackerOverrides) : {}
+  const conditions = {
+    ...Object.fromEntries(Object.entries(values).map(([k, v]) => [k.toLowerCase(), v])),
+    ...promptConditions(who, cast, gameKind),
+  }
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
@@ -376,6 +383,13 @@ export function buildPrompt(
   // Both trailing turns are system turns. The merge below concatenates them: the hint says who
   // is up, then any rewrite instruction narrows what they should write. Neither overwrites the
   // other, and the more specific one has the last word.
+  // ponytail: fixed wording after the stack, a stack block when creators need to place or reword it.
+  const trackerText = trackerPrompt(trackers, values)
+  if (trackerText) {
+    resolved.push({ role: 'system', content: trackerText })
+    fixedTokens += countTokens(trackerText) + perMessageOverhead
+  }
+
   if (group) {
     const hint = nextSpeakerHint(who.name, stack.miscPrompts)
     resolved.push({ role: 'system', content: hint })
