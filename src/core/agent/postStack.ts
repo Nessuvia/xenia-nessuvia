@@ -2,6 +2,8 @@
 import type { Rule } from './rules.ts'
 import type { LexiconEntry } from '../quality/lexicon.ts'
 import { defaultLintConfig, type LintConfig } from './lintRules.ts'
+import { defaultVadLimits, type VadLimits } from './vadGuard.ts'
+import { defaultFlowConfig, defaultFlowStyle, type FlowConfig, type FlowStyle } from './flowRules.ts'
 import type { IgnorePair } from '../hammer/exclusions.ts'
 import { defaultRules } from './agentConfig.ts'
 
@@ -24,6 +26,10 @@ export interface PostStackConfig {
   acrostic: AcrosticConfig
   swaps: { enabled: boolean; lexicon: LexiconEntry[] }
   lint: LintConfig
+  /** Message detectors: code finds the problem, a small prompt fixes the passage. After rules. */
+  flow: FlowConfig
+  /** The reply shape the detectors hold replies to. */
+  style: FlowStyle
   rules: { enabled: boolean; list: Rule[] }
   /** Text the whole pass leaves alone, on top of the code spans and URLs it always skips. Not a
    *  stage: it applies to every stage rather than running in turn. `useTagRules` adds the global
@@ -31,7 +37,20 @@ export interface PostStackConfig {
   ignore: { enabled: boolean; pairs: IgnorePair[]; useTagRules: boolean }
   /** Failed rewrites allowed per sentence or paragraph before the original stays. */
   maxTries: number
+  /** Recent chat messages sent with each rewrite, so a fix fits the scene. 0 sends none. */
+  contextMessages: number
+  /** One call over the whole finished reply for transitions and rhythm. Always runs while the pass is on. */
+  flowPass: FlowPassConfig
+  /** One call that makes speech sound spoken and answer the last message. Runs last, after the flow pass. */
+  dialoguePass: { enabled: boolean }
 }
+
+export interface FlowPassConfig extends VadLimits {
+  /** Sentence count may change by this fraction of the reply's sentences, and always by one. */
+  sentenceDrift: number
+}
+
+export const defaultFlowPassConfig: FlowPassConfig = { ...defaultVadLimits, sentenceDrift: 0.2 }
 
 /** Seeded, not enabled. Turning the stage on is what starts skipping these, so an existing stack
  *  does not silently change what it matches. */
@@ -56,9 +75,14 @@ export function defaultPostStackConfig(): PostStackConfig {
     acrostic: { ...defaultAcrosticConfig },
     swaps: { enabled: true, lexicon: [] },
     lint: { ...defaultLintConfig },
+    flow: { ...defaultFlowConfig, off: [] },
+    style: { ...defaultFlowStyle, narrationRatio: [...defaultFlowStyle.narrationRatio] },
     rules: { enabled: true, list: defaultRules() },
     ignore: { enabled: false, pairs: defaultIgnorePairs(), useTagRules: true },
     maxTries: 3,
+    contextMessages: 4,
+    flowPass: { ...defaultFlowPassConfig },
+    dialoguePass: { enabled: true },
   }
 }
 
@@ -71,8 +95,18 @@ export interface AgentRun {
   rules: Rule[]
   lexicon: LexiconEntry[]
   lint?: LintConfig
+  /** Absent when the detector stage is off. */
+  flow?: { off: string[]; style: FlowStyle }
   /** Spans nothing may touch. Empty when the stack is not ignoring anything. */
   ignore?: IgnorePair[]
+  /** Recent chat as plain text, built by the caller from `contextMessages`. Absent sends none. */
+  context?: string
+  /** The message this reply answers, for the flow pass's VAD guard. */
+  lastMessage?: string
+  /** Absent skips the flow pass: clean only, which makes no calls. */
+  flowPass?: FlowPassConfig
+  /** Absent skips the dialogue pass. Its VAD guard reads `flowPass`'s limits. */
+  dialoguePass?: boolean
 }
 
 /**
@@ -87,6 +121,10 @@ export function runStages(config: PostStackConfig, tagRules: IgnorePair[] = []):
     rules: config.rules.enabled ? config.rules.list : [],
     lexicon: config.swaps.enabled ? config.swaps.lexicon : [],
     lint: config.lint,
+    // A stack saved before the stage existed has no `flow`: it gets the default, the same one the editor shows.
+    flowPass: config.flowPass ?? defaultFlowPassConfig,
+    dialoguePass: config.dialoguePass?.enabled ?? true,
+    flow: (config.flow ?? defaultFlowConfig).enabled ? { off: config.flow?.off ?? [], style: config.style ?? defaultFlowStyle } : undefined,
     ignore: config.ignore.enabled
       ? [...config.ignore.pairs, ...(config.ignore.useTagRules ? tagRules : [])]
       : [],

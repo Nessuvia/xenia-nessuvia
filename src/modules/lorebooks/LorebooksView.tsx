@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { RiDownloadLine } from '@remixicon/react'
 import { newBook, useLorebooks } from '../../core/stores/lorebooksStore'
+import { useWorldInfo } from '../../core/stores/worldInfoStore'
+import { exportBookJson } from '../characters/exportCard'
 import TwoColumn from '../../app/TwoColumn'
 import BookEditor from './BookEditor'
 
@@ -9,6 +12,7 @@ const nameOf = (file: File) => file.name.replace(/\.[^.]+$/, '')
 
 export default function LorebooksView() {
   const { books, counts, bundledTo, loading, load, create, importFile, remove } = useLorebooks()
+  const fetchFor = useWorldInfo((s) => s.fetchFor)
   const [openId, setOpenId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -43,6 +47,17 @@ export default function LorebooksView() {
         </span>
       ))}
       {b.global && <span className="lorebooksBadge">All chats</span>}
+      <button
+        type="button"
+        title="Export"
+        aria-label="Export"
+        onClick={async (e) => {
+          e.stopPropagation()
+          exportBookJson(b, await fetchFor(b.id!))
+        }}
+      >
+        <RiDownloadLine size={14} />
+      </button>
       <button
         type="button"
         className="danger"

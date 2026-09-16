@@ -86,7 +86,6 @@ const events: (HostEvent | GuestEvent)[] = [
     reasonings: ['thinking'],
     speakerId: 1,
     speakerName: 'Damien',
-    requestSnapshots: ['{"prompt":"SECRET-123"}'],
     createdAt: 42,
   }
   const g = forGuests(m)
@@ -102,7 +101,6 @@ const events: (HostEvent | GuestEvent)[] = [
     'swipes',
     'swipeIndex',
     'reasonings',
-    'requestSnapshots',
   ]) {
     assert.ok(!(bad in g), `forGuests leaked ${bad}`)
   }
@@ -127,20 +125,6 @@ const events: (HostEvent | GuestEvent)[] = [
   assert.strictEqual(g.personaName, 'Dom')
   assert.strictEqual(g.speakerName, 'Damien')
   assert.strictEqual(g.createdAt, 42)
-}
-
-// --- a secret in a request snapshot does not leak -------------------------
-{
-  const m: Message = {
-    id: 1,
-    ownerId: 'local',
-    chatId: 1,
-    role: 'assistant',
-    content: 'clean',
-    requestSnapshots: ['{"prompt":"API-KEY-LEAK-XYZ"}'],
-    createdAt: 0,
-  }
-  assert.ok(!JSON.stringify(forGuests(m)).includes('API-KEY-LEAK-XYZ'))
 }
 
 // --- parseEvent rejects bad input without throwing ------------------------

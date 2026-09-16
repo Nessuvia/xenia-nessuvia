@@ -16,10 +16,11 @@ const obj = (v: unknown) =>(v && typeof v === 'object' && !Array.isArray(v) ? (v
  *
  * `book` is the character's first attached lorebook. A card has one `character_book`, so with
  * several attached the rest are left out rather than merged into a book they never belonged to.
+ *
+ * `was` is the book as it arrived on a card. A standalone export has none and passes nothing.
  */
-function buildBook(c: Character, entries: WorldInfoEntry[], book?: Lorebook) {
+function buildBook(entries: WorldInfoEntry[], book?: Lorebook, was: Loose = {}) {
   if (!entries.length && !book) return undefined
-  const was = bookOf(c.rawCard) ?? {}
   return {
     name: book?.name ?? '',
     description: book?.description ?? '',
@@ -72,7 +73,7 @@ export function buildCard(c: Character, entries: WorldInfoEntry[] = [], book?: L
     tags: c.tags,
     creator: c.creator,
     character_version: c.characterVersion,
-    character_book: buildBook(c, entries, book),
+    character_book: buildBook(entries, book, bookOf(c.rawCard)),
     extensions: {
       ...obj(was.extensions),
       alternate_fields: { ...obj(obj(was.extensions).alternate_fields), alt_descriptions: c.altDescriptions },
@@ -94,8 +95,8 @@ export function buildCard(c: Character, entries: WorldInfoEntry[] = [], book?: L
   return { spec: 'chara_card_v3', spec_version: '3.0', ...data, data }
 }
 
-const fileName = (name: string) =>
-  name.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'character'
+const fileName = (name: string, fallback = 'character') =>
+  name.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || fallback
 
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
@@ -110,6 +111,14 @@ export function exportCardJson(c: Character, entries: WorldInfoEntry[] = [], boo
   download(
     new Blob([JSON.stringify(buildCard(c, entries, book), null, 2)], { type: 'application/json' }),
     `${fileName(c.name)}.json`,
+  )
+}
+
+/** A bare `{name, entries}` book, the shape importLorebook reads back. */
+export function exportBookJson(book: Lorebook, entries: WorldInfoEntry[]) {
+  download(
+    new Blob([JSON.stringify(buildBook(entries, book), null, 2)], { type: 'application/json' }),
+    `${fileName(book.name, 'lorebook')}.json`,
   )
 }
 

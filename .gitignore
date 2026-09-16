@@ -25,3 +25,5 @@ dist-ssr
 
 # Centrifugo
 src/resources/centrifugo/centrifugo.exe
+# NRC VAD Lexicon source files. Input to scripts/buildVad.mjs; only the generated data ships.
+scripts/data/

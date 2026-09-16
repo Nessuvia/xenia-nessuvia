@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { runAgent, type Complete } from './runAgent.ts'
+import { recentContext, runAgent, type Complete } from './runAgent.ts'
 import type { AgentRun } from './postStack.ts'
 import type { Rule } from './rules.ts'
 
@@ -68,8 +68,20 @@ r = await runAgent(
 )
 assert.equal(r.text, 'Good start.\n\nHe ran. She followed.\n\nThe end.')
 assert.equal(m.calls.length, 1)
-assert.match(m.calls[0], /^Paragraph:/)
+assert.match(m.calls[0], /^Before:\nGood start\.\n\nAfter:\nThe end\.\n\nParagraph:/)
 assert.doesNotMatch(m.calls[0], /Sentence:/)
+
+// Context: recent chat leads the prompt; think blocks and older messages stay out.
+const history = [
+  { role: 'user' as const, content: 'Too old.' },
+  { role: 'user' as const, content: 'I was hoping I could kick his ass.', personaName: 'Lucille' },
+  { role: 'assistant' as const, content: '<think>hm</think>Fair.', speakerName: 'Damien', reasoningEnd: 17 },
+]
+assert.equal(recentContext(history, 2), 'Lucille: I was hoping I could kick his ass.\n\nDamien: Fair.')
+assert.equal(recentContext(history, 0), '')
+m = model(['It proved his skill.'])
+await runAgent('It was a testament.', { ...config([rule('testament', 'rewrite')]), context: recentContext(history, 2) }, m.complete)
+assert.match(m.calls[0], /^Recent chat:\nLucille: I was hoping I could kick his ass\.\n\nDamien: Fair\.\n\nParagraph:/)
 
 // Two failing sentences in different paragraphs stay sentence rewrites.
 m = model(['One.', 'Two.'])
@@ -113,3 +125,23 @@ release('It showed.')
 r = await run
 assert.equal(r.text, 'It showed.\n\nShe waits.')
 assert.equal(stages.at(-1), 'fresh:It showed.|none:\n\nShe waits.')
+
+// Escalation: a sentence that fails its tries gets one rewrite with its neighbours, then stops.
+m = model(['Still a testament.', 'Another testament.', 'He won and proved his skill.'])
+r = await runAgent('He won. It was a testament to his skill. They cheered.', config([rule('testament', 'rewrite')], 2), m.complete)
+assert.equal(r.text, 'He won and proved his skill.')
+assert.equal(m.calls.length, 3)
+assert.match(m.calls[2], /Passage:\nHe won\. It was a testament to his skill\. They cheered\./)
+assert.equal(r.failed, undefined)
+
+// A failed group keeps the original, and nothing goes wider than the group.
+m = model(['A testament.', 'A testament.', 'A testament.', 'A testament.', 'Never asked for.'])
+r = await runAgent('He won. It was a testament. They cheered.', config([rule('testament', 'rewrite')], 2), m.complete)
+assert.equal(r.text, 'He won. It was a testament. They cheered.')
+assert.equal(m.calls.length, 4)
+assert.match(r.failed ?? '', /1 sentence kept after 2 tries/)
+
+// A rule rewrite may not add a line of dialogue, even one the context grounds. That's the dialogue pass's job.
+m = model(['She sat. "I started lifting after Sarah died," he said.', 'She sat back on the rug.'])
+r = await runAgent('She came back and sat, a testament.', config([rule('testament', 'rewrite')], 2), m.complete)
+assert.equal(r.text, 'She sat back on the rug.')

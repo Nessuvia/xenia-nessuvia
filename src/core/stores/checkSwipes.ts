@@ -1,7 +1,7 @@
 // Run: node --experimental-strip-types src/core/stores/checkSwipes.ts
 import assert from 'node:assert'
 import type { Message } from '../storage/types'
-import { continued, deletedSwipes, instructionChain, passOriginalFor, passed, reasoningFor, regenerated, revertPass, selectSwipe, snapshotFor, swipeCount, swipeIndex, withPass } from './swipes.ts'
+import { continued, deletedSwipes, instructionChain, passOriginalFor, passed, reasoningFor, regenerated, revertPass, selectSwipe, swipeCount, swipeIndex, withPass } from './swipes.ts'
 
 const reply = (id: number, content: string): Message => ({
   id,
@@ -97,30 +97,9 @@ function mirrors(m: Message) {
   assert.strictEqual(swiped.createdAt, 1)
 }
 
-// --- snapshots stay parallel to swipes ------------------------------------
+// --- reasonings stay parallel to swipes ----------------------------------
 {
-  // A message from before snapshots existed: swipe 0 has no entry, the new one does.
-  const first = regenerated(reply(1, 'one'), 'two', '{"b":2}')!
-  assert.strictEqual(first.requestSnapshots!.length, first.swipes!.length)
-  assert.strictEqual(snapshotFor(first), '{"b":2}')
-  assert.strictEqual(snapshotFor(selectSwipe(first, 0)), undefined)
-
-  // And each further swipe keeps its own.
-  const second = regenerated(first, 'three', '{"c":3}')!
-  assert.strictEqual(second.requestSnapshots!.length, 3)
-  assert.strictEqual(snapshotFor(second), '{"c":3}')
-  assert.strictEqual(snapshotFor(selectSwipe(second, 1)), '{"b":2}')
-
-  // A regeneration with nothing to store leaves a hole, not a shifted array.
-  const third = regenerated(second, 'four')!
-  assert.strictEqual(third.requestSnapshots!.length, 4)
-  assert.strictEqual(snapshotFor(third), undefined)
-  assert.strictEqual(snapshotFor(selectSwipe(third, 2)), '{"c":3}')
-}
-
-// --- reasonings stay parallel to swipes, same as snapshots ----------------
-{
-  const first = regenerated(reply(1, 'one'), 'two', undefined, 'because two')!
+  const first = regenerated(reply(1, 'one'), 'two', 'because two')!
   assert.strictEqual(first.reasonings!.length, first.swipes!.length)
   assert.strictEqual(reasoningFor(first), 'because two')
   assert.strictEqual(reasoningFor(selectSwipe(first, 0)), undefined) // swipe 0 predates it
@@ -134,9 +113,9 @@ function mirrors(m: Message) {
 
 // --- deleting swipes ------------------------------------------------------
 {
-  // one, two(+snap b), three(+snap c, reasoning r3)
-  let m = regenerated(reply(1, 'one'), 'two', '{"b":2}')!
-  m = regenerated(m, 'three', '{"c":3}', 'r3')!
+  // one, two, three(+reasoning r3)
+  let m = regenerated(reply(1, 'one'), 'two')!
+  m = regenerated(m, 'three', 'r3')!
   assert.strictEqual(swipeIndex(m), 2)
 
   // Dropping an earlier swipe slides the selection back and keeps parallel arrays aligned.
@@ -144,16 +123,14 @@ function mirrors(m: Message) {
   assert.deepStrictEqual(dropFirst.swipes, ['two', 'three'])
   assert.strictEqual(swipeIndex(dropFirst), 1)
   assert.strictEqual(dropFirst.content, 'three')
-  assert.strictEqual(snapshotFor(dropFirst), '{"c":3}')
   assert.strictEqual(reasoningFor(dropFirst), 'r3')
-  assert.strictEqual(snapshotFor(selectSwipe(dropFirst, 0)), '{"b":2}')
+  assert.strictEqual(selectSwipe(dropFirst, 0).content, 'two')
 
   // Dropping the selected last swipe lands on the new last one.
   const dropLast = deletedSwipes(m, [2])!
   assert.deepStrictEqual(dropLast.swipes, ['one', 'two'])
   assert.strictEqual(swipeIndex(dropLast), 1)
   assert.strictEqual(dropLast.content, 'two')
-  assert.strictEqual(snapshotFor(dropLast), '{"b":2}')
 
   // Nothing left means the caller deletes the message.
   assert.strictEqual(deletedSwipes(m, [0, 1, 2]), null)
@@ -175,18 +152,16 @@ function mirrors(m: Message) {
   mirrors(once)
 
   // Three swipes, sitting on the middle one: only that one changes.
-  let m = regenerated(reply(1, 'one'), 'two', '{"b":2}', 'r2')!
-  m = regenerated(m, 'three', '{"c":3}', 'r3')!
-  const on = continued(selectSwipe(m, 1), 'two and more', '{"d":4}', 'r4')!
+  let m = regenerated(reply(1, 'one'), 'two', 'r2')!
+  m = regenerated(m, 'three', 'r3')!
+  const on = continued(selectSwipe(m, 1), 'two and more', 'r4')!
   assert.deepStrictEqual(on.swipes, ['one', 'two and more', 'three'])
   assert.strictEqual(swipeCount(on), 3)
   assert.strictEqual(swipeIndex(on), 1)
   mirrors(on)
-  // The continuation's request is what produced the text as it now stands; reasoning accumulates.
-  assert.strictEqual(snapshotFor(on), '{"d":4}')
+  // Reasoning accumulates.
   assert.strictEqual(reasoningFor(on), 'r2\n\nr4')
   // Its neighbours are untouched.
-  assert.strictEqual(snapshotFor(selectSwipe(on, 2)), '{"c":3}')
   assert.strictEqual(reasoningFor(selectSwipe(on, 2)), 'r3')
 
   // A continuation that produced nothing changes nothing.
@@ -194,9 +169,8 @@ function mirrors(m: Message) {
   assert.strictEqual(continued(m, ''), null)
   assert.strictEqual(JSON.stringify(m), before)
 
-  // No snapshot and no reasoning leave what was already there alone.
+  // No reasoning leaves what was already there alone.
   const bare = continued(selectSwipe(m, 1), 'two and more')!
-  assert.strictEqual(snapshotFor(bare), '{"b":2}')
   assert.strictEqual(reasoningFor(bare), 'r2')
 }
 
@@ -204,8 +178,8 @@ function mirrors(m: Message) {
 {
   // one, then a plain re-roll (no instruction), then two corrections.
   let m = regenerated(reply(1, 'one'), 'two')!
-  m = regenerated(m, 'three', undefined, undefined, 'less dialogue')!
-  m = regenerated(m, 'four', undefined, undefined, '  she should refuse  ')!
+  m = regenerated(m, 'three', undefined, 'less dialogue')!
+  m = regenerated(m, 'four', undefined, '  she should refuse  ')!
   assert.strictEqual(m.instructions!.length, m.swipes!.length)
   // Swipe 0 and 1 predate any instruction: they are holes rather than a shifted array.
   assert.deepStrictEqual(m.instructions, [undefined, undefined, 'less dialogue', 'she should refuse'])
@@ -223,7 +197,7 @@ function mirrors(m: Message) {
   assert.deepStrictEqual(instructionChain(dropped), ['she should refuse'])
 
   // An empty instruction is a hole, not an empty string in the chain.
-  const blank = regenerated(m, 'five', undefined, undefined, '   ')!
+  const blank = regenerated(m, 'five', undefined, '   ')!
   assert.strictEqual(blank.instructions![4], undefined)
   assert.deepStrictEqual(instructionChain(blank), ['less dialogue', 'she should refuse'])
 

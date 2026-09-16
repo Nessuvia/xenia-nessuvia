@@ -32,7 +32,8 @@ import {
   withAcrostic,
   withPass,
 } from './swipes'
-import { runAgent, type Complete } from '../agent/runAgent'
+import { forgetSwipes, rememberSnapshot } from './snapshots'
+import { recentContext, runAgent, type Complete } from '../agent/runAgent'
 import { resolveChatAgent } from '../agent/agentConfig'
 import { resolvePostStack, runStages, type AcrosticConfig } from '../agent/postStack'
 import { drawAcrostic } from '../agent/acrostic/draw'
@@ -99,6 +100,8 @@ interface PassResult {
 async function agentPass(
   chat: Chat,
   text: string,
+  /** The messages before this reply. The last few go to rewrites as context. */
+  history: Message[],
   signal: AbortSignal,
   onProgress: (text: string, pending: string[], stage?: AgentStage) => void,
   /** Set by the manual action, which runs whether or not auto is on. */
@@ -111,11 +114,10 @@ async function agentPass(
   const connection = resolveConnection(config.connectionId)
   if (!cleanOnly && (!connection || isSentinel(connection.endpointUrl))) return { text }
   // What the pass does comes from the stack; the global config only says whether and how.
-  const staged = runStages(
-    resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks),
-    useSettings.getState().appearance.tagRules,
-  )
-  const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite') } : staged
+  const stack = resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks)
+  const staged = { ...runStages(stack, useSettings.getState().appearance.tagRules), context: recentContext(history, stack.contextMessages), lastMessage: history.at(-1)?.content.slice(history.at(-1)?.reasoningEnd ?? 0) }
+  // Detector fixes are model calls too, so clean only drops them with the rewrite rules.
+  const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite'), flow: undefined, flowPass: undefined, dialoguePass: false } : staged
 
   const complete: Complete = async (messages) => {
     // Unreachable with clean only: with no rewrite rules, runAgent never asks.
@@ -868,7 +870,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         // Agent pass over the finished reply.
         if (text && !controller.signal.aborted) {
           set({ passing: true })
-          const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
+          const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
           text = pass.text
           passOriginal = pass.original
           passFail = pass.failed
@@ -910,7 +912,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
       })
       if (text) {
-        await storage.put('messages', {
+        const id = await storage.put('messages', {
           ownerId: currentOwnerId(),
           chatId: chat.id!,
           role: 'assistant',
@@ -918,7 +920,6 @@ export const useChats = create<ChatState>()((set, get) => ({
           speakerId: speaker.id,
           speakerName: speaker.name, // copied, not looked up: survives deleting the character
           // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
-          requestSnapshots: [snapshot],
           reasonings: [reasoning || undefined],
           reasoningEnd: reasoningEndOf(text, connection),
           // Parallel to swipes as well: what the writing model said, before the pass.
@@ -929,6 +930,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
           createdAt: Date.now(),
         })
+        rememberSnapshot(id, 0, snapshot)
         // The cursor only moves on a reply that happened: a failed turn doesn't skip anyone.
         // Both of these write through the *current* chat. Skip them if you navigated to another
         // one while this streamed, the message above already landed in the right chat.
@@ -994,7 +996,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       // Agent pass over the finished reply.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
+        const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
         text = pass.text
         passOriginal = pass.original
         passFail = pass.failed
@@ -1036,7 +1038,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
     if (text) {
-      await storage.put('messages', {
+      const id = await storage.put('messages', {
         ownerId: currentOwnerId(),
         chatId: chat.id!,
         role: 'assistant',
@@ -1044,7 +1046,6 @@ export const useChats = create<ChatState>()((set, get) => ({
         speakerId: speaker.id,
         speakerName: speaker.name, // copied, not looked up: survives deleting the character
         // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
-        requestSnapshots: [snapshot],
         reasonings: [reasoning || undefined],
         reasoningEnd: reasoningEndOf(text, connection),
         // Parallel to swipes as well: what the writing model said, before the pass.
@@ -1055,6 +1056,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
         createdAt: Date.now(),
       })
+      rememberSnapshot(id, 0, snapshot)
       // The cursor only moves on a reply that happened, so a failed turn doesn't skip anyone.
       // Both of these write through the *current* chat, so skip them if you navigated to another
       // one while this streamed, the message above already landed in the right chat.
@@ -1154,7 +1156,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       // Agent pass, same as the send path.
       if (text && !controller.signal.aborted) {
         set({ passing: true })
-        const pass = await agentPass(chat, text, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
+        const pass = await agentPass(chat, text, get().messages.slice(0, at), controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
         text = pass.text
         passOriginal = pass.original
         passFail = pass.failed
@@ -1193,7 +1195,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       speakingName: '',
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
-    const regen = regenerated(target, text, snapshot, reasoning, instruction)
+    const regen = regenerated(target, text, reasoning, instruction)
     // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
     // count itself. An older message's holes stay where they belong.
     const passedRegen = regen && withAcrostic(withPass(regen, passOriginal, passFail, joinNotes(reply.note, passSummary)), reply.acrostic)
@@ -1201,6 +1203,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     const updated = tracked ? withTrackerUpdate(passedRegen, tracked) : passedRegen
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
+      rememberSnapshot(target.id!, swipeIndex(updated), snapshot)
       // Same as retry: don't reload if you've moved to another chat mid-stream, blip instead.
       if (get().chat?.id === chat.id) await get().load(chat.id!)
       if (get().viewingChatId !== chat.id) {
@@ -1328,12 +1331,14 @@ export const useChats = create<ChatState>()((set, get) => ({
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
     // Joined raw. What the model sent is what's stored, and it decides its own leading space.
-    const joined = added ? continued(target, prefix + added, snapshot, reasoning) : null
+    const joined = added ? continued(target, prefix + added, reasoning) : null
     // The whole reply parses again against the history before it: the continuation may carry the tag.
     const tracked = joined && trackerUpdate(character, chat, get().messages.slice(0, -1), joined.content, connection)
     const updated = tracked ? withTrackerUpdate(joined, tracked) : joined
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
+      // The continuation's request is the one that produced the text as it now stands.
+      rememberSnapshot(target.id!, swipeIndex(updated), snapshot)
       if (get().chat?.id === chat.id) await get().load(chat.id!)
       if (get().viewingChatId !== chat.id) {
         useBlips.getState().mark(target.speakerId ?? chat.characterId)
@@ -1374,7 +1379,7 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     let result: PassResult
     try {
-      result = await agentPass(chat, source, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), true, cleanOnly)
+      result = await agentPass(chat, source, get().messages.slice(0, at), controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), true, cleanOnly)
     } catch {
       // Only an abort reaches here, and a stopped rewrite leaves the message exactly as it was.
       set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
@@ -1421,6 +1426,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     const updated = deletedSwipes(message, indices)
     if (!updated) return get().deleteMessage(messageId)
     await storage.put('messages', updated as unknown as StoredRecord)
+    forgetSwipes(messageId, indices)
     await get().load(message.chatId)
   },
 

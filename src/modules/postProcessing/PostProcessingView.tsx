@@ -5,14 +5,16 @@ import { useAppearance, useSettings } from '../../core/stores/settingsStore'
 import { usePostStacks } from '../../core/stores/postStackStore'
 import { useChats } from '../../core/stores/chatStore'
 import { passOriginalFor } from '../../core/stores/swipes'
-import { defaultPostStackConfig, runStages, type AcrosticConfig, type PostStackConfig } from '../../core/agent/postStack'
+import { defaultFlowPassConfig, defaultPostStackConfig, runStages, type AcrosticConfig, type FlowPassConfig, type PostStackConfig } from '../../core/agent/postStack'
 import type { AgentStyle } from '../../core/agent/agentConfig'
 import { newLexiconEntry, type LexiconEntry } from '../../core/quality/lexicon'
 import type { IgnorePair } from '../../core/hammer/exclusions'
 import { testReplies, type TesterHit } from '../../core/agent/explain'
 import { lintRules, type LintConfig, type LintProfile } from '../../core/agent/lintRules'
+import { defaultFlowConfig, defaultFlowStyle, flowRules, type FlowConfig, type FlowStyle } from '../../core/agent/flowRules'
+import { previewShape } from '../../core/agent/styleDraw'
 import { ruleName } from '../../core/agent/rules'
-import { loadArousal } from '../../core/quality/arousal'
+import { loadVad } from '../../core/quality/vad'
 import type { Chat } from '../../core/storage/types'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import RulesPanel from './RulesPanel'
@@ -20,10 +22,10 @@ import { exportPostStack, parsePostStack } from './postStackFile'
 import './postProcessing.css'
 
 /** The stages, in the order the pass runs them. */
-type StageId = 'acrostic' | 'swaps' | 'lint' | 'rules' | 'ignore'
+type StageId = 'acrostic' | 'swaps' | 'lint' | 'rules' | 'flow' | 'ignore'
 
 /** Which stage a tester key belongs to. */
-const stageOf: Record<string, StageId> = { swap: 'swaps', lint: 'lint', rule: 'rules' }
+const stageOf: Record<string, StageId> = { swap: 'swaps', lint: 'lint', rule: 'rules', flow: 'flow' }
 
 const splitKey = (key: string) => {
   const at = key.indexOf(':')
@@ -61,6 +63,9 @@ export default function PostProcessingView() {
   const stack = stacks.find((s) => s.id === selectedId) ?? stacks.find((s) => s.id === agent.defaultStackId) ?? stacks[0]
   const config = useMemo(() => stack?.config ?? defaultPostStackConfig(), [stack])
   const ignore = useMemo(() => runStages(config, tagRules).ignore ?? [], [config, tagRules])
+  // A stack saved before the detector stage existed has neither field.
+  const flow = config.flow ?? defaultFlowConfig
+  const style = config.style ?? defaultFlowStyle
   const patch = (over: Partial<PostStackConfig>) => stack?.id && patchConfig(stack.id, over)
   const toggle = (id: StageId) => setOpen(open === id ? null : id)
 
@@ -82,6 +87,7 @@ export default function PostProcessingView() {
       return entry ? `Word swap: ${entry.phrase} → ${entry.replacement || 'removed'}` : id
     }
     if (kind === 'lint') return lintRules.find((r) => r.id === id)?.label ?? id
+    if (kind === 'flow') return flowRules.find((r) => r.id === id)?.label ?? id
     const rule = config.rules.list.find((r) => r.id === id)
     if (!rule) return id
     return `${ruleName(rule)} · would ${rule.action === 'swap' ? 'replace' : rule.action}`
@@ -97,7 +103,7 @@ export default function PostProcessingView() {
   const runTester = async (chatId: number) => {
     const messages = await useChats.getState().messagesOf(chatId)
     // The style checks' arousal term reads a lexicon that loads on demand.
-    await loadArousal()
+    await loadVad()
     // As the model wrote them: a reply the pass already cleaned would hide what the rules catch.
     setReplies(messages.filter((m) => m.role === 'assistant').map((m) => passOriginalFor(m) ?? m.content.slice(m.reasoningEnd ?? 0)))
   }
@@ -296,6 +302,23 @@ export default function PostProcessingView() {
                     onChange={(list) => patch({ rules: { ...config.rules, list } })}
                   />
                 </StageHead>
+                <StageHead
+                  id="flow"
+                  title="Detectors"
+                  summary={`${flowRules.length - flow.off.length} on${firedNote('flow', flowRules.map((r) => r.id))}`}
+                  enabled={flow.enabled}
+                  open={open === 'flow'}
+                  onOpen={() => toggle('flow')}
+                  onToggleEnabled={(enabled) => patch({ flow: { ...flow, enabled } })}
+                >
+                  <FlowEditor
+                    flow={flow}
+                    style={style}
+                    hits={hits}
+                    focusKey={focusKey}
+                    onChange={(over) => patch(over)}
+                  />
+                </StageHead>
               </ul>
 
               <section className="card postStage">
@@ -349,6 +372,33 @@ export default function PostProcessingView() {
                   onChange={(e) => patch({ maxTries: Math.max(1, Number(e.target.value) || 1) })}
                 />
               </label>
+
+              <label className="postGlobalField" title="Recent chat messages sent with each rewrite.">
+                Context messages
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={config.contextMessages ?? 0}
+                  onChange={(e) => patch({ contextMessages: Math.max(0, Number(e.target.value) || 0) })}
+                />
+              </label>
+
+              <FlowPassFields flowPass={config.flowPass ?? defaultFlowPassConfig} onChange={(flowPass) => patch({ flowPass })} />
+
+              <section className="card postStage postPassCard">
+                <label className="checkboxRow">
+                  <input
+                    type="checkbox"
+                    checked={config.dialoguePass?.enabled ?? true}
+                    onChange={(e) => patch({ dialoguePass: { enabled: e.target.checked } })}
+                  />
+                  Dialogue pass
+                </label>
+                <p className="hint">
+                  Runs last. One call that makes speech sound spoken and answer the last message. It may add one line. Narration stays word for word.
+                </p>
+              </section>
             </>
           )}
         </section>
@@ -592,6 +642,127 @@ function LintEditor({
               />
               {rule.label}
               {hits && <span className="postHitCount">{hitsLabel(hits[`lint:${rule.id}`] ?? 0)}</span>}
+            </label>
+            <p className="hint">{rule.description}</p>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+const lorem = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua'.split(' ')
+const loremWords = (count: number, from: number) => Array.from({ length: count }, (_, i) => lorem[(from + i) % lorem.length]).join(' ')
+
+/** A made-up reply drawn to the style's narration range, the same draw the pass makes. No request. */
+function ShapePreview({ style }: { style: FlowStyle }) {
+  const [seed, setSeed] = useState(1)
+  const { window, ratio, shape } = useMemo(() => previewShape(style, seed), [style, seed])
+  const percent = (n: number) => `${Math.round(n * 100)}%`
+  return (
+    <div className="postShapePreview">
+      <div className="postShapeHead">
+        <span className="hint">
+          Narration {percent(ratio)} · this reply's range {percent(window[0])}–{percent(window[1])}
+        </span>
+        <button type="button" className="postShapeReroll" onClick={() => setSeed(seed + 1)}>
+          Reroll
+        </button>
+      </div>
+      {shape.map((p, i) => {
+        const narration = <span className="postShapeNarration">{loremWords(p.narration, i * 7)}</span>
+        const dialogue = p.dialogue > 0 && <span className="postShapeDialogue">"{loremWords(p.dialogue, i * 7 + p.narration)}"</span>
+        return (
+          <p key={i} className="postShapeParagraph">
+            {p.dialogueFirst ? dialogue : narration} {p.dialogueFirst ? narration : dialogue}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The whole-reply pass has no switch: it runs whenever post-processing does. Only its guards are set here. */
+function FlowPassFields({ flowPass, onChange }: { flowPass: FlowPassConfig; onChange: (flowPass: FlowPassConfig) => void }) {
+  const set = (over: Partial<FlowPassConfig>) => onChange({ ...flowPass, ...over })
+  const hundredths = (value: string) => Math.min(100, Math.max(0, Number(value) || 0)) / 100
+  return (
+    <section className="card postStage postPassCard">
+      <p className="hint">Flow pass: one call over the finished reply for transitions and rhythm. Dialogue stays word for word.</p>
+      <label className="postGlobalField" title="How much the sentence count may change, as a share of the reply's sentences.">
+        Sentence drift %
+        <input type="number" min={0} max={100} value={Math.round(flowPass.sentenceDrift * 100)} onChange={(e) => set({ sentenceDrift: hundredths(e.target.value) })} />
+      </label>
+      <label className="postGlobalField" title="Largest change in the reply's mean valence and dominance, in hundredths. Arousal gets two thirds of it.">
+        Feeling swing
+        <input type="number" min={0} max={100} value={Math.round(flowPass.swing * 100)} onChange={(e) => set({ swing: hundredths(e.target.value) })} />
+      </label>
+      <label className="postGlobalField" title="Extra room, in hundredths, when the change moves toward the message being answered.">
+        Toward last message
+        <input type="number" min={0} max={100} value={Math.round(flowPass.towardLast * 100)} onChange={(e) => set({ towardLast: hundredths(e.target.value) })} />
+      </label>
+    </section>
+  )
+}
+
+function FlowEditor({
+  flow,
+  style,
+  hits,
+  focusKey,
+  onChange,
+}: {
+  flow: FlowConfig
+  style: FlowStyle
+  hits?: Record<string, number>
+  focusKey: string | null
+  onChange: (over: { flow?: FlowConfig; style?: FlowStyle }) => void
+}) {
+  const setStyle = (over: Partial<FlowStyle>) => onChange({ style: { ...style, ...over } })
+  const percent = (n: number) => Math.round(n * 100)
+  const ratio = (value: string) => Math.min(100, Math.max(0, Number(value) || 0)) / 100
+  const [min, max] = style.narrationRatio
+  return (
+    <>
+      <p className="hint">Runs after the rules. Code finds each problem and a model call rewrites that passage.</p>
+      <label className="postGlobalField" title="Share of words outside quoted speech.">
+        Narration, min %
+        <input type="number" min={0} max={100} value={percent(min)} onChange={(e) => setStyle({ narrationRatio: [ratio(e.target.value), max] })} />
+      </label>
+      <label className="postGlobalField" title="Share of words outside quoted speech.">
+        Narration, max %
+        <input type="number" min={0} max={100} value={percent(max)} onChange={(e) => setStyle({ narrationRatio: [min, ratio(e.target.value)] })} />
+      </label>
+      <label className="postGlobalField" title="How far each reply's narration range may slide, as a share of the range's width.">
+        Noise %
+        <input type="number" min={0} max={100} value={Math.round((style.noise ?? 0) * 100)} onChange={(e) => setStyle({ noise: ratio(e.target.value) })} />
+      </label>
+      <ShapePreview style={style} />
+      <label className="postGlobalField">
+        Body beats per reply
+        <input type="number" min={0} max={20} value={style.bodyBeatsPerReply} onChange={(e) => setStyle({ bodyBeatsPerReply: Math.max(0, Number(e.target.value) || 0) })} />
+      </label>
+      <label className="postGlobalField" title="Fragments of three words or fewer in a row before a hit.">
+        Staccato run
+        <input type="number" min={2} max={10} value={style.staccatoRun} onChange={(e) => setStyle({ staccatoRun: Math.max(2, Number(e.target.value) || 2) })} />
+      </label>
+      <ul className="postLintList">
+        {flowRules.map((rule) => (
+          <li
+            key={rule.id}
+            className={hits && !hits[`flow:${rule.id}`] ? 'postRuleNoHits' : undefined}
+            ref={focusKey === `flow:${rule.id}` ? scrollNearest : undefined}
+          >
+            <label className="checkboxRow">
+              <input
+                type="checkbox"
+                checked={!flow.off.includes(rule.id)}
+                onChange={(e) =>
+                  onChange({ flow: { ...flow, off: e.target.checked ? flow.off.filter((id) => id !== rule.id) : [...flow.off, rule.id] } })
+                }
+              />
+              {rule.label}
+              {hits && <span className="postHitCount">{hitsLabel(hits[`flow:${rule.id}`] ?? 0)}</span>}
             </label>
             <p className="hint">{rule.description}</p>
           </li>

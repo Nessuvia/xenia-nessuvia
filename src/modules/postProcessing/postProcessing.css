@@ -320,3 +320,40 @@
     overflow-y: visible;
   }
 }
+
+.postPassCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.postShapePreview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surfaceSunken);
+}
+
+.postShapeHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.postShapeParagraph {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.postShapeNarration {
+  color: var(--textMuted);
+}
+
+.postShapeDialogue {
+  color: var(--accent);
+}

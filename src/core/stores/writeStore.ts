@@ -978,7 +978,6 @@ export const useWrite = create<WriteState>()((set, get) => ({
       ...block,
       swipes: undefined,
       swipeIndex: undefined,
-      requestSnapshots: undefined,
       reasonings: undefined,
       instructions: undefined,
       content: '',
@@ -1083,6 +1082,6 @@ async function commitSwipe(
     ((await storage.get('chapters', chapterId)) as unknown as Chapter | undefined)
   const block = chapter?.blocks.find((b) => b.id === blockId)
   if (!block) return
-  const next = regenerated(block, added.trim(), undefined, reasoning, instruction)
+  const next = regenerated(block, added.trim(), reasoning, instruction)
   if (next) await putBlock(get, set, chapterId, next, true)
 }

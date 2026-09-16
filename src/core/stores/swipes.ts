@@ -12,7 +12,6 @@ export interface Swipeable {
   content: string
   swipes?: string[]
   swipeIndex?: number
-  requestSnapshots?: (string | undefined)[]
   reasonings?: (string | undefined)[]
   /** What the user asked for when producing each swipe. Parallel to `swipes`, holes where a swipe
    *  was a plain re-roll with nothing typed. */
@@ -53,7 +52,6 @@ function seeded(message: Swipeable): string[] {
 export function regenerated<T extends Swipeable>(
   message: T,
   text: string,
-  snapshot?: string,
   reasoning?: string,
   instruction?: string,
 ): T | null {
@@ -62,12 +60,8 @@ export function regenerated<T extends Swipeable>(
   // first real text becomes it rather than sitting behind a blank alternate.
   const base = seeded(message)
   const swipes = [...(base.length === 1 && !base[0].trim() ? [] : base), text]
-  // Snapshots are parallel to swipes: the array is padded rather than appended to blindly.
-  // A message from before snapshots existed has holes, and a hole displays as unavailable.
-  const requestSnapshots = [...(message.requestSnapshots ?? [])]
-  requestSnapshots.length = swipes.length - 1
-  requestSnapshots.push(snapshot)
-  // reasonings pad the same way, old swipes without a captured reasoning stay holes.
+  // Reasonings are parallel to swipes: padded rather than appended to blindly, so old swipes
+  // without a captured reasoning stay holes.
   const reasonings = [...(message.reasonings ?? [])]
   reasonings.length = swipes.length - 1
   reasonings.push(reasoning || undefined)
@@ -85,7 +79,6 @@ export function regenerated<T extends Swipeable>(
     swipes,
     swipeIndex: swipes.length - 1,
     content: text,
-    requestSnapshots,
     reasonings,
     instructions,
     passOriginals,
@@ -97,33 +90,23 @@ export function regenerated<T extends Swipeable>(
  * and it replaces the selected swipe in place. A continuation is not a new take on the message.
  * It must not become a swipe of its own; re-rolling still does that.
  *
- * The snapshot for that swipe becomes the continuation's request, which is the one that produced the
- * text as it now stands. Reasoning accumulates instead of replacing: both passes really happened.
+ * Reasoning accumulates instead of replacing: both passes really happened.
  */
 export function continued<T extends Swipeable>(
   message: T,
   text: string,
-  snapshot?: string,
   reasoning?: string,
 ): T | null {
   if (!text) return null
   const swipes = seeded(message)
   const at = Math.min(swipeIndex(message), swipes.length - 1)
   swipes[at] = text
-  const requestSnapshots = [...(message.requestSnapshots ?? [])]
   const reasonings = [...(message.reasonings ?? [])]
-  // Pad to the swipe count first: an older message's arrays can be shorter than its swipes, and
+  // Pad to the swipe count first: an older message's array can be shorter than its swipes, and
   // assigning past the end would leave holes anywhere but the slot being written.
-  requestSnapshots.length = swipes.length
   reasonings.length = swipes.length
-  if (snapshot) requestSnapshots[at] = snapshot
   if (reasoning) reasonings[at] = reasonings[at] ? `${reasonings[at]}\n\n${reasoning}` : reasoning
-  return { ...message, swipes, swipeIndex: at, content: text, requestSnapshots, reasonings }
-}
-
-/** The request that produced the currently selected swipe, if it was kept. */
-export function snapshotFor(message: Swipeable): string | undefined {
-  return message.requestSnapshots?.[swipeIndex(message)]
+  return { ...message, swipes, swipeIndex: at, content: text, reasonings }
 }
 
 /** The model's reasoning for the currently selected swipe, if any was captured. */
@@ -241,7 +224,6 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     swipes,
     swipeIndex: at,
     content: swipes[at],
-    requestSnapshots: keep(message.requestSnapshots),
     reasonings: keep(message.reasonings),
     instructions: keep(message.instructions),
     passOriginals: keep(message.passOriginals),

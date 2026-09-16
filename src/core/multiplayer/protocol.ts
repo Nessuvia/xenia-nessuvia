@@ -179,7 +179,7 @@ const knownTypes = new Set([...guestTypes, ...hostTypes])
 
 /**
  * Strip a stored Message to what a guest may see. The only outward path for message data.
- * Drops requestSnapshots (the request itself, and up to ~256 KB per swipe), swipes, reasonings,
+ * Drops swipes, reasonings,
  * and every id except the message's own. Builds a fresh object rather than spreading and deleting:
  * a field added to `Message` later never leaks through.
  */

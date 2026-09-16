@@ -236,10 +236,6 @@ export interface Message {
   /** Which character said this, in a group chat. Absent = the chat's single character. */
   speakerId?: number
   speakerName?: string
-  /** The request that produced each swipe, parallel to `swipes`, for the inspector. Each entry is
-   *  a key-free JSON string, undefined where no snapshot was taken or it was past ~256 KB.
-   *  Unindexed. */
-  requestSnapshots?: (string | undefined)[]
   /** The text as the writing model produced it, for each swipe the agent pass changed. `content`
    *  and `swipes[i]` hold what the pass produced; this holds what was said first. Holes on swipes
    *  the pass left alone. Unindexed. Original and final only, no intermediate stages. */

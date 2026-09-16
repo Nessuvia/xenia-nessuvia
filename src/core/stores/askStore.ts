@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ChatMessage } from '../connectors/connectorInterface'
 import { sendMessage } from '../connectors/openaiCompatible'
-import { snapshotOf } from '../connectors/snapshot'
 import { currentOwnerId } from '../storage/storageInterface'
 import type { Message } from '../storage/types'
 import { activeConnection, defaultAssistantPrompt, useSettings } from './settingsStore'
@@ -14,7 +13,7 @@ import { maxTokensOf } from '../params/connectionParams'
 
 /**
  * Ask turns are `Message` records so the whole Chat message UI works on them unchanged, swipes,
- * snapshots, reasoning, edit, delete. They live in localStorage rather than Dexie: there is one
+ * reasoning, edit, delete. They live in localStorage rather than Dexie: there is one
  * Ask conversation, not a list of them, and `chatId` is 0 for all of them.
  */
 export type AskTurn = Message
@@ -140,7 +139,6 @@ export const useAsk = create<AskState>()(
         let reply = ''
         let reasoning = ''
         let finishReason = ''
-        const snapshot = snapshotOf(messages, connection)
         try {
           for await (const chunk of sendMessage(messages, connection, controller.signal)) {
             if (chunk.reasoning) {
@@ -158,7 +156,7 @@ export const useAsk = create<AskState>()(
             abort = null
             // Whatever streamed is kept, same as Stop.
             set({
-              turns: reply ? [...turns, assistantTurn(reply, snapshot, reasoning)] : turns,
+              turns: reply ? [...turns, assistantTurn(reply, reasoning)] : turns,
               streaming: false,
               streamingText: '',
                   error: (err as Error).message,
@@ -170,7 +168,7 @@ export const useAsk = create<AskState>()(
         }
 
         set({
-          turns: reply ? [...turns, assistantTurn(reply, snapshot, reasoning)] : turns,
+          turns: reply ? [...turns, assistantTurn(reply, reasoning)] : turns,
           streaming: false,
           streamingText: '',
               error:
@@ -208,7 +206,6 @@ export const useAsk = create<AskState>()(
         let text = ''
         let reasoning = ''
         let finishReason = ''
-        const snapshot = snapshotOf(messages, connection)
         try {
           for await (const chunk of sendMessage(messages, connection, controller.signal)) {
             if (chunk.reasoning) {
@@ -236,7 +233,7 @@ export const useAsk = create<AskState>()(
           abort = null
         }
 
-        const updated = regenerated(target, text, snapshot, reasoning)
+        const updated = regenerated(target, text, reasoning)
         set((s) => ({
           streaming: false,
           streamingText: '',
@@ -298,14 +295,13 @@ export function assistantName(): string {
   return askCharacter()?.name || 'Assistant'
 }
 
-function assistantTurn(content: string, snapshot: string, reasoning: string): AskTurn {
+function assistantTurn(content: string, reasoning: string): AskTurn {
   return withId({
     ownerId: currentOwnerId(),
     chatId: 0,
     role: 'assistant',
     content,
     // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
-    requestSnapshots: [snapshot],
     reasonings: [reasoning || undefined],
     createdAt: Date.now(),
   })

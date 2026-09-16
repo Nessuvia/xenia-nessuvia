@@ -21,10 +21,10 @@ import {
   passOriginalFor,
   passSummaryFor,
   reasoningFor,
-  snapshotFor,
   swipeCount,
   swipeIndex,
 } from '../../core/stores/swipes'
+import { snapshotFor } from '../../core/stores/snapshots'
 import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
 import MakeRulePopover from './MakeRulePopover'
 import { reasoningSpan } from '../../core/prompt/reasoning'

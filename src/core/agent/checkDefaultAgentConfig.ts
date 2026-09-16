@@ -34,7 +34,23 @@ assert.equal(swapped('He ordered a biscuit and a sweet tea he didn\'t want.'), '
 assert.equal(swapped('He knew she didn\'t want it.'), 'He knew she didn\'t want it.')
 assert.equal(swapped('"Fine," Travis said in a measured tone.'), '"Fine," Travis said.')
 assert.equal(swapped('He circled it once, twice, mapping the entrances.'), 'He circled it twice.')
-assert.equal(swapped('He sat, listening to a mower, and took the bottle.'), 'He sat, and took the bottle.')
+// Only a trailing -ing tail goes: one followed by ", and" or carrying its own timing stays.
+assert.equal(swapped('He sat, listening to a mower, and took the bottle.'), 'He sat, listening to a mower, and took the bottle.')
+assert.equal(swapped('He set the phone down, rubbing his temples.'), 'He set the phone down.')
+assert.equal(swapped('He sat up, straightening when he heard footsteps.'), 'He sat up, straightening when he heard footsteps.')
+// Reassurance fragments send their paragraph; real sentences and speech don't.
+assert.ok(ops('He would keep it small. Nothing that sounded like an opening.').includes('rewriteParagraph'))
+assert.ok(ops('He waved. Nothing dramatic.').includes('rewriteParagraph'))
+assert.ok(ops('He waved. Just a greeting.').includes('rewriteParagraph'))
+assert.deepEqual(ops('Nothing happened.'), ['keep'])
+assert.deepEqual(ops('No one answered.'), ['keep'])
+assert.deepEqual(ops('"Nothing to see here."'), ['keep'])
+// Abstract things hanging in a room, and smiles that creep.
+assert.ok(ops('The word asshole hung in the room like smoke.').includes('delete'))
+assert.ok(!ops('A smile crept up halfway before he caught it.').includes('keep'))
+assert.deepEqual(ops('He crept down the hall.'), ['keep'])
+// Short sentences in speech are how people talk.
+assert.deepEqual(ops('"Right. Yeah. Sorry." He rubbed his face.'), ['keep', 'keep'])
 assert.equal(swapped('He did nothing, something he regretted.'), 'He did nothing, something he regretted.')
 assert.equal(swapped('She gripped the rail, knuckles pale.'), 'She gripped the rail.')
 assert.equal(swapped('He waited, his jaw tight.'), 'He waited.')

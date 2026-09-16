@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { applyLint, defaultLintConfig, type LintConfig } from '../lintRules.ts'
 import { sceneTemperature, quotedRanges } from '../../quality/temperature.ts'
-import { arousalOf, loadArousal } from '../../quality/arousal.ts'
+import { arousalOf, loadVad } from '../../quality/vad.ts'
 
 const fix: LintConfig = { ...defaultLintConfig, enabled: true, mode: 'fix' }
 const run = (text: string, over: Partial<LintConfig> = {}) => applyLint(text, { ...fix, ...over })
@@ -52,7 +52,7 @@ assert.equal(run('The dog barked at him.').text, 'The dog barked at him.')
 // Structural signals alone still rank shouting above narration.
 assert.ok(sceneTemperature('"Get out! NOW!" she screamed.') > sceneTemperature('The room was dark.'))
 
-await loadArousal()
+await loadVad()
 assert.equal(arousalOf('screamed'), arousalOf('scream'))
 assert.ok(arousalOf('scream')! > 0.5 && arousalOf('table')! < 0)
 

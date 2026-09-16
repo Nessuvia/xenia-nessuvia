@@ -1,5 +1,5 @@
 // Extension-ful imports on purpose: check scripts import this under `node --experimental-strip-types`.
-import { arousalOf } from './arousal.ts'
+import { arousalOf } from './vad.ts'
 
 /** Char ranges inside double quotes. A quote with no close on its line is just a character. */
 export function quotedRanges(text: string): [number, number][] {
@@ -21,7 +21,7 @@ export const inRanges = (ranges: [number, number][], at: number) => ranges.some(
 const words = (text: string) => text.toLowerCase().match(/[a-z']+/g) ?? []
 
 /**
- * How heated a paragraph reads, 0 to 1. Structural signals plus mean arousal from `arousal.ts`. Valence plays no
+ * How heated a paragraph reads, 0 to 1. Structural signals plus mean arousal from `vad.ts`. Valence plays no
  * part: a tender scene and a furious one both run hot.
  */
 export function sceneTemperature(text: string): number {

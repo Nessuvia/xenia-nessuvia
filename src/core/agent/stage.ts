@@ -77,8 +77,8 @@ export function changedRanges(before: string, after: string): [number, number][]
   return merged
 }
 
-/** Split `text`, which starts at `at` in the reply, into plain and flash runs. */
-export function flashed(text: string, at: number, ranges: [number, number][]): Marked[] {
+/** Split `text`, which starts at `at` in the reply, into plain runs and `mark` runs (flash by default). */
+export function flashed(text: string, at: number, ranges: [number, number][], mark: Mark = 'flash'): Marked[] {
   const out: Marked[] = []
   let from = 0
   for (const [s, e] of ranges) {
@@ -86,11 +86,23 @@ export function flashed(text: string, at: number, ranges: [number, number][]): M
     const end = Math.min(text.length, e - at)
     if (end <= start) continue
     if (start > from) out.push({ text: text.slice(from, start), mark: 'none' })
-    out.push({ text: text.slice(start, end), mark: 'flash' })
+    out.push({ text: text.slice(start, end), mark })
     from = end
   }
   if (from < text.length) out.push({ text: text.slice(from), mark: 'none' })
   return out
+}
+
+/** `after` with the words that differ from `before` marked fresh. How the whole-reply steps show what they changed. */
+export function freshRuns(before: string, after: string): Marked[] {
+  // Changed words with only whitespace between them fade in as one span, not word by word.
+  const joined: [number, number][] = []
+  for (const r of changedRanges(before, after)) {
+    const last = joined.at(-1)
+    if (last && !after.slice(last[1], r[0]).trim()) last[1] = r[1]
+    else joined.push([r[0], r[1]])
+  }
+  return flashed(after, 0, joined, 'fresh')
 }
 
 /** Join neighbouring runs with the same mark. Fewer runs keep markdown inside one render call. */

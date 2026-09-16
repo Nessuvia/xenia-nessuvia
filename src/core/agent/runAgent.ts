@@ -7,8 +7,13 @@ import { sentences } from '../quality/sentences.ts'
 import type { AgentRun } from './postStack.ts'
 import { flagMessage } from './rules.ts'
 import { applyLint, defaultLintConfig } from './lintRules.ts'
-import { loadArousal } from '../quality/arousal.ts'
-import { agentBeat, changedRanges, flashed, mergeMarks, type AgentStage, type Mark, type Marked } from './stage.ts'
+import { addsSpeech, echoes, findFlowHits, keepsSpeech } from './flowRules.ts'
+import { loadVad } from '../quality/vad.ts'
+import { defaultVadLimits, textVadAllows } from './vadGuard.ts'
+import { keepsCommitments } from './dialogueGuard.ts'
+import { drawNarrationWindow, textSeed } from './styleDraw.ts'
+import { quotedRanges } from '../quality/temperature.ts'
+import { agentBeat, changedRanges, flashed, freshRuns, mergeMarks, type AgentStage, type Mark, type Marked } from './stage.ts'
 
 /** One model call. Returns the reply text, or '' on failure. */
 export type Complete = (messages: ChatMessage[]) => Promise<string>
@@ -54,8 +59,41 @@ export function rewritesParagraph(failingFlags: Flag[][]): boolean {
   return failingFlags.length >= 2 || failingFlags.some((flags) => flags.some((f) => f.rule.wholeParagraph))
 }
 
+const maxFlowFixes = 8
+
 const sentenceSystem = 'You edit one sentence of a story reply. Keep its meaning, voice and tense. Reply with the new sentence only.'
+const passageSystem = 'You edit one passage of a story reply. Keep what happens, the dialogue word for word, and the tense. Use plain words. Add no new details and no dialogue tags. Reply with the new passage only.'
+const flowSystem = 'You smooth the flow of a story reply. Fix the transitions and rhythm between sentences. Keep every event, image and detail, the dialogue word for word, the tense and the paragraph breaks. Use plain words. Reply with the full reply only.'
+const dialogueSystem = 'You edit the dialogue in a story reply. Make each quoted line sound spoken, the way this character talks, and answer what was just said to them. You may add one short line of dialogue if it answers the last message and fits the chat. Keep the narration outside the quotes word for word, adding only a tag for a new line. Keep every name, number, refusal and question the dialogue already has. Use plain words. Reply with the full reply only.'
 const paragraphSystem = 'You edit one paragraph of a story reply. Keep its meaning, voice and tense. Reply with the new paragraph only.'
+
+/** The slice of a chat message `recentContext` reads. */
+export interface ContextMessage {
+  role: 'user' | 'assistant'
+  content: string
+  speakerName?: string
+  personaName?: string
+  reasoningEnd?: number
+}
+
+/** The last `count` messages as `Name: text`, think blocks left out. '' when there are none. */
+export function recentContext(messages: ContextMessage[], count: number): string {
+  // A stack saved before the field existed has no count, and sends none.
+  if (!(count > 0)) return ''
+  return messages
+    .slice(-count)
+    .map((m) => {
+      const name = m.role === 'user' ? (m.personaName ?? 'User') : (m.speakerName ?? 'Character')
+      return `${name}: ${m.content.slice(m.reasoningEnd ?? 0).trim()}`
+    })
+    .join('\n\n')
+}
+
+/** The scene around a paragraph: recent chat, then the paragraphs either side of it. */
+function surroundings(context: string | undefined, before: string | undefined, after: string | undefined): string {
+  const section = (label: string, text: string | undefined) => (text?.trim() ? `${label}:\n${text.trim()}\n\n` : '')
+  return section('Recent chat', context) + section('Before', before) + section('After', after)
+}
 
 function problems(flags: Flag[]): string {
   return flags.map((f) => `- ${flagMessage(f.rule, f.slice)}`).join('\n')
@@ -85,16 +123,16 @@ export async function runAgent(
   const flagsIn = (s: string) => agentFlags(s, config)
   const tries = Math.max(1, Math.floor(config.maxTries))
 
-  const tryRewrite = async (messages: ChatMessage[]): Promise<string | null> => {
+  const tryRewrite = async (messages: ChatMessage[], accept: (candidate: string) => boolean = () => true): Promise<string | null> => {
     for (let i = 0; i < tries; i++) {
       const candidate = swap((await complete(messages)).trim())
-      if (candidate && !flagsIn(candidate).length) return candidate
+      if (candidate && !flagsIn(candidate).length && accept(candidate)) return candidate
     }
     return null
   }
 
   // Style checks run once on the reply, not on rewrite candidates.
-  if (config.lint?.enabled) await loadArousal()
+  if (config.lint?.enabled) await loadVad()
   const linted = applyLint(swap(text), config.lint ?? defaultLintConfig, config.ignore ?? [])
   const swapped = linted.text
   let rewritten = 0
@@ -128,7 +166,11 @@ export async function runAgent(
         rows: plan.sents.map((s, i): { text: string | null; mark: Mark } => ({ text: s.text, mark: plan.ops[i] === 'keep' ? 'none' : 'pending' })),
       },
   )
+  // Set once the detector and whole-reply steps start: `parts` has collapsed to one string by then, and
+  // the paragraph plans above no longer describe it.
+  let override: Marked[] | null = null
   const marks = (): Marked[] =>
+    override ??
     mergeMarks(
       parts.flatMap((part, p): Marked[] => {
         const plan = plans[p]
@@ -165,6 +207,21 @@ export async function runAgent(
   }
   report(0)
 
+  /**
+   * Progress for the steps after the rule rewrites. Stylized shows `runs` and, with `pause`, holds a
+   * beat so a fresh span can fade in. Default blurs `pending`.
+   */
+  const show = async (runs: Marked[], pending: string[], pause: boolean) => {
+    if (done) return
+    if (!wait) {
+      onProgress?.(parts.join(''), pending)
+      return
+    }
+    override = mergeMarks(runs)
+    report(0)
+    if (pause) await wait(beat)
+  }
+
   // Top to bottom, on a timer of its own, so a slow rewrite never holds up the deletes below it.
   const deletes = async () => {
     for (let p = 0; p < parts.length; p += 2) {
@@ -187,11 +244,12 @@ export async function runAgent(
       const rows = shown[p]!.rows
       const unblur = (i: number) => (rows[i] = { text: sents[i].text, mark: 'none' })
       if (!failing.length) continue
+      const around = surroundings(config.context, parts[p - 2], parts[p + 2])
       if (rewritesParagraph(failing.map((i) => flags[i]))) {
         const candidate = await tryRewrite([
           { role: 'system', content: paragraphSystem },
-          { role: 'user', content: `Paragraph:\n${parts[p]}\n\nProblems:\n${problems(failing.flatMap((i) => flags[i]))}` },
-        ])
+          { role: 'user', content: `${around}Paragraph:\n${parts[p]}\n\nProblems:\n${problems(failing.flatMap((i) => flags[i]))}` },
+        ], (candidate) => !addsSpeech(parts[p], candidate) && !echoes(candidate, parts.filter((_, k) => k !== p).join('')))
         if (candidate) {
           parts[p] = candidate
           shown[p]!.whole = candidate
@@ -204,16 +262,38 @@ export async function runAgent(
         const i = failing[0]
         const candidate = await tryRewrite([
           { role: 'system', content: sentenceSystem },
-          { role: 'user', content: `Paragraph:\n${para}\n\nSentence:\n${sents[i].text}\n\nProblems:\n${problems(flags[i])}` },
-        ])
+          { role: 'user', content: `${around}Paragraph:\n${para}\n\nSentence:\n${sents[i].text}\n\nProblems:\n${problems(flags[i])}` },
+        ], (candidate) => !addsSpeech(sents[i].text, candidate) && !echoes(candidate, parts.map((part, k) => (k === p ? rebuild(para, sents, texts.map((t, j) => (j === i ? null : t))) : part)).join('')))
         if (candidate) {
           texts[i] = candidate
           rows[i] = { text: candidate, mark: 'fresh' }
           rewritten += 1
           parts[p] = rebuild(para, sents, texts)
         } else {
-          unblur(i)
-          kept += 1
+          // Escalate once: the sentence and its neighbours in this paragraph, rewritten together.
+          // A sentence can fail alone because the fix needs room its neighbours hold. Nothing goes wider.
+          const lo = texts[i - 1] != null ? i - 1 : i
+          const hi = texts[i + 1] != null ? i + 1 : i
+          const group = lo < hi ? para.slice(sents[lo].start, sents[hi].end) : ''
+          const without = texts.map((t, j) => (j >= lo && j <= hi ? null : t))
+          const merged =
+            group &&
+            (await tryRewrite(
+              [
+                { role: 'system', content: passageSystem },
+                { role: 'user', content: `${around}Paragraph:\n${para}\n\nPassage:\n${group}\n\nProblems:\n${problems(flags[i])}` },
+              ],
+              (candidate) => !addsSpeech(group, candidate) && !echoes(candidate, parts.map((part, k) => (k === p ? rebuild(para, sents, without) : part)).join('')),
+            ))
+          if (merged) {
+            texts.splice(lo, hi - lo + 1, merged, ...Array<null>(hi - lo).fill(null))
+            for (let j = lo; j <= hi; j++) rows[j] = j === lo ? { text: merged, mark: 'fresh' } : { text: null, mark: 'none' }
+            rewritten += 1
+            parts[p] = rebuild(para, sents, texts)
+          } else {
+            unblur(i)
+            kept += 1
+          }
         }
       }
       report(p + 1)
@@ -222,12 +302,118 @@ export async function runAgent(
     }
   }
 
+  // Message detectors, one hit at a time on the current text, detecting again after each fix so
+  // spans stay small and a fix that also clears a later hit saves its call.
+  // ponytail: capped at maxFlowFixes calls per reply; raise it if long replies stay rough.
+  let smoothed = 0
+  let smoothKept = 0
+  const flows = async () => {
+    if (!config.flow) return
+    const tried = new Set<string>()
+    // One draw per reply, from the text as it arrived, so every fix in the loop aims at the same window.
+    const style = { ...config.flow.style, narrationRatio: drawNarrationWindow(config.flow.style, textSeed(text)) }
+    for (let step = 0; step < maxFlowFixes; step++) {
+      const current = parts.join('')
+      const hit = findFlowHits(current, { enabled: true, off: config.flow.off }, style, config.ignore ?? [])
+        .find((h) => !tried.has(`${h.ruleId}:${current.slice(h.start, h.end)}`))
+      if (!hit) return
+      const passage = current.slice(hit.start, hit.end)
+      tried.add(`${hit.ruleId}:${passage}`)
+      const before = current.slice(0, hit.start)
+      const after = current.slice(hit.end)
+      await show(
+        [{ text: before, mark: 'none' }, { text: passage, mark: 'pending' }, { text: after, mark: 'none' }],
+        sentences(passage).map((s) => s.text),
+        false,
+      )
+      const candidate = await tryRewrite(
+        [
+          { role: 'system', content: passageSystem },
+          { role: 'user', content: `${surroundings(config.context, before, after)}Passage:\n${passage}\n\nProblems:\n- ${hit.note}` },
+        ],
+        // Speech is compared across the whole reply: a staccato span can sit inside a quote, and the
+        // passage alone then holds no quote marks to compare.
+        (candidate) => keepsSpeech(current, before + candidate + after) && !echoes(candidate, before + after),
+      )
+      if (!candidate) {
+        smoothKept++
+        await show([{ text: current, mark: 'none' }], [], false)
+        continue
+      }
+      // Collapse to one part: paragraph plans no longer line up once a passage crosses a break.
+      parts.splice(0, parts.length, before + candidate + after)
+      smoothed++
+      await show(freshRuns(current, parts[0]), [], true)
+    }
+  }
+
+  // The flow pass: one call over the whole reply once every smaller fix is in. The guards keep it to
+  // smoothing: sentence count within the stack's drift, speech word for word, no repeated takes, and
+  // no large swing in feeling except toward the message being answered.
+  let flowed = false
+  const flowPass = async () => {
+    if (!config.flowPass) return
+    const current = parts.join('')
+    if (!current.trim()) return
+    await loadVad()
+    const count = sentences(current).length
+    const drift = Math.max(1, Math.round(count * config.flowPass.sentenceDrift))
+    const candidate = await tryRewrite(
+      [
+        { role: 'system', content: flowSystem },
+        { role: 'user', content: `${surroundings(config.context, undefined, undefined)}Reply:
+${current}` },
+      ],
+      (candidate) =>
+        Math.abs(sentences(candidate).length - count) <= drift &&
+        keepsSpeech(current, candidate) &&
+        !echoes(candidate, '') &&
+        textVadAllows(current, candidate, config.lastMessage, config.flowPass!),
+    )
+    if (!candidate || candidate === current) return
+    parts.splice(0, parts.length, candidate)
+    flowed = true
+    await show(freshRuns(current, candidate), [], true)
+  }
+
+  // The dialogue pass: last, so nothing after it rewrites speech. The only step allowed to add a line.
+  let voiced = false
+  const dialoguePass = async () => {
+    if (!config.dialoguePass) return
+    const current = parts.join('')
+    if (!quotedRanges(current).length) return
+    await loadVad()
+    const candidate = await tryRewrite(
+      [
+        { role: 'system', content: dialogueSystem },
+        { role: 'user', content: `${surroundings(config.context, undefined, undefined)}Reply:
+${current}` },
+      ],
+      (candidate) =>
+        keepsCommitments(current, candidate) &&
+        !echoes(candidate, '') &&
+        textVadAllows(current, candidate, config.lastMessage, config.flowPass ?? defaultVadLimits),
+    )
+    if (!candidate || candidate === current) return
+    parts.splice(0, parts.length, candidate)
+    voiced = true
+    await show(freshRuns(current, candidate), [], true)
+  }
+
   try {
     if (wait) {
       // One beat with every hit flagged before anything resolves.
       if (deleted || plans.some((plan) => plan?.failing.length)) await wait(beat)
       await Promise.all([deletes(), rewrites()])
-    } else await rewrites()
+      await flows()
+      await flowPass()
+      await dialoguePass()
+    } else {
+      await rewrites()
+      await flows()
+      await flowPass()
+      await dialoguePass()
+    }
   } finally {
     done = true
   }
@@ -237,12 +423,18 @@ export async function runAgent(
     swap(text) !== text && 'swapped words',
     linted.hits.length && `${config.lint?.mode === 'fix' ? 'fixed' : 'flagged'} ${linted.hits.length} style ${linted.hits.length === 1 ? 'issue' : 'issues'}`,
     rewritten && `rewrote ${rewritten}`,
+    flowed && 'smoothed the flow',
+    voiced && 'reworked the dialogue',
+    smoothed && `smoothed ${smoothed} ${smoothed === 1 ? 'passage' : 'passages'}`,
     deleted && `deleted ${deleted}`,
   ].filter(Boolean).join(', ')
   return {
     text: final,
     summary: (final !== text || linted.hits.length) && summary ? `Post-processing ${summary}.` : undefined,
-    failed: kept ? `${kept} ${kept === 1 ? 'sentence' : 'sentences'} kept after ${tries} tries.` : undefined,
+    failed: [
+      kept && `${kept} ${kept === 1 ? 'sentence' : 'sentences'} kept after ${tries} tries.`,
+      smoothKept && `${smoothKept} ${smoothKept === 1 ? 'passage' : 'passages'} kept after ${tries} tries.`,
+    ].filter(Boolean).join(' ') || undefined,
   }
 }
 

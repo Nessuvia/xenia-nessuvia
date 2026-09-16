@@ -2,6 +2,7 @@
 import { sentences } from '../quality/sentences.ts'
 import type { AgentRun } from './postStack.ts'
 import { applyLint, defaultLintConfig, type LintHit } from './lintRules.ts'
+import { defaultFlowStyle, findFlowHits } from './flowRules.ts'
 import { agentSwap, operationFor, rewritesParagraph, sentenceFlags } from './runAgent.ts'
 import { ruleName } from './rules.ts'
 import type { PostStackConfig } from './postStack.ts'
@@ -39,6 +40,7 @@ export function testReplies(
       ...config.swaps.lexicon.flatMap((e) => lexiconSpans(text, e, ignore).map((s) => ({ key: `swap:${e.id}`, ...s }))),
       ...applyLint(text, lint, ignore).hits.map((h) => ({ key: `lint:${h.ruleId}`, start: h.start, end: h.end })),
       ...config.rules.list.flatMap((r) => ruleSpans(text, r, ignore).map((s) => ({ key: `rule:${r.id}`, ...s }))),
+      ...findFlowHits(text, { enabled: true, off: [] }, config.style ?? defaultFlowStyle, ignore).map((h) => ({ key: `flow:${h.ruleId}`, start: h.start, end: h.end })),
     ]
     for (const hit of found) counts[hit.key] = (counts[hit.key] ?? 0) + 1
     return found.sort((a, b) => a.start - b.start)
