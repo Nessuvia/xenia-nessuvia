@@ -15,6 +15,7 @@ import { useSettings } from '../stores/settingsStore'
 import { accessToken } from './dropboxAuth'
 import { dropboxContentHash } from './dropboxHash'
 import { dropboxConfigured, type DropboxConfig } from './dropboxConfig'
+import { apiArg, filePath, folderPath } from './dropboxPath'
 import type { Manifest, ObjectName, PulledTable } from './syncTypes'
 
 const rpc = 'https://api.dropboxapi.com/2'
@@ -26,46 +27,41 @@ function config(): DropboxConfig {
   return c
 }
 
-/** Dropbox wants a leading slash and no trailing one, and '' for the app folder's own root. A
- *  folder of '/' or 'books/' has to come out the same as 'books'. */
-function folderPath(c: DropboxConfig): string {
-  const folder = c.folder.replace(/^\/+|\/+$/g, '')
-  return folder ? `/${folder}` : ''
-}
-
-function filePath(c: DropboxConfig, name: string): string {
-  return `${folderPath(c)}/${name}.json`
+interface DropboxError {
+  error_summary?: string
+  error?: unknown
 }
 
 /**
- * The path travels in the `Dropbox-API-Arg` header, and a header can only carry ASCII. Dropbox
- * documents the escape: any character above 007F as a \uXXXX sequence. Reached by a folder name
- * with an accent in it.
+ * A Dropbox failure is JSON with an `error_summary` and a structured `error`. The summary alone
+ * isn't enough: Dropbox truncates it with a literal `...`, so a rejected upload reads `other/...`
+ * and names neither the call nor the reason. The endpoint and the full error object go in too.
  */
-function apiArg(value: unknown): string {
-  return JSON.stringify(value).replace(/[-￿]/g, (c) =>
-    `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
-  )
-}
-
-interface DropboxError {
-  error_summary?: string
-  error?: { '.tag'?: string }
-}
-
-/** A Dropbox failure is JSON with an `error_summary`, which reads like `path/not_found/...`. It's
- *  terse but it names the actual problem, which a bare status doesn't. */
-async function failure(response: Response): Promise<Error> {
+async function failure(endpoint: string, response: Response): Promise<Error> {
   const body = await response.text().catch(() => '')
-  if (response.status === 401) return new Error('Dropbox rejected the sign-in. Connect again.')
-  if (response.status === 429) return new Error('Dropbox is rate limiting this app. Try again shortly.')
-  let summary = ''
-  try {
-    summary = (JSON.parse(body) as DropboxError).error_summary ?? ''
-  } catch {
-    summary = body.slice(0, 200)
+  if (response.status === 401) {
+    return new Error(
+      `Dropbox rejected the sign-in on ${endpoint}. Disconnect and connect again, which is also what a change to the app's permissions needs: a token carries the scopes it was issued with.`,
+    )
   }
-  return new Error(summary || `Dropbox request failed (${response.status}).`)
+  if (response.status === 429) return new Error('Dropbox is rate limiting this app. Try again shortly.')
+
+  let parsed: DropboxError | null = null
+  try {
+    parsed = JSON.parse(body) as DropboxError
+  } catch {
+    // Not JSON at all, which is a gateway or a proxy answering rather than Dropbox.
+    return new Error(`${endpoint} failed (${response.status}). ${body.slice(0, 200)}`.trim())
+  }
+
+  const summary = parsed.error_summary ?? ''
+  // The structured half, which is where a truncated summary keeps the reason. Left off when it
+  // says nothing the summary didn't, so an ordinary error doesn't grow a JSON tail.
+  const detail =
+    parsed.error && JSON.stringify(parsed.error) !== `{".tag":"${summary.split('/')[0]}"}`
+      ? ` ${JSON.stringify(parsed.error)}`
+      : ''
+  return new Error(`${endpoint} failed (${response.status}): ${summary || 'no reason given'}${detail}`)
 }
 
 async function call(url: string, init: RequestInit): Promise<Response> {
@@ -87,7 +83,7 @@ async function rpcCall<T>(endpoint: string, body: unknown): Promise<T> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!response.ok) throw await failure(response)
+  if (!response.ok) throw await failure(endpoint, response)
   return (await response.json()) as T
 }
 
@@ -153,11 +149,11 @@ export async function pullTable(table: ObjectName): Promise<PulledTable | null> 
     headers: { 'Dropbox-API-Arg': apiArg({ path: filePath(c, table) }) },
   })
   if (response.status === 409) {
-    const error = await failure(response)
+    const error = await failure('/files/download', response)
     if (error.message.includes('path/not_found')) return null
     throw error
   }
-  if (!response.ok) throw await failure(response)
+  if (!response.ok) throw await failure('/files/download', response)
   const json = await response.text()
   return { json, hash: await dropboxContentHash(json) }
 }
@@ -180,7 +176,7 @@ export async function pushTable(table: ObjectName, json: string, _hash: string):
     },
     body: json,
   })
-  if (!response.ok) throw await failure(response)
+  if (!response.ok) throw await failure('/files/upload', response)
   return String(((await response.json()) as FileEntry).content_hash ?? '')
 }
 

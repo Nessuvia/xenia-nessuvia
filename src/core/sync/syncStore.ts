@@ -63,10 +63,21 @@ function step(label: string, done: number, total: number) {
   useSync.setState({ progress: { label, done, total, failed: false } })
 }
 
-/** Leaves the failing step on screen. `done` stays where it was, so the bar shows how far it got. */
-function fail(label: string) {
+/**
+ * Leaves the failing step on screen, with the reason appended to it rather than replacing it.
+ * `done` stays where it was, so the bar shows how far it got.
+ *
+ * The step's own label is the half that says which table and which direction, and a run that
+ * stops on the seventh upload is unreadable without it.
+ */
+function fail(reason: string) {
   useSync.setState((s) => ({
-    progress: { label, done: s.progress?.done ?? 0, total: s.progress?.total ?? 1, failed: true },
+    progress: {
+      label: `${s.progress?.label ?? 'Stopped'} ${reason}`,
+      done: s.progress?.done ?? 0,
+      total: s.progress?.total ?? 1,
+      failed: true,
+    },
   }))
 }
 
@@ -225,7 +236,7 @@ export const useSync = create<SyncState>()((set, get) => ({
       if (!settingsPulled) settings.setLastSyncedAt(Date.now())
       step(pulled.length || settingsPulled ? 'Done. Reloading.' : 'Done.', total, total)
     } catch (err) {
-      fail(`Stopped: ${message(err)}`)
+      fail(`stopped: ${message(err)}`)
       set({ error: message(err), status: 'idle' })
       return
     }
