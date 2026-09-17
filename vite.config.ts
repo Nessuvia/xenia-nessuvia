@@ -39,10 +39,12 @@ export default defineConfig({
         // The NRC VAD lexicon (~900 kB) only matters once style checks are on. Offline without
         // it, scene temperature rests on the structural signals.
         globIgnores: ['**/cl100k_base-*.js', '**/vadData-*.js'],
-        // The Dropbox OAuth redirect. It's precached, so the precache route already answers it,
-        // but the SPA fallback catches navigations and serving index.html here would boot the
-        // whole app inside the popup instead of the eight lines that read the code.
-        navigateFallbackDenylist: [/^\/dropbox\.html$/],
+        // The Dropbox OAuth redirect. Both spellings: Cloudflare's asset server strips the
+        // extension, so the browser is redirected from /dropbox.html to /dropbox before the page
+        // loads. Only the first is precached, and without this the SPA fallback answers the second
+        // with index.html, booting the whole app inside the popup instead of the eight lines that
+        // read the code. It looks like a sign-in that redirects and lands on Chat.
+        navigateFallbackDenylist: [/^\/dropbox(\.html)?$/],
       },
     }),
   ],

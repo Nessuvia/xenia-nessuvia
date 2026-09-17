@@ -4,9 +4,9 @@ import { usePalette } from '../../core/stores/palettesStore'
 import { tableNames, type TableName } from '../../core/storage/storageInterface'
 import { useSettings } from '../../core/stores/settingsStore'
 import { bucketConfigured, type BucketConfig } from '../../core/sync/bucketConfig'
-import { connectDropbox, forgetAccessToken, redirectUri } from '../../core/sync/dropboxAuth'
+import { connectDropbox, forgetAccessToken } from '../../core/sync/dropboxAuth'
 import { testDropbox } from '../../core/sync/dropboxClient'
-import { dropboxAppKey, dropboxConfigured } from '../../core/sync/dropboxConfig'
+import { dropboxConfigured } from '../../core/sync/dropboxConfig'
 import { r2AccountId, r2Endpoint, r2Region } from '../../core/sync/r2Endpoint'
 import { testBucket } from '../../core/sync/s3Client'
 import type { SyncProvider } from '../../core/sync/syncTypes'
@@ -502,12 +502,6 @@ function DropboxSection() {
       provider="dropbox"
       status={state === 'ok' ? 'Connected' : connected ? 'Signed in' : 'Not set up'}
     >
-      {!dropboxAppKey && (
-        <p className="syncNote">
-          This copy of the app has no Dropbox app key built in. See Dropbox setup below.
-        </p>
-      )}
-
       <div className="syncActions">
         {connected ? (
           <>
@@ -520,7 +514,7 @@ function DropboxSection() {
             <PrimedButton label="Disconnect" onFire={disconnect} disabled={busy} />
           </>
         ) : (
-          <button type="button" onClick={connect} disabled={busy || !dropboxAppKey}>
+          <button type="button" onClick={connect} disabled={busy}>
             {state === 'working' ? 'Waiting for Dropbox…' : 'Connect Dropbox'}
           </button>
         )}
@@ -547,42 +541,24 @@ function DropboxSection() {
   )
 }
 
-/** The redirect URI is the step that goes wrong, and Dropbox matches it character for character.
- *  Built from location.origin so it's right for whichever build is running. */
+/** What signing in gives Dropbox access to, and what it doesn't. The app registration is built
+ *  into this copy of the app, so there's nothing here for the user to set up. */
 function DropboxSetupSteps() {
-  const [copied, setCopied] = useState(false)
-  const uri = redirectUri()
-
   return (
     <details className="syncSetup">
-      <summary>Dropbox setup</summary>
-      <ol>
-        <li>
-          Create an app at dropbox.com/developers/apps: Scoped access, App folder, and a name of
-          your choosing.
-        </li>
-        <li>
-          On the Permissions tab, tick <code>files.content.read</code> and{' '}
-          <code>files.content.write</code>, then Submit.
-        </li>
-        <li>On the Settings tab, add this redirect URI:</li>
-      </ol>
-      <pre>{uri}</pre>
-      <button
-        type="button"
-        className="syncLinkButton"
-        onClick={() => {
-          navigator.clipboard.writeText(uri)
-          setCopied(true)
-        }}
-      >
-        {copied ? 'Copied' : 'Copy redirect URI'}
-      </button>
+      <summary>What this connects to</summary>
       <p className="syncNote">
-        Then copy the App key from that page into <code>dropboxAppKey</code> in{' '}
-        <code>src/core/sync/dropboxConfig.ts</code> and rebuild. The key is public: the sign-in uses
-        PKCE, which needs no app secret. Files go in Apps/&lt;your app name&gt; and the app cannot
-        see the rest of your Dropbox.
+        Connect opens Dropbox in a new window and asks for access to one folder,
+        Apps/Xenia Nessuvia, inside your own Dropbox. The app cannot read the rest of your files.
+      </p>
+      <p className="syncNote">
+        Your library is written there as JSON files, one per table. They are the same files Export
+        writes, so you can open them, copy them, or keep your own backups of them. Nothing passes
+        through a server of ours.
+      </p>
+      <p className="syncNote">
+        Disconnect removes the sign-in from this browser. To revoke it everywhere, remove the app
+        under Connected apps in your Dropbox account settings.
       </p>
     </details>
   )

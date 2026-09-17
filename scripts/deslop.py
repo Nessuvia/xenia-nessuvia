@@ -23,7 +23,7 @@ TOP_FILES = ["CLAUDE.md", "README.md"]
 EXTS = {".ts", ".tsx", ".css", ".md"}
 
 # check* scripts hold prose inside assert messages and test fixtures. Not worth the risk.
-EXCLUDE_PARTS = {"node_modules", "dist", "assets", "kanban", ".git", "resources"}
+EXCLUDE_PARTS = {"node_modules", "dist", "assets", ".git", "resources"}
 EXCLUDE_NAME = re.compile(r"^(check|LICENSE)|\.min\.|\.lock")
 
 

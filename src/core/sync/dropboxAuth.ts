@@ -120,7 +120,10 @@ function waitForCode(popup: Window): Promise<string> {
       const data = event.data as { source?: string; code?: string; error?: string } | null
       if (!data || data.source !== 'dropboxAuth') return
       if (data.code) return done(() => resolve(data.code as string))
-      done(() => reject(new Error(data.error ?? 'Dropbox did not return a code.')))
+      // `||`, not `??`: the callback page always sends an `error` string and it's empty when
+      // Dropbox sent neither a code nor a reason. That case has to reach the fallback message
+      // rather than surfacing as a blank error.
+      done(() => reject(new Error(data.error || 'Dropbox did not return a code.')))
     }
     window.addEventListener('message', onMessage)
     // A closed popup posts nothing, and the promise would hang on a user who changed their mind.
