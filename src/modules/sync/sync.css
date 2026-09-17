@@ -53,23 +53,52 @@
 
 /* Each section is a card in one column. The base paint lives here; skins repaint `.card`, which
    is why that class is on the element too. */
-.syncSection {
+/* `display: flex` only while open: a shut <details> is its summary alone, and the column gap
+   would otherwise pad the card as though the body were still there. */
+.syncSection[open] {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 100%;
   gap: 14px;
+}
+
+.syncSection {
+  width: 100%;
   padding: 16px 18px;
   border-radius: calc(var(--radius) + 2px);
   background: var(--surface);
 }
 
+/* The card's summary row. `list-style: none` plus the WebKit marker rule drops the browser's own
+   triangle: the chevron beside the title is the remixicon one, so there aren't two. */
 .syncSectionHead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   width: 100%;
+  cursor: pointer;
+  list-style: none;
+}
+
+.syncSectionHead::-webkit-details-marker {
+  display: none;
+}
+
+/* Points right when shut and down when open, the way a disclosure reads. */
+.syncChevron {
+  flex: none;
+  color: var(--textMuted);
+  transition: transform 120ms;
+}
+
+.syncSection[open] > .syncSectionHead .syncChevron {
+  transform: rotate(90deg);
+}
+
+/* The status is pushed to the far edge; the title keeps the chevron beside it. */
+.syncSectionHead h3 {
+  margin-right: auto;
 }
 
 .syncSectionHead h3 {
@@ -81,12 +110,11 @@
   color: var(--text);
 }
 
-/* Sits between the title and the status, so the status stays hard against the right edge. */
+/* First control in the body, above the provider's own form. */
 .syncPick {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--textMuted);

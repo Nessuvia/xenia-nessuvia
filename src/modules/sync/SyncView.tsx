@@ -1,3 +1,4 @@
+import { RiArrowRightSLine } from '@remixicon/react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import BackupButtons from '../../app/BackupButtons'
 import { usePalette } from '../../core/stores/palettesStore'
@@ -58,7 +59,6 @@ export default function SyncView() {
 
           <R2Section />
           <DropboxSection />
-          <DriveSection />
           <BackupSection />
         </div>
       </div>
@@ -66,41 +66,61 @@ export default function SyncView() {
   )
 }
 
-/** `provider` turns the header into the picker: both providers can be set up, and the radio says
- *  which one a run uses. Sections without one (export, Drive) leave it out. */
+/**
+ * One collapsible card. `<details>` does the collapsing: it's a disclosure, the browser already
+ * has one, and the setup steps inside these sections are the same element.
+ *
+ * `provider` adds the picker. It sits in the body rather than in the summary, which is a button:
+ * a radio nested inside one is reached by the click that toggles the section, and the status line
+ * is what says which provider is live while a section is shut.
+ */
 function Section({
   title,
   status,
   provider,
+  startOpen = false,
   children,
 }: {
   title: string
   status: string
   provider?: SyncProvider
+  startOpen?: boolean
   children: ReactNode
 }) {
   const active = useSettings((s) => s.syncProvider)
   const setProvider = useSettings((s) => s.setSyncProvider)
+  // Read once, at mount. Switching provider shouldn't reach over and open the other card while
+  // the user is reading this one.
+  const [open, setOpen] = useState(startOpen)
+
   return (
     // `card` is the skin contract: skins repaint it, sync.css sets the base paint.
-    <section className="syncSection card">
-      <div className="syncSectionHead">
+    <details
+      className="syncSection card"
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary className="syncSectionHead">
+        <RiArrowRightSLine className="syncChevron" size={16} aria-hidden />
         <h3>{title}</h3>
-        {provider && (
-          <label className="syncPick">
-            <input
-              type="radio"
-              name="syncProvider"
-              checked={active === provider}
-              onChange={() => setProvider(provider)}
-            />
-            Use for sync
-          </label>
-        )}
-        <span className="syncStatus">{status}</span>
-      </div>
+        <span className="syncStatus">
+          {provider && active === provider ? `In use · ${status}` : status}
+        </span>
+      </summary>
+
+      {provider && (
+        <label className="syncPick">
+          <input
+            type="radio"
+            name="syncProvider"
+            checked={active === provider}
+            onChange={() => setProvider(provider)}
+          />
+          Use this for sync
+        </label>
+      )}
       {children}
-    </section>
+    </details>
   )
 }
 
@@ -109,6 +129,7 @@ function R2Section() {
   const clearError = useSync((s) => s.clearError)
   const bucket = useSettings((s) => s.bucket)
   const setBucket = useSettings((s) => s.setBucket)
+  const activeProvider = useSettings((s) => s.syncProvider)
 
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok'>('idle')
   // A saved endpoint that isn't R2's opens as the six-field form. An existing Garage or B2
@@ -148,6 +169,7 @@ function R2Section() {
     <Section
       title="Cloudflare R2"
       provider="s3"
+      startOpen={activeProvider === 's3'}
       status={testState === 'ok' ? 'Connected' : ready ? 'Configured' : 'Not set up'}
     >
       {showAll ? (
@@ -456,6 +478,7 @@ function DropboxSection() {
   const clearError = useSync((s) => s.clearError)
   const dropbox = useSettings((s) => s.dropbox)
   const setDropbox = useSettings((s) => s.setDropbox)
+  const activeProvider = useSettings((s) => s.syncProvider)
   const [state, setState] = useState<'idle' | 'working' | 'ok'>('idle')
 
   const connected = dropboxConfigured(dropbox)
@@ -500,6 +523,7 @@ function DropboxSection() {
     <Section
       title="Dropbox"
       provider="dropbox"
+      startOpen={activeProvider === 'dropbox'}
       status={state === 'ok' ? 'Connected' : connected ? 'Signed in' : 'Not set up'}
     >
       <div className="syncActions">
@@ -564,22 +588,11 @@ function DropboxSetupSteps() {
   )
 }
 
-function DriveSection() {
-  return (
-    <Section title="Google Drive" status="Not supported">
-      <p className="syncNote">
-        Google puts Drive access behind an app review. This app has not been through it.
-      </p>
-    </Section>
-  )
-}
-
 function BackupSection() {
   return (
-    <Section title="Export and import" status="Always available">
+    <Section title="Export and import" status="Always available" startOpen>
       <p className="syncNote">
-        Export writes your whole library to a JSON file, and Import reads one back. Both work
-        without any of this. Importing replaces everything in this browser.
+        Writes to a single JSON file; importing replaces everything in the browser.
       </p>
       <div className="syncBackupRow">
         <BackupButtons className="syncBackupButton" />
