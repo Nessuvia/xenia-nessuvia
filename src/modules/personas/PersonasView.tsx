@@ -30,7 +30,7 @@ export default function PersonasView() {
   }
 
   // The one write path: the debounce below and Ctrl+S both go through it. An unnamed persona is
-  // never written. A blank name is what the list shows, and it would read as a broken row.
+  // never written. A blank name is what the list shows, and it'd read as a broken row.
   async function persist() {
     if (!draft?.name.trim()) return
     await save(draft)

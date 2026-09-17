@@ -12,7 +12,7 @@ import { useDiffOrigin } from './useDiffOrigin'
 
 /**
  * How long the box counts down before it sends itself. The bar reads the same number as a CSS
- * var. The animation and the timer cannot drift apart.
+ * var. The animation and the timer can't drift apart.
  */
 const autoSendMs = 1500
 
@@ -54,7 +54,7 @@ export default function GoFishBoard({
   characterName: string
   persona: AvatarSource | undefined
   personaName: string
-  /** The character's latest line, or what is streaming right now. */
+  /** The character's latest line, or what's streaming right now. */
   line: string
   streaming: boolean
   /** The "respond to the character's turn" setting: keeps the box live off your turn. */
@@ -64,12 +64,12 @@ export default function GoFishBoard({
   /** 'stack' overlaps the cards until the whole hand fits the row. 'layout' leaves them at their
    *  own width and lets the row scroll sideways. */
   handFit?: HandFit
-  /** Missing means no toggle: History's replay draws the hands, it does not set the preference. */
+  /** Missing means no toggle: History's replay draws the hands, it doesn't set the preference. */
   onHandFit?: (fit: HandFit) => void
   error?: string
   notice?: string
   readOnly?: boolean
-  /** The table is parked on the step gate. Shows Next, and holds the box until it is clicked. */
+  /** The table is parked on the step gate. Shows Next, and holds the box until it's clicked. */
   awaitingNext?: boolean
   onSubmit?: (text: string) => void
   onNext?: () => void
@@ -84,8 +84,8 @@ export default function GoFishBoard({
     ...state.books.player.map((rank) => ({ rank, by: 'player' as const })),
   ]
 
-  // Where a card that is new to the board came from: the zone that just lost one. The whole
-  // arrival animation hangs off this, and it is a diff rather than a message from the store:
+  // Where a card that's new to the board came from: the zone that just lost one. The whole
+  // arrival animation hangs off this, and it's a diff rather than a message from the store:
   // the board is the only thing that knows where it drew the zones.
   const table = useRef<HTMLDivElement>(null)
   const origin = useDiffOrigin(state, (previous, next) =>
@@ -100,7 +100,7 @@ export default function GoFishBoard({
   useCardMotion(table, origin, state, !readOnly)
   const token = useMemo(() => cardTokens(seed), [seed])
 
-  /** What the character has shown it holds and has not since given up or booked away. */
+  /** What the character has shown it holds and hasn't since given up or booked away. */
   const known = state.known.player
 
   const send = () => {
@@ -148,7 +148,7 @@ export default function GoFishBoard({
             than the card or its position. A card leaving the middle of the hand animates from
             where it sat without its rank ever being in the markup. */}
         {/* --handCount drives the overlap: the stylesheet works out how much the cards have to
-            close up to fit the row, and starts scrolling once they cannot. data-noSwipe: a
+            close up to fit the row, and starts scrolling once they can't. data-noSwipe: a
             sideways drag on a scrolling row is a scroll on the log drawer. */}
         <div
           className="cardTableHandRow"
@@ -161,8 +161,8 @@ export default function GoFishBoard({
           ))}
         </div>
 
-        {/* Always rendered, empty until they have asked for something: the line holds its height.
-            The pool below it does not move down the first time it fills. */}
+        {/* Always rendered, empty until they've asked for something: the line holds its height.
+            The pool below it doesn't move down the first time it fills. */}
         <p className="goFishKnown">
           {known.length > 0 ? `They have asked for ${known.join(', ')}` : ''}
         </p>

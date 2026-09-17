@@ -99,7 +99,7 @@ export function builtinParamDefs(): ParamDef[] {
     def('mirostat_eta', 'Mirostat eta', {
       kind: 'slider', min: 0, max: 1, step: 0.01, default: 0.1, appliesTo: ['text'],
     }),
-    // Special-token handling. Rows rather than template fields: they are ordinary body keys, and a
+    // Special-token handling. Rows rather than template fields: they're ordinary body keys, and a
     // backend wanting ignore_eos_token or spaces_between_special_tokens instead needs no release.
     def('add_bos_token', 'Add BOS token', {
       kind: 'bool', default: true, appliesTo: ['text'],

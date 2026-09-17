@@ -6,7 +6,7 @@ import ParamInput from '../settings/ParamInput'
 /**
  * The active connection's own parameters, edited from the chat sidebar. This writes the global
  * level on purpose: per-character and per-chat overrides still exist in the character editor, but
- * the panel next to the chat is where people expect the knobs they actually turn.
+ * the panel next to the chat is where people expect the knobs they turn.
  *
  * Which params show is the connection's list, same as everywhere else. Adding or removing one is
  * still ParamBuilder's job in Settings.

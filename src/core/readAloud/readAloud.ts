@@ -22,7 +22,7 @@ export interface Chunk {
  * Break text into utterance-sized chunks at sentence boundaries.
  *
  * Chromium truncates long utterances and the online voices time out on them: a whole paragraph
- * in one `speak()` is not safe. Greedy fill rather than one chunk per sentence: fewer utterances
+ * in one `speak()` isn't safe. Greedy fill rather than one chunk per sentence: fewer utterances
  * means fewer seams between them.
  */
 export function splitChunks(text: string, max = 200): Chunk[] {
@@ -37,7 +37,7 @@ export function splitChunks(text: string, max = 200): Chunk[] {
       end = n
     } else {
       // Back off to a sentence end, then to any space. A single unbroken run longer than max
-      // gets cut mid-word, which is the only case where that is better than nothing.
+      // gets cut mid-word, which is the only case where that's better than nothing.
       let cut = -1
       for (let j = end - 1; j > i; j--) {
         if ('.!?…'.indexOf(text.charAt(j)) >= 0) {
@@ -74,7 +74,7 @@ export interface VoiceLike {
 /**
  * Default voices for prose and dialogue, best available first.
  *
- * Online first: that is where the difference is audible. Edge's Natural voices, then any
+ * Online first: that's where the difference is audible. Edge's Natural voices, then any
  * other remote voice, then the local ones (David, Zira) that are all an offline reader gets. When
  * the pool holds a single voice both names come back the same and the caller shifts pitch instead.
  */
@@ -141,7 +141,7 @@ export const readAloudCss = `.readAloud {
 
 /**
  * The browser half. Kept as a string: it ships inside an exported file rather than running
- * in the app. The two pure helpers above are injected: there is one copy of that logic.
+ * in the app. The two pure helpers above are injected: there's one copy of that logic.
  *
  * `skipSelector` is the export's own furniture (its nav, its collapsed think blocks) that should
  * not be read.

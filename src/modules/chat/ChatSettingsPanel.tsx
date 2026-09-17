@@ -29,7 +29,7 @@ const clampWidth = (n: number) => Math.min(100, Math.max(1, n || 100))
  * keystroke. The sidebar keys this on the chat id: the draft never needs resetting in place.
  */
 export default function ChatSettingsPanel({
-  /** Render every control disabled. Guests see the host's settings and cannot change them. */
+  /** Render every control disabled. Guests see the host's settings and can't change them. */
   readOnly,
 }: {
   readOnly?: boolean

@@ -47,7 +47,7 @@ export function inviteLink(origin: string, sessionId: string, config: RelayConfi
   return `${origin}/join/${sessionId}?r=${encodeURIComponent(config.url)}`
 }
 
-/** The relay a guest should use, from the `r` parameter on the link they opened. An `r` that is
+/** The relay a guest should use, from the `r` parameter on the link they opened. An `r` that's
  *  missing or not a valid wss URL is undefined, and the guest is told the link is bad rather than
  *  pointed at whatever it said. */
 export function relayFromLink(r: string | null): RelayConfig | undefined {

@@ -242,7 +242,7 @@ function LiveGame() {
     return close
   }, [gameId, open, close, loadCharacters])
 
-  // The notice is transient: it says the last thing typed was not a move, and it stops mattering
+  // The notice is transient: it says the last thing typed wasn't a move, and it stops mattering
   // as soon as the player has read it.
   useEffect(() => {
     if (!notice) return

@@ -42,7 +42,7 @@ function speaker(message: Message, characterName: string): string {
  *
  * `later` empty (the message *is* the last one) returns '', nothing to warn about. That stays a
  * rule here rather than something the wording has to express: an override can't make an
- * instruction appear where there is nothing to instruct about.
+ * instruction appear where there's nothing to instruct about.
  */
 export function oldMessageInstruction(
   later: Message[],

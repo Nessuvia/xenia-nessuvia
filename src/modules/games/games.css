@@ -109,7 +109,7 @@
   align-items: center;
   gap: 12px;
   /* Grows with the cards. At a fixed 560 a 2x hand wrapped after seven with the rest of the table
-     empty either side, since the card doubled and the room it had did not. */
+     empty either side, since the card doubled and the room it had didn't. */
   max-width: calc(var(--cardTableWidth) * var(--cardTableScale, 1));
   width: 100%;
   margin: 0 auto;
@@ -130,7 +130,7 @@
 
 /* The live board is a frame, not a column that grows. The two avatars are the anchors of the
    screen: one at the top, one at the bottom, and neither moves because a reply came in, a hand got
-   longer or a notice appeared. The field between them is the only part that gives, and it is the
+   longer or a notice appeared. The field between them is the only part that gives, and it's the
    .screenBody of this screen.
 
    Only the live route. A replay is a block inside the History list, which scrolls as a page. */
@@ -155,7 +155,7 @@
   justify-content: safe center;
 }
 
-/* The play field. Full width whatever the scale, so a hand wraps only when the cards really do
+/* The play field. Full width whatever the scale, so a hand wraps only when the cards do
    run out of room. */
 .cardTableField {
   display: flex;
@@ -167,7 +167,7 @@
   perspective: 700px;
 }
 
-/* Fixed height so a notice or an error appearing does not move the board. */
+/* Fixed height so a notice or an error appearing doesn't move the board. */
 .cardTableFooter {
   display: flex;
   flex-direction: column;
@@ -203,7 +203,7 @@
 }
 
 /* Holds the Next button over the line. The button is a sibling of the paragraph, not a child:
-   inside it, it would scroll away with the text it is asking you to finish reading. */
+   inside it, it'd scroll away with the text it's asking you to finish reading. */
 .cardTableLineWrap {
   position: relative;
   display: flex;
@@ -322,7 +322,7 @@
 
 /* Stack: one row, however many cards. The percentage margin resolves against the row's own width,
    so `(100% - what the cards need) / the gaps between them` is the space each card gives back for
-   the hand to fit, with no measuring in JS. min() rather than clamp(): there is no floor on the
+   the hand to fit, with no measuring in JS. min() rather than clamp(): there's no floor on the
    overlap, because fitting is the whole point of this mode. The -0.9 guard only stops a card from
    sliding behind the one before it and reversing the order on screen. */
 .cardTableHandFitStack .cardTableHandRow {
@@ -455,7 +455,7 @@
 }
 
 /* A hand and its count. Stacked, which is how the field has always read; the phone block turns it
-   into a row. Column, so the count keeps the side of the hand it is written on: the dealer's below
+   into a row. Column, so the count keeps the side of the hand it's written on: the dealer's below
    theirs, yours above yours, both facing the shoe. */
 .blackjackHandLine {
   display: flex;
@@ -473,7 +473,7 @@
 
 .blackjackButton {
   /* An explicit height rather than one that falls out of the padding: .blackjackActions has to
-     reserve the same number while the buttons are not there. */
+     reserve the same number while the buttons aren't there. */
   min-height: 32px;
   padding: 6px 12px;
   background: var(--surface);
@@ -723,7 +723,7 @@
   cursor: pointer;
 }
 
-/* Fixed height for the same reason as the footer: this line is empty until they have asked for
+/* Fixed height for the same reason as the footer: this line is empty until they've asked for
    something, and the cards must not move down the first time they do. */
 .goFishKnown {
   margin: 0;
@@ -779,7 +779,7 @@
     min-height: 44px;
   }
 
-  /* Hit and Stand are how the game is played and they are the only real targets on this board, so
+  /* Hit and Stand are how the game is played and they're the only real targets on this board, so
      they take the width and a 44px touch height. */
   .blackjackActions {
     width: 100%;

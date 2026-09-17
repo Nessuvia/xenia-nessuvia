@@ -7,14 +7,14 @@
  * bundled asset to fetch. Arrays of strings are the same thing to edit and one less moving part.
  *
  * Adding lines is the whole intended workflow. Append to `roulette` freely. `explainers` is the
- * part a new user actually reads, so think before touching it.
+ * part a new user reads, so think before touching it.
  */
 
 /**
  * The first replies, in order, one per message. Every one has to answer "why is the model saying
  * this" on its own. A user who sends one message and leaves sees only the first.
  *
- * Order matters and randomness does not belong here: three sends should read as the app repeating
+ * Order matters and randomness doesn't belong here: three sends should read as the app repeating
  * itself, not as something generating text.
  */
 export const explainers: string[] = [

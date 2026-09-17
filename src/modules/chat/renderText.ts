@@ -38,7 +38,7 @@ const markers = [
   { mark: '__', tag: 'strong', className: 'boldText', keepMark: false },
   { mark: '*', tag: 'em', className: 'emphasisText', keepMark: false },
   { mark: '_', tag: 'em', className: 'emphasisText', keepMark: false },
-  // straight quotes only. Curly “…” needs distinct open/close markers, which this
+  // straight quotes only. Curly "..." needs distinct open/close markers, which this
   // symmetric table can't express. Add a separate pair list if models start emitting them.
   { mark: '"', tag: 'span', className: 'spokenText', keepMark: true },
 ]
@@ -54,7 +54,7 @@ export interface RenderOpts {
 /**
  * Display-only find/replace pass. Rules are skipped if disabled, off-target for this role, or an
  * invalid regex (the panel surfaces the syntax error; render stays quiet). Literal rules escape
- * `find` so nothing in it is treated as a pattern.
+ * `find` so nothing in it's treated as a pattern.
  */
 export function applyReplaceRules(
   text: string,

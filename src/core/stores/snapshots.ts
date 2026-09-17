@@ -7,7 +7,7 @@ import { swipeIndex } from './swipes.ts'
  * row, every sync push and every backup. A reload forgets them.
  *
  * Keyed by message id, parallel to that message's swipes, holes where nothing was captured.
- * ponytail: entries for deleted messages stay until reload. Dexie ids are not reused, so they never
+ * ponytail: entries for deleted messages stay until reload. Dexie ids aren't reused, so they never
  * show up on the wrong message.
  */
 const byMessage = new Map<number, (string | undefined)[]>()

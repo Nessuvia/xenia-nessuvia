@@ -84,7 +84,7 @@ export default function MultiplayerPanel({ isHost }: { isHost: boolean }): JSX.E
         </div>
       </section>
 
-      {/* Session-scoped: the host writes the participant in this room. A stored persona row is not
+      {/* Session-scoped: the host writes the participant in this room. A stored persona row isn't
           touched, and neither is the guest's own copy of it. */}
       {isHost && editing && (
         <section className="panelSection">

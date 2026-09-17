@@ -120,7 +120,7 @@
   white-space: nowrap;
 }
 
-/* the row stretches its inputs; the checkbox is not the field that should grow. */
+/* the row stretches its inputs; the checkbox isn't the field that should grow. */
 .blockDeleteToggle input {
   flex: none;
 }

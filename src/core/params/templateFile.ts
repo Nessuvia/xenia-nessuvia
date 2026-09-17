@@ -12,7 +12,7 @@ export interface TemplateFile {
 }
 
 /**
- * A template as a shareable file. The endpoint and the API key are not in the shape at all: no
+ * A template as a shareable file. The endpoint and the API key aren't in the shape at all: no
  * path exists by which a shared template carries a secret. A template is a fact about a model,
  * the connection is the account.
  */

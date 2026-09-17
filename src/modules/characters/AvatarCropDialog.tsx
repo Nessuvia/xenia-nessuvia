@@ -4,8 +4,8 @@ import 'react-image-crop/dist/ReactCrop.css'
 import type { AvatarCrop } from '../../core/storage/types'
 
 /**
- * Both halves of a confirmed crop. Avatars keep `crop` and the original image, so there is one copy
- * of the pixels; story covers take `dataUrl`, since they are stored as a finished image.
+ * Both halves of a confirmed crop. Avatars keep `crop` and the original image, so there's one copy
+ * of the pixels; story covers take `dataUrl`, since they're stored as a finished image.
  */
 export interface CropResult {
   crop: AvatarCrop

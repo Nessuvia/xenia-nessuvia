@@ -4,7 +4,7 @@
 /**
  * The lorebook ids a Narrator turn borrows: the union of every roster member's books, in roster
  * order, first mention wins. The Narrator has no books of its own, and giving it none would mean
- * narrating a world it cannot see. Two characters sharing a book must not make it count twice:
+ * narrating a world it can't see. Two characters sharing a book must not make it count twice:
  * `resolveWorldInfo` budgets by entry, and a duplicate id would fetch the same entries again.
  *
  * Pure, and takes the id arrays rather than the characters, so it needs no store and no Dexie.

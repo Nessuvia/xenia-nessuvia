@@ -27,7 +27,7 @@ interface PostStacksState {
   create(name?: string): Promise<number>
   duplicate(id: number): Promise<number>
   remove(id: number): Promise<void>
-  /** How many chats name each stack, keyed by stack id. Chats with no stack of their own are not
+  /** How many chats name each stack, keyed by stack id. Chats with no stack of their own aren't
    *  counted against the default: they follow it rather than pick it. */
   usage(): Promise<Record<number, number>>
 }

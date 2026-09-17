@@ -17,7 +17,7 @@ export default function TagList({
   tags: string[]
   checked: string[]
   onToggle: (tag: string) => void
-  /** Given, a text input appears at the bottom for adding a tag that does not exist yet. */
+  /** Given, a text input appears at the bottom for adding a tag that doesn't exist yet. */
   onCreate?: (tag: string) => void
   /** Rendered above the list, the Any/All switch, a Clear button. */
   header?: ReactNode

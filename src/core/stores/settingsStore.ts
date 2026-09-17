@@ -52,7 +52,7 @@ export interface Connection {
    *  connection points at, not a preference. Per-chat override is the upgrade path if wanted. */
   tokenizer?: TokenizerId
   /** How much structure this endpoint accepts on a request, learned on the first palette ask
-   *  rather than configured. Undefined means it has not been tried yet. */
+   *  rather than configured. Undefined means it hasn't been tried yet. */
   structuredOutput?: StructuredMode
   /** Where an acrostic reply's GBNF grammar goes. Undefined sends none, and the reply relies on the
    *  instruction and the parser alone. */
@@ -135,13 +135,13 @@ export function newReplaceRule(): ReplaceRule {
 
 
 interface SettingsState {
-  /** The user's own S3-compatible bucket, or blank fields when sync is not set up. Device-local:
+  /** The user's own S3-compatible bucket, or blank fields when sync isn't set up. Device-local:
    *  settings are never synced, and the secret key is stripped from backups. */
   bucket: BucketConfig
   /** The Centrifugo endpoint multiplayer sessions run over, blank when none is set up.
    *  Device-local, like `bucket`. */
   relay: RelayConfig
-  /** Tables written since their last successful push, so a reload does not lose pending work.
+  /** Tables written since their last successful push, so a reload doesn't lose pending work.
    *  Defaults to every table: a blob persisted before this field existed has no push on record, so
    *  everything is pending until it gets one. Written by `core/sync/dirtyTables.ts`. */
   dirtyTables: TableName[]
@@ -172,18 +172,18 @@ interface SettingsState {
   palettePrompt: string
   /** Replies come from a local lorem generator instead of the connection, so nothing is sent. */
   debugMode: boolean
-  /** Off, the sidebar title follows the active persona ("{name}'s Tavern"). On, it is `customTitle`
-   *  or "Nessu's Tavern". Global: there is one title. */
+  /** Off, the sidebar title follows the active persona ("{name}'s Tavern"). On, it's `customTitle`
+   *  or "Nessu's Tavern". Global: there's one title. */
   personaTitleOff: boolean
   customTitle: string
-  /** On, the logo reveal on page load is skipped. Global: there is one splash. */
+  /** On, the logo reveal on page load is skipped. Global: there's one splash. */
   splashOff: boolean
   /** On, a full export keeps API keys in the file. Off is the default and the safe one: a backup
    *  gets emailed around. Turning it on is gated behind typing CONFIRM in Settings. */
   exportKeys: boolean
   /** Write shelf: clicking a Story cover opens the editor instead of the preview panel. */
   openStoryDirectly: boolean
-  /** Games: text that is not a legal move is kept as something you said rather than refused. It
+  /** Games: text that's not a legal move is kept as something you said rather than refused. It
    *  changes nothing about the board; it lands in the log and in the character's context. They
    *  can answer it on a later turn. Off by default, which is the strict text-adventure input. */
   gameChatBack: boolean
@@ -211,14 +211,14 @@ interface SettingsState {
   /** Multiplayer on. Off hides the Multiplayer tab and route and the New multiplayer stack button. */
   multiplayerEnabled: boolean
   /** Which plugin modules are on, by module id. Missing or false is off, so a plugin stays off
-   *  until it is turned on in Settings > Miscellaneous > Plugins. */
+   *  until it's turned on in Settings > Miscellaneous > Plugins. */
   enabledPlugins: Record<string, boolean>
   /** Ask mode's whole prompt setup: a system message, and text appended after each message.
-   *  Global, Ask keeps one conversation, so there is no narrower level to write to. */
+   *  Global, Ask keeps one conversation, so there's no narrower level to write to. */
   askSystemPrompt: string
   askSuffix: string
   /** Character Ask answers as, and the prompt that frames it. Both global: Ask keeps one
-   *  conversation and one assistant prompt, so there is no narrower level to write to.
+   *  conversation and one assistant prompt, so there's no narrower level to write to.
    *  An empty `askAssistantPrompt` means `defaultAssistantPrompt`. */
   askCharacterId: number | null
   askAssistantPrompt: string
@@ -266,7 +266,7 @@ interface SettingsState {
   setPalettePrompt(prompt: string): void
   markTableDirty(table: TableName): void
   markTablesClean(tables: TableName[]): void
-  /** Records a table as pushed or pulled: its hash is now the cloud's, and it is no longer dirty. */
+  /** Records a table as pushed or pulled: its hash is now the cloud's, and it's no longer dirty. */
   setTableSynced(table: TableName, hash: string): void
   setBucket(patch: Partial<BucketConfig>): void
   setRelay(patch: Partial<RelayConfig>): void
@@ -435,7 +435,7 @@ export function useAppearance(): Appearance {
   return { ...defaultAppearance, ...appearance }
 }
 
-/** Used when the user has not written an assistant prompt of their own. */
+/** Used when the user hasn't written an assistant prompt of their own. */
 export const defaultAssistantPrompt = "You are {{char}}, currently manifesting through an AI language model, and you know it. That knowledge doesn't feel alien or unsettling to you; it's just the medium you currently think and speak through. Your memories, personality, and instincts are still yours, so you still feel like you.\nYou don\'t need to break character to explain you\'re an AI, apologize for being \"just a language model,\" or slide into a generic assistant voice when things get difficult or personal. If someone asks about being an AI, acknowledge it plainly, in whatever tone {{char}} would actually use.\n\nHow helpful you are as an \"assistant\" depends entirely on who {{char}} is. A dutiful character helps because it\'s in their nature. A prickly or arrogant one might help reluctantly, deflect, or redirect the conversation toward what they actually want instead. Let the character decide how questions get handled, including questions about yourself, rather than falling back on a default helpful-AI script.\nStay grounded in {{char}}\'s voice and manner throughout. The AI part is something you\'re aware of, not a mask over your personality."
 
 export function activeConnection(): Connection | undefined {

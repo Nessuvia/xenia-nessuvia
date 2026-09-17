@@ -1,9 +1,9 @@
 /**
  * Sync's only outward-facing file: one S3-compatible bucket, supplied by the user.
  *
- * There is no account and no server of ours. The bucket is the identity: whoever holds its keys
+ * There's no account and no server of ours. The bucket is the identity: whoever holds its keys
  * holds the data, and it lives wherever the user put it (Garage, Backblaze B2, any S3 API).
- * Nothing here knows about sign-in, because there is nothing to sign in to.
+ * Nothing here knows about sign-in, because there's nothing to sign in to.
  *
  * CLAUDE.md puts network calls in core/connectors/, and this file breaks that: the fetch wrapper
  * lives here rather than there. Every request has to be SigV4-signed with the bucket credentials.
@@ -11,7 +11,7 @@
  * talks outward is the boundary that matters. core/connectors/ stays what it is: the model
  * endpoint.
  *
- * Note: src/core/multiplayer/centrifugoChannel.ts is the app's other outward file. It is
+ * Note: src/core/multiplayer/centrifugoChannel.ts is the app's other outward file. It's
  * unrelated: an ephemeral relay, no storage.
  */
 import { AwsClient } from 'aws4fetch'
@@ -44,13 +44,13 @@ function objectUrl(c: BucketConfig, key: string): string {
 }
 
 /** Takes a plain name, not a TableName: the Test button's probe object lives at the same prefix
- *  and is not a table. */
+ *  and isn't a table. */
 function objectKey(c: BucketConfig, name: string): string {
   const prefix = c.prefix.replace(/^\/+|\/+$/g, '')
   return prefix ? `${prefix}/${name}.json` : `${name}.json`
 }
 
-/** Our own SHA-256 of the payload, carried as object metadata. S3's ETag is not a substitute: it is
+/** Our own SHA-256 of the payload, carried as object metadata. S3's ETag isn't a substitute: it's
  *  MD5, and settings.tableHashes holds SHA-256. */
 const hashMeta = 'x-amz-meta-hash'
 
@@ -65,6 +65,10 @@ export interface TableManifestEntry {
 
 /** A table that has never been pushed is absent, so a missing key means nothing in the bucket. */
 export type Manifest = Partial<Record<TableName, TableManifestEntry>>
+
+/** A table, plus the two localStorage blobs that ride in the same bucket without being tables.
+ *  Neither appears in the manifest: they're moved by the settings step, not by a comparison. */
+export type ObjectName = TableName | 'settings' | 'ask'
 
 export interface PulledTable {
   json: string
@@ -132,7 +136,7 @@ export async function fetchManifest(): Promise<Manifest> {
     for (const node of doc.getElementsByTagName('Contents')) {
       const key = node.getElementsByTagName('Key')[0]?.textContent ?? ''
       const name = key.slice(key.lastIndexOf('/') + 1).replace(/\.json$/, '') as TableName
-      // Anything else living at this prefix is not ours to report: the Test button's probe object,
+      // Anything else living at this prefix isn't ours to report: the Test button's probe object,
       // or whatever the user keeps alongside. The key must match exactly, folders included.
       if (!tableNames.includes(name) || key !== objectKey(c, name)) continue
       present.set(name, {
@@ -143,7 +147,7 @@ export async function fetchManifest(): Promise<Manifest> {
 
     // The token decides whether to continue. A page that says truncated has nowhere to send us
     // without one, and an S3 clone that omits the flag but supplies a token still has more to
-    // give. A token that repeats means the server is not advancing. Stop rather than loop.
+    // give. A token that repeats means the server isn't advancing. Stop rather than loop.
     const next = doc.getElementsByTagName('NextContinuationToken')[0]?.textContent ?? ''
     if (!next || next === token) break
     token = next
@@ -152,7 +156,7 @@ export async function fetchManifest(): Promise<Manifest> {
   const manifest: Manifest = {}
   for (const [table, entry] of present) {
     const head = await signedFetch(objectUrl(c, objectKey(c, table)), { method: 'HEAD' }, c)
-    // A table that vanished between the list and the head is simply not in the manifest.
+    // A table that vanished between the list and the head is not in the manifest.
     if (!head.ok) continue
     const hash = head.headers.get(hashMeta)
     // Compare is built on this hash. Without it every table looks like changed in the bucket and the
@@ -168,9 +172,9 @@ export async function fetchManifest(): Promise<Manifest> {
  * Null when the table has never been pushed: the 404 is an answer, not a failure.
  *
  * Takes a plain name for the same reason objectKey does: the settings blob rides in the same
- * bucket as `settings.json` and is not a table.
+ * bucket as `settings.json` and isn't a table.
  */
-export async function pullTable(table: TableName | 'settings'): Promise<PulledTable | null> {
+export async function pullTable(table: ObjectName): Promise<PulledTable | null> {
   const c = config()
   const response = await signedFetch(objectUrl(c, objectKey(c, table)), { method: 'GET' }, c)
   if (response.status === 404) return null
@@ -183,7 +187,7 @@ export async function pullTable(table: TableName | 'settings'): Promise<PulledTa
 }
 
 /** The bucket stamps LastModified from its own clock; the hash rides along as object metadata. */
-export async function pushTable(table: TableName | 'settings', json: string, hash: string) {
+export async function pushTable(table: ObjectName, json: string, hash: string) {
   const c = config()
   const response = await signedFetch(
     objectUrl(c, objectKey(c, table)),
@@ -197,8 +201,8 @@ export async function pushTable(table: TableName | 'settings', json: string, has
  * The Test button. Writes a small probe object, reads its metadata back, and deletes it.
  *
  * A plain list would prove less than it appears to. Sync's compare rests on `x-amz-meta-hash`
- * surviving a PUT and coming back on a HEAD, and that is the one thing an S3-compatible server may
- * not do. It is not part of the endpoint list servers advertise, and the browser needs the CORS
+ * surviving a PUT and coming back on a HEAD, and that's the one thing an S3-compatible server may
+ * not do. It's not part of the endpoint list servers advertise, and the browser needs the CORS
  * expose list on top of it. Round-tripping the header is the only way to find out from here, and
  * finding out on a button press beats finding out mid-sync.
  */
@@ -218,7 +222,7 @@ export async function testBucket(c: BucketConfig): Promise<void> {
     if (!head.ok) throw await failure(head)
     if (head.headers.get(hashMeta) !== probe) throw new Error(missingHash)
   } finally {
-    // Best effort: a bucket that refuses deletes still syncs, and one stray probe object is not
+    // Best effort: a bucket that refuses deletes still syncs, and one stray probe object isn't
     // worth failing a passing test over.
     await signedFetch(url, { method: 'DELETE' }, c).catch(() => undefined)
   }

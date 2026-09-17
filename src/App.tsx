@@ -21,7 +21,7 @@ export default function App() {
   // The sampler library loads on boot rather than on the first visit to Settings: the send path
   // reads it synchronously to shape every request body.
   const loadParamDefs = useParamDefs((s) => s.load)
-  // Seeds the default chat and Story stacks on a fresh install, so they are there before the first
+  // Seeds the default chat and Story stacks on a fresh install, so they're there before the first
   // visit to Prompts.
   const loadStacks = useStacks((s) => s.load)
   // The send path reads post-processing stacks synchronously, so they load on boot rather than on
@@ -72,7 +72,7 @@ function AppShell() {
           <AppRoutes />
         </div>
       </main>
-      {/* Outside the rail and the content pane: the tour dims both, so it cannot sit inside
+      {/* Outside the rail and the content pane: the tour dims both, so it can't sit inside
           either one's stacking context. */}
       <TourHost />
     </div>

@@ -185,7 +185,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
   },
 
   remove: async (id) => {
-    // The last one stays: with no rows there is nothing to edit and the app falls back to the
+    // The last one stays: with no rows there's nothing to edit and the app falls back to the
     // built-in constant. The button is disabled too; this is the guard behind it.
     if (get().palettes.length <= 1) return
     await storage.remove('palettes', id)
@@ -219,7 +219,7 @@ export const usePalettes = create<PalettesState>()((set, get) => ({
     next[from] = rows[to]
     next[to] = rows[from]
     // Positions are renumbered from scratch, which also gives an orderId to any row that predates
-    // the field. Only the rows whose number actually changed get written.
+    // the field. Only the rows whose number changed get written.
     const renumbered = next.map((p, i) => ({ ...p, orderId: i }))
     set({ palettes: renumbered })
     for (let i = 0; i < renumbered.length; i++) {

@@ -89,7 +89,7 @@ const skipKeys = new Set([
   'show_external_models',
   'max_context_unlocked',
   // ST keeps its bias list as [{id, text, value}], which is its own UI's shape and not the
-  // `logit_bias` any endpoint accepts. Retyping it is the only honest route.
+  // `logit_bias` any endpoint accepts. Retyping it's the only honest route.
   'logit_bias',
 ])
 
@@ -101,7 +101,7 @@ function gatedOff(key: string, preset: Record<string, unknown>): boolean {
   return false
 }
 
-/** Whether an unmapped key holds something the user actually set. */
+/** Whether an unmapped key holds something the user set. */
 function meaningful(key: string, value: unknown): boolean {
   if (value === null || value === undefined) return false
   if (typeof value === 'string') return value.trim() !== ''
@@ -126,7 +126,7 @@ export interface PresetImport {
 }
 
 /**
- * A ST preset as params. Mapped keys always come over, gates aside: they are a known, short list
+ * A ST preset as params. Mapped keys always come over, gates aside: they're a known, short list
  * and the user was sending them. Everything else has to look deliberate to make the cut.
  */
 export function paramsFromPreset(preset: Record<string, unknown>): PresetImport {
@@ -171,7 +171,7 @@ export function paramsFromPreset(preset: Record<string, unknown>): PresetImport 
       continue
     }
     // `inferKind` stringifies an array member by member, which turns a list of objects into
-    // "[object Object]". A list with any object in it is json, not a string list.
+    // "[object Object]". A list with any object in it's json, not a string list.
     const objectList = Array.isArray(value) && value.some((v) => v !== null && typeof v === 'object')
     const { kind, default: fallback } = objectList
       ? ({ kind: 'json', default: JSON.stringify(value) } as const)

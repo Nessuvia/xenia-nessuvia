@@ -75,7 +75,7 @@ export default function StoryPromptPanel() {
   const connection = baseConnection && resolveParams(baseConnection, undefined, story)
 
   // Split around the Block the cursor is in, the same way writeBlock() does. The preview shows
-  // the "What follows" block the next generation would actually send, and honours that Block's own
+  // the "What follows" block the next generation would send, and honours that Block's own
   // context setting. The prose here is the saved text. It trails typing.
   const activeBlock = active?.blocks.find((b) => b.id === activeBlockId)
   const fit = storyFit(

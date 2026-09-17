@@ -3,8 +3,8 @@
 // crypto.subtle, which Node and the browser both have.
 import type { StoredRecord, TableName } from './storageInterface.ts'
 
-/** One table, as it is stored in R2. No ownerId and no timestamp: the owner comes from the
- *  verified JWT and `updatedAt` is stamped server-side. A client cannot assert either. */
+/** One table, as it's stored in R2. No ownerId and no timestamp: the owner comes from the
+ *  verified JWT and `updatedAt` is stamped server-side. A client can't assert either. */
 export interface TablePayload {
   format: 'nessuTavern.table'
   version: 1

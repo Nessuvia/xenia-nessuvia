@@ -3,7 +3,7 @@ export const avatarMaxEdge = 256
 
 /**
  * Read an image file, downscale it so its longest edge is at most `avatarMaxEdge`, and return a
- * base64 data URI. Rejects when the file is not a decodable image.
+ * base64 data URI. Rejects when the file isn't a decodable image.
  */
 export function downscaleImage(file: File, maxEdge: number = avatarMaxEdge): Promise<string> {
   return new Promise((resolve, reject) => {

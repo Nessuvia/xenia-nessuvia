@@ -16,7 +16,7 @@ export interface GeneratedPalette {
   mode: StructuredMode
 }
 
-/** Everything the endpoint actually sent, for the panel to show under a failure. Reading it is how
+/** Everything the endpoint sent, for the panel to show under a failure. Reading it's how
  *  you tell a refusal from a truncation from a model that answered in prose. */
 export interface PaletteAttempt {
   mode: StructuredMode
@@ -36,7 +36,7 @@ export interface PaletteError extends Error {
  * app comes from; the difference is that the stream is collected into a string rather than rendered
  * as it arrives, and that the request asks for JSON back.
  *
- * Structured output is not configured, it is discovered: the request asks for a JSON schema, and
+ * Structured output isn't configured, it's discovered: the request asks for a JSON schema, and
  * an endpoint that refuses gets asked again one rung lower. `connection.structuredOutput` is where
  * the answer is remembered. The walk down happens once per connection rather than once per ask.
  */

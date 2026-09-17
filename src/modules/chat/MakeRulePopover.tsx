@@ -10,7 +10,7 @@ import { useSettings } from '../../core/stores/settingsStore'
 
 /**
  * A rule from selected reply text. Scope: the stack this chat resolves to, which is the global
- * default when the chat has not picked one, so the rule reaches every chat on that stack.
+ * default when the chat hasn't picked one, so the rule reaches every chat on that stack.
  */
 export default function MakeRulePopover({ at, text, onClose }: { at: { x: number; y: number }; text: string; onClose: () => void }) {
   const ref = useCloseOnOutside<HTMLDivElement>(true, onClose)

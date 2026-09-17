@@ -2,7 +2,7 @@ import type { AvatarSource } from '../core/storage/types'
 import './Avatar.css'
 
 /**
- * Renders an avatar image, framed by its crop rect. There is only ever one copy of the pixels:
+ * Renders an avatar image, framed by its crop rect. There's only ever one copy of the pixels:
  * `avatar` is the original the user uploaded, and the crop is applied here rather than baked into
  * a second cropped image. The Gallery can show the whole thing.
  *
@@ -21,7 +21,7 @@ export function Avatar({
   onClick,
 }: {
   of: AvatarSource | null | undefined
-  /** Drawn as an initial when there is no image. Empty renders nothing at all. */
+  /** Drawn as an initial when there's no image. Empty renders nothing at all. */
   name?: string
   className?: string
   title?: string

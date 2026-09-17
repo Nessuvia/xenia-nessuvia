@@ -7,7 +7,7 @@ import { defaultFlowConfig, defaultFlowStyle, type FlowConfig, type FlowStyle } 
 import type { IgnorePair } from '../hammer/exclusions.ts'
 import { defaultRules } from './agentConfig.ts'
 
-/** How a reply's shape is drawn before it is written. Filled in by Part B; the stage exists here so
+/** How a reply's shape is drawn before it's written. Filled in by Part B; the stage exists here so
  *  a stack saved today keeps its switch. */
 export interface AcrosticConfig {
   enabled: boolean
@@ -33,7 +33,7 @@ export interface PostStackConfig {
   rules: { enabled: boolean; list: Rule[] }
   /** Text the whole pass leaves alone, on top of the code spans and URLs it always skips. Not a
    *  stage: it applies to every stage rather than running in turn. `useTagRules` adds the global
-   *  Tags from Settings, so a tag set up once is not written out again here. */
+   *  Tags from Settings, so a tag set up once isn't written out again here. */
   ignore: { enabled: boolean; pairs: IgnorePair[]; useTagRules: boolean }
   /** Failed rewrites allowed per sentence or paragraph before the original stays. */
   maxTries: number
@@ -53,7 +53,7 @@ export interface FlowPassConfig extends VadLimits {
 export const defaultFlowPassConfig: FlowPassConfig = { ...defaultVadLimits, sentenceDrift: 0.2 }
 
 /** Seeded, not enabled. Turning the stage on is what starts skipping these, so an existing stack
- *  does not silently change what it matches. */
+ *  doesn't silently change what it matches. */
 export function defaultIgnorePairs(): IgnorePair[] {
   return [
     { id: 'square', open: '[', close: ']' },
@@ -69,7 +69,7 @@ export const defaultAcrosticConfig: AcrosticConfig = {
   jsonMode: false,
 }
 
-/** The stack seeded on first run, and the fallback when a chat names a stack that is gone. */
+/** The stack seeded on first run, and the fallback when a chat names a stack that's gone. */
 export function defaultPostStackConfig(): PostStackConfig {
   return {
     acrostic: { ...defaultAcrosticConfig },
@@ -97,7 +97,7 @@ export interface AgentRun {
   lint?: LintConfig
   /** Absent when the detector stage is off. */
   flow?: { off: string[]; style: FlowStyle }
-  /** Spans nothing may touch. Empty when the stack is not ignoring anything. */
+  /** Spans nothing may touch. Empty when the stack isn't ignoring anything. */
   ignore?: IgnorePair[]
   /** Recent chat as plain text, built by the caller from `contextMessages`. Absent sends none. */
   context?: string
@@ -138,7 +138,7 @@ interface StackLike {
 }
 
 /**
- * The stack a chat actually runs: its own, then the global default, then the built-in.
+ * The stack a chat runs: its own, then the global default, then the built-in.
  * Falls through the same way when either id names a stack that has since been deleted, so a
  * delete never leaves a chat with no pass at all.
  */

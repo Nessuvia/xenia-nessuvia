@@ -26,12 +26,12 @@ export default function GameSettingsPanel() {
   const stepMode = useSettings((s) => s.gameStepMode)
   const setStepMode = useSettings((s) => s.setGameStepMode)
   // Difficulty is per game: a property of this match. Changing it halfway through a game you are
-  // losing should not rewrite the ones you already played.
+  // losing shouldn't rewrite the ones you already played.
   const setDifficulty = useGames((s) => s.setDifficulty)
   const setAuthorNote = useGames((s) => s.setAuthorNote)
 
   // Typed but not yet written. Null until the first keystroke. The box shows the stored note, and
-  // a game that appends events while the panel is open does not fight the field.
+  // a game that appends events while the panel is open doesn't fight the field.
   const [draft, setDraft] = useState<string | null>(null)
   useEffect(() => {
     if (draft === null) return
@@ -61,7 +61,7 @@ export default function GameSettingsPanel() {
         </span>
       </div>
 
-      {/* Blackjack's dealer draws to 17 and has nothing to decide. There is no skill to set. */}
+      {/* Blackjack's dealer draws to 17 and has nothing to decide. There's no skill to set. */}
       {game.kind === 'goFish' && (
         <label className="gamesRailField">
           <span className="gamesRailRow">Difficulty</span>
@@ -156,7 +156,7 @@ export default function GameSettingsPanel() {
         />
       </label>
 
-      {/* The score itself is the marquee at the top of the rail. It is not repeated here. */}
+      {/* The score itself is the marquee at the top of the rail. It's not repeated here. */}
       <p className="gamesRailRow">Cards left {state.deck.length}</p>
       {game.status === 'playing' && (
         <button type="button" className="gamesRailButton" onClick={() => void abandon()}>

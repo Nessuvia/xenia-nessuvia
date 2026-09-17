@@ -5,7 +5,7 @@
 import type { BlockSource, PromptBlock } from '../storage/types.ts'
 import { stBlock } from './stBlock.ts'
 
-/** ST's context placeholders that we have a bound source for. */
+/** ST's context placeholders that we've a bound source for. */
 const tokenSources: Record<string, BlockSource> = {
   description: 'characterDescription',
   personality: 'characterPersonality',

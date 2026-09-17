@@ -1,4 +1,4 @@
-// Post-processing stack files: the name and the config, without the row id or ownerId. There is no
+// Post-processing stack files: the name and the config, without the row id or ownerId. There's no
 // connection field by construction, so a stack file never carries an API key.
 import type { PostStack } from '../../core/storage/types'
 import { defaultPostStackConfig, type PostStackConfig } from '../../core/agent/postStack'

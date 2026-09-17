@@ -42,7 +42,7 @@ export default function Sidebar() {
   const customTitle = useSettings((s) => s.customTitle)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const personaName = usePersonas((s) => s.personas.find((p) => p.id === activePersonaId)?.name)
-  // "User" is the persona a fresh install creates. It does not count as a name the user picked.
+  // "User" is the persona a fresh install creates. It doesn't count as a name the user picked.
   const named = personaName?.trim() && personaName.trim().toLowerCase() !== 'user' ? personaName.trim() : ''
   const title = personaTitleOff
     ? customTitle.trim() || 'Xenia Nessuvia'
@@ -72,7 +72,7 @@ export default function Sidebar() {
 
   // The rail's real width on <html>, for anything laid out outside the flex row that needs it, the
   // background layer, which spans the shell and can be told to start after the rail (see index.css).
-  // Observed rather than read off palette.sidebarWidth: that is unset until the first drag, and the
+  // Observed rather than read off palette.sidebarWidth: that's unset until the first drag, and the
   // defaults differ per rail state.
   useEffect(() => {
     const el = rail.current
@@ -141,7 +141,7 @@ export default function Sidebar() {
     }
     const stop = () => {
       handle.removeEventListener('pointermove', move)
-      // A click that never moved is not a resize, no need to write the width it already has.
+      // A click that never moved isn't a resize, no need to write the width it already has.
       if (Math.round(width) !== Math.round(startW)) patch({ sidebarWidth: Math.round(width) })
     }
 

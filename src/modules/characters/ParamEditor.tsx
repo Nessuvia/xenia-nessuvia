@@ -17,11 +17,11 @@ const fields: Record<OverridableField, { label: string }> = {
  * itself, so everything falls through to the connection.
  *
  * The sampler rows come from the connection, not from a list here: whichever params it sends are
- * the ones there is anything to override. A level can change what a sampler is set to; it can't
+ * the ones there's anything to override. A level can change what a sampler is set to; it can't
  * add one the connection doesn't send.
  *
  * `scopeLabel` names the level being edited in the "from x" tags. It defaults to 'chat' because
- * that is what `ParamSource` calls the innermost layer; Write passes 'story'.
+ * that's what `ParamSource` calls the innermost layer; Write passes 'story'.
  */
 export default function ParamEditor({
   overrides,
@@ -40,7 +40,7 @@ export default function ParamEditor({
   const inherited = resolveParams(connection, character)
   const byKey = new Map(defs.map((d) => [d.key, d]))
 
-  // ParamSource names the innermost layer 'chat'; say what it actually is here.
+  // ParamSource names the innermost layer 'chat'; say what it is here.
   const sourceLabel = (source: string) => (source === 'chat' ? scopeLabel : source)
 
   // empty string means inherit, one input, no checkbox, no tri-state.

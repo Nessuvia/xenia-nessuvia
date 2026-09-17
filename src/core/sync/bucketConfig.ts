@@ -10,7 +10,7 @@ export interface BucketConfig {
   /** Base URL of the S3 API, e.g. `https://s3.example.net` or `http://localhost:3900`. */
   endpoint: string
   /** Self-hosted servers mostly ignore the value. SigV4 signs it: it has to match what the
-   *  server expects and cannot be blank. Garage's default is `garage`, set as `s3_region` in
+   *  server expects and can't be blank. Garage's default is `garage`, set as `s3_region` in
    *  garage.toml. Hosted providers want a real region. */
   region: string
   bucket: string
@@ -18,9 +18,6 @@ export interface BucketConfig {
   prefix: string
   accessKeyId: string
   secretAccessKey: string
-  /** Encrypts the settings object before it is uploaded. Empty uploads it as plain text. Never sent
-   *  to the bucket in the clear, and not part of bucketConfigured: the tables sync without it. */
-  passphrase: string
 }
 
 export const emptyBucketConfig: BucketConfig = {
@@ -32,10 +29,9 @@ export const emptyBucketConfig: BucketConfig = {
   prefix: '',
   accessKeyId: '',
   secretAccessKey: '',
-  passphrase: '',
 }
 
-/** Every field but `prefix`, which is legitimately empty when the tables sit at the bucket root. */
+/** Every field but `prefix`, which is empty when the tables sit at the bucket root. */
 export function bucketConfigured(c: BucketConfig): boolean {
   return Boolean(c.endpoint && c.region && c.bucket && c.accessKeyId && c.secretAccessKey)
 }

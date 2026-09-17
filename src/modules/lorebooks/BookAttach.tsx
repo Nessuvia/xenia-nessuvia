@@ -9,7 +9,7 @@ import EntityPicker from '../../app/EntityPicker'
  * attached books, and a picker to add one.
  *
  * The same control in both places on purpose: the two levels differ in which record they write to,
- * and nothing else. Which record that is stays with the caller, which is the level the user meant.
+ * and nothing else. Which record that's stays with the caller, which is the level the user meant.
  */
 export default function BookAttach({
   ids,

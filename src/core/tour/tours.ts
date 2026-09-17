@@ -4,7 +4,7 @@ import type { Tour } from './types.ts'
 /**
  * One file per page, named after the route it belongs to with `/` written as `.`, and a segment
  * starting with `_` standing in for a URL parameter. `chat.c._id.md` is `/chat/c/:id`. Adding a
- * tour is adding a file: there is no list to edit and no import in main.tsx.
+ * tour is adding a file: there's no list to edit and no import in main.tsx.
  */
 const files = import.meta.glob('./tours/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 

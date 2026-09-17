@@ -32,7 +32,7 @@ export default function TagsPage() {
   async function applyRename() {
     const to = rename.trim()
     if (active === null || !to || to === active) return
-    // A draft has no members to sweep, renaming it is just retitling the unsaved row.
+    // A draft has no members to sweep, renaming it's just retitling the unsaved row.
     if (draft === active) {
       setDraft(to)
       setSelected(to)
@@ -59,7 +59,7 @@ export default function TagsPage() {
   async function toggleMember(id: number) {
     const c = characters.find((x) => x.id === id)
     if (!c || !active) return
-    // Appended, never prepended: assigning a tag here should not move a character out of the group
+    // Appended, never prepended: assigning a tag here shouldn't move a character out of the group
     // their first tag already puts them in.
     const next = c.tags.includes(active) ? c.tags.filter((t) => t !== active) : [...c.tags, active]
     await save({ ...c, tags: next })

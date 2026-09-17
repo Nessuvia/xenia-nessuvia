@@ -2,8 +2,7 @@ import { create } from 'zustand'
 import { storage } from '../storage/db'
 import { buildTablePayload } from '../storage/backup'
 import { hashPayload } from '../storage/tablePayload'
-import { keepDeviceFields, settingsKey } from './settingsObject'
-import { decryptText, encryptText, isEncrypted } from './encrypt'
+import { askKey, keepDeviceFields, settingsKey } from './settingsObject'
 import { tableNames, type TableName } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { TablePayload } from '../storage/tablePayload'
@@ -30,7 +29,7 @@ export interface TableComparison {
 export type Comparison = Partial<Record<TableName, TableComparison>>
 
 export interface Progress {
-  /** What is happening right now. Replaced by the next step, so there is no log to read. */
+  /** What's happening right now. Replaced by the next step, so there's no log to read. */
   label: string
   /** Steps finished, out of `total`. The bar is done/total, so it only moves on a success. */
   done: number
@@ -47,9 +46,9 @@ interface SyncState {
    *  reload, which clears it. */
   progress: Progress | null
   compare(): Promise<void>
-  apply(decisions: Partial<Record<TableName, Direction>>): Promise<void>
-  pushSettings(): Promise<void>
-  pullSettings(): Promise<void>
+  /** The tables to move, and optionally the settings object, in one run. `settings` on its own is
+   *  a valid call: `decisions` is then empty and the run is one step long. */
+  apply(decisions: Partial<Record<TableName, Direction>>, settings?: Direction | null): Promise<void>
   clearError(): void
 }
 
@@ -58,7 +57,7 @@ function message(err: unknown): string {
   return err instanceof Error ? err.message : 'Sync failed.'
 }
 
-/** Replaces the current line. Hoisted, so it can reach the store it is defined above. */
+/** Replaces the current line. Hoisted, so it can reach the store it's defined above. */
 function step(label: string, done: number, total: number) {
   useSync.setState({ progress: { label, done, total, failed: false } })
 }
@@ -121,9 +120,9 @@ export const useSync = create<SyncState>()((set, get) => ({
     }
   },
 
-  apply: async (decisions) => {
+  apply: async (decisions, settingsDirection = null) => {
     const comparison = get().comparison
-    // A collision cannot be resolved by inaction: every both-changed table needs a direction.
+    // A collision can't be resolved by inaction: every both-changed table needs a direction.
     const undecided = comparison
       ? (Object.entries(comparison) as [TableName, TableComparison][])
           .filter(([table, c]) => c.verdict === 'both' && !decisions[table])
@@ -135,14 +134,18 @@ export const useSync = create<SyncState>()((set, get) => ({
     }
 
     const queue = Object.entries(decisions) as [TableName, Direction][]
-    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: queue.length, failed: false } })
+    // The settings object is one more step on the same bar. It's not a table and never appears in
+    // the comparison: the two-device case is "send it from the device that has the keys".
+    const total = queue.length + (settingsDirection ? 1 : 0)
+    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total, failed: false } })
     const settings = useSettings.getState()
     const pulled: TableName[] = []
+    let settingsPulled = false
     try {
       for (const [index, [name, direction]] of queue.entries()) {
         const table = name as TableName
         if (direction === 'push') {
-          step(`Uploading ${table}...`, index, queue.length)
+          step(`Uploading ${table}...`, index, total)
           const { json, hash } = await buildTablePayload(table)
           const bytes = new Blob([json]).size
           if (bytes > maxPayloadBytes) {
@@ -152,12 +155,12 @@ export const useSync = create<SyncState>()((set, get) => ({
           }
           await client.pushTable(table, json, hash)
           settings.setTableSynced(table, hash)
-          step(`Uploaded ${table}, ${size(bytes)}.`, index + 1, queue.length)
+          step(`Uploaded ${table}, ${size(bytes)}.`, index + 1, total)
         } else {
-          step(`Downloading ${table}...`, index, queue.length)
+          step(`Downloading ${table}...`, index, total)
           const object = await client.pullTable(table)
           if (!object) {
-            step(`${table} is not in the bucket. Skipped.`, index + 1, queue.length)
+            step(`${table} is not in the bucket. Skipped.`, index + 1, total)
             continue
           }
           const payload = JSON.parse(object.json) as TablePayload
@@ -165,7 +168,7 @@ export const useSync = create<SyncState>()((set, get) => ({
             throw new Error(`${table} came back in an unrecognized format.`)
           }
           const rows = payload.rows as StoredRecord[]
-          // Suppressed: a pull is not a user edit. The table is recorded clean below, with the
+          // Suppressed: a pull isn't a user edit. The table is recorded clean below, with the
           // hash it was pulled at, rather than left holding whatever flag it had.
           await withDirtySuppressed(async () => {
             await storage.clear(table)
@@ -176,85 +179,61 @@ export const useSync = create<SyncState>()((set, get) => ({
           step(
             `Downloaded ${table}, ${rows.length} record${rows.length === 1 ? '' : 's'}.`,
             index + 1,
-            queue.length,
+            total,
           )
         }
       }
-      settings.setLastSyncedAt(Date.now())
-      step(pulled.length ? 'Done. Reloading.' : 'Done.', queue.length, queue.length)
+      // The bundled Nessuvia card and the default palettes live behind flags in settings, which are
+      // not synced. Without this a second device would seed its own copies on top of the pulled
+      // rows. Before the settings step: every one of these writes the persisted settings blob, and
+      // a settings pull has already replaced it in localStorage by then.
+      if (pulled.includes('characters')) settings.markCharactersSeeded()
+      if (pulled.includes('palettes')) settings.markPalettesSeeded()
+      if (pulled.includes('paramDefs')) settings.markParamDefsSeeded()
+      // Stacks matter twice over: stacksStore.load seeds two rows and calls setActiveId for them.
+      // Without this a pulled promptStacks table comes back with two extras and the active stack
+      // pointing at one of them.
+      if (pulled.includes('promptStacks')) settings.markStacksSeeded()
+
+      if (settingsDirection === 'push') {
+        step('Uploading settings...', queue.length, total)
+        const json = localStorage.getItem(settingsKey) ?? '{}'
+        await client.pushTable('settings', json, await hashPayload(json))
+        const ask = localStorage.getItem(askKey)
+        // Nothing written in Ask yet on this device. Uploading '{}' over the other device's
+        // scratchpad would be a silent delete.
+        if (ask !== null) await client.pushTable('ask', ask, await hashPayload(ask))
+        step(`Uploaded settings, ${size(new Blob([json]).size)}.`, queue.length + 1, total)
+      } else if (settingsDirection === 'pull') {
+        step('Downloading settings...', queue.length, total)
+        const object = await client.pullTable('settings')
+        if (!object) throw new Error('The bucket has no settings to download.')
+        // Absent in a bucket last written before Ask was synced. Leaving this device's scratchpad
+        // alone is the right answer either way. Both reads happen before either write: a failed
+        // request must not leave localStorage half replaced.
+        const ask = await client.pullTable('ask')
+        localStorage.setItem(settingsKey, keepDeviceFields(object.json, localStorage.getItem(settingsKey)))
+        if (ask) localStorage.setItem(askKey, ask.json)
+        settingsPulled = true
+        step('Downloaded settings.', queue.length + 1, total)
+      }
+
+      // Skipped after a settings pull: the store still holds the old blob in memory, and any write
+      // to it would persist that straight back over the one just written to localStorage.
+      if (!settingsPulled) settings.setLastSyncedAt(Date.now())
+      step(pulled.length || settingsPulled ? 'Done. Reloading.' : 'Done.', total, total)
     } catch (err) {
       fail(`Stopped: ${message(err)}`)
       set({ error: message(err), status: 'idle' })
       return
     }
 
-    // The bundled Nessuvia card and the default palettes live behind flags in settings, which are
-    // not synced. Without this a second device would seed its own copies on top of the pulled rows.
-    if (pulled.includes('characters')) settings.markCharactersSeeded()
-    if (pulled.includes('palettes')) settings.markPalettesSeeded()
-    if (pulled.includes('paramDefs')) settings.markParamDefsSeeded()
-    // Stacks matter twice over: stacksStore.load seeds two rows and calls setActiveId for them.
-    // Without this a pulled promptStacks table comes back with two extras and the active stack
-    // pointing at one of them.
-    if (pulled.includes('promptStacks')) settings.markStacksSeeded()
-
-    if (pulled.length) {
+    if (pulled.length || settingsPulled) {
       // Every store holds its rows in memory. A reload is how they all rehydrate at once.
       location.reload()
       return
     }
     set({ status: 'idle', comparison: null })
-  },
-
-  /**
-   * Settings, keys and all, as their own object in the bucket. Deliberately outside the table
-   * comparison: it is one small blob, it is not a table, and the two-device case is "send it from
-   * the device that has the keys" rather than a merge.
-   */
-  pushSettings: async () => {
-    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: 2, failed: false } })
-    try {
-      const plain = localStorage.getItem(settingsKey) ?? '{}'
-      const { passphrase } = useSettings.getState().bucket
-      step(passphrase ? 'Encrypting settings...' : 'Uploading settings as plain text...', 0, 2)
-      const json = passphrase ? await encryptText(plain, passphrase) : plain
-      step('Uploading settings...', 1, 2)
-      await client.pushTable('settings', json, await hashPayload(json))
-      step(`Uploaded settings, ${size(new Blob([json]).size)}.`, 2, 2)
-      set({ status: 'idle' })
-    } catch (err) {
-      fail(`Stopped: ${message(err)}`)
-      set({ error: message(err), status: 'idle' })
-    }
-  },
-
-  pullSettings: async () => {
-    set({ status: 'applying', error: '', progress: { label: 'Starting...', done: 0, total: 2, failed: false } })
-    try {
-      step('Downloading settings...', 0, 2)
-      const object = await client.pullTable('settings')
-      if (!object) {
-        fail('The bucket has no settings to download.')
-        set({ error: 'The bucket has no settings to download.', status: 'idle' })
-        return
-      }
-      // The stored object says whether it is encrypted, not the local setting: a device that has
-      // not been given the passphrase yet must fail with "wrong passphrase", not write ciphertext
-      // into localStorage.
-      const { passphrase } = useSettings.getState().bucket
-      let json = object.json
-      if (isEncrypted(json)) {
-        if (!passphrase) throw new Error('The settings in this bucket are encrypted. Enter the passphrase.')
-        step('Decrypting settings...', 1, 2)
-        json = await decryptText(json, passphrase)
-      }
-      localStorage.setItem(settingsKey, keepDeviceFields(json, localStorage.getItem(settingsKey)))
-      step('Downloaded settings. Reloading.', 2, 2)
-      location.reload()
-    } catch (err) {
-      fail(`Stopped: ${message(err)}`)
-      set({ error: message(err), status: 'idle' })
-    }
   },
 
   clearError: () => set({ error: '' }),

@@ -13,7 +13,7 @@ The send button, and the controls for continuing or regenerating the last reply.
 Chat-level actions: renaming, exporting, and deleting a range of messages.
 
 ## .sidebar | right | desktop
-The rail holds this chat's settings while it is open: the connection, the persona, the prompt stack
+The rail holds this chat's settings while it's open: the connection, the persona, the prompt stack
 and the lorebooks in play.
 
 Closing the chat puts the module links back.

@@ -11,7 +11,7 @@ interface Props {
  * The utility prompts this stack sends on the app's behalf. Rows come from the registry: a new
  * prompt shows up here without touching this file.
  *
- * Editing writes to the stack you have open, the same as any block, and rides the editor's autosave.
+ * Editing writes to the stack you've open, the same as any block, and rides the editor's autosave.
  */
 export default function MiscPromptsPanel({ stack, onChange }: Props) {
   const defs = defsForKind(stackKind(stack))

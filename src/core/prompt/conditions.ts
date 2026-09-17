@@ -9,7 +9,7 @@ import { castSlots } from './swapTokens.ts'
  * booleans rather than an expression language: `[if]` reads like code without becoming one.
  *
  * `narrator`: the speaker this turn is the Narrator.
- * `char1`…`char4`: that cast slot is filled. Matches the {{charN}} tokens one for one.
+ * `char1`...`char4`: that cast slot is filled. Matches the {{charN}} tokens one for one.
  * `game`: this send is a game's commentary rather than a chat turn.
  * The game's own kind, as written in `GameKind`: `goFish`, `blackjack`. One stack covers every
  * game: the per-game half of the prompt is a branch in it rather than a stack each.
@@ -60,7 +60,7 @@ function directive(line: string): Directive | undefined {
   const negated = Boolean(match[2])
   const name = match[3] ?? ''
   const needsName = keyword === 'if' || keyword === 'elseif'
-  // [if] with no name, or [else] with one, is not a directive.
+  // [if] with no name, or [else] with one, isn't a directive.
   if (needsName !== (name !== '')) return undefined
   const op = match[4] as Op | undefined
   const value = match[5]?.replace(/^"(.*)"$/, '$1')
@@ -90,9 +90,9 @@ export function mentionsCondition(text: string, name: string): boolean {
 /**
  * The same question asked of a whole prompt stack. Walks children, reads the selected option of a
  * block that has options, and skips a disabled block, which contributes nothing to a prompt and so
- * should not count as the stack having an opinion.
+ * shouldn't count as the stack having an opinion.
  *
- * Only text a block carries itself is scanned. A card field pulled in by a non-text block cannot
+ * Only text a block carries itself is scanned. A card field pulled in by a non-text block can't
  * hold directives anyway: `resolveConditions` runs over the stack's own text.
  */
 export function blocksMentionCondition(blocks: PromptBlock[], name: string): boolean {
@@ -133,7 +133,7 @@ function isConditional(node: Node): node is Conditional {
  */
 function parse(lines: string[]): Node[] {
   const root: Node[] = []
-  // Innermost last. Each frame is the conditional being built and the list it will be added to.
+  // Innermost last. Each frame is the conditional being built and the list it'll be added to.
   const open: { node: Conditional; parent: Node[] }[] = []
   const current = () => (open.length ? open[open.length - 1].node.branches.at(-1)!.body : root)
 
@@ -217,7 +217,7 @@ function render(nodes: Node[], flags: PromptConditions, out: string[]): void {
       continue
     }
     // First eligible branch wins; an [else] has no name and always qualifies. No match emits
-    // nothing at all: an [if] with no [else] simply drops.
+    // nothing at all: an [if] with no [else] drops.
     const branch = node.branches.find(
       (b) => b.name === undefined || holds(flags[b.name], b.op, b.value) !== b.negated,
     )

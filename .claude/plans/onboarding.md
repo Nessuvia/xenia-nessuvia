@@ -111,7 +111,7 @@ appears on whatever page loads first, pointing at that button. `nessuTavern.tour
 persisted state: a non-portable browser preference, straight to `localStorage`, no store, no Dexie
 table, out of the backup by construction.
 
-Tours do not chain in v1: the offer starts the current page's tour and nothing else. A later change
+Tours don't chain in v1: the offer starts the current page's tour and nothing else. A later change
 covers the sequence of every page, as a `tourOrder` array in `tours.ts` plus a "next: Characters"
 button on the last step.
 
@@ -130,7 +130,7 @@ button on the last step.
 - Cross-page chaining and the full-site walkthrough.
 - Avatar poses. One hand, one PNG. The pointer is a component taking a side; a pose prop is an
   additive change.
-- Resume after refresh, completion tracking, "tours you have not seen".
+- Resume after refresh, completion tracking, "tours you've not seen".
 - Any step that opens a rail, a drawer or a modal for you.
 - Tours for `write`, `multiplayer`, `ask`, `appearance`, `sync`. Add them by dropping in a file once
   the mechanism is proven.

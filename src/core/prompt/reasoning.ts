@@ -16,7 +16,7 @@ export interface ReasoningSpan {
  * `<think>` appearing later is the model quoting the marker inside its reply, and cutting there
  * would eat the answer. Leading whitespace before the marker is allowed and nothing else is.
  *
- * An unclosed block counts and runs to the end of the text. That is the truncated case, where the
+ * An unclosed block counts and runs to the end of the text. That's the truncated case, where the
  * reply is all thinking and no answer, and treating it as "no reasoning at all" would show the
  * user raw thinking as though the model had meant it.
  */
@@ -32,7 +32,7 @@ export function reasoningSpan(text: string, config: ReasoningConfig): ReasoningS
     : { start, end: close + config.suffix.length }
 }
 
-/** The reply with its think block removed, markers and all. Unchanged when there is no block. */
+/** The reply with its think block removed, markers and all. Unchanged when there's no block. */
 export function withoutReasoning(text: string, config: ReasoningConfig): string {
   const span = reasoningSpan(text, config)
   if (!span) return text
@@ -43,7 +43,7 @@ export function withoutReasoning(text: string, config: ReasoningConfig): string 
  * A stored reply as it should go back into a later prompt. `distance` is how far back the turn is,
  * newest being 1: `maxSendBack` can keep the last turn's thinking and drop the rest. Past
  * thinking is expensive and models rarely need their own. `sendBack` is off by
- * default. It is a send-time choice and the stored text is left whole either way.
+ * default. It's a send-time choice and the stored text is left whole either way.
  */
 export function stripReasoning(text: string, config: ReasoningConfig, distance: number): string {
   if (!config.sendBack) return withoutReasoning(text, config)

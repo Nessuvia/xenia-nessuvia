@@ -80,7 +80,7 @@ function templateOf(instruct: StInstruct): InstructTemplate {
     ...(last ? { lastModelPrefix: last } : {}),
     ...(instruct.system_same_as_user ? { systemAsUser: true } : {}),
     ...(instruct.wrap ? { wrapNewlines: true } : {}),
-    // ST's `macro` defaults on where it is absent. Only an explicit false turns it off.
+    // ST's `macro` defaults on where it's absent. Only an explicit false turns it off.
     ...(instruct.macro === false ? { expandMacros: false } : {}),
     ...(instruct.sequences_as_stop_strings ? { sequencesAsStops: true } : {}),
     ...(names ? { names } : {}),
@@ -120,14 +120,14 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
 
   const template = sections.instruct ? templateOf(sections.instruct) : undefined
   // Think markers belong to the model. On a text connection they go on the template, and the
-  // global tag rules stay untouched. Without an instruct template there is nowhere to put them:
+  // global tag rules stay untouched. Without an instruct template there's nowhere to put them:
   // the tag rule below is the fallback.
   const open = text(sections.reasoning?.prefix).trim()
   const close = text(sections.reasoning?.suffix).trim()
   if (template && open && close) {
     template.reasoning = { prefix: open, suffix: close, autoParse: true, sendBack: false }
   }
-  // ST calls it "Start Reply With". It is text the reply has to begin with either way.
+  // ST calls it "Start Reply With". It's text the reply has to begin with either way.
   const prefill = text(sections.preset?.assistant_prefill)
   if (template && prefill) template.prefill = prefill
   if (template?.stopSequences.length && !params.some((p) => p.key === 'stop')) {

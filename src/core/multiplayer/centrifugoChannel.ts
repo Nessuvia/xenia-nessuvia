@@ -30,7 +30,7 @@ const connectTimeoutMs = 10_000
 /**
  * What travels on the channel. Exactly one field is set: `e` is a protocol event, `a` is this
  * layer's own identity announcement. Keeping the announcement out of `e` is what lets `protocol.ts`
- * stay untouched: `parseEvent` never sees a frame it does not know, and `protocolVersion` does not
+ * stay untouched: `parseEvent` never sees a frame it doesn't know, and `protocolVersion` doesn't
  * move for a transport detail.
  */
 interface Envelope {
@@ -83,7 +83,7 @@ export function openCentrifugoChannel(
     clearTimeout(timer)
     reportReady()
     // Also on a resubscribe after a drop: the others' maps still hold our old connection id, which
-    // no longer exists, so we have to say who we are under the new one.
+    // no longer exists, so we've to say who we're under the new one.
     announce()
   })
 
@@ -103,7 +103,7 @@ export function openCentrifugoChannel(
     if (envelope.a) {
       const member = asMember(envelope.a)
       // No `info` means a server-API publish, which nothing in this app does. Without the
-      // publisher's connection id there is nothing to correlate a later leave against.
+      // publisher's connection id there's nothing to correlate a later leave against.
       if (!member || !ctx.info?.client) return
       if (member.id === me.id) return
       const known = members.get(ctx.info.client)

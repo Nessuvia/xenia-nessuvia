@@ -89,7 +89,7 @@ export default function ChatView() {
     load(chatId)
     // The draft belongs to the chat you typed it in.
     useDraft.getState().setText('')
-    // `chat` stays loaded after you leave. The store needs telling when it's actually on screen.
+    // `chat` stays loaded after you leave. The store needs telling when it's on screen.
     useChats.getState().setViewing(chatId)
     return () => useChats.getState().setViewing(null)
   }, [chatId, load])
@@ -334,7 +334,7 @@ export default function ChatView() {
 
         <div className="chatToolbar">
           {/* Shown in a solo chat too, not only a group: the Narrator is always a choice, and
-              picking it is how you hold a narrated stretch without retyping /narrate. */}
+              picking it's how you hold a narrated stretch without retyping /narrate. */}
           <ResponderPicker
             chat={chat}
             characters={characters}

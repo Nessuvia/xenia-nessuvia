@@ -15,7 +15,7 @@ export interface Rule {
    * - `regex`: a raw JS pattern. The only mode that can cross a sentence.
    */
   match: MatchMode
-  /** What to look for. A blank find matches nothing. For a built rule it is generated from the chips. */
+  /** What to look for. A blank find matches nothing. For a built rule it's generated from the chips. */
   find: string
   /** `pattern` only: the sentence the builder tags into chips. Absent on a pattern written by hand. */
   sample?: string
@@ -54,7 +54,7 @@ export function newRule(): Rule {
 }
 
 /**
- * Compile a `regex` rule, or null if it has no find or does not compile. An invalid regex is skipped
+ * Compile a `regex` rule, or null if it has no find or doesn't compile. An invalid regex is skipped
  * rather than thrown: the panel surfaces the syntax error, and a send must never break because a
  * rule is half-typed. `pattern` rules compile through `hammer/pattern.ts` instead and return null here.
  */

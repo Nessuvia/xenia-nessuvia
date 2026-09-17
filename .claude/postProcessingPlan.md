@@ -137,7 +137,7 @@ interface AcrosticConfig {
   threshold.
 
 ### Store
-- `Message.acrostics?: ({ template, fit } | undefined)[]`, parallel to swipes. It is a plain field,
+- `Message.acrostics?: ({ template, fit } | undefined)[]`, parallel to swipes. It's a plain field,
   so there's no version bump.
 
 ### Wiring
@@ -156,7 +156,7 @@ Words mode goes away. Everything the builder makes is Word types DSL, so the pat
 what Words mode had.
 
 ### What the tagger does today (checked 2026-09-15)
-Test run of compromise on "She didn't smile, and he won't go." and "I can't — they're here. It's
+Test run of compromise on "She didn't smile, and he won't go." and "I can't; they're here. It's
 fine; you'd know.":
 
 - Punctuation is never its own term. It sits in the previous term's `post` (`", "`, `" — "`,
@@ -180,7 +180,7 @@ fine; you'd know.":
    text. This allows rules that need a comma (the reason `default-noun-adj-tail` is regex today).
 3. Contractions, from compromise's own `implicit`. No hand table. A contraction becomes two tokens
    sharing the contraction's char span: `did` (pos verb) and `not` (pos from its tags), both with
-   `contraction: true`. Literals match on the implicit words, so `did not` matches both "did not"
+   `contraction: true`. Literals match on the implicit words, so `did not` matches both "didn't"
    and "didn't". A DSL literal `didn't` gets expanded at compile time by running it through the
    tagger, which gives the same two words. Rule: a match may not start or end in the middle of a
    contraction pair. Otherwise a rule on `not` would rewrite the whole of "didn't". Token text for
@@ -250,7 +250,7 @@ Three columns inside `.screenBody`: the stack list, the pipeline, and the tester
 
 ### Tester
 - Pick a chat and press Run. It runs the stack over that chat's assistant replies in memory. There
-  are no requests: rewrites show as "would rewrite" and are not sent. Nothing is stored.
+  are no requests: rewrites show as "would rewrite" and aren't sent. Nothing is stored.
 - Output: a hit count for each rule, style check, and swap, fed into the stage summaries. The reply
   list highlights hits, and clicking a hit scrolls the pipeline to its rule.
 - While a rule is open, the tester highlights only that rule's hits, and a count sits beside the
@@ -291,7 +291,7 @@ Regex rules show a plain text field in place of the builder.
 
 ### Chat panel (`AgentChatPanel.tsx`)
 - "Post-processing in this chat" (on/off override), the stack select, and "Use the global settings"
-  to reset. Display mode stays where it is for the Default style.
+  to reset. Display mode stays where it's for the Default style.
 
 ---
 
@@ -338,9 +338,9 @@ want to feel acrostic sooner, steps 8 and 9 can move to just after step 2. They 
 - Acrostic and beat chips in Write mode.
 
 ## Open questions
-- Some contractions are ambiguous. "It's" can be "it is" or "it has", and "'d" can be "would" or
+- Some contractions are ambiguous. "It's" can be "it's" or "it has", and "'d" can be "would" or
   "had". Compromise's `implicit` is a guess. A rule written as `it has` may miss an "it's" that
-  compromise read as "it is". Step 4 decides whether that's acceptable or whether a literal should
+  compromise read as "it's". Step 4 decides whether that's acceptable or whether a literal should
   match either reading.
 - Should the tester simulate acrostic fit on existing replies, e.g. how varied openers already are?
   It's skipped for now.

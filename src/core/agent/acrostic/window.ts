@@ -11,7 +11,7 @@ export interface WindowMessage {
 /**
  * The replies an acrostic draw and the beat suggestions read: the last `size` assistant replies,
  * oldest first, stopping at a `/break` divider. `content` is already the active swipe; the reasoning
- * block in front of it is cut off.
+ * block in front of it's cut off.
  */
 export function acrosticWindow(messages: WindowMessage[], size = 10): string[] {
   const out: string[] = []

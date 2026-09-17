@@ -3,7 +3,7 @@ import type { Rule } from './rules.ts'
 
 /**
  * The global agent config. Lives in `settingsStore`.
- * What the pass actually does lives in a post-processing stack, so it can be exported and shared.
+ * What the pass does lives in a post-processing stack, so it can be exported and shared.
  * What stays here is what must not travel: the master switch, the style, and the connection, which
  * holds an API key.
  */

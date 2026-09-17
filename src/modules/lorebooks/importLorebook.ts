@@ -50,7 +50,7 @@ export function mapEntry(item: unknown, index: number): ImportedEntry {
   const e = (item ?? {}) as Loose
   const keys = keyList(e.key ?? e.keys)
   const extensions = (e.extensions as Loose) ?? {}
-  // Secondary keys only gate when the entry is actually selective. An explicit `selective: false`
+  // Secondary keys only gate when the entry is selective. An explicit `selective: false`
   // means the author turned the gate off and left the keys behind.
   const selective = e.selective !== false
   return {

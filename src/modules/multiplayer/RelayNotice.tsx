@@ -3,13 +3,13 @@
  *
  * Multiplayer is the one feature that sends anything outside the browser other than model requests.
  * Frames go through a relay the host runs (`resources/self-hosted-relay.md`). The relay carries
- * plaintext. That is a fact the user should accept, not discover: this notice gates the feature,
- * it does not sit tucked away on a settings page.
+ * plaintext. That's a fact the user should accept, not discover: this notice gates the feature,
+ * it doesn't sit tucked away on a settings page.
  *
  * A guest's link says which relay the room is on, so the guest's copy names it.
  *
  * Acceptance is persisted for hosts only. `multiplayerStore.ts` holds a guest's tab to writing
- * nothing to localStorage and nothing to Dexie, and one convenience flag is not worth breaking it
+ * nothing to localStorage and nothing to Dexie, and one convenience flag isn't worth breaking it
  * so `JoinView` keeps the accepted state in React and shows the notice again next session.
  */
 import type { JSX } from 'react'

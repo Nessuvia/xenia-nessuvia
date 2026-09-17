@@ -1,5 +1,5 @@
 // Natural-language input, text-adventure style: "got any sevens", "any 3s?", "queens".
-// Returns null on anything it cannot read, including a rank the player does not hold. The caller
+// Returns null on anything it can't read, including a rank the player doesn't hold. The caller
 // shows the toast and logs nothing.
 
 import type { Rank } from './deck.ts'
@@ -23,15 +23,15 @@ const words: [string, Rank][] = [
 ]
 
 /** The one-letter shorthands. Read only when the spelled-out pass found nothing, and only from a
- *  token that is the letter alone. */
+ *  token that's the letter alone. */
 const letters: [string, Rank][] = [['a', 'A'], ['j', 'J'], ['q', 'Q'], ['k', 'K']]
 
 /**
  * Read an ask out of free text. `legal` is the ranks the player holds: a rank outside it reads as
- * no move at all. Asking for what you do not hold is not a legal move rather than a different one.
+ * no move at all. Asking for what you don't hold isn't a legal move rather than a different one.
  */
 export function parseAsk(text: string, legal: Rank[]): Rank | null {
-  // Tokenise on anything that is not a letter or digit: "any 3s?" and "3's" both split cleanly.
+  // Tokenise on anything that's not a letter or digit: "any 3s?" and "3's" both split cleanly.
   const tokens = text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
   const found = collect(tokens, words)
   // Two ranks in one line is ambiguous, not a move. "any threes or fours" gets a toast.
@@ -49,8 +49,8 @@ const actionWords: [string, 'hit' | 'stand'][] = [
 ]
 
 /**
- * Read a Blackjack decision out of free text. Two different decisions in one line is not a move,
- * the same way two ranks is not an ask.
+ * Read a Blackjack decision out of free text. Two different decisions in one line isn't a move,
+ * the same way two ranks isn't an ask.
  */
 export function parseAction(text: string): 'hit' | 'stand' | null {
   const tokens = text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)

@@ -27,7 +27,7 @@ import { useMediaQuery } from '../../app/useMediaQuery'
 import { edgeState, type EdgeState } from './tabScroll'
 import './plotLayout.css'
 
-/** Words in a blob of prose. A display number, it does not have to agree with any other counter
+/** Words in a blob of prose. A display number, it doesn't have to agree with any other counter
  *  in the app, and nothing budgets against it. */
 export function countWords(text: string): number {
   const trimmed = text.trim()
@@ -40,7 +40,7 @@ export function countWords(text: string): number {
  * .dialog / .dialogActions from chat.css, the same as RegenDialog.
  *
  * It stays open while the run works through the beats: the progress line is the only place the
- * Author can see how far it got, and closing it would not stop the run anyway.
+ * Author can see how far it got, and closing it'd not stop the run anyway.
  */
 function RewriteChapterDialog({
   label,
@@ -109,7 +109,7 @@ const sendLabels: Record<GuideSend, string> = {
 }
 
 // A cap (Premise or Ending) holds its own draft and writes to the Story when typing pauses, the
-// same 500ms the Author's note uses, a keystroke is not a database write.
+// same 500ms the Author's note uses, a keystroke isn't a database write.
 function Cap({
   label,
   hint,
@@ -163,11 +163,11 @@ function BulkAddBeats({
   onClose: () => void
 }) {
   const [text, setText] = useState('')
-  // A length the parse did not recognise is answered here rather than guessed at. Keyed by the raw
+  // A length the parse didn't recognise is answered here rather than guessed at. Keyed by the raw
   // value. Two beats that both say "epic" are one row.
   const [mapping, setMapping] = useState<Record<string, BeatWeight>>({})
   const { beats, unknown, error } = parseBulkBeats(text)
-  // An empty box is not a mistake the Author has made yet. It says nothing.
+  // An empty box isn't a mistake the Author has made yet. It says nothing.
   const shown = text.trim() ? error : ''
   const resolved = mapWeights(beats, mapping)
   const unanswered = unknown.filter((u) => !mapping[u])
@@ -636,7 +636,7 @@ function ChapterEditor({
                 type="button"
                 title="Remove this beat and the prose in it"
                 onClick={() => {
-                  // The beat owns its prose now. Removing it removes writing. Ask when there is any.
+                  // The beat owns its prose now. Removing it removes writing. Ask when there's any.
                   if (beat.content.trim() && !confirm('Delete this beat and the prose in it?')) return
                   setBeats(beats.filter((b) => b.id !== beat.id))
                 }}
@@ -712,7 +712,7 @@ function ChapterEditor({
  * The Plot Layout tab: the Premise, the chain of Chapters, the Ending, and the editor for whichever
  * Chapter is selected.
  *
- * Selection is local to this tab and is not persisted. Clicking a block must not move where the
+ * Selection is local to this tab and isn't persisted. Clicking a block must not move where the
  * next Direct writes, the Story tab's caret owns that. The one thing here that sets the active
  * Chapter is the beat Write button, which is an explicit "write here".
  */
@@ -723,7 +723,7 @@ export default function PlotLayout({
 }: {
   onWriteBeat: (chapterId: number, beatId: string) => void
   onJumpToStory: (beatId: string) => void
-  /** Set by the Story tab's jump button. This tab remounts on every tab switch, so it is only read
+  /** Set by the Story tab's jump button. This tab remounts on every tab switch, so it's only read
    *  for the initial selection. */
   focusBeat: { chapterId: number; beatId: string } | null
 }) {

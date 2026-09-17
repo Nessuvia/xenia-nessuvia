@@ -89,7 +89,7 @@
 
 /* --- Structure (skin) row ------------------------------------------------- */
 
-/* The dropdown holds two words, so it does not get the fluid `flex: 1 1 110px` the other selects
+/* The dropdown holds two words, so it doesn't get the fluid `flex: 1 1 110px` the other selects
    do. The space it gives up is where the knobs sit. */
 .appearance .appearanceRow .skinSelect {
   flex: 0 1 auto;
@@ -490,7 +490,7 @@
 }
 
 /* Opens downward: upward put the menu behind the list rows above it and cut off the top entries.
-   Width follows the button but may grow to the column, and the height is clamped to what is left
+   Width follows the button but may grow to the column, and the height is clamped to what's left
    below the button so the last row stays reachable. */
 .paletteBundledMenu {
   position: absolute;

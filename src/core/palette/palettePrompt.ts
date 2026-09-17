@@ -169,7 +169,7 @@ export function parsePaletteReply(text: string, base: Palette): Palette {
   return next
 }
 
-/** The first balanced `{…}` in the text, ignoring braces inside strings. Exported because every
+/** The first balanced `{...}` in the text, ignoring braces inside strings. Exported because every
  *  one-shot JSON request has the same problem: a model that fences the object or wraps it in a
  *  sentence, and one scanner is enough. `core/prompt/outline.ts` is the other caller. */
 export function firstJsonObject(text: string): string {
@@ -203,8 +203,8 @@ export function firstJsonObject(text: string): string {
  *
  * A quote is treated as the string's end only when the next non-space character is structural
  * (`,` `}` `]` `:`) or the text runs out. Anything else is prose and gets escaped. That rule is
- * wrong for a value that legitimately ends in a quote followed by more prose. Such a value is
- * not valid JSON in the first place, and there is nothing correct to lose.
+ * wrong for a value that ends in a quote followed by more prose. Such a value is
+ * not valid JSON in the first place, and there's nothing correct to lose.
  *
  * Returns the text unchanged when nothing needed fixing: a caller can tell a repair happened.
  */
@@ -241,7 +241,7 @@ export function repairJsonStrings(text: string): string {
       continue
     }
     // A raw control character is never legal inside a JSON string. Newlines and tabs are what a
-    // model actually emits; anything else in that range is dropped rather than guessed at.
+    // model emits; anything else in that range is dropped rather than guessed at.
     if (c === '\n') out += '\\n'
     else if (c === '\r') out += '\\r'
     else if (c === '\t') out += '\\t'

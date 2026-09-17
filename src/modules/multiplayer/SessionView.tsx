@@ -56,8 +56,8 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
   const settings = useMultiplayer((s) => s.settings)
   const shared = useMultiplayer((s) => s.appearance)
   const palette = usePalette()
-  // Host-side reads. The first two mark who is speaking in the left panel; the last two are read
-  // only to subscribe. The host's messages live in chatStore. Without them the shell would not
+  // Host-side reads. The first two mark who's speaking in the left panel; the last two are read
+  // only to subscribe. The host's messages live in chatStore. Without them the shell wouldn't
   // re-render on a new message, and the effect below would stop following the bottom.
   const streaming = useChats((s) => s.streaming)
   const speakingId = useChats((s) => s.speakingId)
@@ -73,7 +73,7 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
   //
   // Neither opens on a swipe: the navbar already owns the left-to-right swipe, and a room with two
   // panels has no way to say which one a swipe from the right meant. A swipe closes whichever is
-  // open, which is the half that matters once you are looking at one.
+  // open, which is the half that matters once you're looking at one.
   const phone = useMediaQuery('(max-width: 700px)')
   const [openPanel, setOpenPanel] = useState<'session' | 'room' | null>(null)
   const leftDrawer = useSideDrawer({
@@ -194,7 +194,7 @@ function Room({ isHost }: { isHost: boolean }): JSX.Element {
               narratorName={narratorName}
               speakingId={isHost && streaming ? (speakingId ?? undefined) : undefined}
             />
-            {/* Host only: it reads the open chat, which a guest's tab does not have. */}
+            {/* Host only: it reads the open chat, which a guest's tab doesn't have. */}
             {isHost && <ChatSettingsPanel />}
           </div>
         </aside>
@@ -526,7 +526,7 @@ function GuestBar(): JSX.Element {
   )
 }
 
-/** A guest's turn-holder pick. Rides in `say.responderId`, there is no `chat.respondWith` to
+/** A guest's turn-holder pick. Rides in `say.responderId`, there's no `chat.respondWith` to
  *  write on this side of the wire. */
 function GuestResponderPicker({
   characters,

@@ -1,5 +1,5 @@
 // Parsing the Bulk Add box into beats. Its own file rather than a helper in PlotLayout.tsx so
-// checkBulkBeats.ts can run it under `node --experimental-strip-types`, which cannot parse JSX.
+// checkBulkBeats.ts can run it under `node --experimental-strip-types`, which can't parse JSX.
 //
 // Extension-ful imports on purpose, for the same reason.
 import type { BeatWeight } from '../../core/storage/types.ts'
@@ -14,8 +14,8 @@ export interface BulkBeat {
 
 export interface BulkParse {
   beats: BulkBeat[]
-  /** Length values that are not one of the weights, deduplicated, in the order they first appear.
-   *  The dialog draws a dropdown per value and nothing is added until they are all answered. */
+  /** Length values that aren't one of the weights, deduplicated, in the order they first appear.
+   *  The dialog draws a dropdown per value and nothing is added until they're all answered. */
   unknown: string[]
   error: string
 }
@@ -32,7 +32,7 @@ export interface BulkParse {
  *
  * Untrusted input, and typed by hand as often as pasted. Every field is coerced and a bad entry
  * is skipped rather than taking the whole paste down with it. The one thing that fails outright is
- * input that is not an array at all: that is a format mistake, and saying so is more use than
+ * input that's not an array at all: that's a format mistake, and saying so is more use than
  * quietly adding nothing.
  */
 export function parseBulkBeats(input: string): BulkParse {
@@ -93,7 +93,7 @@ function isWeight(length: string): boolean {
 }
 
 /** A field as a single-line string. A number or a boolean is written out rather than dropped;
- *  anything else (an object, an array, null) is not text and becomes nothing. */
+ *  anything else (an object, an array, null) isn't text and becomes nothing. */
 function line(value: unknown): string {
   if (typeof value === 'string') return value.replace(/\s*\n\s*/g, ' ').trim()
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)

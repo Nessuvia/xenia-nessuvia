@@ -42,7 +42,7 @@ Rules while writing:
   sentence; rewrite it, don't ship the awkward one.
 - A hard letter usually has an escape hatch: a proper noun, the product name, a normal word most
   writers forget ("Zero", "Every", "Come"). Look before giving up.
-- If a letter genuinely can't work after real effort, say which one and rerun for that slot only.
+- If a letter can't work after real effort, say which one and rerun for that slot only.
 - Keep the voice warm and plain. The constraint is for freshness, not for showing off.
 
 ## Check

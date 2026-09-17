@@ -20,7 +20,7 @@ export interface Naming {
   they: string
   /** Object for the far side: "You asked Ivy for sevens." */
   them: string
-  /** Possessive for the far side, mid-sentence: "It is Ivy's turn." */
+  /** Possessive for the far side, mid-sentence: "It's Ivy's turn." */
   theirs: string
   /** The same possessive at the start of a line: "Ivy's hand: ..." */
   Theirs: string

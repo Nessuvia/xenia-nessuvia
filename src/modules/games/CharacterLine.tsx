@@ -5,8 +5,8 @@ import { useStickToBottom } from './useStickToBottom'
  * The character's line at the top of a board, and the Next button that sits in its bottom right
  * while the table is parked on the step gate.
  *
- * The button is outside the scrolling paragraph on purpose: inside it, it would scroll away with
- * the text it is asking you to finish reading.
+ * The button is outside the scrolling paragraph on purpose: inside it, it'd scroll away with
+ * the text it's asking you to finish reading.
  */
 export default function CharacterLine({
   line,

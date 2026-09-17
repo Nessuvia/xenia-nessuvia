@@ -77,7 +77,7 @@ export interface InstructTemplate {
   reasoning?: ReasoningConfig
 }
 
-/** When a turn is prefixed with who is speaking. */
+/** When a turn is prefixed with who's speaking. */
 export type NamesBehavior = 'never' | 'always' | 'group'
 
 /**
@@ -111,7 +111,7 @@ export function defaultTemplate(): InstructTemplate {
 }
 
 /**
- * Instruct formats for the models people actually run locally. These are facts about a model
+ * Instruct formats for the models people run locally. These are facts about a model
  * rather than taste, and unlike agent rules they ship: a user pointing at a Llama 3
  * build gets a first reply without retyping `<|start_header_id|>` from memory.
  */
@@ -198,7 +198,7 @@ export const templatePresets: { name: string; template: () => InstructTemplate }
  *
  * The escapes exist because the values that matter most in these lists are whitespace. DRY's
  * sequence breakers are `["\n", ":", "\"", "*"]` and a stop string is often a bare newline; a
- * single-line input cannot hold either, and trimming each entry deleted them outright. An empty
+ * single-line input can't hold either, and trimming each entry deleted them outright. An empty
  * list then means "omit the key", and a backend that requires a non-empty array rejects the
  * request.
  *
@@ -206,7 +206,7 @@ export const templatePresets: { name: string; template: () => InstructTemplate }
  * Anything else after a backslash is that character. A lone backslash in a stop string survives
  * rather than eating the next one.
  *
- * The one thing that cannot be written is a plain space at the start or end of an entry: the spaces
+ * The one thing that can't be written is a plain space at the start or end of an entry: the spaces
  * after a comma are the user's typing and are trimmed, and no escape survives that trim. Write `\t`
  * where a real space-like separator is wanted. Nothing a backend takes here needs one.
  */
@@ -226,7 +226,7 @@ export function formatList(list: string[]): string {
 export function parseList(text: string): string[] {
   // Split on unescaped commas only, keeping the escapes intact. Trimming has to happen on this
   // raw text and not on the unescaped value: `\n` here is a backslash and an n, which survives a
-  // trim, where the newline it stands for would not.
+  // trim, where the newline it stands for wouldn't.
   const raw: string[] = []
   let current = ''
   let escaped = false
@@ -293,7 +293,7 @@ export function coerceValue(def: ParamDef, value: unknown): unknown {
   }
 }
 
-/** `'["\n", ":"]'` as `['\n', ':']`, or null when the text is not a JSON array of strings. */
+/** `'["\n", ":"]'` as `['\n', ':']`, or null when the text isn't a JSON array of strings. */
 function parseJsonStringArray(text: string): string[] | null {
   const trimmed = text.trim()
   if (!trimmed.startsWith('[')) return null

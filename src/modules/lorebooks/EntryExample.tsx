@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { RiDeleteBinLine } from '@remixicon/react'
 import { CollapseButton } from '../../app/CollapseButton'
 
-/** View state only, so it is not in Dexie and not in a backup. '0' means open. */
+/** View state only, so it's not in Dexie and not in a backup. '0' means open. */
 const storageKey = 'nessuTavern.lorebooksExample'
 
 /**
@@ -11,7 +11,7 @@ const storageKey = 'nessuTavern.lorebooksExample'
  * match a field here against the same field one row down.
  */
 export default function EntryExample() {
-  // Closed until asked for: the rows below explain themselves once you have read this once.
+  // Closed until asked for: the rows below explain themselves once you've read this once.
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(storageKey) !== '0')
 
   const toggle = () => {

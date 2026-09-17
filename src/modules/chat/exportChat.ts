@@ -3,7 +3,7 @@
 // ../write/exportStory.ts. The two read as one family.
 //
 // Imports use file extensions. checkExportChat.ts runs the builders under
-// `node --experimental-strip-types`, which does not resolve extensionless app imports. The builders
+// `node --experimental-strip-types`, which doesn't resolve extensionless app imports. The builders
 // stay pure. Only the three `export*` wrappers touch `document`.
 import { createElement, Fragment } from 'react'
 import type { Chat, Message } from '../../core/storage/types.ts'
@@ -40,7 +40,7 @@ export interface TranscriptTurn {
 export interface Transcript {
   title: string
   turns: TranscriptTurn[]
-  /** Only the rules this chat's text actually opens and closes, see usedTagRules. */
+  /** Only the rules this chat's text opens and closes, see usedTagRules. */
   tagRules: TagRule[]
 }
 
@@ -65,7 +65,7 @@ export function turnName(m: Message, names: Names): string {
   return live ?? m.speakerName ?? names.characterName
 }
 
-/** The tag rules this chat's text actually uses. A rule counts as used when some turn opens and
+/** The tag rules this chat's text uses. A rule counts as used when some turn opens and
  *  closes it. */
 export function usedTagRules(turns: TranscriptTurn[], rules?: TagRule[]): TagRule[] {
   return (rules ?? []).filter((r) => {
@@ -190,7 +190,7 @@ export async function buildHtml(t: Transcript, palette: Palette): Promise<string
     t.turns.map((turn) => (turn.divider ? Promise.resolve('') : messageHtml(turn, t.tagRules))),
   )
 
-  // Dividers are not bubbles. The counter increments only for bubbles; jump-menu indices line up
+  // Dividers aren't bubbles. The counter increments only for bubbles; jump-menu indices line up
   // with the `.bubble` elements the script collects.
   const body: string[] = []
   const options: string[] = []
@@ -350,7 +350,7 @@ ${readAloudScript(`nav, .readAloud, .codeBlock${tagCss ? ', .taggedBlock' : ''}`
  */
 export function buildJson(chat: Chat, messages: Message[]): string {
   // Lorebook ids are row ids in this browser's database and name nothing on another device, so
-  // they are dropped rather than exported as numbers that would resolve to someone else's books.
+  // they're dropped rather than exported as numbers that would resolve to someone else's books.
   const { lorebookIds: _lorebookIds, ...rest } = chat
   return JSON.stringify(
     {

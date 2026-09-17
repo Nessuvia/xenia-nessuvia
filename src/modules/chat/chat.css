@@ -468,7 +468,7 @@
 /* The menu overhangs the rows below it, and a z-index inside the row can't reach them: the glass
    skin gives .card a backdrop-filter, which makes every row its own stacking context. So the row
    holding an open menu is what gets lifted, in the list's stacking context where the later rows
-   actually are. */
+   are. */
 .chatRow:has(.chatExportMenu) {
   position: relative;
   /* Ordering one row against its siblings inside the list, not a tier on the ladder: any positive
@@ -1180,7 +1180,7 @@
 }
 
 /* The pre-pass text, shown in place of the message while the header toggle is on. Dimmed so a
-   glance never mistakes it for what is stored. */
+   glance never mistakes it for what's stored. */
 .passOriginalBody {
   color: var(--textMuted);
 }

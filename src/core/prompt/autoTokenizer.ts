@@ -2,7 +2,7 @@ import type { ResolvedTokenizerId } from './tokenizers.ts'
 
 /**
  * Guesses a model's tokenizer family from its id. Names are the only signal an OpenAI-compatible
- * endpoint gives: there is no field for this. It is a guess. The picker exists for when the
+ * endpoint gives: there's no field for this. It's a guess. The picker exists for when the
  * guess is wrong.
  *
  * Order matters: the more specific pattern has to be tested before the family it belongs to

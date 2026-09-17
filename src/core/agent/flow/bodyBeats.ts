@@ -3,7 +3,7 @@ import type { FlowRule } from '../flowRules.ts'
 import { beatMaxWords, isBeat, narrationNeighbour } from './words.ts'
 
 // Brows, jaw, throat, a nod, a shrug: each fine alone, a body inventory together. Past the stack's
-// budget, every further beat is flagged, with the narration sentence before it when there is one.
+// budget, every further beat is flagged, with the narration sentence before it when there's one.
 export const bodyBeats: FlowRule = {
   id: 'body-beats',
   label: 'Body beat budget',

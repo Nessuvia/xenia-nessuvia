@@ -1,6 +1,6 @@
 # CSS conventions
 
-Read this before writing or editing any `.css` file or any `className` in this repo. It is the long
+Read this before writing or editing any `.css` file or any `className` in this repo. It's the long
 form of the Style section in CLAUDE.md: that section is the summary, this is the rulebook.
 
 Every rule is a pair. The failure this file exists to stop is **drift**: values that are each
@@ -10,7 +10,7 @@ already had a place for it. None of it looks broken in isolation, all of it has 
 hand.
 
 The house rule underneath all of the below: **read the neighbouring rules before adding one.** If a
-value in this file disagrees with a value already in the file you are editing, match the file and
+value in this file disagrees with a value already in the file you're editing, match the file and
 say so.
 
 ---
@@ -29,7 +29,7 @@ Shared components live in `/app` with their own `.css` and are imported by modul
 
 Second copy of a pattern is a nudge, third is the cue to hoist it into `/app`.
 
-A module `.css` holds only what is specific to that tab. Anything two tabs share belongs in the
+A module `.css` holds only what's specific to that tab. Anything two tabs share belongs in the
 shared component's stylesheet.
 
 ---
@@ -55,14 +55,14 @@ The vars, by role:
 | `--surfaceHover` | `--textDim` disabled | | `--codeBg` / `--codeText` |
 | `--surfaceActive`, `--surfaceSelected` | | | |
 
-Need a tint of an existing var rather than a new one? Use `color-mix`, do not invent a hex:
+Need a tint of an existing var rather than a new one? Use `color-mix`, don't invent a hex:
 
 ```css
 /* No */  background: #1e1e28;
 /* Yes */ background: color-mix(in srgb, var(--surface) 80%, var(--accent));
 ```
 
-**The only standing exceptions**, all of which are already in the tree, do not add a sixth without
+**The only standing exceptions**, all of which are already in the tree, don't add a sixth without
 a comment saying why:
 
 - `#000` inside a `mask` / `-webkit-mask` gradient (`chat.css`), where the value is an alpha channel
@@ -84,15 +84,15 @@ carry most of the app; 4 and 6 are the tight end; 16 and 24 are for page-level p
 - **No:** `padding: 7px 9px;` · `gap: 5px;` · `margin-bottom: 14px;`
 - **Yes:** `padding: 6px 8px;` · `gap: 4px;` · `margin-bottom: 12px;`
 
-If the design genuinely needs a value off the scale, it is optical correction and it takes a comment
-saying what it is correcting.
+If the design needs a value off the scale, it's optical correction and it takes a comment
+saying what it's correcting.
 
 ```css
 /* The icon's glyph sits 1px high in the font, so the row needs uneven padding to look centred. */
 padding: 7px 8px 6px;
 ```
 
-Some off-scale values already exist (28 uses of `7px`, some `3px`, `5px`, `14px`). Leave them; do not
+Some off-scale values already exist (28 uses of `7px`, some `3px`, `5px`, `14px`). Leave them; don't
 reformat a file to the scale as a side quest. The rule governs what you *add*.
 
 There are no spacing tokens and none are wanted. Literal px from the scale is the convention.
@@ -104,10 +104,10 @@ There are no spacing tokens and none are wanted. Literal px from the scale is th
 **Default to not setting `font-size` at all.** Inheritance is the correct answer far more often than
 a number is, and every unnecessary declaration is a place for drift.
 
-- **No:** `font-size: 13px;` on a `<span>` inside a panel that is already 13px.
+- **No:** `font-size: 13px;` on a `<span>` inside a panel that's already 13px.
 - **Yes:** nothing. Let it inherit.
 
-When a size genuinely has to differ from its parent, take it from **11 · 12 · 13 · 14** px.
+When a size has to differ from its parent, take it from **11 · 12 · 13 · 14** px.
 
 | Size | Used for |
 | --- | --- |
@@ -117,15 +117,15 @@ When a size genuinely has to differ from its parent, take it from **11 · 12 · 
 | `14px` | emphasis inside a panel, small headings |
 
 Anything larger is a heading and belongs to the small set already in use (`15px`, `18px`, `22px`,
-`28px`); pick one of those, do not add a new one.
+`28px`); pick one of those, don't add a new one.
 
 Units: **px for chrome.** `rem` and `em` appear in ~40 rules and are correct in exactly two places:
 inside message and story content, where the user's own font scaling should apply, and where an `em`
-is deliberately relative to the parent (`0.85em` on a nested label). Do not sprinkle `rem` through UI
+is deliberately relative to the parent (`0.85em` on a nested label). Don't sprinkle `rem` through UI
 chrome for tidiness.
 
-`font-weight` follows the same default: leave it alone unless the element is genuinely a heading or
-genuinely de-emphasised. `:root` sets `font-weight: var(--textWeight, 400)` as a palette knob, and
+`font-weight` follows the same default: leave it alone unless the element is a heading or
+de-emphasised. `:root` sets `font-weight: var(--textWeight, 400)` as a palette knob, and
 anything with a weight of its own opts out of it.
 
 ---
@@ -145,13 +145,13 @@ border-radius: calc(var(--radius) + 4px);   /* full panels */
 border-radius: calc(var(--radius) - 2px);   /* a chip inside a card */
 ```
 
-`50%` for circles and `999px` for pills are fine as literals: they are shapes, not sizes.
+`50%` for circles and `999px` for pills are fine as literals: they're shapes, not sizes.
 
 ---
 
 ## 6. Layering
 
-Every `z-index` comes from the ladder in `index.css`. Do not invent a number.
+Every `z-index` comes from the ladder in `index.css`. Don't invent a number.
 
 The rungs are numbered, not named: `--layer-0` through `--layer-10`, one tier each, no gaps, higher
 draws over lower.
@@ -170,26 +170,26 @@ draws over lower.
 | `--layer-9` | the onboarding tour overlay |
 | `--layer-10` | the boot splash |
 
-- **No:** `z-index: 40;` because 30 was not enough.
-- **Yes:** `z-index: var(--layer-3);` If nothing on the ladder fits, that is a design question
+- **No:** `z-index: 40;` because 30 wasn't enough.
+- **Yes:** `z-index: var(--layer-3);` If nothing on the ladder fits, that's a design question
   to raise, not a number to pick.
 
-A new tier goes in at its place in `index.css` and every rung above it shifts up by one. That is a
+A new tier goes in at its place in `index.css` and every rung above it shifts up by one. That's a
 single edit, because no stylesheet outside `index.css` names a number: they all say `var(--layer-N)`.
 Renumbering means moving the var names on the rules that move, so do it with the ladder comment open
 and check the phone stack after.
 
 Rungs 4 through 7 are the phone drawer stack, in order: `drawerOpenButtons`, `.sideDrawer`,
 `.sidebarOpenButton`, `.sidebar.sideDrawer`. Each is commented where it lives,
-because the navbar is the way out of any screen and must never end up behind a panel. Do not take a
+because the navbar is the way out of any screen and must never end up behind a panel. Don't take a
 rung in that range for anything else.
 
 A small `z-index` used purely to order siblings inside one container (the pair on `.chatRow` and
-`.chatExportMenu` in `chat.css`) is not a tier and does not use a var. It is a bare `1`, and it gets
-a comment saying what it is ordering against.
+`.chatExportMenu` in `chat.css`) isn't a tier and doesn't use a var. It's a bare `1`, and it gets
+a comment saying what it's ordering against.
 
 The two exported-document stylesheets (`exportChat.ts`, `exportStory.ts`) build standalone HTML
-files that never load `index.css`. Their `z-index` values are not on this ladder and are not drift.
+files that never load `index.css`. Their `z-index` values aren't on this ladder and aren't drift.
 
 ---
 
@@ -205,20 +205,20 @@ files that never load `index.css`. Their `z-index` values are not on this ladder
 .promptsActionButton { padding: 6px 8px; }
 ```
 
-This is not a style preference. `characters.css` carries this comment:
+This isn't a style preference. `characters.css` carries this comment:
 
 > `#root` because the chat module styles every `.chatView button`, and this one is the component's,
 
-That is the cost, in full: a module's generic selector reached a shared component, and the fix was a
+That's the cost, in full: a module's generic selector reached a shared component, and the fix was a
 specificity escape hatch that now has to be maintained. Nine `#root` prefixes exist in the tree and
 every one of them is a descendant selector that overreached.
 
-There are 297 existing descendant selectors. They stay. Do not convert them wholesale, but when you
-touch a rule that uses one and it is fighting you, adding the class is the fix.
+There are 297 existing descendant selectors. They stay. Don't convert them wholesale, but when you
+touch a rule that uses one and it's fighting you, adding the class is the fix.
 
-**`#root` is the last resort, not a tool.** It is for a shared rule in `/app` that has to beat a
-module's generic selector. It always carries a comment saying which selector it is beating and why,
-because stylesheet order is not something to rely on:
+**`#root` is the last resort, not a tool.** It's for a shared rule in `/app` that has to beat a
+module's generic selector. It always carries a comment saying which selector it's beating and why,
+because stylesheet order isn't something to rely on:
 
 ```css
 /* #root to beat .formPage label, which stacks label content in a column. A checkbox belongs on
@@ -239,16 +239,16 @@ Modules and no scoping, so a name is a claim on the whole app.
 - **Yes:** `.chatComposerRow` · `.promptsEditorActions` · `.sidebarItem` · `.paramsLibraryRow`
 
 **Grep before you name.** `grep -rn '\.yourName' src --include='*.css'`. A name that already exists
-in another file is a collision, and it will apply to both.
+in another file is a collision, and it'll apply to both.
 
 Eleven names are currently defined in two files each: `.chatView`, `.editorActions`,
 `.characterList`, `.characterName`, `.chatBottomBar`, `.personaEditor`, `.personaEditorDescription`,
 `.libraryRow`, `.lorebookRow`, `.lobbyDeny`, `.plotAddChapter`. Treat those as bugs waiting to bite,
-not as precedent. If you are editing one and its two definitions disagree, say so rather than
+not as precedent. If you're editing one and its two definitions disagree, say so rather than
 guessing which is live.
 
 Two kebab-case strays exist (`.sidebar-item`, `.sidebar-title`) plus `.react-colorful`, which belongs
-to the library. Do not add to the first group.
+to the library. Don't add to the first group.
 
 ---
 
@@ -274,7 +274,7 @@ A different width needs a comment saying what breaks at that width:
 @media (max-width: 900px) { … }
 ```
 
-Four other widths already exist (560, 720, 900, 1200). They stay, but do not copy one just because it
+Four other widths already exist (560, 720, 900, 1200). They stay, but don't copy one just because it
 is nearby.
 
 CSS handles anything a stylesheet can say on its own. Reach for `useMediaQuery('(max-width: 700px)')`
@@ -306,7 +306,7 @@ can be found by grepping for its full name, and nesting breaks that.
 .chatRowLabel { color: var(--textMuted); }
 ```
 
-**Transitions and animations you were not asked for: never.** CLAUDE.md's "keep styling light until
+**Transitions and animations you weren't asked for: never.** CLAUDE.md's "keep styling light until
 the polishing phase" applies here first. A screen that works and looks plain is done. No fade-ins on
 mount, no hover lifts, no easing on a thing that was static a moment ago. The exceptions already in
 the tree are deliberate and commented: the palette-swap fade, the drawer slide, the collapse chevron.
@@ -320,8 +320,8 @@ localStorage. User markup has exactly one vetted route: `palette/sanitizeHtml.ts
 
 ### Inline `style={{}}`: allowed, but narrowly
 
-Thirteen uses exist and all are values a stylesheet cannot know: a palette swatch's color, a slider
-thumb's `left: %`, a computed row count. That is the bar.
+Thirteen uses exist and all are values a stylesheet can't know: a palette swatch's color, a slider
+thumb's `left: %`, a computed row count. That's the bar.
 
 ```tsx
 /* No: this belongs in the stylesheet */
@@ -344,7 +344,7 @@ A skin is the structural half of a palette: `data-skin` on the root, and a style
 
 A skin may only change **how a surface is painted**: background, border, shadow, filter. Radius,
 padding and spacing stay in the base stylesheet. A skin can therefore look wrong but can never break
-layout, and that property is worth more than any effect it would buy.
+layout, and that property is worth more than any effect it'd buy.
 
 - **No:** `[data-skin='glass'] #root .card { padding: 12px; border-radius: 12px; }`
 - **Yes:** `[data-skin='glass'] #root .card { background: …; backdrop-filter: …; }`
@@ -359,13 +359,13 @@ Run through this on any diff that touches CSS:
 
 - [ ] No hex, `rgb()` or `hsl()` outside `index.css`.
 - [ ] Every spacing value is on the scale, or carries a comment.
-- [ ] Every `font-size` you added is actually needed, and is on the scale.
+- [ ] Every `font-size` you added is needed, and is on the scale.
 - [ ] Every `z-index` is a `--layer-*` var.
-- [ ] Every new class has a module prefix and is not already defined elsewhere (grep it).
+- [ ] Every new class has a module prefix and isn't already defined elsewhere (grep it).
 - [ ] No bare-tag descendant selectors in new rules.
 - [ ] No `!important`, no `&` nesting, no unrequested motion.
 - [ ] Media queries are `max-width: 700px` or `max-width: 1300px`, or commented.
 - [ ] Anything two tabs now share moved to `/app` rather than being copied.
 
 Then `npx pnpm build` and the `check*` scripts, and **stop**. The user drives Chrome and tests in the
-browser personally. Report that the build is clean and say what is ready to look at.
+browser personally. Report that the build is clean and say what's ready to look at.

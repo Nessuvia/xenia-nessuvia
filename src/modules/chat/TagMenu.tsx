@@ -7,7 +7,7 @@ import type { TagMode } from './tags'
 /**
  * Every tag control on the picker, behind one button: filter, Any/All, group by tag, and the way
  * into tag management. Three separate header buttons put tag housekeeping at the same weight as
- * New character, which it is not.
+ * New character, which it's not.
  *
  * State stays in CharacterPicker, this is chrome, not a store.
  */

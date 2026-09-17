@@ -23,7 +23,7 @@ export type TokenizerId =
   | 'yi'
   | 'claude'
 
-/** Everything `countTokens` can actually run. `auto` resolves to one of these. */
+/** Everything `countTokens` can run. `auto` resolves to one of these. */
 export type ResolvedTokenizerId = Exclude<TokenizerId, 'auto'>
 
 export interface TokenizerDef {

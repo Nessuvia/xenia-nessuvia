@@ -50,7 +50,7 @@ export function useSideDrawer({
   const id = useRef({})
 
   // While this drawer is open every other drawer stands down. A swipe that closes this one
-  // cannot open one on the opposite edge at the same time.
+  // can't open one on the opposite edge at the same time.
   useEffect(() => {
     if (!enabled || !open) return
     return markDrawerOpen(id.current)
@@ -67,7 +67,7 @@ export function useSideDrawer({
     let y0 = 0
     let t0 = 0
     let startOpen = false
-    // Set on the first move that is clearly sideways. Until then the touch could still turn out to
+    // Set on the first move that's sideways. Until then the touch could still turn out to
     // be a scroll. Nothing is claimed and the page behaves normally.
     let claimed = false
     let live = false

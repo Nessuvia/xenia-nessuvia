@@ -230,10 +230,10 @@ export function StoryBeats() {
   const [mode, setMode] = useState(0)
   const [shutChapters, setShutChapters] = useState<string[]>([])
 
-  // Streaming only gates rows while it is THIS Story being written.
+  // Streaming only gates rows while it's THIS Story being written.
   const busy = streaming && streamingStoryId === (story?.id ?? null)
 
-  // Scrolling to the Block and focusing it is one action: the list is a way around the document,
+  // Scrolling to the Block and focusing it's one action: the list is a way around the document,
   // not a second place to read it.
   function jump(blockId: string) {
     const el = document.querySelector<HTMLElement>(`.storyProse[data-block="${blockId}"]`)
@@ -548,7 +548,7 @@ const railSections: { id: string; label: string; body: () => ReactNode }[] = [
 ]
 
 // One section. The pin sits inside the <summary> so it lines up with the label, which means it has
-// to stop its own click from reaching the <details> and folding the section. It is a <span> with a
+// to stop its own click from reaching the <details> and folding the section. It's a <span> with a
 // button role rather than a <button>: a <button> inside a <summary> is invalid HTML.
 function RailSection({
   label,

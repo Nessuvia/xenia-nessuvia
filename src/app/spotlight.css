@@ -33,7 +33,7 @@
 }
 
 /* Phone: the box takes an edge instead of anchoring beside the target. The edge flips away from
-   the target, so it never covers the thing it is pointing at. */
+   the target, so it never covers the thing it's pointing at. */
 .spotlightBoxDockedBottom {
   left: 0;
   right: 0;

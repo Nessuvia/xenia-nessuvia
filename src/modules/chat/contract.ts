@@ -10,13 +10,13 @@ const negations: [string, string][] = [
 const pronouns = '(I|you|he|she|it|we|they|that|there|here|what|who)'
 const helpers: [string, string][] = [['am', "'m"], ['are', "'re"], ['is', "'s"], ['will', "'ll"], ['would', "'d"]]
 
-/** Keep the first letter's case: "Do not" becomes "Don't". */
+/** Keep the first letter's case: "Don't" becomes "Don't". */
 function matchCase(original: string, out: string): string {
   return original[0] === original[0].toUpperCase() ? out[0].toUpperCase() + out.slice(1) : out
 }
 
 /**
- * Contract a message: "should not" to "shouldn't", "I am" to "I'm".
+ * Contract a message: "shouldn't" to "shouldn't", "I am" to "I'm".
  * A pronoun + helper before punctuation stays whole: "Yes, I am." can't become "Yes, I'm."
  * Pairs that don't go together ("I are", "he am") are left alone.
  */

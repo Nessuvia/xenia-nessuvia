@@ -42,7 +42,7 @@ export default function Tour({ tour, onClose }: Props) {
   }, [])
 
   // A step whose selector no longer matches anything is skipped: a renamed class shortens a tour,
-  // it does not break the app.
+  // it doesn't break the app.
   const onMissingTarget = useCallback(() => {
     if (import.meta.env.DEV) console.warn(`tour "${tour.id}" step ${index}: no element for ${step?.target}`)
     if (direction.current < 0 && index === 0) onClose()

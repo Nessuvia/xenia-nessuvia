@@ -18,7 +18,7 @@ export interface PickerItem {
  * Filtering and the search box live here; what the items are and what picking one does belong to
  * the caller.
  *
- * Two shapes, from the same rows. Without `selectedKeys` it is a one-shot list, click a row and
+ * Two shapes, from the same rows. Without `selectedKeys` it's a one-shot list, click a row and
  * the caller closes it. With `selectedKeys` it stays put and rows carry their own on/off state,
  * which is what a multi-select wants.
  */
@@ -37,12 +37,12 @@ export default function EntityPicker({
   emptyText?: string
   /** Keys currently on. Given at all, rows become toggles and keep a selected background. */
   selectedKeys?: string[]
-  /** Keys that cannot be picked right now, a selection cap already met, say. */
+  /** Keys that can't be picked right now, a selection cap already met, say. */
   disabledKeys?: string[]
   /** Rows visible before the list scrolls. */
   rows?: number
   onPick: (item: PickerItem) => void
-  /** Omit in a list that stays on screen: no Cancel button, and the search box does not steal focus. */
+  /** Omit in a list that stays on screen: no Cancel button, and the search box doesn't steal focus. */
   onCancel?: () => void
 }) {
   const [search, setSearch] = useState('')

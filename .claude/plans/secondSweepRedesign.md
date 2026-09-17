@@ -11,7 +11,7 @@ Confirmed by the user across five question rounds. Everything below reflects tho
 > I don't like this pattern → send to Slop-dentifier → add rules to pipeline → back to the chat,
 > swipe for a new reply or run the second sweep on the original.
 
-That is the whole product. Every decision below serves it. Today the loop breaks at step three:
+That's the whole product. Every decision below serves it. Today the loop breaks at step three:
 "add a rule to the pipeline" forces a choice between two rule types living behind two different
 tabs, with different fields and different powers, and nothing in the UI says which one you want.
 
@@ -21,8 +21,8 @@ tabs, with different fields and different powers, and nothing in the UI says whi
 Checks, Rules, Hammer) in one file. A pipeline's actual shape, an ordered list of stages a reply
 flows through, is invisible. You read forms and infer the flow.
 
-Three things are wrong at once: two rule systems where the user thinks in one, a page that is an
-undifferentiated wall, and a structure that is never drawn.
+Three things are wrong at once: two rule systems where the user thinks in one, a page that's an
+undifferentiated wall, and a structure that's never drawn.
 
 ## Read before starting
 
@@ -49,7 +49,7 @@ interface DetectSettings {
 ```
 
 They already agree on `id`, `enabled`, `label`, `scope`, `caseSensitive`. They differ on how the
-match is expressed and what happens to a match. That is a match mode and an action, not two types.
+match is expressed and what happens to a match. That's a match mode and an action, not two types.
 
 ## The merged rule
 
@@ -98,7 +98,7 @@ Now `strip` works on a literal and `flag` works on a POS pattern.
 `rule.ts` is deleted, its type absorbed into `rules.ts`.
 
 `strip.ts` becomes mode-aware rather than pattern-only. It already runs rules as ordered passes with
-sentinel substitution so a later rule cannot see an earlier rule's output, capped at `MAX_PASSES`.
+sentinel substitution so a later rule can't see an earlier rule's output, capped at `MAX_PASSES`.
 That ordering is the right behaviour for a merged list and it stays. The change is that finding the
 spans for one rule now branches on `match`: pattern mode calls `findMatches` as today, literal and
 regex mode run the compiled regex. Both paths already honour `computeExclusions`, so code fences,
@@ -108,10 +108,10 @@ URLs and inline code stay off limits in every mode.
 
 Two semantics to settle, both called out in the code:
 
-- **Match cap.** Text rules cap at 3 matches per rule, hammer rules do not. Keep the cap for
+- **Match cap.** Text rules cap at 3 matches per rule, hammer rules don't. Keep the cap for
   `flag` (it exists to stop one rule drowning the editing model in notes) and leave `strip` and
   `replace` uncapped, since an unfixed match is the failure there.
-- **Sentence boundaries.** A pattern-mode match cannot cross a sentence. A regex can. That is a
+- **Sentence boundaries.** A pattern-mode match can't cross a sentence. A regex can. That's a
   property of regex, not a bug, and the rules editor says so in one line next to the mode picker.
 
 `collect.ts` collapses to a single `applyRules` call, replacing `stripText` + `findFlags` +
@@ -143,7 +143,7 @@ Where it runs:
   the legacy path feeding `oneRule`. Export writes the merged shape only.
 - `legacy.ts` (the 0.0.42 converter) emits `Rule[]` directly.
 
-Because nothing is dropped, there is no user-facing report. The conversion is silent.
+Because nothing is dropped, there's no user-facing report. The conversion is silent.
 
 ## Call sites
 
@@ -218,14 +218,14 @@ stacks under the diagram and the selected card scrolls into view.
 
 ## The source node
 
-`detect`, `lexicon` and `census` are pipeline-wide inputs that every stage below reads. They are not
+`detect`, `lexicon` and `census` are pipeline-wide inputs that every stage below reads. They're not
 stages themselves, and today they own three of the five sub-tabs.
 
 They become a fixed **Detectors** node pinned at the top of the chain. Not removable, not
 reorderable, no enable toggle. Selecting it puts the merged rules list, the lexicon and the census
 options in the inspector. This is honest about how it runs: one input feeding everything below.
 
-It is also where the Slop-dentifier loop lands. One node, one list, one place a new rule appears.
+It's also where the Slop-dentifier loop lands. One node, one list, one place a new rule appears.
 
 `Pipeline.label` and `Pipeline.description` belong to the pipeline rather than any node, so they sit
 in a header above the diagram.
@@ -243,8 +243,8 @@ A disabled node renders dimmed with a dashed connector. It stays in place rather
 end.
 
 Cards carry a status-badge slot that renders nothing today. Runtime overlay is out of scope, and the
-slot exists so wiring it later touches one component. It would need `runPipeline` to return
-per-stage results, which it does not: it returns a rolled-up `{ text, original, summary, failed }`.
+slot exists so wiring it later touches one component. It'd need `runPipeline` to return
+per-stage results, which it doesn't: it returns a rolled-up `{ text, original, summary, failed }`.
 Separate work.
 
 ## Interaction
@@ -254,7 +254,7 @@ Separate work.
   draggable. The Detectors node is outside the reorder range.
 - A `+` on each connector opens a kind picker and inserts at that position. Also a `+` after the
   last node. `useCloseOnOutside` for the picker.
-- Delete lives in the inspector, not on the card, so a misclick cannot destroy a stage.
+- Delete lives in the inspector, not on the card, so a misclick can't destroy a stage.
 
 ## Files
 
@@ -284,7 +284,7 @@ The user asked for a proposal. Recommendation: **keep one tab, swap the view**.
 
 `/settings#secondSweep` shows the library list. Opening a pipeline replaces the panel body with the
 editor and a back link. No new route, no new tab, no deep link to a single pipeline: pipeline ids
-are Dexie row numbers that differ between machines and would not survive a backup restore. A second
+are Dexie row numbers that differ between machines and wouldn't survive a backup restore. A second
 tab would also split "pick a pipeline" from "edit a pipeline" across the tab bar, which reads worse
 than a back link.
 

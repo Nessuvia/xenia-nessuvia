@@ -212,7 +212,7 @@ h3.storyPreviewTitle {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
-  /* The dt column is `auto`, so it is as wide as the longest label and every shorter one has slack
+  /* The dt column is `auto`, so it's as wide as the longest label and every shorter one has slack
      left over. The filler grows into that slack and draws the leader across it. */
   display: flex;
   align-items: baseline;
@@ -521,7 +521,7 @@ h3.storyPreviewTitle {
 }
 
 /* Structure, not text: a rule across the editor with the Chapter title on it. Deliberately unlike
-   prose, because it is not a line that can be backspaced away. */
+   prose, because it's not a line that can be backspaced away. */
 .chapterDivider {
   display: flex;
   align-items: center;
@@ -603,7 +603,7 @@ h3.storyPreviewTitle {
   user-select: none;
 }
 
-/* The beat's name plate: nothing in it changes size, so it is a plain centered row. */
+/* The beat's name plate: nothing in it changes size, so it's a plain centered row. */
 .blockPlan {
   display: flex;
   align-items: center;
@@ -628,7 +628,7 @@ h3.storyPreviewTitle {
 }
 
 /* A collapsed beat keeps its head and hides everything below it. The prose element stays in the
-   DOM, since it is the source of truth for typing and must not unmount. */
+   DOM, since it's the source of truth for typing and must not unmount. */
 .blockRegion.collapsed .storyProse,
 .blockRegion.collapsed .blockPreview,
 .blockRegion.collapsed .streamingTail,
@@ -767,7 +767,7 @@ h3.storyPreviewTitle {
   text-align: left;
 }
 
-/* The add strip between Blocks sits in the middle of a document being read, so it does not show
+/* The add strip between Blocks sits in the middle of a document being read, so it doesn't show
    until the pointer is near it. */
 
 .blockGap {
@@ -815,7 +815,7 @@ h3.storyPreviewTitle {
 
 /* Section headers are the rail's main control, and they were a bare line of text: an 18px target
    on a desktop pointer and on a thumb. 44px is the touch floor, and the row spans the rail so
-   there is nowhere near the label that misses. */
+   there's nowhere near the label that misses. */
 .storyRail summary,
 .storyRail .beatChapter,
 .phoneBeats > summary {
@@ -1245,7 +1245,7 @@ h3.storyPreviewTitle {
     border-left: none;
   }
 
-  /* .storyPreview carries a `position` of its own at this specificity; sideDrawer.css does not,
+  /* .storyPreview carries a `position` of its own at this specificity; sideDrawer.css doesn't,
      so say it here where it beats it. */
   .storyPreview.sideDrawer {
     position: fixed;
@@ -1269,7 +1269,7 @@ h3.storyPreviewTitle {
 }
 
 /* The empty prose box would otherwise hold its 4rem open above the preview. It keeps one line so
-   there is still somewhere to click and type. */
+   there's still somewhere to click and type. */
 .blockRegion.previewing .storyProse {
   min-height: 0;
 }
@@ -1341,8 +1341,8 @@ h3.storyPreviewTitle {
   font: inherit;
 }
 
-/* The instructions already applied to the version being rewritten. Read-only: they are sent again
-   whatever is typed below, so the box says what the request will actually carry. */
+/* The instructions already applied to the version being rewritten. Read-only: they're sent again
+   whatever is typed below, so the box says what the request will carry. */
 .regenChain {
   padding: 8px 12px;
   background: var(--surfaceSunken);

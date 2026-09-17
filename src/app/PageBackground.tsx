@@ -101,7 +101,7 @@ export default function PageBackground() {
   const signature = JSON.stringify([slot, src, background.fit, background.excludeNav, css, html])
 
   const nextKey = useRef(0)
-  // Parity is not derived from the key: a cancelled swap still burns a key. `key % 2` can otherwise
+  // Parity isn't derived from the key: a cancelled swap still burns a key. `key % 2` can otherwise
   // repeat the parity of the layer already on screen, two layers sharing a <style> and a scope root,
   // where the outgoing one's cleanup wipes the incoming one's CSS. It's assigned against the layer
   // being kept instead, inside the state updater.
@@ -154,7 +154,7 @@ export default function PageBackground() {
 
   // `data-bgAnimated` on <html>, from the newest layer's CSS. Skins drop backdrop-filter under it:
   // a blur over a backdrop that repaints every frame is re-run every frame, once per blurred
-  // element. Set here rather than in BackgroundLayer: there is one writer. During a crossfade both
+  // element. Set here rather than in BackgroundLayer: there's one writer. During a crossfade both
   // layers are live, and the incoming one is the one that decides.
   const liveCss = layers[layers.length - 1].css
   const animated = useMemo(() => (liveCss ? scopeBackgroundCss(liveCss).animated : false), [liveCss])
@@ -220,7 +220,7 @@ function BackgroundLayer({ spec, leaving }: { spec: LayerSpec; leaving: boolean 
     style.dataset.owner = String(spec.key)
     // Appended every time, not just on create: `append` moves an existing node, which keeps this
     // last in <head>. Custom CSS has to outrank the module stylesheets at equal specificity, and
-    // a user writing `.pageBackground { … }` shouldn't have to guess at selector weight.
+    // a user writing `.pageBackground { ... }` shouldn't have to guess at selector weight.
     document.head.append(style)
     const owned = style
     return () => {
@@ -249,7 +249,7 @@ function BackgroundLayer({ spec, leaving }: { spec: LayerSpec; leaving: boolean 
   )
 }
 
-/** What a layer actually paints, minus which slot asked for it. Equal means a fade would show nothing. */
+/** What a layer paints, minus which slot asked for it. Equal means a fade would show nothing. */
 function contentSig(spec: Omit<LayerSpec, 'key' | 'parity'>): string {
   return JSON.stringify([spec.src, spec.fit, spec.excludeNav, spec.css, spec.html])
 }

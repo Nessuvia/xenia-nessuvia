@@ -25,7 +25,7 @@ export interface TesterHit {
  * turning it on. Ignored text still applies.
  *
  * ponytail: each item runs over the untouched reply, not over what the stages before it produced.
- * A swap that creates or removes a later rule's match is not reflected. Chain the stages here if
+ * A swap that creates or removes a later rule's match isn't reflected. Chain the stages here if
  * the counts are ever misleading.
  */
 export function testReplies(

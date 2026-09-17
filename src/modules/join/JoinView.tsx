@@ -68,15 +68,15 @@ function handleHostEvent(event: MultiplayerEvent) {
 }
 
 /** Sends the current guest's `say`. Called from the room, not from `chatStore`, guests never
- *  generate. A no-op when there is no open channel. */
+ *  generate. A no-op when there's no open channel. */
 export function guestSay(text: string, responderId: number): void {
   const meId = useMultiplayer.getState().meId
   if (!channel || !meId) return
   channel.send({ v: protocolVersion, type: 'say', guestId: meId, text, responderId })
 }
 
-/** Sends a persona rewrite. The host decides whether it is allowed and when it takes effect.
- *  This side only asks. A no-op when there is no open channel. */
+/** Sends a persona rewrite. The host decides whether it's allowed and when it takes effect.
+ *  This side only asks. A no-op when there's no open channel. */
 export function guestChangePersona(persona: Omit<GuestPersona, 'guestId'>): void {
   const meId = useMultiplayer.getState().meId
   if (!channel || !meId) return
@@ -117,7 +117,7 @@ function openGuestChannel(sessionId: string, relay: RelayConfig, persona: GuestP
         channel?.send({ v: protocolVersion, type: 'hello', persona })
         useMultiplayer.getState().setPhase('waiting')
 
-        // Sessions cannot be enumerated and a used-up link is inert. Presence is the only
+        // Sessions can't be enumerated and a used-up link is inert. Presence is the only
         // "does this session exist" check there is.
         setTimeout(() => {
           if (useMultiplayer.getState().phase !== 'waiting') return
@@ -134,8 +134,8 @@ function openGuestChannel(sessionId: string, relay: RelayConfig, persona: GuestP
 export default function JoinView(): JSX.Element {
   const { sessionId } = useParams<{ sessionId: string }>()
   const [params] = useSearchParams()
-  // The link says which relay the room is on. Undefined means it said something that is not a
-  // usable relay URL, untrusted input, so it is refused rather than handed to a client.
+  // The link says which relay the room is on. Undefined means it said something that's not a
+  // usable relay URL, untrusted input, so it's refused rather than handed to a client.
   const relay = relayFromLink(params.get('r'))
   const phase = useMultiplayer((s) => s.phase)
   const reason = useMultiplayer((s) => s.reason)

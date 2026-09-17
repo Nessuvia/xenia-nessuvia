@@ -33,7 +33,7 @@ export interface Channel {
 
 /**
  * Open the channel for a session. `me` is this client's presence identity: the host's id or a
- * guest's client-generated guestId. Throws when the chosen relay is not usable, which is a state
+ * guest's client-generated guestId. Throws when the chosen relay isn't usable, which is a state
  * the caller presents rather than an error to swallow.
  */
 export function openChannel(

@@ -148,7 +148,7 @@ body {
    translucent rail shows and blurs the same background the content area does.
 
    Also the scope root for user CSS (see scopeCss.ts), which is why it's a separate element from
-   `.pageBackground` below: a user writing `.pageBackground { … }` needs that class to be a
+   `.pageBackground` below: a user writing `.pageBackground { ... }` needs that class to be a
    descendant of the scope root, not the root itself.
 
    Clipped and contained, so nothing the user's HTML or CSS does inside can move page content or

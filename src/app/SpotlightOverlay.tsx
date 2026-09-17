@@ -21,7 +21,7 @@ const handSize = 64
 const handRoom = handSize + tipGap
 
 // The art points up. Pointing up is the readable pose: the hand goes under the target and only
-// flips to pointing down when there is no room under it. This is independent of which side the box
+// flips to pointing down when there's no room under it. This is independent of which side the box
 // landed on: a hand under the target still reads as pointing at it with the box off to the left.
 const handTurn = { up: 0, down: 180 }
 
@@ -33,17 +33,17 @@ const tipFromCentre = { up: { x: -8, y: -28 }, down: { x: 8, y: 28 } }
 interface Props {
   /** CSS selector for the element to spotlight. Omitted means a centred box and no cutout. */
   target?: string
-  /** Preferred side for the box on desktop. Ignored when there is no room on that side. */
+  /** Preferred side for the box on desktop. Ignored when there's no room on that side. */
   side?: Side
   /** Forces the phone dock edge. Without it the edge flips away from the target. */
   dock?: Dock
-  /** The selector matched nothing. A tour skips the step; a tutorial has to say it is stuck. */
+  /** The selector matched nothing. A tour skips the step; a tutorial has to say it's stuck. */
   onMissingTarget?(): void
   /** Click on the dim, outside the box. */
   onOverlayClick?(): void
   /**
    * Bump when the box contents change without the target changing. The box is placed from its own
-   * measured height, and `children` cannot be a dependency: a new element object every render
+   * measured height, and `children` can't be a dependency: a new element object every render
    * would re-measure forever.
    */
   revision?: string | number
@@ -101,7 +101,7 @@ export default function SpotlightOverlay({ target, side, dock, onMissingTarget, 
     const h = el.offsetHeight
 
     // On a phone the box docks to an edge, and the edge flips away from the target: a target up top
-    // gets the box at the bottom. Otherwise the instructions cover the field they are about.
+    // gets the box at the bottom. Otherwise the instructions cover the field they're about.
     const edge: Dock = dock ?? (rect.top + rect.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top')
     setDockEdge(edge)
 

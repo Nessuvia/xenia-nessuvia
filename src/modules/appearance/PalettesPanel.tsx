@@ -123,7 +123,7 @@ export default function PalettesPanel() {
     ) : null
 
   /** One rewind for a whole marker stack. ColorStack is shared by three panels: its rows stay
-   *  as they are and the group heading carries the control instead. */
+   *  as they're and the group heading carries the control instead. */
   const rewindGroup = (fields: (keyof Palette)[]) => {
     const mine = fields.filter((f) => changed.includes(f))
     if (!mine.length) return null
@@ -270,7 +270,7 @@ export default function PalettesPanel() {
                         <button
                           key={key}
                           type="button"
-                          // This adds a new palette: an existing copy stays as it is and the new
+                          // This adds a new palette: an existing copy stays as it's and the new
                           // row takes a numbered name.
                           onClick={() => {
                             setBundledOpen(false)

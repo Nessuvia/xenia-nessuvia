@@ -145,13 +145,13 @@ export function activeContent(block: PromptBlock): string {
   return block.options[block.activeOption ?? 0]?.content ?? ''
 }
 
-/** The description actually used: the active variant, or `description` when there isn't one. */
+/** The description used: the active variant, or `description` when there isn't one. */
 export function activeDescription(c: Character): string {
   const variant = c.altDescriptions[c.activeDescriptionIndex]
   return c.activeDescriptionIndex >= 0 && variant ? variant.content : c.description
 }
 
-/** Who you are in a chat: the {{user}} name, plus description text a stack can bind to. */
+/** Who you're in a chat: the {{user}} name, plus description text a stack can bind to. */
 export interface Persona {
   id?: number
   ownerId: string
@@ -205,7 +205,7 @@ export interface Chat {
   updatedAt: number
 }
 
-/** Who a turn is attributed to, when it is not the active persona. */
+/** Who a turn is attributed to, when it's not the active persona. */
 export interface SpeakerAs {
   name: string
   personaId?: number
@@ -295,7 +295,7 @@ export interface Story {
   /** Book ids switched off for this Story, whichever way the book got here. The row greys out and
    *  its entries stop reaching the prompt; the attachment itself is left alone. Absent = all on. */
   lorebookOff?: number[]
-  /** Book ids the Author removed from this Story's list that this Story did not attach itself: a
+  /** Book ids the Author removed from this Story's list that this Story didn't attach itself: a
    *  cast character's book, or a global one. Absent = nothing removed. */
   lorebookDropped?: number[]
   createdAt: number
@@ -320,7 +320,7 @@ export type BlockContext = 'before' | 'after' | 'both' | 'none'
  */
 export interface Block {
   id: string // crypto.randomUUID(); Blocks have no table
-  /** The instructions: what is meant to happen here, one line or many. '' is an unplanned beat. */
+  /** The instructions: what's meant to happen here, one line or many. '' is an unplanned beat. */
   beat: string
   /** How long this beat runs relative to its neighbours. The Chapter's word target is divided by
    *  these. See `core/prompt/beatWeights.ts`. */
@@ -453,7 +453,7 @@ export interface PostStack {
 
 /**
  * One played game. Append-only: the seed reproduces the deal and the events reproduce every state
- * after it. A game is not a chat: it sees no chat history and writes no messages.
+ * after it. A game isn't a chat: it sees no chat history and writes no messages.
  */
 export interface Game {
   id?: number

@@ -70,7 +70,7 @@ export function buildStoryOutlineMessages(
  * parsed whole, every field is coerced, and an entry that holds no title and no summary is dropped
  * rather than becoming an empty Chapter.
  *
- * Throws with a readable message when there is nothing usable. The screen shows it, and the store
+ * Throws with a readable message when there's nothing usable. The screen shows it, and the store
  * only touches the existing chapters after this has returned.
  */
 export function parseStoryOutlineReply(text: string): OutlineChapter[] {
@@ -136,7 +136,7 @@ export function buildChapterOutlineMessages(
     req.ending.trim() && `Where it all ends: ${req.ending.trim()}`,
   ].filter(Boolean)
 
-  // The prose wins when there is any: what was actually written says more than the recap of it.
+  // The prose wins when there's any: what was written says more than the recap of it.
   const previous = req.previousProse.trim()
     ? `What the previous chapter ended on:\n\n${tailOf(req.previousProse.trim())}`
     : req.previousSummary.trim()
@@ -214,7 +214,7 @@ export function buildChapterSummaryMessages(
 
 // -------------------------------------------------------------------------------- internals
 
-/** One system turn. There is no history and no stack here: the whole request is the instruction,
+/** One system turn. There's no history and no stack here: the whole request is the instruction,
  *  and an endpoint that wants a user turn to answer at all gets a bare one. */
 function outlineTurns(text: string): ChatMessage[] {
   return [
@@ -236,7 +236,7 @@ function outlineObject(text: string): unknown {
   try {
     return JSON.parse(json)
   } catch (err) {
-    // A beat is prose: the usual failure is a quote or a newline the model did not escape.
+    // A beat is prose: the usual failure is a quote or a newline the model didn't escape.
     // Second pass rather than first: a reply that was already valid must never go through a repair.
     try {
       return JSON.parse(repairJsonStrings(json))
@@ -252,7 +252,7 @@ function outlineObject(text: string): unknown {
  * The text either side of the position a parse failed at. A column number on its own says nothing
  * about which beat broke, and the reply is gone by the time the dialog shows the error.
  *
- * The position is read out of the engine's own message, which is not a stable format: V8 says
+ * The position is read out of the engine's own message, which isn't a stable format: V8 says
  * "at position 337", SpiderMonkey says "column 338". Neither matching means the whole object is
  * shown instead, which is still more use than a number.
  */
@@ -265,21 +265,21 @@ function aroundFailure(json: string, message: string, span = 120): string {
   return `${from > 0 ? '…' : ''}${json.slice(from, to)}${to < json.length ? '…' : ''}`
 }
 
-/** A row as a plain object, or undefined for anything that is not one (an array, null, a string). */
+/** A row as a plain object, or undefined for anything that's not one (an array, null, a string). */
 function record(row: unknown): Record<string, unknown> | undefined {
   if (!row || typeof row !== 'object' || Array.isArray(row)) return undefined
   return row as Record<string, unknown>
 }
 
 /** A field as a single-line string. A number or a boolean is written out rather than dropped;
- *  anything else (an object, an array, null) is not text and becomes nothing. */
+ *  anything else (an object, an array, null) isn't text and becomes nothing. */
 function str(value: unknown): string {
   if (typeof value === 'string') return value.replace(/\s*\n\s*/g, ' ').trim()
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)
   return ''
 }
 
-/** An optional paragraph: blank when there is nothing, and otherwise separated from what precedes
+/** An optional paragraph: blank when there's nothing, and otherwise separated from what precedes
  *  it. Keeps the templates free of conditional whitespace. */
 function para(text: string): string {
   return text ? `\n${text}\n` : ''

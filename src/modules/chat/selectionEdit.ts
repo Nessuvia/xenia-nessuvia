@@ -1,7 +1,7 @@
 // Mapping a DOM text selection inside a message bubble back onto the stored string.
 //
 // renderText drops the markers it consumes (`**`, `*`, backticks) and tag blocks, so the text a
-// user selects on screen is not a substring of message.content at the same offsets. The way back
+// user selects on screen isn't a substring of message.content at the same offsets. The way back
 // is a search rather than an index: take the selected string, count how many times it already
 // appeared in the rendered text above the selection, then pick that same occurrence in the stored
 // text. Exact match first; if the selection straddled a dropped marker, a tolerant pass allows
@@ -18,7 +18,7 @@ export const tolerantLimit = 2000
 
 /**
  * Index of (node, offset) within root's text content, counting only text nodes. Returns -1 when
- * node is not inside root.
+ * node isn't inside root.
  */
 export function textOffset(root: Node, node: Node, offset: number): number {
   if (!root.contains(node)) return -1

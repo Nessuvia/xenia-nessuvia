@@ -5,7 +5,7 @@ import { newRule, type Rule } from './rules.ts'
 
 /**
  * The rule builder: a sample sentence tagged into chips, each chip a choice, the choices written
- * out as pattern DSL. The chips are stored and the tokens are not: tagging the sample again gives
+ * out as pattern DSL. The chips are stored and the tokens aren't: tagging the sample again gives
  * the same tokens, and a new sample resets the chips rather than shifting old choices onto new words.
  */
 
@@ -35,7 +35,7 @@ function defaultChip(token: Token): Chip {
 
 /**
  * The next state on a click. Words cycle exact, word type, any. Punctuation toggles between
- * required and ignored, except a mark the DSL cannot write as itself (a bracket), which stays ignored.
+ * required and ignored, except a mark the DSL can't write as itself (a bracket), which stays ignored.
  */
 export function nextChip(token: Token, chip: Chip): Chip {
   if (isPunct(token)) return { state: chip.state === 'ignored' && ALL_PUNCT.test(token.text) ? 'exact' : 'ignored' }

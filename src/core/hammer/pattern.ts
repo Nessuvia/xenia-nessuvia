@@ -9,7 +9,7 @@ export const POS_TAGS: readonly PosTag[] = ['adj', 'verb', 'noun', 'adv', 'det',
 export const WILDCARD_TAG = 'word'
 
 /** `[clause]` is the rest of the clause: one or more words, stopping at punctuation or the end of
- *  the sentence. It is `[word]+` with a name that says what it is for. */
+ *  the sentence. It's `[word]+` with a name that says what it's for. */
 export const CLAUSE_TAG = 'clause'
 
 export type SlotTag = PosTag | typeof WILDCARD_TAG | typeof CLAUSE_TAG

@@ -34,7 +34,7 @@
 }
 
 /* Spans the list column, so it looks like a heading over the rows in one- and two-column layouts
-   alike. Not a .card: it is a label in the list, not a row you can open. */
+   alike. Not a .card: it's a label in the list, not a row you can open. */
 .lorebooksGroupHeader {
   padding: 4px 2px;
   color: var(--textMuted);
@@ -257,7 +257,7 @@
   margin-right: auto;
 }
 
-/* Nothing in it is editable, so it sits back from the rows it explains. */
+/* Nothing in it's editable, so it sits back from the rows it explains. */
 .lorebooksExampleCard {
   background: var(--surfaceSunken);
 }

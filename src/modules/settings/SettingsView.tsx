@@ -126,7 +126,7 @@ export default function SettingsView() {
                           Set active
                         </button>
                       )}
-                      {/* The copy carries the API key: it is the same account, and re-keying a
+                      {/* The copy carries the API key: it's the same account, and re-keying a
                           copy defeats the point of copying it. */}
                       <button
                         type="button"

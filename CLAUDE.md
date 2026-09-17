@@ -13,7 +13,7 @@ Four paths leave the tab:
 - jsDelivr, for a tokenizer vocabulary, on the download button in a connection. Two public JSON
   files, no key, no user text. See `core/prompt/tokenizerCache.ts`.
 
-`xenia.nessuvia.com` is a sentinel string. A connection pointing at it is answered in the browser with one canned line. Every outward call site checks `isSentinel` first, and that host never resolves. See `core/connectors/sentinel.ts`.
+`xenia.nessuvia.com` is a sentinel string. A connection pointing at it's answered in the browser with one canned line. Every outward call site checks `isSentinel` first, and that host never resolves. See `core/connectors/sentinel.ts`.
 
 The build ships as static assets behind a Cloudflare Worker (`src/index.js`, `wrangler.jsonc`) that serves `dist` and declares no routes of its own. It installs as a PWA.
 
@@ -27,7 +27,7 @@ Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (
 
 Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
 
-There is no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
+There's no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
 `itemProps` makes the whole row draggable and suits a row of plain content. A row holding an `input`
 or a `textarea` uses `handleProps` on a drag handle and `dropProps` on the row. `draggable` on an
 ancestor stops Chrome placing the caret in the field: the caret sticks at the start and clicking
@@ -63,7 +63,7 @@ Modules self-register by calling `registerModule` from their `index.ts`. The sid
   (`app/useHashTab.ts`).
 - `plugin: true`: listed in Settings › Miscellaneous, off until enabled there.
 - `chatPanels`: sections contributed to the chat sidebar, ordered by registration order in
-  `main.tsx`. A panel that should stay hidden renders null. There is no visibility API.
+  `main.tsx`. A panel that should stay hidden renders null. There's no visibility API.
 - `decorateMessage(ctx)`: text appended to the outgoing user message before token substitution.
 
 `component` is `lazy()` for route views. `chatPanels` stay eager and render inside the chat rather than behind a route.
@@ -75,7 +75,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
 - `sync` is registered and live. It sits under Import/Export in the rail rather than the main nav.
   `Sidebar.tsx` guards its entries with `syncModule &&`, and commenting the import out of
   `main.tsx` is the whole off switch.
-- `join` is not a module. `App.tsx` mounts `/join/:sessionId` outside the app shell, and a guest
+- `join` isn't a module. `App.tsx` mounts `/join/:sessionId` outside the app shell, and a guest
   never loads the sidebar.
 
 ## Seams: reuse these, don't reinvent
@@ -104,7 +104,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   implementation. Nothing above it touches the relay client. `protocol.ts` holds the event shapes,
   `protocolVersion` (guests reject a mismatch) and the 240 KB event cap. `hostSession`,
   `turnOrder`, `narrator`, `rosterAvatar` sit on top.
-- **Narrator** is `core/multiplayer/narrator.ts` and is not multiplayer-only: it sits there by
+- **Narrator** is `core/multiplayer/narrator.ts` and isn't multiplayer-only: it sits there by
   origin. `narratorId` is -1, `narratorCharacter()` is a synthetic card, and `isNarrator` is how
   you test for it. It answers in an ordinary chat two ways: pinned in `ResponderPicker`
   (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
@@ -126,7 +126,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   the structural layer.
 - **Sampler params** live in `core/params`. A param def is a row rather than code, and a new sampler
   needs no release.
-- **Agent pass** lives in `core/agent`. `runAgent` is the only entry point and it is chat-only.
+- **Agent pass** lives in `core/agent`. `runAgent` is the only entry point and it's chat-only.
   It takes the reply, the global `AgentConfig` (`settingsStore.agent`) and a `complete` function the
   store supplies, so the engine never touches a connector. Lexicon swaps (`quality/lexicon.ts`) and
   `swap` rules run in code first. The reply splits into paragraphs, then sentences
@@ -144,7 +144,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   flash. The CSS in `chat.css` does the animating.
 - **Rules** are one type, `Rule` in `core/agent/rules.ts`, with a match mode (`literal`, `regex`,
   `pattern`) and an action (`swap`, `rewrite`, `delete`). Any mode works with any action. `pattern`
-  is the part-of-speech DSL and cannot cross a sentence.
+  is the part-of-speech DSL and can't cross a sentence.
   The matching engine is `core/hammer`: `tagger`, then `pattern`, then `matcher`, then
   `repair`/`strip`, with `exclusions` marking spans a rule may not touch. `stripText` applies swaps
   and `findFlags` reports rewrite and delete hits. `compromise` tags the text.
@@ -166,10 +166,10 @@ Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(18)
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:
   IndexedDB refuses to open a database whose stored version is higher than the one requested.
-  Adding an `upgrade()` callback would bring the chain back, and this codebase does not migrate.
+  Adding an `upgrade()` callback would bring the chain back, and this codebase doesn't migrate.
 - Adding a plain field needs no version bump: put it in `types.ts` and default it in the store's
   `newX()` factory. Indexes are only for fields you query with `find()`.
-- `storage.put/remove/clear/putAll` call `markDirty` before the write, and that is how sync knows
+- `storage.put/remove/clear/putAll` call `markDirty` before the write, and that's how sync knows
   what changed. A whole-table replacement (restore, pull) runs inside `withDirtySuppressed`.
 
 Three Zustand stores persist to localStorage rather than Dexie, via `zustand/middleware` `persist`: `settingsStore` (`nessuTavern.settings`, holding connections and the API keys with them), `askStore` (`nessuTavern.ask`), `blipStore` (`nessuTavern.blips`).
@@ -208,7 +208,7 @@ whether restoring a backup on another machine should carry it. If it shouldn't, 
   allowlist, rejecting the whole input rather than scrubbing it) attached with `replaceChildren` in
   `PageBackground.tsx`, and `palette/scopeCss.ts` for user CSS, which wraps it in `@scope` and
   refuses it whole if a stray `}` escapes the block.
-- Store what the model actually said. Formatting is a display concern. Never rewrite stored content.
+- Store what the model said. Formatting is a display concern. Never rewrite stored content.
 - A file that a `check*` script imports uses explicit `.ts` extensions in its own imports. Node
   strips types rather than resolving like Vite. `core/params/paramDef.ts` and
   `core/multiplayer/relayConfig.ts` are the pattern.
@@ -229,7 +229,7 @@ Write to the narrowest level that matches what the user meant, and make the leve
 
 Keep styling light until the polishing phase. A screen that works and looks plain is done, and pixel work waits. Build the pieces so polish is cheap later.
 
-**Before writing or editing any `.css` file or any `className`, read [`.claude/cssConventions.md`](.claude/cssConventions.md).** It is the full rulebook and the rules live there alone: the color vars, the spacing and type scales, the `z-index` ladder, the selector and class-naming rules, the breakpoint, the bans, and the skin contract. Its last section is a checklist to run against any diff that touches CSS.
+**Before writing or editing any `.css` file or any `className`, read [`.claude/cssConventions.md`](.claude/cssConventions.md).** It's the full rulebook and the rules live there alone: the color vars, the spacing and type scales, the `z-index` ladder, the selector and class-naming rules, the breakpoint, the bans, and the skin contract. Its last section is a checklist to run against any diff that touches CSS.
 
 The headline, to carry the shape in before you open it: no hardcoded colors, no invented spacing values, no invented `z-index` numbers, a class on every element you style, and nothing shared between two tabs living in a module stylesheet.
 
@@ -245,7 +245,7 @@ Write the shortest sentence that carries the fact. Then check it against these t
 
 - The rhetorical triple and its shorter cousin, the negated pair: "no requests, no spend", "not a
   warning, not a block", "faster, simpler, cheaper". Never use either. State the positive fact:
-  "Requests are not sent."
+  "Requests aren't sent."
 - The em-dash aside that adds a flourish rather than information.
 - Words that praise the feature: seamlessly, simply, just, effortlessly, powerful, robust, smart.
 - Explaining why a design is good, or what it saves the user, in copy that should only say what it
@@ -267,7 +267,7 @@ This covers user-visible text. Code comments explain reasoning and can breathe.
 
 Run `scripts/agent-test.sh` to typecheck and run every check* script. It prints one line when clean. Pass a substring to run a subset (`scripts/agent-test.sh turnOrder`), `-v` for untruncated failures, `--build` before handing off.
 
-One is `.mjs` (`core/multiplayer/checkTurnOrder.mjs`). The glob above catches it. There is no test framework. Don't add one unasked.
+One is `.mjs` (`core/multiplayer/checkTurnOrder.mjs`). The glob above catches it. There's no test framework. Don't add one unasked.
 
 When you add non-trivial logic (a branch, a loop, a parser, a security path), add one `check*.ts` next to it: the smallest thing that fails if the logic breaks. No frameworks, no fixtures, no per-function suites unless asked. Trivial one-liners need no check.
 

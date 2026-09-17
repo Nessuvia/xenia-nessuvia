@@ -162,7 +162,7 @@ export default function CharacterPicker() {
             />
           </span>
 
-          {/* The tag controls stay out of the way until a character actually has a tag. */}
+          {/* The tag controls stay out of the way until a character has a tag. */}
           {tags.length > 0 && (
             <TagMenu
               tags={tags}

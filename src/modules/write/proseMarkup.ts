@@ -4,7 +4,7 @@
 // in the DOM text. The editor reads its value back with textContent, and a marker dropped for
 // display would be a marker deleted from the Chapter.
 //
-// Every marker stays a text node. It is only hidden with CSS. Invariant the whole thing rests
+// Every marker stays a text node. It's only hidden with CSS. Invariant the whole thing rests
 // on: decorate(el, text) leaves el.textContent === text, character for character.
 import type { MarkerKind } from '../../core/stores/settingsStore'
 
@@ -14,7 +14,7 @@ export type ProsePiece =
 
 export type MarkKind = 'bold' | 'em' | 'boldEm' | 'quote' | 'code'
 
-// Longest first: `**bold**` is not eaten as a nested `*italic*`, and `***` comes before both.
+// Longest first: `**bold**` isn't eaten as a nested `*italic*`, and `***` comes before both.
 const markers: { mark: string; kind: MarkKind }[] = [
   // Grave accents first: what they wrap is literal. Nothing inside them is markup.
   { mark: '`', kind: 'code' },
@@ -24,7 +24,7 @@ const markers: { mark: string; kind: MarkKind }[] = [
   { mark: '__', kind: 'bold' },
   { mark: '*', kind: 'em' },
   { mark: '_', kind: 'em' },
-  // Straight quotes only, same as chat's table. Curly “…” needs distinct open/close markers, which
+  // Straight quotes only, same as chat's table. Curly "..." needs distinct open/close markers, which
   // this symmetric list can't express. Add a separate pair list if models start emitting them.
   { mark: '"', kind: 'quote' },
 ]
@@ -79,7 +79,7 @@ export function parseProse(text: string): ProsePiece[] {
       out.push({
         mark: marker.mark,
         kind: marker.kind,
-        // Grave-wrapped text is literal: an asterisk in there is an asterisk.
+        // Grave-wrapped text is literal: an asterisk in there's an asterisk.
         children: marker.kind === 'code' ? [{ text: inner }] : parseProse(inner),
       })
       i = close + marker.mark.length
@@ -158,11 +158,11 @@ function markSpan(mark: string, doc: Document, className: string): HTMLElement {
 const blockTags = new Set(['DIV', 'P', 'LI', 'BLOCKQUOTE', 'PRE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'])
 
 /**
- * One walk serving both the text read-back and the caret offset. They have to agree character for
+ * One walk serving both the text read-back and the caret offset. They've to agree character for
  * character: a caret counted against a slightly different string drifts. They share a walker
  * rather than two implementations of the same newline rules.
  *
- * The rules exist for one reason: a contenteditable is not a textarea. Pressing Enter makes the
+ * The rules exist for one reason: a contenteditable isn't a textarea. Pressing Enter makes the
  * browser insert a <br> or wrap lines in <div>s, and textContent renders both as nothing. The
  * newline would vanish the next time the DOM was rebuilt from this string.
  *

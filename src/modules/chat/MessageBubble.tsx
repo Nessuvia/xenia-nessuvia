@@ -87,7 +87,7 @@ export default function MessageBubble({
 }: {
   message: Message
   who: string
-  /** The speaker's picture and its crop; null when they have none or their card is gone. */
+  /** The speaker's picture and its crop; null when they've none or their card is gone. */
   avatar: AvatarSource | null
   /** This speaker's per-character color overrides; empty fields fall through to the global colors. */
   colors: CharacterColors
@@ -96,7 +96,7 @@ export default function MessageBubble({
   greeting: boolean
   /** Non-null while this message is being re-rolled: shown in place of its stored content. */
   streamingText: string | null
-  /** Reasoning so far for that re-roll; empty when there is none. */
+  /** Reasoning so far for that re-roll; empty when there's none. */
   streamingReasoning: string
   /** Called only when the rewrite box opens, building it quotes every later message. */
   defaultInstruction: () => string
@@ -104,7 +104,7 @@ export default function MessageBubble({
   rewriting: boolean
   onRewriteOpen: (open: boolean) => void
   onEdit: (content: string) => void
-  /** Fires when the inline edit box opens and closes. The composer hides while it is open. */
+  /** Fires when the inline edit box opens and closes. The composer hides while it's open. */
   onEditingChange?: (editing: boolean) => void
   /** Only passed for the last user message: generate a reply to it, as if it were just sent. */
   onReprompt?: () => void
@@ -226,7 +226,7 @@ export default function MessageBubble({
   const onBodyPointerUp = (e: React.PointerEvent) => {
     if (!onPhone || e.pointerType === 'mouse') return
     const { clientX, clientY } = e
-    // The selection is not final until the browser settles the handles.
+    // The selection isn't final until the browser settles the handles.
     window.setTimeout(() => openSelectionMenu(clientX, clientY), 0)
   }
 

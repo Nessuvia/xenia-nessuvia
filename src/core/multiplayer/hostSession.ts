@@ -1,5 +1,5 @@
 /**
- * The host's authority. Everything the room decides, it decides here: who is admitted, whose turn
+ * The host's authority. Everything the room decides, it decides here: who's admitted, whose turn
  * it is, which character replies, and what guests are told.
  *
  * The host's browser owns the chat: it holds the connection and the key, builds every prompt and
@@ -71,13 +71,13 @@ export interface HostSession {
   setPersonaLock(locked: boolean): void
   /**
    * Write a participant's persona from the host's side. Applies at once, whoever holds the turn:
-   * the host is the authority and does not queue behind it. Session-scoped: this writes the
+   * the host is the authority and doesn't queue behind it. Session-scoped: this writes the
    * participant in the room, not the host's stored persona row.
    */
   setPersona(id: string, persona: GuestPersona): void
   /**
    * Drop the host's session-only persona and go back to following their stored one. No-op when the
-   * host has not overridden it.
+   * host hasn't overridden it.
    */
   clearHostPersona(): void
   /** The host's own turn. Mirrors a guest `say`. */
@@ -97,7 +97,7 @@ export function activeSession(): HostSession | undefined {
 
 /**
  * Open a room. Creates the Chat row, opens the channel, and takes authority.
- * Throws when the user is not signed in or sync is not configured.
+ * Throws when the user isn't signed in or sync isn't configured.
  */
 /** What the host chose on the start screen. Every field has a default: the object is optional. */
 export interface SessionOptions {
@@ -142,10 +142,10 @@ export async function createSession(
   const hostAvatar = await downscaleAvatar(persona.avatar)
 
   // Every await finishes before the store is touched. `phase` leaving 'idle' is what swaps the
-  // landing page for the room. Nothing may flip it until there is a roster to draw and a
+  // landing page for the room. Nothing may flip it until there's a roster to draw and a
   // `session` to act on: an await in the middle of the store writes renders the room against an
   // empty store, and a throw or a hang in one leaves that empty room up with the error going
-  // nowhere: the Landing that would have shown it is already unmounted.
+  // nowhere: the Landing that would have shown it's already unmounted.
   const roster = await Promise.all(characters.map(rosterCharacter))
 
   const store = useMultiplayer.getState()
@@ -192,7 +192,7 @@ export async function createSession(
   })
 
   live = { channel, chatId, characters: [...characters] }
-  // Slot order for {{char1}}…{{char4}} is the order the host picked them in.
+  // Slot order for {{char1}}...{{char4}} is the order the host picked them in.
   setSessionCast(live.characters)
   stopRelay = startStreamRelay(chatId)
   stopPersonaWatch = watchHostPersona()
@@ -222,7 +222,7 @@ export async function createSession(
   return session
 }
 
-/** Everything the live session needs that is not in the store. Undefined between sessions. */
+/** Everything the live session needs that's not in the store. Undefined between sessions. */
 let live: { channel: Channel; chatId: number; characters: Character[] } | undefined
 let stopRelay: (() => void) | undefined
 let stopPersonaWatch: (() => void) | undefined
@@ -351,8 +351,8 @@ function dropParticipant(id: string) {
 // --- personas mid-session ------------------------------------------------
 
 /**
- * Personas a guest has sent but which have not taken effect yet, keyed by participant id. A change
- * lands on the guest's next turn: a rewrite cannot change who was speaking in a line already
+ * Personas a guest has sent but which haven't taken effect yet, keyed by participant id. A change
+ * lands on the guest's next turn: a rewrite can't change who was speaking in a line already
  * said or in a reply being generated for it.
  */
 const pendingPersonas = new Map<string, Participant>()
@@ -378,11 +378,11 @@ function guestPersonaChange(guestId: string, persona: GuestPersona) {
   const next = validPersona({ ...persona, guestId })
   if (!next) return
   pendingPersonas.set(guestId, next)
-  // Applied at once when it is not their turn: "next turn" is already now.
+  // Applied at once when it's not their turn: "next turn" is already now.
   if (store.order[store.turnIndex] !== guestId) applyPendingPersonas()
 }
 
-/** Move every queued persona that is not the turn holder's into the room. */
+/** Move every queued persona that's not the turn holder's into the room. */
 function applyPendingPersonas() {
   if (!pendingPersonas.size) return
   const store = useMultiplayer.getState()
@@ -421,7 +421,7 @@ function writePersona(id: string, persona: GuestPersona) {
 }
 
 /**
- * True once the host has written their own row from inside the room. Session-only: it is never
+ * True once the host has written their own row from inside the room. Session-only: it's never
  * saved to a persona record, and `close()` drops it with everything else.
  */
 let hostPersonaOverride = false
@@ -468,7 +468,7 @@ function watchHostPersona(): () => void {
 function clearHostPersona() {
   if (!hostPersonaOverride) return
   hostPersonaOverride = false
-  // The stored persona has not changed. The key would otherwise suppress the push putting it back.
+  // The stored persona hasn't changed. The key would otherwise suppress the push putting it back.
   lastStoredPersona = ''
   void syncHostPersona()
 }
@@ -503,8 +503,8 @@ function advanceTurn() {
 
 /**
  * The session's people, rebuilt whenever the participant list or anyone's persona changes, and
- * handed to `chatStore` to fill {{personas}}. Characters are not in here: the stack already reaches
- * them through {{char1}}…{{char4}}, and listing them twice would just spend the budget twice.
+ * handed to `chatStore` to fill {{personas}}. Characters aren't in here: the stack already reaches
+ * them through {{char1}}...{{char4}}, and listing them twice would just spend the budget twice.
  *
  * Every instruction the Narrator gets now comes from the prompt stack. This is the only thing
  * the session pushes into the prompt layer.
@@ -610,11 +610,11 @@ function sendEvent(event: HostEvent) {
 
 /**
  * Relays `streamingText` as `stream` events, throttled trailing-edge: the last chunk before
- * completion is not lost. `text` is the full text so far rather than a delta: a dropped event
+ * completion isn't lost. `text` is the full text so far rather than a delta: a dropped event
  * self-heals. Returns the unsubscribe.
  */
 /**
- * True when the transcript changed in a way `append` cannot carry: a line removed, or a line's id or
+ * True when the transcript changed in a way `append` can't carry: a line removed, or a line's id or
  * content rewritten. A plain append is false: the relay sends that as an `append`.
  */
 function revised(previous: Message[], next: Message[]): boolean {
@@ -642,7 +642,7 @@ function startStreamRelay(chatId: number): () => void {
 
   const unsubscribe = useChats.subscribe((state, previous) => {
     // A turn's message is stored and reloaded before the request goes out. This fires while the
-    // reply is still being waited on: guests see the line as soon as it is said rather than when
+    // reply is still being waited on: guests see the line as soon as it's said rather than when
     // the reply lands. Whoever said it, host or guest, it arrives through the same `send`.
     if (state.chat?.id === chatId && state.messages.length > previous.messages.length) {
       const last = state.messages.at(-1)

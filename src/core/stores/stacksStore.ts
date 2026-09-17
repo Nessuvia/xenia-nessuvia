@@ -45,7 +45,7 @@ export function defaultStack(name = 'Default'): PromptStack {
  * while a character is told to write as itself and gets only its own description.
  *
  * This stack is the *only* source of the Narrator's instructions. The Narrator is a speaker with a
- * name and no card: anything not written here is not sent. Editing this text is how the Narrator
+ * name and no card: anything not written here isn't sent. Editing this text is how the Narrator
  * is changed.
  *
  * The Narrator branch uses the slot tokens rather than the bound `characterDescription`, which only
@@ -142,7 +142,7 @@ export function defaultGameStack(name = 'Game'): PromptStack {
 }
 
 /** The Story stack that ships with the build, kept as an exported stack file rather than code so
- *  editing it is an export/replace instead of a diff. Same parser as a user import, so it gets
+ *  editing it's an export/replace instead of a diff. Same parser as a user import, so it gets
  *  fresh block ids every time. */
 export function defaultStoryStack(name = 'Story'): PromptStack {
   return { ...parseStack(JSON.stringify(storyStackFile)), name }
@@ -277,7 +277,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
   addBundled: async (key) => {
     const entry = bundledStacks.find((b) => b.key === key)
     if (!entry) return
-    // Adding, not restoring: an existing copy stays as it is and the new row takes a numbered name.
+    // Adding, not restoring: an existing copy stays as it's and the new row takes a numbered name.
     const taken = (name: string) => get().stacks.some((s) => s.name === name)
     let name = entry.name
     for (let n = 2; taken(name); n++) name = `${entry.name} ${n}`

@@ -19,8 +19,8 @@ export function other(side: Side): Side {
 }
 
 export type GoFishEvent =
-  /** `text` is what the player actually typed, kept verbatim. The rules only ever read `rank`, but
-   *  the words are the turn: they go to the model and they are what the log shows. Absent on the
+  /** `text` is what the player typed, kept verbatim. The rules only ever read `rank`, but
+   *  the words are the turn: they go to the model and they're what the log shows. Absent on the
    *  character's asks, which code chooses and nobody typed. */
   | { kind: 'ask'; by: Side; rank: Rank; text?: string }
   /** Every card of `rank` moves at once: a hand never holds two of the same rank apart. */
@@ -174,7 +174,7 @@ export function resolveAsk(state: GoFishState, side: Side, rank: Rank, text?: st
   for (const booked of completedBooks(current.hands[side])) emit({ kind: 'book', by: side, rank: booked })
 
   // An empty hand draws one: a side is never stuck holding nothing while cards remain. Both
-  // sides: giving your last card away empties a hand that is not the asker's. One card cannot
+  // sides: giving your last card away empties a hand that's not the asker's. One card can't
   // complete a book: nothing to check afterwards.
   for (const who of [side, opponent]) {
     if (current.hands[who].length === 0 && current.deck.length > 0) {
@@ -184,7 +184,7 @@ export function resolveAsk(state: GoFishState, side: Side, rank: Rank, text?: st
 
   let next = keepsTurn ? side : opponent
   // Whoever is up must have something to ask with. With an empty hand and an empty deck they
-  // cannot move: the turn goes back. If neither side can move, `isOver` catches it below.
+  // can't move: the turn goes back. If neither side can move, `isOver` catches it below.
   if (current.hands[next].length === 0) next = other(next)
   emit({ kind: 'turn', to: next })
 
@@ -201,7 +201,7 @@ export function chooseMove(state: GoFishState, side: Side, quality: MoveQuality)
   const all = legalAsks(state, side)
   if (all.length === 0) return null
   // The last ask, when it came back empty, is the one rank known *not* to be over there. Drop it
-  // unless it is all that is left: a hand of one rank would ask for that rank until the game ends.
+  // unless it's all that's left: a hand of one rank would ask for that rank until the game ends.
   const lastAsk = state.asked[side][state.asked[side].length - 1]
   const stale = lastAsk !== undefined && !state.known[side].includes(lastAsk) ? lastAsk : undefined
   const fresh = all.filter((rank) => rank !== stale)
@@ -209,7 +209,7 @@ export function chooseMove(state: GoFishState, side: Side, quality: MoveQuality)
   const count = (rank: Rank) => state.hands[side].filter((c) => c.rank === rank).length
 
   if (quality === 'best') {
-    // A rank the opponent has shown and has not since given up or booked away. Freshest first.
+    // A rank the opponent has shown and hasn't since given up or booked away. Freshest first.
     const knownHeld = [...state.known[side]].reverse().find((rank) => legal.includes(rank))
     if (knownHeld) return knownHeld
     // Otherwise ask where you hold the most: the fewest cards left to find.

@@ -22,7 +22,7 @@ function avatarNode(p: Persona, onClick?: () => void) {
 
 // Avatar quick-switch for the active persona; clicking opens the others as icons.
 // The active persona is a global default (settingsStore), not per-chat, switching here
-// changes who you are everywhere. Per-chat override would be the upgrade path.
+// changes who you're everywhere. Per-chat override would be the upgrade path.
 export default function PersonaSwitcher() {
   const personas = usePersonas((s) => s.personas)
   const activePersonaId = useSettings((s) => s.activePersonaId)

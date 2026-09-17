@@ -3,7 +3,7 @@
  * app's surfaces are built out of them: translucency, blur, borders, shadows.
  *
  * Applied as `data-skin` on the root element: a skin's stylesheet is a block of
- * `[data-skin='glass'] #root .panel { … }` rules and nothing else. Four classes are the whole
+ * `[data-skin='glass'] #root .panel { ... }` rules and nothing else. Four classes are the whole
  * contract:
  *
  *   panel   a bordered surface region: side panels, settings panes, section bodies, dialogs

@@ -116,24 +116,40 @@
   font-size: 14px;
 }
 
-/* Sits in the settings action row rather than the bucket grid, so it carries its own copy of the
-   field styling instead of widening .syncBucket's selectors. */
-.syncPassphrase {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--textMuted);
+/* A primed button, waiting for its second click. */
+.sync button.danger {
+  color: var(--danger);
 }
 
-.syncPassphrase input {
-  background: var(--surfaceSunken);
-  border-radius: var(--radius);
-  padding: 8px 10px;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
+/* The main button sets the width and the menu matches it, so the labels line up and nothing in the
+   row moves when the menu opens. The menu is absolute for the same reason. */
+.syncSplit {
+  position: relative;
+}
+
+#root .syncSplitMain {
+  width: 100%;
+}
+
+.syncSplitMenu {
+  display: none;
+  position: absolute;
+  z-index: var(--layer-2);
+  top: 100%;
+  left: 0;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.syncSplit:hover .syncSplitMenu,
+.syncSplit:focus-within .syncSplitMenu {
+  display: flex;
+}
+
+#root .syncSplitItem {
+  width: 100%;
 }
 
 /* A button that looks like a link: the mode toggle and the copy action are asides, not actions with
@@ -284,10 +300,13 @@
   }
 }
 
+/* The section is align-items: flex-start, so without this the track shrink-wraps its empty content
+   and the bar has no room to grow into. The width has to be fixed for the fill to read as progress. */
 .syncProgress {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
   margin-top: 12px;
 }
 
@@ -301,6 +320,7 @@
 .syncProgressBar {
   height: 100%;
   background: var(--accent);
+  transition: width 200ms linear;
 }
 
 .syncProgressBarFailed {

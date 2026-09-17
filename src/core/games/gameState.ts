@@ -39,16 +39,16 @@ function missing(from: Card[], to: Card[]): Rank[] {
 
 // There used to be a `seedMove` line here: "A good ask would be 3. A poor ask would be K." It was
 // the bug behind the character announcing one rank while the board tracked another. Two reasons it
-// could not be right. The block is built from the state *after* the move landed: `chooseMove`
+// couldn't be right. The block is built from the state *after* the move landed: `chooseMove`
 // ran on the next ask, not the one just made. It also named the 'best' rank while the driver plays
 // the game's own difficulty, which defaults to 'average'. The model read a rank, said it, and the
-// log said something else. The ask the code actually chose is already in the fact line under the
-// block. That is the only rank the model should ever see.
+// log said something else. The ask the code chose is already in the fact line under the
+// block. That's the only rank the model should ever see.
 
 export function buildStateBlock(state: GoFishState, ctx: StateBlockContext = {}): string {
   // The block is the character's own view: the far side is the player.
   const far = naming('char', ctx.names)
-  // Which game this is comes from the block: the prompt stack does not have to name one.
+  // Which game this is comes from the block: the prompt stack doesn't have to name one.
   const lines: string[] = ['You are playing Go Fish.']
   const hand = sortHand(state.hands.char).map((c) => c.rank)
   lines.push(`Your hand: ${hand.length ? hand.join(', ') : 'empty'}`)
@@ -73,7 +73,7 @@ export function buildStateBlock(state: GoFishState, ctx: StateBlockContext = {})
  * One or two sentences covering the events of a single move, in the second person.
  *
  * `you` picks whose side the sentences are written from: the character, which is what the prompt
- * sends, or the player, which is what the log on the board shows. A card the reader cannot see is
+ * sends, or the player, which is what the log on the board shows. A card the reader can't see is
  * never named. The other side is called by name where `names` has one: "they" otherwise.
  */
 export function describeEvent(events: GoFishEvent[], you: Side = 'char', names?: SideNames): string {

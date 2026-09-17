@@ -64,7 +64,7 @@ export function storyScanText(story: string, extra: string[] = []): { content: s
 const ownText = (text: string | undefined, bound: Bound) =>
   swapStoryTokens(text ?? '', bound.tokens)
 
-/** A bound block wrapped in its own open/close text (e.g. `<cast>…</cast>`). */
+/** A bound block wrapped in its own open/close text (e.g. `<cast>...</cast>`). */
 function wrap(block: PromptBlock, inner: string, bound: Bound): string {
   return [ownText(block.content, bound), inner, ownText(block.closeContent, bound)]
     .filter((t) => t && t.trim())
@@ -74,7 +74,7 @@ function wrap(block: PromptBlock, inner: string, bound: Bound): string {
 /**
  * A block's text: own content, children, then its closing text. Bound sources resolve to their
  * content wherever they sit: a Cast block nested inside a `<character>` wrapper contributes the
- * same text it would at the top level, just indented into the parent's join.
+ * same text it'd at the top level, just indented into the parent's join.
  */
 function blockText(block: PromptBlock, bound: Bound): string {
   if (block.disabled) return ''
@@ -85,7 +85,7 @@ function blockText(block: PromptBlock, bound: Bound): string {
       return wrap(block, bound.story, bound)
     case 'storyTrailing':
       // Guarded rather than left to `wrap`: this block carries instruction text of its own ("must
-      // lead into the text below"), and with no caret there is no text below for it to point at.
+      // lead into the text below"), and with no caret there's no text below for it to point at.
       return bound.storyTrailing.trim() ? wrap(block, bound.storyTrailing, bound) : ''
     // Guarded for the same reason: a `<world_info>` wrapper around nothing is worse than no block.
     case 'worldInfo':
@@ -136,8 +136,8 @@ export function fitEndBackward(text: string, available: number): string {
 /**
  * Cap on the "What follows" block, in tokens.
  *
- * The trailing text is priced in the fixed pass: every token of it is a token `fitEndBackward`
- * can't spend on Story context. What the model actually needs is the passage it has to join up
+ * The trailing text is priced in the fixed pass: every token of it's a token `fitEndBackward`
+ * can't spend on Story context. What the model needs is the passage it has to join up
  * with (the sentences immediately after the caret). A few hundred tokens carries the job, and
  * a caret placed near the top of a long Chapter must not push the whole preceding Story out of the
  * window. Raise it if joins start reading as though the model couldn't see far enough ahead.
@@ -177,7 +177,7 @@ export interface StoryFit {
 /**
  * The Story prose and the ladder that fits it, in one object both Write-mode callers spread into
  * `buildStoryPrompt`. `generate` and the preview panel share it so what the preview shows and what
- * goes over the wire cannot diverge, the job `fitChapterGuide` used to do.
+ * goes over the wire can't diverge, the job `fitChapterGuide` used to do.
  */
 export function storyFit(
   chapters: GuideChapter[],
@@ -208,9 +208,9 @@ export interface BuildStoryArgs {
   /**
    * How to cut the Story prose down to what the budget leaves for it. Supplied by both Write-mode
    * callers as a closure over `fitStoryProse`, which degrades oldest-first from prose to beat
-   * instructions; `generate` and the preview panel share the one closure so they cannot diverge.
+   * instructions; `generate` and the preview panel share the one closure so they can't diverge.
    *
-   * Left out, `fitEndBackward` chops whole lines off the top instead. That is the fallback for a
+   * Left out, `fitEndBackward` chops whole lines off the top instead. That's the fallback for a
    * caller with no Chapters to hand, which is every non-Write consumer.
    */
   fitStoryText?: (available: number) => string
@@ -218,7 +218,7 @@ export interface BuildStoryArgs {
    *  is the common case. The block then renders empty and drops out. */
   storyTrailing?: string
   /** What the Story's lorebooks matched, already budgeted. `atDepth` entries have nowhere to go in
-   *  Write mode (there is no history to splice into). Only the two block-shaped slots arrive
+   *  Write mode (there's no history to splice into). Only the two block-shaped slots arrive
    *  here. Absent = no books, or nothing matched. */
   worldInfo?: { before: string; after: string }
   direction: string
@@ -240,8 +240,8 @@ export interface BuiltStoryPrompt {
  * the Direction rides last as a separate user turn, never merged into the prose. See the master's
  * Context assembly. Budget = the active connection's contextLimit.
  *
- * The beat is not in the Direction. It reaches the model through {{beat}} / {{beatTargetWords}},
- * placed by the stack: a Story stack decides where the plan sits and how it is worded.
+ * The beat isn't in the Direction. It reaches the model through {{beat}} / {{beatTargetWords}},
+ * placed by the stack: a Story stack decides where the plan sits and how it's worded.
  */
 export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltStoryPrompt {
   const { stack, castText: cast, tokens, storyText, direction } = args

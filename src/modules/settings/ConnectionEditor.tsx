@@ -25,7 +25,7 @@ interface Props {
   onClose: () => void
 }
 
-/** Edits autosave 1s after the last keystroke; there is no Save button. */
+/** Edits autosave 1s after the last keystroke; there's no Save button. */
 export default function ConnectionEditor({ connection, onSave, onClose }: Props) {
   const [draft, setDraft] = useState(connection)
   const [saved, setSaved] = useState(true)
@@ -38,7 +38,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
   const [reading, setReading] = useState(false)
   const defs = useParamDefs((s) => s.defs)
 
-  // A sentinel connection is answered in the browser and never fetched, so it cannot be blocked.
+  // A sentinel connection is answered in the browser and never fetched, so it can't be blocked.
   const blocked =
     !isSentinel(draft.endpointUrl) &&
     mixedContentBlocked(draft.endpointUrl, window.location.protocol)
@@ -136,7 +136,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
       setTestResult(describeFetchError(err, completionUrl(draft.endpointUrl, draft.type)))
     } finally {
       // finally, rather than a line after the try: the early returns for a non-OK status and for a
-      // non-JSON body skipped it and left the button reading "Testing…" until a reload.
+      // non-JSON body skipped it and left the button reading "Testing..." until a reload.
       setTesting(false)
     }
   }

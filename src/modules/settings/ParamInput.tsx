@@ -12,10 +12,10 @@ export function asText(value: unknown): string {
 
 /**
  * One def's control, rendered by its kind. Used by the connection's param builder and by the
- * character/chat override editor, so a custom param looks the same wherever it is set.
+ * character/chat override editor, so a custom param looks the same wherever it's set.
  *
  * `placeholder` carries the inherited value in the override editor, where an empty input means
- * inherit. In the builder there is nothing to inherit from and it stays unset.
+ * inherit. In the builder there's nothing to inherit from and it stays unset.
  */
 export default function ParamInput({
   def,
@@ -58,7 +58,7 @@ export default function ParamInput({
           max={def.max ?? 1}
           step={def.step ?? 0.01}
           // A range input has no empty state. The override editor's "inherit" shows as the
-          // inherited value until the user moves it. The number box next to it is the real control.
+          // inherited value until the user moves it. The number box next to it's the real control.
           value={text === '' ? (placeholder ?? '0') : text}
           onChange={(e) => onChange(Number(e.target.value))}
         />

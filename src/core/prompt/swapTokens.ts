@@ -60,7 +60,7 @@ export function swapTokens(text: string, values: TokenValues): string {
 export function characterTokens(
   character: Character,
   userName: string,
-  /** The active persona's description. Absent where there is no persona (Ask). */
+  /** The active persona's description. Absent where there's no persona (Ask). */
   personaDescription = '',
 ): TokenValues {
   const base = { char: character.name, user: userName }

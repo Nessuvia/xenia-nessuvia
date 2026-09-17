@@ -65,7 +65,7 @@ function newStory(title: string): Story {
   }
 }
 
-/** A blank beat. Empty instructions are the ordinary state of one the Author has not planned yet. */
+/** A blank beat. Empty instructions are the ordinary state of one the Author hasn't planned yet. */
 export function newBlock(beat = '', weight: BeatWeight = defaultWeight): Block {
   return { id: crypto.randomUUID(), beat, weight, content: '', context: 'both' }
 }
@@ -78,11 +78,11 @@ function newChapter(storyId: number, order: number, title: string): Chapter {
     order,
     title,
     summary: '',
-    // No beats. A Chapter with none is the ordinary state of one that has not been outlined, and
+    // No beats. A Chapter with none is the ordinary state of one that hasn't been outlined, and
     // the editor offers to generate them.
     blocks: [],
     targetWords: 0,
-    // Everything you have: an unwritten Chapter sends beats because it has no summary yet, a
+    // Everything you've: an unwritten Chapter sends beats because it has no summary yet, a
     // written one sends both, and the guide's trim decides what survives when room runs short.
     guideSend: 'both',
     createdAt: now,
@@ -160,7 +160,7 @@ interface WriteState {
   /** True when the stream will replace what the Block already says (a regen), so the region hides
    *  the old text instead of leaving it above the tail. */
   streamingReplaces: boolean
-  /** Progress of a chapter-wide rewrite: which beat of how many. Null when none is running. It is
+  /** Progress of a chapter-wide rewrite: which beat of how many. Null when none is running. It's
    *  separate from `streaming`: the run outlives each individual request. */
   rewriting: { done: number; total: number } | null
   error: string
@@ -185,7 +185,7 @@ interface WriteState {
   /** What the open Story's lorebooks matched on the last `refreshWorldInfo`. Held here rather than
    *  resolved where it's needed: reading entries is async and the prompt preview renders
    *  synchronously. This is the one value both the preview and `writeBlock` read. What the
-   *  preview shows and what goes over the wire cannot disagree. */
+   *  preview shows and what goes over the wire can't disagree. */
   worldInfo: ResolvedWorldInfo
   /** Match the Story's enabled lorebooks against `scan` and keep the result. Returns it too, for
    *  the caller that needs it in the same tick it asked for it. */
@@ -223,7 +223,7 @@ interface WriteState {
   addChapter(title?: string): Promise<void>
   /** Edit a Chapter's plan (title, summary, beats, send toggle). Never touches prose. */
   updateChapter(id: number, patch: ChapterPatch): Promise<void>
-  /** Delete a Chapter and its prose. The caller confirms; this does not. */
+  /** Delete a Chapter and its prose. The caller confirms; this doesn't. */
   removeChapter(id: number): Promise<void>
   /** Move a Chapter by one position. Its prose moves with it. */
   moveChapter(id: number, delta: number): Promise<void>
@@ -260,7 +260,7 @@ interface WriteState {
    *
    * `direction` defaults to the Direction box verbatim, the Story's standing instruction. The
    * beat is NOT folded in; it reaches the model through {{beat}}, wherever the stack places it.
-   * Pass one to override (that is what "Regen with instructions" does).
+   * Pass one to override (that's what "Regen with instructions" does).
    */
   writeBlock(
     chapterId: number,
@@ -281,7 +281,7 @@ interface WriteState {
    * appends a swipe. Runs one Block at a time so each sees the previous one's new prose.
    */
   rewriteChapter(chapterId: number, note: string): Promise<void>
-  /** Rewrite a Chapter's summary from the prose it actually holds. The recap the prompt sends
+  /** Rewrite a Chapter's summary from the prose it holds. The recap the prompt sends
    *  matches what got written rather than what was planned. Replaces whatever is there. */
   summarizeChapter(chapterId: number): Promise<void>
   /** Select one of a Block's alternates. */
@@ -328,8 +328,8 @@ function outlineConnection(story: Story) {
 /**
  * The half both outline generators share: hold the streaming flag, send, collect the reply.
  *
- * Nothing renders this as it arrives: there is no `streamingBlockId`. It lands as Chapters or
- * beats once it is done. The flag is the one `writeBlock` holds. Stop works and neither can
+ * Nothing renders this as it arrives: there's no `streamingBlockId`. It lands as Chapters or
+ * beats once it's done. The flag is the one `writeBlock` holds. Stop works and neither can
  * start while the other runs.
  */
 async function runOutline(
@@ -364,7 +364,7 @@ async function runOutline(
 }
 
 
-/** A parse failure, or the token limit that actually caused it. A truncation looks like a parse error
+/** A parse failure, or the token limit that caused it. A truncation looks like a parse error
  *  otherwise, which points at the reply instead of at the limit that cut it. Clears the streaming
  *  flag on the way out: the run is over either way, and the dialog stays open on the message. */
 function outlineError(
@@ -513,7 +513,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
       // Session state, and this is a different document's prose.
       activeBlockId: null,
       pendingCaret: null,
-      // Kept when you come back to a Story that is still generating: the tail picks up mid-flight.
+      // Kept when you come back to a Story that's still generating: the tail picks up mid-flight.
       streamingText: get().streamingStoryId === id ? get().streamingText : '',
     })
   },
@@ -751,7 +751,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     // story > connection. The cast contributes nothing: several characters, no non-arbitrary winner.
     const connection = resolveParams(base, undefined, story)
     // The Direction box is the Story's standing instruction: read on every generation, never
-    // cleared. The beat is not folded in - the stack places it with {{beat}}.
+    // cleared. The beat isn't folded in - the stack places it with {{beat}}.
     const sent = direction ?? story.direction
 
     const controller = new AbortController()
@@ -863,7 +863,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     if (!block || !instruction.trim()) return
     // The chat's re-roll wording, unchanged: quote what it said, then the instruction. An empty
     // Block has nothing to rewrite. The instruction steers a first draft instead. Either way the
-    // beat still arrives through {{beat}} and is not repeated here.
+    // beat still arrives through {{beat}} and isn't repeated here.
     // The Story stack's own override, if it set one: `writeBlock` resolves the same stack again to
     // build the prompt, and both halves of this request read the same row.
     const stack = await useStacks.getState().ensureActive('story')
@@ -882,7 +882,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
     const chapter = get().chapters.find((c) => c.id === chapterId)
     if (!chapter || get().streaming || !note.trim()) return
     // The list is taken once, before anything runs. The Blocks are replaced as each pass commits:
-    // holding the records would rewrite stale prose. Ids survive and are what is held.
+    // holding the records would rewrite stale prose. Ids survive and are what's held.
     const ids = chapter.blocks.filter((b) => b.content.trim()).map((b) => b.id)
     if (!ids.length) return
     const stack = await useStacks.getState().ensureActive('story')
@@ -1057,8 +1057,8 @@ async function writeBlockContent(
  */
 /**
  * Every correction that led to the selected swipe, plus the one just typed, as one instruction.
- * Numbered when there is more than one: the model sees them as a list rather than a paragraph
- * of contradictions. This is what makes a re-roll iterate: round three does not have to re-explain
+ * Numbered when there's more than one: the model sees them as a list rather than a paragraph
+ * of contradictions. This is what makes a re-roll iterate: round three doesn't have to re-explain
  * what rounds one and two already asked for.
  */
 function chainedInstruction(block: Block, instruction: string): string {

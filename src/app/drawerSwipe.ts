@@ -21,7 +21,7 @@ export function towardOpen(side: DrawerSide, dx: number): number {
 }
 
 /**
- * How far the drawer is pulled from closed, `0…width`. A closed drawer only tracks pull toward
+ * How far the drawer is pulled from closed, `0...width`. A closed drawer only tracks pull toward
  * open and an open one only away; dragging the other way clamps to where it already rests rather
  * than pushing it past its own edge.
  */
@@ -55,11 +55,11 @@ export function settleDrawer({ startOpen, pull, width, elapsed }: Settle): boole
 
 /**
  * Which drawers are open right now. Every drawer listens to the whole document, so on a screen
- * with more than one they would all answer the same swipe: the navbar opening from the left at
+ * with more than one they'd all answer the same swipe: the navbar opening from the left at
  * the moment a right-hand panel is swiped shut, say.
  *
- * The rule that sorts it out: closing beats opening. A drawer takes a gesture if it is the one
- * that is open, or if nothing is open at all.
+ * The rule that sorts it out: closing beats opening. A drawer takes a gesture if it's the one
+ * that's open, or if nothing is open at all.
  */
 const openDrawers = new Set<object>()
 

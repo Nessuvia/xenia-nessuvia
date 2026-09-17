@@ -100,7 +100,7 @@
 }
 
 /* The connection's plumbing fields, packed onto a four-column grid so they take a few short rows
-   instead of one field per line. The param builder underneath is what the page is really for. */
+   instead of one field per line. The param builder underneath is what the page is for. */
 .connectionGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -564,7 +564,7 @@
 }
 
 /* Rule JSON in and out. The native file input won't shrink and squeezed the button beside it, so
-   it is hidden and its label styled to match a .grammarActions button. */
+   it's hidden and its label styled to match a .grammarActions button. */
 .ruleImportButton {
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
@@ -670,7 +670,7 @@
   font-size: 11px;
 }
 
-/* A row that is a checkbox, a name and a delete on one line: pipelines in the library, and
+/* A row that's a checkbox, a name and a delete on one line: pipelines in the library, and
    phrases in the lexicon. */
 .passRow {
   display: flex;

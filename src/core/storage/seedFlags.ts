@@ -4,7 +4,7 @@
  * Four stores write bundled rows on first load and record a flag: a delete sticks. Palettes,
  * characters, sampler defs and prompt stacks. A restore or a pull replaces those tables with
  * someone else's rows, and without the flags the next load writes the bundled ones on top. For
- * stacks that is worse than an extra row: stacksStore.load also calls setActiveId for the two
+ * stacks that's worse than an extra row: stacksStore.load also calls setActiveId for the two
  * stacks it seeds, and the restored active-stack choice is overwritten too.
  *
  * Its own file, extension-ful imports and all: checkSeedFlags.ts can run it under

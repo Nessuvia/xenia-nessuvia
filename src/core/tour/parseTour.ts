@@ -9,7 +9,7 @@ const layouts = ['desktop', 'mobile'] as const
  *
  *     ## .chatSidebar | left | desktop
  *
- * `center` in the selector slot means a step with no target. A `##` with nothing after it is not a
+ * `center` in the selector slot means a step with no target. A `##` with nothing after it's not a
  * step. Its body is dropped rather than attached to the step above: a heading marks a break either
  * way.
  */

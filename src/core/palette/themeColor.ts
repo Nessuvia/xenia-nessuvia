@@ -2,17 +2,17 @@
  * What the OS paints its own chrome with, derived from the active palette's background.
  *
  * Android, in a standalone PWA: `<meta name="theme-color">` colors the status bar and Chrome reads
- * it live. A palette swap repaints it. The navigation bar at the bottom is not directly settable:
+ * it live. A palette swap repaints it. The navigation bar at the bottom isn't directly settable:
  * Chrome derives it from the manifest's `background_color` at launch and from the page's own
- * background after that. The honest lever there is `body { background: var(--bg) }`, which
+ * background after that. The honest lever there's `body { background: var(--bg) }`, which
  * index.css already sets.
  *
  * iOS, from the home screen: `apple-mobile-web-app-status-bar-style` takes a style name rather than
  * a color, and Safari reads it once when the app launches. Writing it here means a palette swap
  * shows up on the next launch, not immediately.
  *
- * The manifest colors in vite.config.ts are the pre-load half of this: they are what shows before
- * any of the app has run, and they are baked in when the app is installed.
+ * The manifest colors in vite.config.ts are the pre-load half of this: they're what shows before
+ * any of the app has run, and they're baked in when the app is installed.
  */
 import { isLight } from './palette.ts'
 

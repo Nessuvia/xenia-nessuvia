@@ -13,12 +13,12 @@ export interface Token {
   start: number
   end: number
   pos: PosTag[]
-  /** Which sentence this token belongs to, counting from 0. Matches cannot cross a boundary. */
+  /** Which sentence this token belongs to, counting from 0. Matches can't cross a boundary. */
   sentenceIndex: number
   /**
    * What a literal matches against, when that differs from the surface text. Only a contraction's
    * leading half sets it: `text` stays "didn't" so the panel shows what the reader sees, while
-   * `word` is "did" so `did not` matches it.
+   * `word` is "did" so `didn't` matches it.
    */
   word?: string
   /**
@@ -35,16 +35,16 @@ export function isPunct(token: Token): boolean {
 }
 
 /**
- * One token per written word: no punctuation, and a contraction as the single word it is written
+ * One token per written word: no punctuation, and a contraction as the single word it's written
  * as. This is the stream the tagger produced before punctuation and contraction halves were split
- * out for the matcher, and it is what a caller wants when it reads adjacency as "the next word"
+ * out for the matcher, and it's what a caller wants when it reads adjacency as "the next word"
  * and reads punctuation off the source text itself. The style checks use it.
  */
 export function wordTokens(tokens: Token[]): Token[] {
   return tokens.filter((t) => !isPunct(t) && t.contraction !== 'tail')
 }
 
-/** What a literal compares against: the implicit word where there is one. */
+/** What a literal compares against: the implicit word where there's one. */
 export function matchText(token: Token): string {
   return token.word ?? token.text
 }

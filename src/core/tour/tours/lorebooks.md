@@ -2,7 +2,7 @@
 
 ## center
 A lorebook is a set of entries that only enter the prompt when their keywords appear in the
-conversation. It is how a large world stays inside a context limit.
+conversation. It's how a large world stays inside a context limit.
 
 ## .lorebooksList
 Your books. Click one to open its entries.

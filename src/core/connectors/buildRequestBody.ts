@@ -9,7 +9,7 @@ import { flattenPrompt, sequencesOf } from '../prompt/flattenPrompt.ts'
  * this. Nothing else in the app builds a body.
  *
  * Every sampler in the body comes from `connection.params`, resolved against the def library.
- * A param the connection does not carry is not sent at all. The backend applies its own default
+ * A param the connection doesn't carry isn't sent at all. The backend applies its own default
  * instead.
  */
 export function buildRequestBody(
@@ -56,7 +56,7 @@ export function buildRequestBody(
 }
 
 /**
- * Where a request is actually POSTed. Accepts a full path, a `/v1` base, or a bare root; the
+ * Where a request is POSTed. Accepts a full path, a `/v1` base, or a bare root; the
  * connection type picks the tail. A path that already names either completions endpoint is left
  * exactly as typed. Local backends put these under paths no rule here could guess
  * (`/api/v1`, `/completion`, a proxy prefix), so a full URL is taken at its word.

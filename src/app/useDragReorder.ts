@@ -35,7 +35,7 @@ export interface DragReorder {
 
 /**
  * Drag-to-reorder over a list, using native HTML5 drag events.
- * `onReorder` receives the moved item's original and new index and is not called for a no-op drop.
+ * `onReorder` receives the moved item's original and new index and isn't called for a no-op drop.
  * `pinnedFirst` blocks moving index 0 and blocks dropping anything ahead of it.
  */
 export function useDragReorder(

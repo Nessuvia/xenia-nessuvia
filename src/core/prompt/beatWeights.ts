@@ -12,7 +12,7 @@ export const defaultWeight: BeatWeight = 'normal'
 
 /**
  * How much of the Chapter each weight claims, relative to `normal`. The spread is wide on purpose:
- * a sketch and a major scene in the same chapter should not read as the same size of thing. These
+ * a sketch and a major scene in the same chapter shouldn't read as the same size of thing. These
  * are ratios, never word counts. The words come from the Chapter's target.
  */
 export const weightMultiplier: Record<BeatWeight, number> = {
@@ -23,7 +23,7 @@ export const weightMultiplier: Record<BeatWeight, number> = {
   major: 2.3,
 }
 
-/** What the Author reads on the control. One word each: the multiplier is not their problem. */
+/** What the Author reads on the control. One word each: the multiplier isn't their problem. */
 export const weightLabel: Record<BeatWeight, string> = {
   sketch: 'Sketch',
   brief: 'Brief',
@@ -33,7 +33,7 @@ export const weightLabel: Record<BeatWeight, string> = {
 }
 
 /** A weight off untrusted input (a model reply, a pasted bulk list). Anything unrecognised, in any
- *  casing, becomes the default rather than throwing: a bad weight is not worth losing a beat over. */
+ *  casing, becomes the default rather than throwing: a bad weight isn't worth losing a beat over. */
 export function asWeight(value: unknown): BeatWeight {
   if (typeof value !== 'string') return defaultWeight
   const key = value.trim().toLowerCase()

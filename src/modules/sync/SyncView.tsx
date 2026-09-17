@@ -84,17 +84,7 @@ function Section({
 }
 
 function R2Section() {
-  const {
-    status,
-    error,
-    progress,
-    comparison,
-    compare,
-    apply,
-    pushSettings,
-    pullSettings,
-    clearError,
-  } = useSync()
+  const { status, error, progress, comparison, compare, apply, clearError } = useSync()
   const bucket = useSettings((s) => s.bucket)
   const setBucket = useSettings((s) => s.setBucket)
   const lastSyncedAt = useSettings((s) => s.lastSyncedAt)
@@ -110,7 +100,7 @@ function R2Section() {
   const busy = status !== 'idle'
   const ready = bucketConfigured(bucket)
   // Same fields bucketConfigured checks, named the way the visible form names them. `prefix` is
-  // legitimately empty and is not in either list.
+  // empty and isn't in either list.
   const fields: [keyof BucketConfig, string][] = showAll
     ? [['endpoint', 'Endpoint'], ['region', 'Region']]
     : [['endpoint', 'Account ID']]
@@ -172,12 +162,21 @@ function R2Section() {
           >
             {status === 'comparing' ? 'Comparing…' : 'Compare'}
           </button>
-          <button type="button" onClick={() => apply(allTables('push'))} disabled={busy}>
-            Upload all
-          </button>
-          <button type="button" onClick={() => apply(allTables('pull'))} disabled={busy}>
-            Download all
-          </button>
+          <SplitButton
+            busy={busy}
+            actions={[
+              ['Upload all', () => apply(allTables('push'), 'push')],
+              ['Upload w/o settings', () => apply(allTables('push'))],
+            ]}
+          />
+          <SplitButton
+            busy={busy}
+            actions={[
+              ['Download all', () => apply(allTables('pull'), 'pull')],
+              ['Download settings', () => apply({}, 'pull')],
+              ['Download content', () => apply(allTables('pull'))],
+            ]}
+          />
           {lastSyncedAt !== null && (
             <span className="syncNote">Last synced {stamp(lastSyncedAt)}</span>
           )}
@@ -185,35 +184,12 @@ function R2Section() {
       )}
 
       {ready && (
-        <>
-          <p className="syncNote">
-            Settings include your connections and their API keys, and the access keys for this
-            bucket. With a passphrase they are encrypted in the browser before upload, and the same
-            passphrase has to be typed on the other device to read them back. There is no recovery
-            if you forget it. Without a passphrase they are written to the bucket as plain text,
-            readable by anyone who can read the bucket and by the provider hosting it. Downloading
-            replaces the settings in this browser, apart from the bucket details.
-          </p>
-          <div className="syncActions">
-            <label className="syncPassphrase">
-              Passphrase
-              <input
-                type="password"
-                value={bucket.passphrase}
-                onChange={(e) => setBucket({ passphrase: e.target.value })}
-                placeholder="Leave empty to upload as plain text"
-                spellCheck={false}
-                autoComplete="off"
-              />
-            </label>
-            <button type="button" onClick={() => pushSettings()} disabled={busy}>
-              Upload settings
-            </button>
-            <button type="button" onClick={() => pullSettings()} disabled={busy}>
-              Download settings
-            </button>
-          </div>
-        </>
+        <p className="syncNote">
+          Settings include your connections and their API keys, the access keys for this bucket, and
+          the Ask scratchpad. They're written to the bucket as plain text, readable by anyone who can
+          read the bucket and by the provider hosting it. Downloading them replaces the settings in
+          this browser, apart from the bucket details.
+        </p>
       )}
 
       {comparison && (
@@ -240,6 +216,65 @@ function R2Section() {
 
       {error && <SyncError error={error} onDismiss={clearError} />}
     </Section>
+  )
+}
+
+/**
+ * Every button that moves data is primed by the first click and fired by the second. Leaving the
+ * button cancels, the same pattern as the regex conversion in RuleBuilder. Upload overwrites the
+ * bucket and download overwrites this browser: neither should be one stray click away.
+ */
+function PrimedButton({
+  label,
+  onFire,
+  disabled,
+  className,
+}: {
+  label: string
+  onFire(): void
+  disabled?: boolean
+  className?: string
+}) {
+  const [primed, setPrimed] = useState(false)
+  return (
+    <button
+      type="button"
+      className={[className, primed ? 'danger' : ''].filter(Boolean).join(' ') || undefined}
+      disabled={disabled}
+      onBlur={() => setPrimed(false)}
+      onClick={() => {
+        if (!primed) return setPrimed(true)
+        setPrimed(false)
+        onFire()
+      }}
+    >
+      {primed ? `${label}?` : label}
+    </button>
+  )
+}
+
+/**
+ * The first action is the button; the rest sit in a menu under it, shown on hover and on
+ * focus-within. No open state: priming the main button focuses it, which is the same one tap that
+ * opens the menu on a touch screen.
+ */
+function SplitButton({ actions, busy }: { actions: [string, () => void][]; busy: boolean }) {
+  const [[mainLabel, mainFire], ...rest] = actions
+  return (
+    <div className="syncSplit">
+      <PrimedButton className="syncSplitMain" label={mainLabel} onFire={mainFire} disabled={busy} />
+      <div className="syncSplitMenu">
+        {rest.map(([label, fire]) => (
+          <PrimedButton
+            key={label}
+            className="syncSplitItem"
+            label={label}
+            onFire={fire}
+            disabled={busy}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -305,7 +340,7 @@ function R2Form({
 
 /**
  * The CORS policy is the step that goes wrong, and it fails as a blocked preflight the browser
- * won't explain. Built from location.origin so it is right for whichever build is running.
+ * won't explain. Built from location.origin so it's right for whichever build is running.
  */
 function SetupSteps() {
   const [copied, setCopied] = useState(false)
@@ -533,9 +568,7 @@ function ComparisonTable({
         )
       })}
       <div className="syncActions">
-        <button type="button" onClick={onApply} disabled={busy}>
-          {busy ? 'Working…' : 'Apply'}
-        </button>
+        <PrimedButton label={busy ? 'Working…' : 'Apply'} onFire={onApply} disabled={busy} />
         <span className="syncNote">Downloading a table replaces it in this browser.</span>
       </div>
     </div>

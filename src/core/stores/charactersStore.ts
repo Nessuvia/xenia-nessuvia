@@ -40,7 +40,7 @@ export function newCharacter(): Character {
 
 /**
  * The card's `character_book` as a Lorebook row, or nothing when it carried none. Returned as a
- * list because that is the shape `Character.lorebookIds` wants; a card only ever has one book.
+ * list because that's the shape `Character.lorebookIds` wants; a card only ever has one book.
  */
 async function importedBookIds(json: unknown): Promise<number[]> {
   const imported = importBook(json)
@@ -128,7 +128,7 @@ export const useCharacters = create<CharactersState>()((set, get) => ({
 
   remove: async (id) => {
     // Cascade: chats for this character, then their messages. Orphaned message rows are
-    // the one data mess that's genuinely annoying to clean up later.
+    // the one data mess that's annoying to clean up later.
     for (const chat of await storage.find('chats', 'characterId', id)) {
       for (const message of await storage.find('messages', 'chatId', chat.id)) {
         await storage.remove('messages', message.id!)

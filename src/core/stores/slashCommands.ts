@@ -81,7 +81,7 @@ function matchName(rest: string, names: string[]): string | undefined {
  * first column counts, and `//` escapes it, `//me` is a message that starts with a slash, which
  * `stripEscape` below takes care of.
  *
- * An unknown command name is not an error: it parses to null and sends verbatim. A message that
+ * An unknown command name isn't an error: it parses to null and sends verbatim. A message that
  * happens to open with a slash is never eaten.
  *
  * `names` is the roster. A command that takes a character matches greedily against it because

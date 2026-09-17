@@ -23,7 +23,7 @@ Post-processing edits an assistant reply after it streams in. It removes LLM hab
 
 `AgentConfig` lives in `settingsStore`. It holds what stays on this machine: the master switch, the style (Default or Stylized), the connection for rewrite calls, and `defaultStackId`.
 
-A post-processing stack holds everything the pass does. Stacks are Dexie rows. A user keeps several, duplicates them, and exports them as JSON files (`postStackFile.ts`, format `nessu-post-stack`). A stack file carries a name and a config, and it is safe to share.
+A post-processing stack holds everything the pass does. Stacks are Dexie rows. A user keeps several, duplicates them, and exports them as JSON files (`postStackFile.ts`, format `nessu-post-stack`). A stack file carries a name and a config, and it's safe to share.
 
 `resolvePostStack` picks the stack in this order: the chat's own stack, `defaultStackId`, then `defaultPostStackConfig()`. `Chat.agent` overrides the switch and the display mode per chat.
 

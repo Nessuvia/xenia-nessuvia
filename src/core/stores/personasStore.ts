@@ -20,7 +20,7 @@ interface PersonasState {
   load(): Promise<void>
   save(persona: Persona): Promise<number>
   create(): Promise<number>
-  /** Refused on the last one: there is always a persona to be. */
+  /** Refused on the last one: there's always a persona to be. */
   remove(id: number): Promise<void>
   /** The persona chat should use, creating "User" on first run rather than erroring. */
   ensureActive(): Promise<Persona>

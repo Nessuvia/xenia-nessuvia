@@ -45,7 +45,7 @@ export default function BlackjackBoard({
   error?: string
   notice?: string
   readOnly?: boolean
-  /** The table is parked on the step gate. Shows Next, and holds the controls until it is clicked. */
+  /** The table is parked on the step gate. Shows Next, and holds the controls until it's clicked. */
   awaitingNext?: boolean
   onSubmit?: (text: string) => void
   onNext?: () => void
@@ -101,7 +101,7 @@ export default function BlackjackBoard({
           >
             {state.hands.char.map((card, i) =>
               // The hole card is face down until the dealer plays. Its rank stays out of the DOM.
-              // Its motion id stays 'charHole' either way: identity is not the face, and changing
+              // Its motion id stays 'charHole' either way: identity isn't the face, and changing
               // it on the reveal made the card look like a new one landing rather than one turning
               // over.
               state.holeDown && i === 1 ? (
@@ -148,7 +148,7 @@ export default function BlackjackBoard({
         </div>
 
         {/* Always rendered, empty between turns: the row holds its height. The input and your
-            avatar underneath do not jump every time it becomes your move. */}
+            avatar underneath don't jump every time it becomes your move. */}
         <div className="blackjackActions">
           {canAct && (
             <>

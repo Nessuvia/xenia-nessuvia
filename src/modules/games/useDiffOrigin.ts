@@ -1,15 +1,15 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 
 /**
- * Where a card that is new to the board came from: the zone that just lost one.
+ * Where a card that's new to the board came from: the zone that just lost one.
  *
  * The diff is the board's to make, because the board is the only thing that knows where it drew the
- * zones. What is not the board's business is remembering the previous state, and doing it in the
+ * zones. What's not the board's business is remembering the previous state, and doing it in the
  * render body is a bug: StrictMode renders twice, the second pass sees the state it just stored,
  * the diff comes back empty and the card fades in from nowhere instead of flying off the deck.
  *
  * So the previous state is written in a layout effect, which runs once per commit. The origin is
- * handed back in a ref rather than returned, since the value belongs to the commit that has not
+ * handed back in a ref rather than returned, since the value belongs to the commit that hasn't
  * happened yet: call this before `useCardMotion` and its effect runs first, which is what makes the
  * ref current by the time the motion pass reads it.
  */

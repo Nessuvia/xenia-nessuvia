@@ -79,7 +79,7 @@ export function isBust(hand: Card[]): boolean {
   return handValue(hand).total > 21
 }
 
-/** What the player can see of the dealer's hand: the hole card is not in it. */
+/** What the player can see of the dealer's hand: the hole card isn't in it. */
 export function visibleHand(state: BlackjackState): Card[] {
   return state.holeDown ? state.hands.char.slice(0, 1) : state.hands.char
 }
@@ -157,7 +157,7 @@ export type Action = 'hit' | 'stand'
 /**
  * What the player may do right now. Empty between rounds and once the game is over.
  *
- * A hand of 21 is not a decision: `resolveAction` stands it for them, and the turn is already
+ * A hand of 21 isn't a decision: `resolveAction` stands it for them, and the turn is already
  * the dealer's by the time this is asked again. The bust check is the same story.
  */
 export function legalActions(state: BlackjackState): Action[] {
@@ -207,7 +207,7 @@ export function resolveAction(state: BlackjackState, action: Action): BlackjackE
   if (!card) return [{ kind: 'end' }]
   emit({ kind: 'hit', by: 'player', rank: card.rank })
   if (isBust(current.hands.player)) emit({ kind: 'bust', by: 'player' })
-  // Twenty-one needs no decision: it is stood for them rather than asked about.
+  // Twenty-one needs no decision: it's stood for them rather than asked about.
   else if (handValue(current.hands.player).total === 21) emit({ kind: 'stand', by: 'player' })
   return events
 }
@@ -217,7 +217,7 @@ export function resolveAction(state: BlackjackState, action: Action): BlackjackE
  * waiting on the player, or the game is over.
  *
  * This is the whole of Blackjack's side of the driver. Every path that ends a player's turn runs
- * through it. There is one place a round can be opened and one place the dealer plays.
+ * through it. There's one place a round can be opened and one place the dealer plays.
  */
 export function nextEvents(state: BlackjackState): BlackjackEvent[] | null {
   if (state.over || state.turn === 'player') return null

@@ -9,7 +9,7 @@ import ParamDefModal from './ParamDefModal'
 import './paramBuilder.css'
 
 /**
- * The connection's request body, built by hand. Left is the form as it will be sent, in order;
+ * The connection's request body, built by hand. Left is the form as it'll be sent, in order;
  * right is the rest of the library. Dragging moves a param between the two, and the + and × do
  * the same thing for anyone not using a mouse.
  *

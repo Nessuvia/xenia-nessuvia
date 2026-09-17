@@ -198,8 +198,8 @@ export const miscPromptDef = (id: string): MiscPromptDef | undefined =>
   miscPromptDefs.find((d) => d.id === id)
 
 /**
- * The wording to send: the stack's override, or the built-in. Blank (or whitespace) is not an
- * override: it is how the editor's Reset says "use the built-in", the same rule `palettePrompt`
+ * The wording to send: the stack's override, or the built-in. Blank (or whitespace) isn't an
+ * override: it's how the editor's Reset says "use the built-in", the same rule `palettePrompt`
  * follows. An unknown id returns '' rather than throwing: a stack can carry a row for a prompt a
  * later build removed, and that must not break sending.
  */
@@ -210,9 +210,9 @@ export function miscPrompt(id: string, prompts?: MiscPrompts): string {
 }
 
 /**
- * Fill `{{token}}` slots. One pass: a value that itself contains `{{…}}` (model output, which
+ * Fill `{{token}}` slots. One pass: a value that itself contains `{{...}}` (model output, which
  * every one of these quotes) is never rescanned and never substituted again. An unknown token is
- * left as written: it is more likely a typo the user wants to see than a slot to blank out.
+ * left as written: it's more likely a typo the user wants to see than a slot to blank out.
  */
 export function fillSlots(text: string, values: Record<string, string>): string {
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (whole, token: string) => {

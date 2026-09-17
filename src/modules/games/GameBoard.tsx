@@ -6,7 +6,7 @@ import type { AnyGameState, HandFit } from './gamesStore'
 import GoFishBoard from './GoFishBoard'
 import BlackjackBoard from './BlackjackBoard'
 
-/** Everything a board needs that is not the board's own state. Both boards take exactly this. */
+/** Everything a board needs that's not the board's own state. Both boards take exactly this. */
 export interface BoardProps {
   /** The game's shuffle seed. Only the boards' motion pass reads it, to name face-down cards
    *  without putting their ranks in the DOM. */
@@ -16,7 +16,7 @@ export interface BoardProps {
   characterName: string
   persona: AvatarSource | undefined
   personaName: string
-  /** The character's latest line, or what is streaming right now. */
+  /** The character's latest line, or what's streaming right now. */
   line: string
   streaming: boolean
   chatBack?: boolean
@@ -37,7 +37,7 @@ export interface BoardProps {
 
 /**
  * Picks the board for a game. The cast is the same one the store's rules table makes: `kind` is
- * what decides which game a record is, and it is the only thing that can.
+ * what decides which game a record is, and it's the only thing that can.
  */
 export default function GameBoard({ kind, state, ...rest }: BoardProps & { kind: GameKind; state: AnyGameState }) {
   return kind === 'goFish' ? (

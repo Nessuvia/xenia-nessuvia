@@ -6,7 +6,7 @@ import { readVocab } from './tokenizerCache.ts'
 // families the single-encoding entrypoint matters: the package root bundles every encoding it
 // ships and doubles the chunk.
 //
-// Two phases on purpose: loading is async, counting is not. countTokens runs inside trim loops and
+// Two phases on purpose: loading is async, counting isn't. countTokens runs inside trim loops and
 // straight in JSX, and none of that can await.
 let count: ((text: string) => number) | null = null
 const counters = new Map<ResolvedTokenizerId, (text: string) => number>()

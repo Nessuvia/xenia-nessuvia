@@ -1,5 +1,5 @@
 // Cards and a seeded shuffle. Pure, no React, no storage: a stored seed has to reproduce the exact
-// deal. That is what lets a game replay from its event log without storing card positions.
+// deal. That's what lets a game replay from its event log without storing card positions.
 
 export type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K'
 export type Suit = 'S' | 'H' | 'D' | 'C'
@@ -50,7 +50,7 @@ export function shuffle(deck: Card[], seed: number): Card[] {
  * An opaque, stable name for a card, for a hand nobody may see.
  *
  * A face-down card still needs an identity the motion pass can follow, or a card leaving the middle
- * of a hand animates as though the last one left. Its rank cannot be that identity: it would be in
+ * of a hand animates as though the last one left. Its rank can't be that identity: it'd be in
  * the DOM, and a hand you may not see would be readable from the markup. This is the card's
  * position in a seeded shuffle of the deck. Stable for the life of a game, and meaningless
  * without the seed. The seed lives in the store and never reaches the page.

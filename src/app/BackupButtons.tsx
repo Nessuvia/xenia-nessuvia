@@ -48,7 +48,7 @@ export default function BackupButtons({ className }: { className: string }) {
           type="button"
           className={className}
           onClick={async () => {
-            // Without keys in the file there is one sensible export. Skip the menu.
+            // Without keys in the file there's one sensible export. Skip the menu.
             if (!exportKeys) return downloadBackup(await buildBackup())
             setChoosing((v) => !v)
           }}

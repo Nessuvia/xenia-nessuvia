@@ -63,7 +63,7 @@ import { budgetOf, maxTokensOf, withParam } from '../params/connectionParams'
 
 /**
  * The active session's people as `Name: description` lines, filling {{personas}}, or undefined
- * outside a session. The Narrator's instructions are not here and never were a store concern:
+ * outside a session. The Narrator's instructions aren't here and never were a store concern:
  * they come from the prompt stack's `[if Narrator]` branch, the one place the user can edit them.
  */
 let _sessionPersonas: string | undefined = undefined
@@ -198,7 +198,7 @@ function acrosticStage(chat: Chat, force: boolean): AcrosticConfig | null {
 /**
  * An acrostic reply, through the chat's own connection: draw a template from the recent replies, ask
  * for it, parse the lines. One retry on the same template when fewer than half come back, then
- * false and the caller streams normally. The text is not streamed: half-written tagged lines mean
+ * false and the caller streams normally. The text isn't streamed: half-written tagged lines mean
  * nothing on screen.
  */
 async function acrosticReply(
@@ -290,7 +290,7 @@ async function generateReply(
 }
 
 /**
- * The stack this chat should actually use: its own override, or the globally active one. The
+ * The stack this chat should use: its own override, or the globally active one. The
  * override keeps a multiplayer session's stack from leaking into every ordinary chat. The
  * global is what the Prompts tab and the Settings picker write, and a session must not repoint it.
  * Falls back to the global when the override names a stack that has since been deleted.
@@ -305,7 +305,7 @@ export async function stackFor(chat: Chat | null): Promise<PromptStack> {
 }
 
 /**
- * The connection as this chat should actually use it, the only place override precedence is
+ * The connection as this chat should use it, the only place override precedence is
  * applied. It lives in the store rather than the view: the store is what sends. The
  * budget, the request body and the preview all read the same resolved object.
  */
@@ -317,7 +317,7 @@ export function resolvedConnection(character: Character, chat: Chat): Connection
 /**
  * Where an inline think block ends in a finished reply, recorded on the message. The text is stored
  * whole; this is only the offset. A reader can skip the thinking without re-parsing it against a
- * connection that may since have changed. Undefined when there is no block to skip, which keeps the
+ * connection that may since have changed. Undefined when there's no block to skip, which keeps the
  * field off the record entirely for the usual reply.
  */
 function reasoningEndOf(text: string, connection: Connection): number | undefined {
@@ -342,8 +342,8 @@ function trackerUpdate(character: Character, chat: Chat, history: Message[], tex
  * deleted out from under the roster still leaves a turn that can be generated.
  */
 function characterAt(chat: Chat, index: number, fallback: Character): Character {
-  // Check the Narrator first before the roster lookup. The Narrator is not in participantIds:
-  // without this branch it would hit the fallback and silently generate a normal character.
+  // Check the Narrator first before the roster lookup. The Narrator isn't in participantIds:
+  // without this branch it'd hit the fallback and silently generate a normal character.
   if (isNarrator(index)) return narratorCharacter()
   const id = participants(chat)[index]
   return useCharacters.getState().characters.find((c) => c.id === id) ?? fallback
@@ -366,8 +366,8 @@ function rosterBookIds(chat: Chat | null): number[] {
  * participant, and the books attached to this chat.
  *
  * The Narrator is the one speaker with no books of its own, so it borrows the whole roster's
- * instead. Narrating a world the characters can see and the Narrator cannot is the failure this
- * avoids, and in a group there is no single character whose books are the right ones.
+ * instead. Narrating a world the characters can see and the Narrator can't is the failure this
+ * avoids, and in a group there's no single character whose books are the right ones.
  */
 export async function worldInfoFor(
   speaker: Character,
@@ -433,7 +433,7 @@ interface ChatState {
   error: string
   /** History messages the budget dropped on the last send, normal operation, not an error. */
   trimmedCount: number
-  /** The open chat's stack's utility-prompt overrides, for views that show one before it is sent.
+  /** The open chat's stack's utility-prompt overrides, for views that show one before it's sent.
    *  The send path re-reads them off the stack it loads rather than trusting this copy. */
   miscPrompts: Record<string, string> | undefined
   /** The message being re-rolled, so the stream renders in place instead of at the bottom. */
@@ -485,7 +485,7 @@ interface ChatState {
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
   /** Run the agent pass over an assistant message by hand. Always starts from the stored original, so
-   *  running it twice does not compound, and replaces the previous rewrite. */
+   *  running it twice doesn't compound, and replaces the previous rewrite. */
   /** `cleanOnly` skips rewrite rules, so the pass makes no request. */
   passMessage(messageId: number, cleanOnly?: boolean): Promise<void>
   /** Put the pre-Gold-Pass text back and forget the rewrite. */
@@ -692,7 +692,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         return
       }
       // The same fields `retry` stamps on a reply, minus the request snapshot and reasoning:
-      // there was no request. Nothing records that a human wrote it: from here on it is that
+      // there was no request. Nothing records that a human wrote it: from here on it's that
       // character's line like any other.
       await storage.put('messages', {
         ownerId: currentOwnerId(),
@@ -751,8 +751,8 @@ export const useChats = create<ChatState>()((set, get) => ({
     // `/noreply` is an ordinary user turn with the command word taken off; everything else
     // (decoration, tokens, the record itself) is the same, and only the reply is skipped below.
     // `/narrate` is an ordinary user turn with the command word taken off, same as `/noreply`.
-    // Only who replies changes, and that is decided below. Bare `/narrate` posts nothing and
-    // simply asks the Narrator for a beat on the transcript as it stands.
+    // Only who replies changes, and that's decided below. Bare `/narrate` posts nothing and
+    // asks the Narrator for a beat on the transcript as it stands.
     const narrating = command?.name === 'narrate'
     const body = command?.name === 'noreply' || narrating ? command!.text : stripEscape(text)
     if (command?.name === 'noreply' && !body.trim()) return
@@ -1220,7 +1220,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       set({ error: 'Nothing to continue, the last message is not a reply.' })
       return
     }
-    // Trailing whitespace is not part of what was said, and some endpoints reject a prefill that
+    // Trailing whitespace isn't part of what was said, and some endpoints reject a prefill that
     // ends in it. Trimmed once here: the text sent and the text appended to are the same string.
     const prefix = target.content.replace(/\s+$/, '')
     if (!prefix) {
@@ -1288,7 +1288,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       // span is new and to leave the rest alone.
       //
       // The pass is skipped here for the same reason, and more strongly: a rewrite stage remakes a whole
-      // passage rather than a flagged span. It would restate the prefix the user accepted. The
+      // passage rather than a flagged span. It'd restate the prefix the user accepted. The
       // manual action on the message is how a continued reply gets rewritten.
       for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
         if (chunk.reasoning) {

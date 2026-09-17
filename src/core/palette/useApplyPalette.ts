@@ -23,7 +23,7 @@ export function useApplyPalette() {
     const style = root.style
 
     // An unknown or missing skin id matches no rules, the same thing 'default' does.
-    // There is nothing to validate here.
+    // There's nothing to validate here.
     root.dataset.skin = palette.skin || 'default'
 
     // The OS chrome lives outside the document and can't read a CSS var (themeColor.ts).

@@ -39,7 +39,7 @@ export function computeExclusions(text: string, pairs: IgnorePair[] = []): Range
  * and all. An unclosed opener runs to the end of the text, the same call `scanFenced` makes: a
  * half-written block is still not prose.
  *
- * Nested pairs of the same kind are not tracked. `[a [b] c]` ends at the first `]`, which is what
+ * Nested pairs of the same kind aren't tracked. `[a [b] c]` ends at the first `]`, which is what
  * a non-greedy scan gives and what the render-time strip has always done elsewhere in this file.
  */
 function scanPairs(text: string, pairs: IgnorePair[], ranges: Range[]) {

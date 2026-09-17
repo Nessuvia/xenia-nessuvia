@@ -48,9 +48,9 @@ export function mergeConnections(mine: string | null, theirs: string | null): st
 /**
  * Whether a backup file adds to the library or replaces it.
  *
- * The flag when the file has one. For a file older than the flag, ask the one question that cannot
+ * The flag when the file has one. For a file older than the flag, ask the one question that can't
  * go stale: a sanitized export never carries `chats`, and a full one always writes the key even
- * when it is empty.
+ * when it's empty.
  *
  * Counting tables was the old test, and it was wrong in a way that got worse with every release.
  * A table added since the file was written made a full backup look sanitized. It restored in

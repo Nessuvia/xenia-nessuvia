@@ -38,7 +38,7 @@ const tokenGuide: Record<StackKind, [string, string][]> = {
   ],
 }
 
-/** Every edit goes straight into the stack draft, which autosaves. There is no Save button. */
+/** Every edit goes straight into the stack draft, which autosaves. There's no Save button. */
 export default function BlockModal({
   block,
   kind,

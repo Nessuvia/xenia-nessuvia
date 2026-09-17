@@ -3,14 +3,12 @@ import { stripApiKeys } from './stripApiKeys'
 import { isPartialRestore, mergeConnections, renameConnections } from './shareable'
 import { tableNames, type StoredRecord, type TableName } from './storageInterface'
 import { withDirtySuppressed } from '../sync/dirtyTables'
+import { askKey, settingsKey } from '../sync/settingsObject'
 import { hashPayload, tablePayload } from './tablePayload'
 import { withSeedFlags } from './seedFlags'
 
-/** The persisted settings store. */
-const settingsKey = 'nessuTavern.settings'
-/** The Ask scratchpad's transcript. It lives in localStorage rather than a Dexie table: nothing
- *  else in the export path would carry it. It is the user's writing like any chat is. */
-const askKey = 'nessuTavern.ask'
+// settingsKey is the persisted settings store; askKey is the Ask scratchpad's transcript. Both live
+// in localStorage rather than a Dexie table, and both ride in a backup and in a sync.
 
 export interface Backup {
   format: 'nessuTavern.backup'
@@ -27,7 +25,7 @@ export interface Backup {
 /**
  * What a shareable export keeps: the things a user made, rather than what they did with them.
  * lorebooks and worldInfo ride along as a pair. The entries are meaningless without the book
- * they are keyed to.
+ * they're keyed to.
  */
 const shareableTables: TableName[] = [
   'characters',
@@ -75,7 +73,7 @@ export async function buildBackup({ keys, shareable }: BackupOptions = {}): Prom
 /**
  * One table, ready to push: the payload, the exact JSON that goes over the wire, and its hash.
  * Serialized once, the push path needs the string for its size check and as the request body, and
- * the hash to skip a table that has not changed since its last push.
+ * the hash to skip a table that hasn't changed since its last push.
  *
  * Settings are deliberately absent. They never enter a table payload, which is what keeps API keys
  * on the device.
@@ -108,7 +106,7 @@ export function downloadBackup(backup: Backup, tag = '') {
 export function parseBackup(text: string): Backup {
   const data = JSON.parse(text) as Partial<Backup>
   if (data.format !== 'nessuTavern.backup' || !data.tables) throw new Error('Not a backup file.')
-  // A newer version could carry a table this build clears but cannot repopulate. A restore from
+  // A newer version could carry a table this build clears but can't repopulate. A restore from
   // one would lose data rather than fail.
   if (typeof data.version === 'number' && data.version > 1) {
     throw new Error('This backup is from a newer version of the app.')
@@ -122,15 +120,15 @@ export function parseBackup(text: string): Backup {
  */
 export async function restoreBackup(backup: Backup) {
   const partial = isPartialRestore(backup)
-  // Suppressed: a restore is not a user edit, and the settings blob written below carries the
+  // Suppressed: a restore isn't a user edit, and the settings blob written below carries the
   // dirty set the backup was taken with.
   await withDirtySuppressed(async () => {
     for (const name of tableNames) {
       // A shareable export writes only the tables it carries. Importing one adds characters and
       // prompts without clearing the chats it left out.
       //
-      // A full restore means "make this browser match the file": a table the file does not
-      // carry is emptied rather than skipped. That is the case for a table added after the file
+      // A full restore means "make this browser match the file": a table the file doesn't
+      // carry is emptied rather than skipped. That's the case for a table added after the file
       // was written: leaving the rows would mix a library from one install into a restore of
       // another.
       if (!(name in backup.tables)) {
@@ -145,7 +143,7 @@ export async function restoreBackup(backup: Backup) {
   // Only keys the export writes: a tampered file can't set arbitrary localStorage.
   const settings = backup.localStorage?.[settingsKey]
   const text = typeof settings === 'string' ? settings : null
-  // A shareable file's settings blob has no keys in it. Overwriting with it would blank the
+  // A shareable file's settings blob has no keys in it. Overwriting with it'd blank the
   // importer's own. Take only its connections, appended to theirs.
   localStorage.setItem(
     settingsKey,

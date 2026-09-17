@@ -2,7 +2,7 @@
  * Glass. Every color here comes from the active palette, so the skin composes with any of them:
  * a light palette gets light glass.
  *
- * The four vars below are the knobs, declared in skins.ts and overridable per palette. They are
+ * The four vars below are the knobs, declared in skins.ts and overridable per palette. They're
  * scoped to the skin rather than to index.css because they mean nothing without it. Anything else a
  * palette can already set (radius, the surface ramp) is deliberately not repeated here.
  *
@@ -19,15 +19,15 @@
 
 /*
  * The `#root` prefix is the repo convention for a shared rule that has to beat a module's own
- * selector. It is needed here: module stylesheets are imported by the module files, so they load
+ * selector. It's needed here: module stylesheets are imported by the module files, so they load
  * after this one, and a two-class module selector like `.chatSettings.screenBody` would otherwise
  * win the tie on order alone. Every skin rule below needs it for the same reason.
  */
 /*
  * Per-surface tint and blur are separate vars from the two knobs, and every surface sets both. A
- * surface rule cannot write `--glassTint: calc(var(--glassTint) + 18%)`. A custom property that
+ * surface rule can't write `--glassTint: calc(var(--glassTint) + 18%)`. A custom property that
  * references itself is a cycle, so it and everything built from it become invalid and the surface
- * paints as nothing at all. That is why these exist, and why the shared rule below sets them for the
+ * paints as nothing at all. That's why these exist, and why the shared rule below sets them for the
  * base case instead of letting the surface rules fall back: a value left unset would inherit from
  * whatever surface encloses this one.
  */
@@ -53,17 +53,17 @@
  * animates, every blurred element re-runs a full-window blur pass per frame, so the cost is set by
  * how many of these exist, not by how heavy the background is.
  *
- * Hence no `.bubble`: there is one per message, so including it scaled the per-frame cost with the
+ * Hence no `.bubble`: there's one per message, so including it scaled the per-frame cost with the
  * length of the chat. Bubbles keep the tint, the border and the edges, and sit inside an
- * already-blurred `.panel`. Nested backdrop-filters do not compound anyway (see `.card` below).
+ * already-blurred `.panel`. Nested backdrop-filters don't compound anyway (see `.card` below).
  *
  * And hence `:not([data-bg-animated])`: `.panel` and `.card` are per-item in list views too (palettes,
- * the prompt stack's zones), so trimming the selector is not enough on its own.
+ * the prompt stack's zones), so trimming the selector isn't enough on its own.
  * PageBackground sets that attribute when the background's CSS declares keyframes, which drops the
- * blur to a plain tint for exactly the backgrounds that cannot afford it. A moving background is
+ * blur to a plain tint for exactly the backgrounds that can't afford it. A moving background is
  * already carrying the visual interest the glass was there to provide.
  *
- * -webkit- prefix included: Safari still needs it. Saturation is kept close to 1: pushing it is
+ * -webkit- prefix included: Safari still needs it. Saturation is kept close to 1: pushing it's
  * what gives cheap glass its tinted-plastic look.
  */
 [data-skin='glass']:not([data-bg-animated]) #root .panel,
@@ -73,7 +73,7 @@
   backdrop-filter: blur(var(--surfaceBlur)) saturate(1.15);
 }
 
-/* Regions read as lifted off the page; the rail and the message surface do not. */
+/* Regions read as lifted off the page; the rail and the message surface don't. */
 [data-skin='glass'] #root .panel,
 [data-skin='glass'] #root .navbar {
   box-shadow:
@@ -90,7 +90,7 @@
 
 /*
  * The sidebar rail, specifically. This is the one place the skin names something outside the four
- * contract classes, because the rail is the only navbar that is vertical: a shadow thrown downward
+ * contract classes, because the rail is the only navbar that's vertical: a shadow thrown downward
  * and hairlines along the top and bottom are the wrong axis for it, so both are turned a quarter
  * turn. The rail also runs the full height of the window with no radius, so its lit edge is a
  * border-side highlight rather than an inset that has to stay inside a corner.
@@ -115,7 +115,7 @@
 }
 
 /* Cards sit inside panels, already looking through one layer, so they get less tint again. Nested
-   backdrop-filters do not compound, which is why this is a tint choice and not a blur one. */
+   backdrop-filters don't compound, which is why this is a tint choice and not a blur one. */
 [data-skin='glass'] #root .card {
   --surfaceTint: max(0%, calc(var(--glassTint) - 14%));
 }
@@ -133,7 +133,7 @@
 
 /* The Story panel sits beside prose being read and holds controls and small text, so it gets the
    same tint bump as a message rather than the panel default. Named here, outside the four contract
-   classes, for the same reason .navbar.sidebar is: it is a reading surface, not a frame. */
+   classes, for the same reason .navbar.sidebar is: it's a reading surface, not a frame. */
 [data-skin='glass'] #root .panel.storySidebar {
   --surfaceTint: min(100%, calc(var(--glassTint) + 24%));
 }

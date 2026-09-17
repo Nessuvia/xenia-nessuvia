@@ -5,7 +5,7 @@ import { forgetMotion, isFlying, noteMotion } from './cardMotion'
  * FLIP for the cards. Motion is normally off limits until polish, this is the polish pass and it
  * was asked for.
  *
- * The board renders state. Nothing about it moves on its own: a card given to you simply stops
+ * The board renders state. Nothing about it moves on its own: a card given to you stops
  * being drawn in one row and starts being drawn in another. This measures every card before and
  * after a state change and plays the difference. Cards carry a `data-cardid` that
  * survives moving between rows: the lookup is by that attribute, not by DOM node, and a node

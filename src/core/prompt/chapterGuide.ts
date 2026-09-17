@@ -1,5 +1,5 @@
 // Chapters as prompt text: the Story prose, and the ladder that degrades it beat by beat when it
-// will not fit. Pure and check-testable: the store resolves rows, this decides wording and shape.
+// won't fit. Pure and check-testable: the store resolves rows, this decides wording and shape.
 //
 // Extension-ful imports on purpose: checkChapterGuide.ts runs this under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.
@@ -36,8 +36,8 @@ export function chapterState(chapter: GuideChapter, activeId: number | null): Ch
 /**
  * The header a Chapter gets once some of its prose has been degraded to instructions: what the
  * Chapter was, in one line: the beat lines under it have something to hang off. Replaces
- * `chapterDivider` for that Chapter, and unlike the divider it is emitted for Chapter 1 too: with
- * the prose gone there is nothing else naming what those beats belong to.
+ * `chapterDivider` for that Chapter, and unlike the divider it's emitted for Chapter 1 too: with
+ * the prose gone there's nothing else naming what those beats belong to.
  *
  * Prompt wording; retuned here with the rest.
  */
@@ -66,13 +66,13 @@ export function storyProse(chapters: GuideChapter[], activeId: number | null): s
 /**
  * The same prose, split around one Block: `text` is everything before it (the Story context as
  * `storyProse` has always built it), `trailing` is the rest of the active Chapter after it: what
- * the model has to write its way back to. The Block's own content is in neither: it is what the
+ * the model has to write its way back to. The Block's own content is in neither: it's what the
  * generation is replacing.
  *
  * `trailing` stops at the end of the active Chapter. Later Chapters are the future and stay out,
  * the same rule `text` follows on the other side.
  *
- * `context` is the Block's own setting and does nothing but blank one side or the other. That is
+ * `context` is the Block's own setting and does nothing but blank one side or the other. That's
  * the whole of the per-Block context feature: `buildStoryPrompt` already took these two strings.
  *
  * With `blockId` null (a preview with no Block picked) the split falls at the end of the active
@@ -93,21 +93,21 @@ export interface FittedProse {
   /** Blocks whose prose was replaced by their instructions, or dropped for having none. */
   degradedCount: number
   /** Blocks that could have been degraded. `degradedCount === degradable` means every Chapter
-   *  before the active one is down to its plan and there is nothing gentler left to give. */
+   *  before the active one is down to its plan and there's nothing gentler left to give. */
   degradable: number
 }
 
 /**
  * The Story prose, degraded until it fits `available` tokens.
  *
- * Everything sends in full while there is room. Over budget, the oldest Block swaps its prose for
+ * Everything sends in full while there's room. Over budget, the oldest Block swaps its prose for
  * `Beat N: <instructions>` and its Chapter grows a `degradedHeader`; still over, the next Block
  * does the same, and so on. Blocks are walked in Story order: a Chapter is fully converted
  * before the next one is touched, and what the model loses is always the oldest prose.
  *
  * The active Chapter is never degraded, and neither is anything after it: the passage being written
- * into is the one piece of prose that cannot be replaced by a description of itself. If the active
- * Chapter alone overruns, that is what comes back, the same floor the Chapter guide used to hold.
+ * into is the one piece of prose that can't be replaced by a description of itself. If the active
+ * Chapter alone overruns, that's what comes back, the same floor the Chapter guide used to hold.
  *
  * `count` is injected so this file stays free of gpt-tokenizer and the check scripts can run it
  * under `--experimental-strip-types`.
@@ -134,7 +134,7 @@ export function fitStoryProse(
 }
 
 /**
- * The one walk both exports share: they cannot disagree about which Blocks are in scope or where
+ * The one walk both exports share: they can't disagree about which Blocks are in scope or where
  * the caret splits the active Chapter.
  *
  * `degraded` is how many Blocks from the start of the Story send their instructions instead of their
@@ -185,7 +185,7 @@ function walk(
           return
         }
         // Degraded. Every Block is a beat: the only one contributing no line is one the Author
-        // has not planned yet. Numbering is the Block's own position: the lines stay in step
+        // hasn't planned yet. Numbering is the Block's own position: the lines stay in step
         // with the Plot Layout even when an unwritten beat sits between two written ones.
         if (off || !wantsBeats) return
         const instructions = block.beat.trim()

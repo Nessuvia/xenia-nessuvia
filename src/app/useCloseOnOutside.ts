@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 /**
  * Standard dropdown dismissal: a mousedown outside the returned ref, or Escape, closes it.
  * Put the ref on the element that wraps both the trigger and the menu. A click on the trigger
- * has to count as inside, or it would close and reopen on the same press.
+ * has to count as inside, or it'd close and reopen on the same press.
  */
 export function useCloseOnOutside<T extends HTMLElement = HTMLDivElement>(
   open: boolean,

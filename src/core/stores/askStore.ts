@@ -13,7 +13,7 @@ import { maxTokensOf } from '../params/connectionParams'
 
 /**
  * Ask turns are `Message` records so the whole Chat message UI works on them unchanged, swipes,
- * reasoning, edit, delete. They live in localStorage rather than Dexie: there is one
+ * reasoning, edit, delete. They live in localStorage rather than Dexie: there's one
  * Ask conversation, not a list of them, and `chatId` is 0 for all of them.
  */
 export type AskTurn = Message

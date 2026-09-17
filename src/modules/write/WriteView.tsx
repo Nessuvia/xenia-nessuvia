@@ -150,8 +150,8 @@ function stamp(ms: number): string {
 
 // Shelf preview panel: a bigger cover and what the Story holds, with Continue to open the editor.
 //
-// On a phone it is a drawer on the right edge rather than a column beside the grid. Picking a
-// cover is what opens it, so a swipe from closed is not eligible, there would be nothing in it.
+// On a phone it's a drawer on the right edge rather than a column beside the grid. Picking a
+// cover is what opens it, so a swipe from closed isn't eligible, there would be nothing in it.
 // A swipe right, or the close button, sends it back out; the Story it was showing is dropped once
 // it has finished leaving, so the slide out isn't cut short by the panel unmounting mid-move.
 function StoryPreview({ story, onClose }: { story: Story; onClose: () => void }) {
@@ -173,7 +173,7 @@ function StoryPreview({ story, onClose }: { story: Story; onClose: () => void })
   // null when not editing; the draft otherwise. Blur saves, an empty draft keeps the old title.
   const [titleDraft, setTitleDraft] = useState<string | null>(null)
   const phone = useMediaQuery('(max-width: 700px)')
-  // Off a phone the panel is simply in the layout, so it counts as open and the drawer classes do
+  // Off a phone the panel is in the layout, so it counts as open and the drawer classes do
   // nothing. On a phone it mounts closed and slides in on the next frame.
   const [open, setOpen] = useState(!phone)
   const drawer = useSideDrawer({ side: 'right', enabled: phone, swipeOpen: false, open, setOpen })
@@ -418,8 +418,8 @@ function RegenDialog({
   weight: BeatWeight
   /** The words this beat works out to at the weight below. Derived, so it moves as the weight does. */
   words: number
-  /** Every instruction that led to the version on screen, oldest first. Shown because they are sent
-   *  again alongside whatever is typed here: a regen carries them, it does not start over. */
+  /** Every instruction that led to the version on screen, oldest first. Shown because they're sent
+   *  again alongside whatever is typed here: a regen carries them, it doesn't start over. */
   chain: string[]
   onClose: () => void
   onRegen: (instruction: string, weight: BeatWeight) => void
@@ -518,7 +518,7 @@ function BlockHead({
   const menuRef = useCloseOnOutside<HTMLDivElement>(menu, () => setMenu(false))
   const jumpToPlot = useContext(JumpToPlot)
 
-  // The beat field is always a textarea, there is no read mode to swap out of, which is what used
+  // The beat field is always a textarea, there's no read mode to swap out of, which is what used
   // to reflow the text on click. Local draft with a debounced save, the same reason PlotLayout's
   // BeatText keeps one: onPatch awaits a Dexie write, so a controlled value lands a render late
   // and React puts the caret back at the end of the line.
@@ -561,7 +561,7 @@ function BlockHead({
   const total = swipeCount(block)
   const at = swipeIndex(block)
   const crumb = `Chapter ${chapterIndex + 1} · Beat ${beatIndex + 1}`
-  // RegenDialog names the beat it is about to rewrite, so it wants the whole line.
+  // RegenDialog names the beat it's about to rewrite, so it wants the whole line.
   const label = `${crumb}: ${block.beat.trim() || 'Empty beat'}`
 
   async function regen(instruction: string, weight: BeatWeight) {
@@ -772,7 +772,7 @@ function BlockHead({
 // restore to one predictable moment.
 //
 // Backspace at the very start of a region is swallowed: Blocks merge only by deleting one, and the
-// box edge above is not content that could be backspaced away.
+// box edge above isn't content that could be backspaced away.
 function BlockRegion({
   block,
   chapterId,
@@ -797,7 +797,7 @@ function BlockRegion({
   const rev = useWrite((s) => s.revs[id] ?? 0)
   const streamingText = useWrite((s) => s.streamingText)
   const streamingReasoning = useWrite((s) => s.streamingReasoning)
-  // One switch for the whole app, shared with chat - there is no per-beat toggle.
+  // One switch for the whole app, shared with chat - there's no per-beat toggle.
   const showReasoning = useSettings((s) => s.appearance.showReasoning)
   const takingStream = useWrite((s) => streamingHere(s) && s.streamingBlockId === id)
   // A regen replaces the Block, so the old text goes off screen the moment the stream starts -
@@ -863,7 +863,7 @@ function BlockRegion({
     }
   }, [rev, id])
 
-  // A color reorder repaints prose that is already on screen, caret kept where the Author left it.
+  // A color reorder repaints prose that's already on screen, caret kept where the Author left it.
   useLayoutEffect(() => {
     const el = ref.current
     if (!el || decoratedOrder.current === orderKey) return
@@ -1026,7 +1026,7 @@ function ChapterRegion({ chapter, index }: { chapter: Chapter; index: number }) 
   const updateChapter = useWrite((s) => s.updateChapter)
   const blocks = chapter.blocks
 
-  // A Chapter with no beats is the ordinary state of one that has not been outlined; the Plot
+  // A Chapter with no beats is the ordinary state of one that hasn't been outlined; the Plot
   // Layout offers to generate them, and the gap button adds one by hand.
   const setBlocks = (next: Block[]) => updateChapter(id, { blocks: next })
   const targets = beatTargets(chapter)
@@ -1089,7 +1089,7 @@ function StoryDocument() {
 
   // Follow the block being written, not the end of the document, a beat generated mid-Story used
   // to scroll the Author to the bottom. Only nudge when the block's tail has slipped just below the
-  // fold; if it is further off than a screen the Author has scrolled away on purpose, so leave it.
+  // fold; if it's further off than a screen the Author has scrolled away on purpose, so leave it.
   useEffect(() => {
     if (!streaming) return
     const el = document.querySelector<HTMLElement>('.storyMain')
@@ -1112,7 +1112,7 @@ function StoryDocument() {
 
   return (
     // showMarkers is the off state of Toggle Styling: the marker spans stop being hidden and the
-    // bold/italic rules stop applying, so the prose looks like the raw text it actually is.
+    // bold/italic rules stop applying, so the prose looks like the raw text it is.
     <div className={`chapterEditor${styling ? '' : ' showMarkers'}`} style={proseStyle}>
       {chapters.map((chapter, i) => (
         <ChapterRegion key={chapter.id} chapter={chapter} index={i} />

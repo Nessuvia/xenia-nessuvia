@@ -69,7 +69,7 @@ function Landing(): JSX.Element {
   const [previewCollapsed, setPreviewCollapsed] = useState(false)
   const [persona, setPersona] = useState<Persona | null>(null)
   /** Whose turn the preview assembles: `narratorId` for the Narrator row, otherwise a character
-   *  id. Undefined is slot 1. Preview-only, it is not carried into the session. */
+   *  id. Undefined is slot 1. Preview-only, it's not carried into the session. */
   const [previewSpeakerId, setPreviewSpeakerId] = useState<number | undefined>(undefined)
 
   useEffect(() => {
@@ -78,7 +78,7 @@ function Landing(): JSX.Element {
     usePersonas.getState().ensureActive().then(setPersona)
   }, [loadCharacters, loadStacks])
 
-  // Slot order for {{char1}}…{{char4}}: `picked` is the order, and the list below lets the host
+  // Slot order for {{char1}}...{{char4}}: `picked` is the order, and the list below lets the host
   // change it before starting.
   const { itemProps, over } = useDragReorder((from, to) =>
     setPicked((prev) => {
@@ -174,7 +174,7 @@ function Landing(): JSX.Element {
             <>
               <ul className="castSlotList">
                 {/* Not a slot and not draggable: the Narrator has no {{charN}} token and never
-                    moves. It is here to let the preview read as a Narrator turn. */}
+                    moves. It's here to let the preview read as a Narrator turn. */}
                 <li
                   className={`castSlotRow narratorSlotRow${previewSpeakerId === narratorId ? ' previewing' : ''}`}
                   onClick={() => setPreviewSpeakerId(narratorId)}
@@ -284,7 +284,7 @@ function speakerIdOf(chosen: number | undefined, cast: Character[]): number | un
  * outlives the session and every other chat with this character sees it. The narrower level
  * (per-session, or per-chat) needs an override field the send path reads. `characterAt` in
  * chatStore resolves the speaker from the characters store rather than from the session cast. A
- * cast copy alone would not change what gets sent.
+ * cast copy alone wouldn't change what gets sent.
  *
  * Picking also moves the preview to this character: a description-bound block resolves against the
  * speaker. A flip on any other row would leave the preview unchanged and read as a dead control.
@@ -322,9 +322,9 @@ function DescriptionPicker({
 /**
  * The picked stack assembled with the real cast: the host reads what a slot token turns into
  * before the room opens. Calls `buildPrompt` with the same arguments the session will
- * (`nameSpeakers` on, the cast in slot order). The preview cannot drift from what gets sent.
+ * (`nameSpeakers` on, the cast in slot order). The preview can't drift from what gets sent.
  * Speaker-bound blocks resolve against the row the host picked, slot 1 by default, or the
- * Narrator: that is how `[if Narrator]` branches get read before the room opens.
+ * Narrator: that's how `[if Narrator]` branches get read before the room opens.
  */
 function StackPreview({
   stack,

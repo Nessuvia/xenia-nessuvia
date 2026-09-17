@@ -1,6 +1,6 @@
 // What happens at the table with nobody deciding.
 //
-// Both games have a state the player is not being asked about: the dealer's runout, the next round,
+// Both games have a state the player isn't being asked about: the dealer's runout, the next round,
 // the character's ask. That rule used to live in three places (a trailing `if` after a Blackjack
 // action, a `while` loop in the store for Go Fish, and the dealer's turn buried inside
 // `resolveAction`). Every stuck table was a branch that fell out of one of them. It lives here
@@ -22,7 +22,7 @@ export interface DriveOptions {
   difficulty?: MoveQuality
 }
 
-/** Null means the table is genuinely waiting on the player, or the game is over. */
+/** Null means the table is waiting on the player, or the game is over. */
 export type Driver = (state: AnyGameState, options: DriveOptions) => GameEvent[] | null
 
 /** The casts are the one place `GameKind` deciding which half of the union a state is has to be
@@ -41,6 +41,6 @@ export const drivers: Record<GameKind, Driver> = {
 /**
  * How many times a caller may drive before it decides something is wrong. A Go Fish run of
  * successful asks is bounded by the deck, and a Blackjack shoe is bounded by `shoeFloor`. This
- * is a backstop and not a rule: reaching it is a bug, not a long game.
+ * is a backstop and not a rule: reaching it's a bug, not a long game.
  */
 export const driveGuard = 200

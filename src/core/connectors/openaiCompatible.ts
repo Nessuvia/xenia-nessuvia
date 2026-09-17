@@ -22,7 +22,7 @@ export async function* sendMessage(
     return
   }
 
-  // Same reason, one level up: the sentinel host does not exist. The request must not be made.
+  // Same reason, one level up: the sentinel host doesn't exist. The request must not be made.
   if (isSentinel(connection.endpointUrl)) {
     yield* sendSentinelMessage(signal)
     return

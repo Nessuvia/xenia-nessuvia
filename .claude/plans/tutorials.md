@@ -15,13 +15,13 @@ Tours stay exactly as they are. This is a second, heavier system next to them.
 | Dummy backend | Sentinel URL `xenia.nessuvia.com/v1`, checked globally. Nothing is sent. |
 | Reply | Always the same line, streamed as real SSE. |
 | Records | Real connection, real chat. Duplicates on rerun are fine. |
-| Gating | Hard. A gated step does not advance until the action happens. |
+| Gating | Hard. A gated step doesn't advance until the action happens. |
 | Escape | One `Exit tutorial` button on every panel. No per-step skip. |
 | Broken selector | Tutorial is stuck. `checkTutorial.ts` is what stops that shipping. |
 | Navigation | The user clicks the sidebar. The step waits for the route. |
 | Back | Never crosses a step that made a record. `act()` need not be idempotent. |
 | Mobile | Compact docked box. Edge flips away from the target; `dock` overrides. |
-| Soft keyboard | Box hides while it is up, returns when it drops. From `visualViewport`. |
+| Soft keyboard | Box hides while it's up, returns when it drops. From `visualViewport`. |
 | API key gate | Exactly `xenia`. The copy names the value, so the gate matches it. |
 | Module | `tutorials`, sidebar row, list page with search, `tutorialsEnabled` boolean. |
 
@@ -38,7 +38,7 @@ language pretending to be prose, and the moment a step needs "wait until the rou
 stops fitting on a line. Typed objects say what they mean and the compiler checks the selectors'
 neighbours.
 
-What genuinely is shared is the hard part: `getBoundingClientRect`, side selection with collision
+What is shared is the hard part: `getBoundingClientRect`, side selection with collision
 flipping, the 9999px cutout, the hand placement, the mobile dock. That comes out of `Tour.tsx` into
 `app/SpotlightOverlay.tsx` and both engines render through it. `Tour.tsx` keeps its step loop and
 loses about 80 lines of geometry.
@@ -77,11 +77,11 @@ host that must never be contacted:
 Miss one and the string leaves the tab. `checkSentinel.ts` asserts `isSentinel` matches the URL with
 and without scheme, with and without `/v1`, and rejects lookalikes (`xenia.nessuvia.com.evil.test`,
 `notxenia.nessuvia.com`). CLAUDE.md's "four paths leave the tab" list stays true and gains a
-sentence saying this URL is not a fifth.
+sentence saying this URL isn't a fifth.
 
 Global, so a user who types the URL by hand gets the same behaviour. The comment at `isSentinel`
 says why: the reply explains itself, and a magic string that fails closed beats a flag on a record
-that a copied connection would not carry.
+that a copied connection wouldn't carry.
 
 ## Step kinds
 
@@ -114,7 +114,7 @@ A `run` step is a one-way barrier. Back is hidden on the run step itself, and on
 after it, since that one would land on the run step and create a second chat. From two steps on,
 Back works normally and walks back as far as the barrier.
 
-So with a run at 5: steps 1 to 4 have Back, 5 and 6 do not, 7 onward go back to 6 and stop there.
+So with a run at 5: steps 1 to 4 have Back, 5 and 6 don't, 7 onward go back to 6 and stop there.
 The rule is `index > 0 && !isRun(index) && !isRun(index - 1)`, plus a floor on how far back the
 Back button may walk. It falls out of one helper that finds the last run step at or before the
 current index.
@@ -134,7 +134,7 @@ step. A docked box tall enough to cover half the screen defeats the point of poi
 The edge is chosen per step rather than fixed to the bottom. The target's centre decides: a target
 in the top half of the viewport docks the box at the bottom, a target in the lower half docks it at
 the top. This is what makes gated steps work on a phone, since the field the user has to type into
-cannot be the thing hidden behind the instructions telling them to. A step may override with
+can't be the thing hidden behind the instructions telling them to. A step may override with
 `dock: 'top' | 'bottom'` when the automatic pick reads badly, the same escape hatch `side` gives on
 desktop.
 
@@ -143,7 +143,7 @@ desktop.
 On a phone the keyboard takes roughly half the screen, and on an `awaitValue` step it opens over
 exactly the area the tutorial is docked in. The box hides while the keyboard is up and comes back
 when it goes down. Required behaviour, not a polish item: without it the user is typing into a field
-they cannot see.
+they can't see.
 
 Detected from `visualViewport`, not from focus. A field can be focused with a hardware keyboard
 attached, or focused programmatically by the step before it, and neither should hide anything. The
@@ -151,14 +151,14 @@ signal is `visualViewport.height` dropping meaningfully below `window.innerHeigh
 `visualViewport`'s `resize`, and remember it fires on scroll-driven URL bar collapse too, so the
 threshold needs to be a real fraction of the height rather than a few pixels.
 
-While hidden, the cutout and the hand stay. The user still sees which element they are aimed at,
+While hidden, the cutout and the hand stay. The user still sees which element they're aimed at,
 just not the paragraph about it. `Exit tutorial` needs to survive somehow, since a stuck user with
 the keyboard up otherwise has no way out: likely a small floating button rather than the whole box.
 
 The instruction being unreadable mid-type is the thing to look at in the browser. If it reads badly,
 the fallback is a one-line bar instead of a full hide, but the full hide is what to build first.
 
-One more case the automatic dock rule does not cover: a target taller than half the screen, where
+One more case the automatic dock rule doesn't cover: a target taller than half the screen, where
 centre-based picking is arbitrary. Falling back to whichever edge leaves more of the target visible
 is the likely fix.
 
@@ -168,7 +168,7 @@ is the likely fix.
 
 1. Land on Settings. Point at `.pageTabs`, then `.connectionList` empty state.
 2. `awaitClick` the add-connection button.
-3. `type` the endpoint URL into the field. This is the long fiddly one, so it is demonstrated.
+3. `type` the endpoint URL into the field. This is the long fiddly one, so it's demonstrated.
    Copy names the URL as a stand-in that goes nowhere.
 4. `awaitValue` on the API key field, expecting `xenia`. Copy says a key is often absent on a local
    endpoint, and that this one is a placeholder because the URL is too.
@@ -201,7 +201,7 @@ the component because the tutorial outlives the route. Nothing persists. An inte
 starts again from step 1, same policy as tours.
 
 `app/TutorialHost.tsx` mounts beside `TourHost` in the shell and renders when `activeId` is set.
-`TourHost` gains one guard: it does not offer a tour while a tutorial is running. `settings.md`
+`TourHost` gains one guard: it doesn't offer a tour while a tutorial is running. `settings.md`
 stays, as the quick refresher for someone who already has a connection.
 
 ## Verifying
@@ -238,5 +238,5 @@ Steps 1 and 2 are each worth stopping at for a browser check before the next one
 - What `Exit tutorial` looks like while the keyboard is up and the box is hidden.
 - Whether hiding the box mid-type costs the user the instruction they were following.
 
-All three want a real phone, not a narrow desktop window. The keyboard ones cannot be checked any
+All three want a real phone, not a narrow desktop window. The keyboard ones can't be checked any
 other way, since a desktop browser has no soft keyboard to shrink `visualViewport`.

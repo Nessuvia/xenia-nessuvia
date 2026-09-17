@@ -6,13 +6,13 @@ import { loremStream } from './dummy.ts'
 import { explainers, roulette } from './sentinelReplies.ts'
 
 /**
- * A host that is a string, not a server. Nothing resolves it and nothing may contact it: every
+ * A host that's a string, not a server. Nothing resolves it and nothing may contact it: every
  * outward path checks `isSentinel` first and answers locally instead.
  *
- * It is a magic URL rather than a flag on the connection record: a flag fails open. A
+ * It's a magic URL rather than a flag on the connection record: a flag fails open. A
  * connection copied out of a backup, typed by hand, or imported from someone else would lose the
- * flag and start making real requests to a host that does not exist. The URL travels with the
- * record; the check cannot be separated from the thing it protects. The reply states what it is,
+ * flag and start making real requests to a host that doesn't exist. The URL travels with the
+ * record; the check can't be separated from the thing it protects. The reply states what it is,
  * telling a user who ends up here by accident what to fix.
  */
 export const sentinelHost = 'xenia.nessuvia.com'
@@ -32,7 +32,7 @@ export const sentinelReply = explainers[0]
  */
 export function pickSentinelReply(
   count: number,
-  /** The previous reply: the same line does not come back twice running. */
+  /** The previous reply: the same line doesn't come back twice running. */
   avoid?: string,
   rand: () => number = Math.random,
 ): string {

@@ -12,7 +12,7 @@ export function advance(order: string[], turnIndex: number): number {
 }
 
 /**
- * Move a participant to a new position. Returns a new array; does not mutate.
+ * Move a participant to a new position. Returns a new array; doesn't mutate.
  * An out-of-range `from` or `to` is clamped rather than throwing.
  */
 export function reorder(order: string[], from: number, to: number): string[] {
@@ -32,7 +32,7 @@ export function reorder(order: string[], from: number, to: number): string[] {
  * Drop a participant and return the surviving order alongside the corrected cursor.
  * Removing the holder leaves the cursor pointing at whoever now occupies that slot: the turn
  * passes to the next person rather than skipping them. Removing someone earlier in the order
- * shifts the cursor back by one, and the holder does not change.
+ * shifts the cursor back by one, and the holder doesn't change.
  */
 export function removeParticipant(
   order: string[],

@@ -16,10 +16,10 @@ type Row = { key: number; side: 'char' | 'player' | 'system'; text: string }
  * the right, everything the table did between them in the middle.
  *
  * `turn` events are dropped. The ring on the active avatar already says whose move it is, and a
- * centred "it is their turn" after every single ask doubles the length of the log for nothing.
+ * centred "it's their turn" after every single ask doubles the length of the log for nothing.
  */
 function rows(kind: GameKind, events: GameEvent[], characterName: string): Row[] {
-  // Read from your seat: you are "you", and the far side is the character by name rather than
+  // Read from your seat: you're "you", and the far side is the character by name rather than
   // "they", which is what the board already calls them everywhere else.
   const names = { char: characterName }
   const line = (event: GameEvent) =>
@@ -84,7 +84,7 @@ export default function GameLog({
   }, [items.length, streamingText, open])
 
   // Off a phone a closed log collapses to its rail. On a phone the panel stays mounted whatever the
-  // open state. The drawer slides and tracks a finger, and an unmounted panel cannot.
+  // open state. The drawer slides and tracks a finger, and an unmounted panel can't.
   if (!open && !phone) return <CollapseRail label="Game log" onToggle={onToggle} className="gameLogRail" />
 
   return (

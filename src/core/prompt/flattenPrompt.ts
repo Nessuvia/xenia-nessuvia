@@ -42,9 +42,9 @@ export function sequencesOf(template: InstructTemplate): string[] {
  * the assistant turn is left open at the end so the model continues rather than starts over.
  *
  * The message contents are never rewritten, only wrapped and optionally labelled with a speaker.
- * Formatting is a transport concern here the same way it is a display concern elsewhere. The one
+ * Formatting is a transport concern here the same way it's a display concern elsewhere. The one
  * exception is a past think block, which is dropped when the template says not to send it back:
- * that is removing text the model wrote about itself, not reformatting what it said.
+ * that's removing text the model wrote about itself, not reformatting what it said.
  */
 export function flattenPrompt(messages: ChatMessage[], template: InstructTemplate): string {
   const char = [...messages].reverse().find((m) => m.role === 'assistant' && m.name)?.name ?? ''
@@ -84,7 +84,7 @@ export function flattenPrompt(messages: ChatMessage[], template: InstructTemplat
       suffix = seq(template.systemSuffix)
     } else if (role === 'assistant') {
       // The first and last assistant turns may open differently. When both apply to one turn, last
-      // wins: it is the one a "stay in character" nudge is written for.
+      // wins: it's the one a "stay in character" nudge is written for.
       const override =
         idx === lastAssistant
           ? template.lastModelPrefix

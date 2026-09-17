@@ -15,7 +15,7 @@ const blank = (): ReasoningConfig => ({
 })
 
 /**
- * Think-block markers for this connection. They are a property of the model, and they sit
+ * Think-block markers for this connection. They're a property of the model, and they sit
  * here rather than in the global tag rules. With this off, the tag rules in Text rules apply.
  */
 export default function ReasoningPanel({

@@ -17,7 +17,7 @@ export interface StateBlockContext {
 /**
  * A hand with the reading already done. Bust and blackjack are said in words rather than left as a
  * total to compare against 21: a model given `10, 9, 5 (24)` and nothing else works it out most of
- * the time. The times it does not, it tells the player they went bust when they did not.
+ * the time. The times it doesn't, it tells the player they went bust when they didn't.
  */
 function readHand(state: BlackjackState, side: Side): string {
   const cards = state.hands[side]
@@ -40,7 +40,7 @@ export function buildStateBlock(state: BlackjackState, ctx: StateBlockContext = 
   // The block is the character's own view: the far side is the player.
   const far = naming('char', ctx.names)
   const lines: string[] = ['You are dealing Blackjack.']
-  // Which round the hands below belong to: they are read as this round and not as the transcript
+  // Which round the hands below belong to: they're read as this round and not as the transcript
   // above: without it a model reaches back through the history for the last bust it can find.
   // `round` counts rounds settled: a settled table is still showing the hands of round `round`.
   lines.push(`Round ${state.outcome === null ? state.round + 1 : state.round}.`)
@@ -59,7 +59,7 @@ export function buildStateBlock(state: BlackjackState, ctx: StateBlockContext = 
           : 'Between rounds.',
   )
   // Last, next to the turn line: the hands above are the ones this settled. `deal` clears the
-  // outcome: there is never a result here belonging to a round already off the table.
+  // outcome: there's never a result here belonging to a round already off the table.
   const outcome = readOutcome(state, far.they)
   if (outcome) lines.push(outcome)
 

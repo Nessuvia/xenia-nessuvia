@@ -23,7 +23,7 @@ import type { MiscPrompts } from './miscPrompts.ts'
 import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
 
 /**
- * The card's text, or the block's own content when the card has none. That is the spec's
+ * The card's text, or the block's own content when the card has none. That's the spec's
  * "empty string means use the frontend's own" rule. {{original}} in the card's text resolves to
  * that same content. A card can extend the stack's instruction instead of replacing it.
  *
@@ -31,7 +31,7 @@ import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
  */
 function cardOverride(cardText: string, block: PromptBlock): string {
   const fallback = activeContent(block)
-  // Not substituted into the fallback itself: {{original}} inside it would resolve to itself.
+  // Not substituted into the fallback itself: {{original}} inside it'd resolve to itself.
   if (!cardText.trim()) return fallback
   return cardText.replace(/\{\{\s*original\s*\}\}/gi, fallback)
 }
@@ -133,7 +133,7 @@ function speakerLabel(message: Message, character: Character, persona: Persona):
 
 /**
  * Drop each depth-limited tag block from a history message once it's older than the tag allows.
- * `distance` is how far the message is from the newest (1 = it is the last message). A tag with
+ * `distance` is how far the message is from the newest (1 = it's the last message). A tag with
  * depth 1 rides along only while its message is last. Same literal open/close scan as renderText;
  * a rule with no `depth` is display-only and never touches the sent text. Storage is untouched.
  */
@@ -198,7 +198,7 @@ export interface BuildPromptArgs {
    *  the budget like any other text, never exempted. */
   appendSystem?: string
   /** A partial reply left as the last turn for the model to carry on from: what `/continue` sends.
-   *  Goes after `appendSystem`: a prefill only works while it is the final turn. Counted
+   *  Goes after `appendSystem`: a prefill only works while it's the final turn. Counted
    *  against the budget like any other text. */
   appendAssistant?: string
   /** Display-only: indent nested block content for the preview. Never set on the send path. */
@@ -207,7 +207,7 @@ export interface BuildPromptArgs {
   tagRules?: TagRule[]
   /** Force speaker labels on even outside a group. Multiplayer needs them with one character. */
   nameSpeakers?: boolean
-  /** The multiplayer roster in host-chosen slot order, filling {{char1}}…{{char4}}. Absent
+  /** The multiplayer roster in host-chosen slot order, filling {{char1}}...{{char4}}. Absent
    *  outside a session, which leaves those tokens alone. */
   cast?: Character[]
   /** The session's people as `Name: description` lines, filling {{personas}}. Resolved by the
@@ -292,18 +292,18 @@ export function buildPrompt(
   const group = (chat ? isGroup(chat) || chat.nameSpeakers === true : false) || nameSpeakers === true
 
   // Authored card data only: character fields, persona info, freeform blocks. Chat history is
-  // transcript, not card data: it is never substituted. {{user}} is always the *active* persona,
+  // transcript, not card data: it's never substituted. {{user}} is always the *active* persona,
   // even where older turns were sent as someone else.
   // {{charDescription}} follows the speaker too: in a group each character's blocks paste
   // that character's own description.
-  // {{char1}}…{{char4}} are the session roster instead, fixed for the whole session. They don't
+  // {{char1}}...{{char4}} are the session roster instead, fixed for the whole session. They don't
   // follow the speaker, and one block can talk about the cast as a group.
   const tokens = chatTokens(who, persona, cast, personas, game)
   const swap = (text: string) => swapTokens(text, tokens)
 
   // [if Narrator] and friends. Resolved per block, before substitution: a token inside a dropped
   // branch never gets swapped, and no token's value can be read back as a condition name. A
-  // conditional cannot span two blocks: each block's text is parsed on its own. An [if] in one
+  // conditional can't span two blocks: each block's text is parsed on its own. An [if] in one
   // block and its [endif] in the next are both literal text.
   // Trackers come off the chat's card, whoever speaks. Built-in names win a clash with a tracker key.
   const trackers = character.trackers ?? []
@@ -353,7 +353,7 @@ export function buildPrompt(
     const message: ChatMessage = { role: block.role, content: text }
     fixedTokens += countTokens(text) + perMessageOverhead
 
-    // a depth note with no history block in the stack simply doesn't appear. Depth is
+    // a depth note with no history block in the stack doesn't appear. Depth is
     // defined relative to history; a stack without history has nothing to be N messages from.
     // The chat's own depth beats the stack's, same shape as the param overrides: the stack block
     // carries the default, one chat can move the note without touching the stack.
@@ -405,7 +405,7 @@ export function buildPrompt(
   }
 
   // Last, and after the merge below it stays last: a prefill the model is meant to continue only
-  // works as the final turn. Not swapped: it is transcript the model already wrote.
+  // works as the final turn. Not swapped: it's transcript the model already wrote.
   if (appendAssistant?.trim()) {
     resolved.push({ role: 'assistant', content: appendAssistant })
     fixedTokens += countTokens(appendAssistant) + perMessageOverhead

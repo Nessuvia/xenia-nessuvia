@@ -2,7 +2,7 @@ import { RiArrowDownSLine, RiArrowUpSLine, RiErrorWarningLine } from '@remixicon
 
 /**
  * A rule's collapsed row: on/off, a name, an error flag, and the chevron. Copy and delete live in the
- * open body. Rules only ever read model replies, so there is no scope picker.
+ * open body. Rules only ever read model replies, so there's no scope picker.
  */
 export default function RuleCardHead({
   enabled,

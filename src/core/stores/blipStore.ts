@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 /**
- * Characters whose reply finished while you were somewhere else. A reminder, not an inbox: there is
+ * Characters whose reply finished while you were somewhere else. A reminder, not an inbox: there's
  * no count and no per-chat detail. Just "this one said something since you looked".
  *
  * character ids only. Per-chat blips are the upgrade path if a character with several
@@ -14,7 +14,7 @@ import { persist } from 'zustand/middleware'
  * shorter than shipping an audio file.
  *
  * fixed notes at a fixed volume, and a mute is the obvious next knob, appearance in
- * settingsStore is where it would live.
+ * settingsStore is where it'd live.
  */
 function playBlip() {
   // Autoplay policy: a chat reply always follows a click, so the context is allowed to start.

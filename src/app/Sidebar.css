@@ -111,7 +111,7 @@
 
 /* Tabs of a page, in a panel beside the rail while the nav item or the panel is hovered.
    Fixed-positioned from JS off the nav item's rect (see Sidebar.tsx), since the rail is overflow:hidden,
-   so a panel laid out inside it would be clipped. Opening is immediate; .closing fades it over
+   so a panel laid out inside it'd be clipped. Opening is immediate; .closing fades it over
    500ms while it stays mounted and hoverable, so a mouse that comes back inside the grace window
    picks it up again rather than starting over from the nav item. */
 .sidebarFlyout {
@@ -321,7 +321,7 @@
 
 /* Phones: the rail leaves the flex row and becomes a full-screen drawer, off to the left until a
    left-to-right swipe pulls it in. Where it sits and how it moves is in sideDrawer.css, shared with
-   every other drawer; what is left here is the rail's own padding and the widths it has to give up.
+   every other drawer; what's left here is the rail's own padding and the widths it has to give up.
    Sidebar.tsx forces the collapsed state off and drops the inline --sidebarWidth at this width, so
    nothing overrides these.
 

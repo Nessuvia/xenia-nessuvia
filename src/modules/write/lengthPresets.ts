@@ -16,7 +16,7 @@ export interface LengthPreset {
 /**
  * PLACEHOLDER NUMBERS. These are a plausible shape, not researched publishing norms: word ranges by
  * form, typical chapter counts and words per chapter still need looking up, and the numbers below
- * should be replaced wholesale once they have been. Editing this table is the whole job; no code
+ * should be replaced wholesale once they've been. Editing this table is the whole job; no code
  * reads anything but `targetWords` and `chapters`.
  */
 export const lengthPresets: LengthPreset[] = [

@@ -9,7 +9,7 @@ import { usePalette } from '../stores/palettesStore'
  * Mounted once, in App, alongside `useApplyPalette`. `useApplyPalette` writes `--chatFont` and
  * `--appFont` from `effectiveFont`/`effectiveAppFont`; this hook only owns the `<link>`s that
  * deliver the families. The two are separate: a font stays loaded across a palette swap to
- * another palette using the same family, and `paletteVars` is a pure var emitter. It should not
+ * another palette using the same family, and `paletteVars` is a pure var emitter. It shouldn't
  * touch the DOM.
  */
 export function useApplyWebfont() {
@@ -37,7 +37,7 @@ export function loadWebfont(linkId: string, on: boolean, fontId: string, clearVa
     link = document.createElement('link')
     link.id = linkId
     link.rel = 'stylesheet'
-    // `display=swap` is not a Fontsource CSS param; the @font-face rules already set
+    // `display=swap` isn't a Fontsource CSS param; the @font-face rules already set
     // font-display: swap. A missing font falls back immediately while it loads.
     document.head.append(link)
   }

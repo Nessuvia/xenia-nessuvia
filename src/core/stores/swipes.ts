@@ -18,7 +18,7 @@ export interface Swipeable {
   instructions?: (string | undefined)[]
   /** The text as the writing model produced it, before the agent pass worked it over. Parallel to
    *  `swipes`, a hole where the pass was off or changed nothing. Survives a reload, which the
-   *  Grammar Hammer's old "show original" toggle did not. */
+   *  Grammar Hammer's old "show original" toggle didn't. */
   passOriginals?: (string | undefined)[]
   /** What the pass did to a swipe, in one line, parallel to `swipes`. */
   passSummaries?: (string | undefined)[]
@@ -66,11 +66,11 @@ export function regenerated<T extends Swipeable>(
   reasonings.length = swipes.length - 1
   reasonings.push(reasoning || undefined)
   // instructions pad the same way. A plain re-roll leaves a hole, which is the honest record: that
-  // take was not asked to fix anything.
+  // take wasn't asked to fix anything.
   const instructions = [...(message.instructions ?? [])]
   instructions.length = swipes.length - 1
   instructions.push(instruction?.trim() || undefined)
-  // A fresh take has not been passed yet. The pass runs after this and writes its own arrays, so
+  // A fresh take hasn't been passed yet. The pass runs after this and writes its own arrays, so
   // padding them here keeps them parallel rather than one short.
   const passOriginals = [...(message.passOriginals ?? [])]
   passOriginals.length = swipes.length
@@ -87,10 +87,10 @@ export function regenerated<T extends Swipeable>(
 
 /**
  * A finished continuation: `text` is the whole reply, the partial plus what the model just added,
- * and it replaces the selected swipe in place. A continuation is not a new take on the message.
+ * and it replaces the selected swipe in place. A continuation isn't a new take on the message.
  * It must not become a swipe of its own; re-rolling still does that.
  *
- * Reasoning accumulates instead of replacing: both passes really happened.
+ * Reasoning accumulates instead of replacing: both passes happened.
  */
 export function continued<T extends Swipeable>(
   message: T,
@@ -114,7 +114,7 @@ export function reasoningFor(message: Swipeable): string | undefined {
   return message.reasonings?.[swipeIndex(message)]
 }
 
-/** The text before the agent pass, for the selected swipe, when the pass actually changed it. */
+/** The text before the agent pass, for the selected swipe, when the pass changed it. */
 export function passOriginalFor(message: Swipeable): string | undefined {
   return message.passOriginals?.[swipeIndex(message)]
 }
@@ -196,7 +196,7 @@ export function passed<T extends Swipeable>(
 
 /**
  * Put the pre-pass text back into the selected swipe and forget what the pass produced. Returns
- * null when there is no original, so the caller can leave the record alone.
+ * null when there's no original, so the caller can leave the record alone.
  */
 export function revertPass<T extends Swipeable>(message: T): T | null {
   const original = passOriginalFor(message)

@@ -10,7 +10,7 @@ export const backgroundFits: BackgroundFit[] = ['center', 'cover', 'contain', 's
 /**
  * One page's background layer. `imageId` points at a row in the `backgroundImages` table: the bytes
  * live there, not here, and loading a palette list doesn't drag megabytes of base64 along. `url` is
- * an externally hosted image. They are exclusive: setting one clears the other.
+ * an externally hosted image. They're exclusive: setting one clears the other.
  *
  * `css` is raw CSS, wrapped in `@scope` so it only reaches inside the background layer (see
  * scopeCss.ts). `html` is the user's own elements, placed inside `.pageBackground` for their CSS to
@@ -19,7 +19,7 @@ export const backgroundFits: BackgroundFit[] = ['center', 'cover', 'contain', 's
  * scope early, renders nothing rather than a half-applied result.
  *
  * Both name the slot's image the same way, `<img src="image.jpg">` and `url(image.jpg)`, and both
- * fall back to the baseline's when empty. That is how one pair of boxes on `all` dresses all four
+ * fall back to the baseline's when empty. That's how one pair of boxes on `all` dresses all four
  * slots while each slot supplies its own picture.
  *
  * The Backgrounds panel is the only editor in the app that doesn't autosave. These two fields are
@@ -92,7 +92,7 @@ export interface Palette {
   quoteColor: string
   colorOrder: MarkerKind[]
   // When on, per-character color overrides are ignored and the palette is the only source of marker
-  // color. The overrides stay stored: this hides them and does not erase them.
+  // color. The overrides stay stored: this hides them and doesn't erase them.
   overwriteCharColor: boolean
 
   // Story markers
@@ -106,7 +106,7 @@ export interface Palette {
   fontFamily: string // '' = inherit from the app
   // A Fontsource family picked from the Webfont picker. While `useWebfont` is on, this overrides
   // `fontFamily` for the chat locations (chat, ask, write). `webfontId` is the Fontsource slug used
-  // to build the CDN CSS URL; kept alongside so applying a palette does not need the catalog loaded.
+  // to build the CDN CSS URL; kept alongside so applying a palette doesn't need the catalog loaded.
   webfont: string
   webfontId: string
   useWebfont: boolean
@@ -269,7 +269,7 @@ export function resolvePalette(p?: Partial<Palette> | null): Palette {
 /**
  * Numbers keyed by CSS var name, and nothing else. A row from a file can hold strings, nulls or
  * nested objects here, and these values go straight into a `style.setProperty` call. Junk is
- * dropped rather than coerced. Range is not checked: the knob that owns the key clamps it, and this
+ * dropped rather than coerced. Range isn't checked: the knob that owns the key clamps it, and this
  * module has no access to the skin declarations.
  */
 export function normalizeSkinVars(stored?: unknown): Record<string, number> {
@@ -339,7 +339,7 @@ export function resolveBackground(
 }
 
 /**
- * How one fit mode paints. Applied inline, and only when there is an image: a slot with no image
+ * How one fit mode paints. Applied inline, and only when there's an image: a slot with no image
  * leaves `.pageBackground` with no background properties at all. Custom CSS starts from nothing.
  */
 export function fitStyle(fit: BackgroundFit): {

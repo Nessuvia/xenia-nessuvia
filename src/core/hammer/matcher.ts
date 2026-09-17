@@ -15,7 +15,7 @@ export interface Match {
 }
 
 /** Does a token satisfy a POS slot? A token carries several slots; any one matches. `[word]` and
- *  `[clause]` are wildcards over words. No slot ever matches punctuation: that is written as
+ *  `[clause]` are wildcards over words. No slot ever matches punctuation: that's written as
  *  itself. */
 function matchesPos(token: Token, tag: TokenMatcher): boolean {
   if (tag.kind !== 'pos') return false
@@ -33,8 +33,8 @@ function matchesLiteral(token: Token, m: TokenMatcher): boolean {
   return m.caseSensitive ? text === m.value : text.toLowerCase() === m.value.toLowerCase()
 }
 
-/** The first token at or after `ti` that is not punctuation. Runs of punctuation between two
- *  matchers are skipped, so a rule does not have to predict the separators. */
+/** The first token at or after `ti` that's not punctuation. Runs of punctuation between two
+ *  matchers are skipped, so a rule doesn't have to predict the separators. */
 function skipPunct(tokens: Token[], ti: number): number {
   let at = ti
   while (at < tokens.length && isPunct(tokens[at])) at += 1
@@ -48,7 +48,7 @@ function skipPunct(tokens: Token[], ti: number): number {
  *
  * Constraints enforced here:
  * - A match's tokens all share one `sentenceIndex`.
- * - A match's char span does not overlap any exclusion zone (caller passes the sorted ranges).
+ * - A match's char span doesn't overlap any exclusion zone (caller passes the sorted ranges).
  *
  * Greedy quantifiers: a `[adj]+` takes as many adjectives as it can, then backtracks one at a time
  * if the rest of the pattern fails to continue. This is the classic regex-semantics in miniature.
@@ -158,8 +158,8 @@ function walk(
     return { end: tokens[ti - 1].end, tokenTo: ti, groups: [] }
   }
   const m = matchers[mi]
-  // Punctuation between two matchers is not the rule's business, so it is stepped over. Two
-  // matchers have to see it: one that is itself punctuation, and `[clause]`, whose whole meaning is
+  // Punctuation between two matchers isn't the rule's business, so it's stepped over. Two
+  // matchers have to see it: one that's itself punctuation, and `[clause]`, whose whole meaning is
   // "up to the next mark". Skipping into a clause would make `sat [clause]` match "sat, then left",
   // where the clause after "sat" is in fact over. A rule that wants the next clause writes the
   // comma: `sat , [clause]`.

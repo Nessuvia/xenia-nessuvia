@@ -32,7 +32,7 @@ export default function TemplateEditor({
   onChange,
 }: {
   template: InstructTemplate
-  /** The connection's name, so an exported file says which model it is for. */
+  /** The connection's name, so an exported file says which model it's for. */
   name: string
   onChange: (template: InstructTemplate) => void
 }) {

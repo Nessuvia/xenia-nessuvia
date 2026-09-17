@@ -41,7 +41,7 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
   }
 
   /**
-   * The drafts, onto the Story. Every field here is already a Story field. There is nowhere else
+   * The drafts, onto the Story. Every field here is already a Story field. There's nowhere else
    * for them to live and nothing to serialise: this is the same write `run` does, minus the request.
    *
    * Called on the way out as well as on Generate. Without it, typing a premise and closing the
@@ -69,7 +69,7 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
 
   const run = async () => {
     // Every chapter goes, prose included. Asked once, here, rather than on the button that opened
-    // the dialog: the numbers above change what is about to replace them.
+    // the dialog: the numbers above change what's about to replace them.
     if (chapterCount > 0 && !confirm(`Replace all ${chapterCount} chapters and the prose in them?`))
       return
     setBusy(true)
@@ -207,7 +207,7 @@ export function OutlineDialog({ onClose }: { onClose: () => void }) {
 
         <div className="dialogActions">
           {/* Close, not Cancel: the fields are kept either way. The label must not promise
-              they are thrown away. */}
+              they're thrown away. */}
           <button type="button" className="secondary" disabled={busy} onClick={close}>
             Close
           </button>

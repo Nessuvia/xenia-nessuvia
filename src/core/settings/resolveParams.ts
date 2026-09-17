@@ -47,11 +47,11 @@ export function paramSourceFor(key: string, character?: Character, chat?: ParamS
 }
 
 /**
- * The connection as it should actually be used for this chat: chat override, else character
+ * The connection as it should be used for this chat: chat override, else character
  * override, else the connection's own value. Field by field, patch not replace. Never mutates.
  *
  * Overrides only reach params the connection already carries. A character can change what
- * `temperature` is, but it cannot add a sampler the connection does not send, which knobs exist
+ * `temperature` is, but it can't add a sampler the connection doesn't send, which knobs exist
  * is the connection's decision, and what they're set to is the chat's.
  */
 export function resolveParams(

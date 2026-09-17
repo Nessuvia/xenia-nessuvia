@@ -19,7 +19,7 @@ export interface CastMember {
 
 /**
  * `Name: description` lines, one per member, for the `{{personas}}` token. Generated at send time,
- * never stored. Returns an empty string when there is nobody to describe, and a member with an
+ * never stored. Returns an empty string when there's nobody to describe, and a member with an
  * empty or whitespace-only description is omitted entirely.
  */
 export function castBlock(members: CastMember[]): string {
@@ -33,7 +33,7 @@ export function castBlock(members: CastMember[]): string {
  * A Character-shaped Narrator for `buildPrompt`: a speaker with a name and an id, and nothing
  * else worth reading.
  *
- * `systemPrompt` is the one exception, and it is a fallback rather than a second voice. A stack
+ * `systemPrompt` is the one exception, and it's a fallback rather than a second voice. A stack
  * that has an `[if Narrator]` branch owns the Narrator, and the caller passes nothing here. Only
  * a stack that never mentions the Narrator gets its `narrator` misc prompt, which lands in the
  * same slot a character's own system prompt would. The caller decides which case it is; see
@@ -41,7 +41,7 @@ export function castBlock(members: CastMember[]): string {
  * Description, personality and scenario stay empty on purpose: those would be invisible narrator
  * instructions the stack editor could neither show nor override.
  *
- * Never written to Dexie: `ownerId` is '', and it does not look like a persistable record.
+ * Never written to Dexie: `ownerId` is '', and it doesn't look like a persistable record.
  */
 export function narratorCharacter(systemPrompt = ''): Character {
   return {

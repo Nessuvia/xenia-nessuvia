@@ -29,7 +29,7 @@ export interface PaletteFileImage {
   dataUrl: string
 }
 
-/** Every user palette. Default is a constant in code: it is never written out. */
+/** Every user palette. Default is a constant in code: it's never written out. */
 export function buildPaletteFile(
   palettes: Palette[],
   library: { id?: number; name: string; dataUrl: string }[] = [],
@@ -87,7 +87,7 @@ export function parsePalettes(text: string): { palettes: Palette[]; images: Reco
 }
 
 /**
- * Point a parsed palette's background slots at the ids the images actually landed on locally.
+ * Point a parsed palette's background slots at the ids the images landed on locally.
  * Anything unmapped becomes 0: the slot shows no image of its own and falls back to the baseline,
  * which is how an empty slot already behaves.
  */

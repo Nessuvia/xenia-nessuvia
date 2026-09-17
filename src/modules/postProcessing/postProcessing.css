@@ -307,7 +307,7 @@
   word-break: break-word;
 }
 
-/* The columns stack, tester last: it is the one you consult rather than edit. */
+/* The columns stack, tester last: it's the one you consult rather than edit. */
 @media (max-width: 1300px) {
   .postColumns {
     grid-template-columns: minmax(0, 1fr);

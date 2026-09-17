@@ -4,7 +4,7 @@
 
 /**
  * What the field shows while typing: one leading `#`, hex digits only, uppercase, cut at the
- * longest form the field accepts. Everything else the user types is dropped as it is typed. A
+ * longest form the field accepts. Everything else the user types is dropped as it's typed. A
  * half-finished value stays in the field instead of being rejected on the way in.
  */
 export function sanitizeHexText(raw: string, allowAlpha = false): string {
@@ -20,7 +20,7 @@ const expand = (digits: string) => digits.split('').map((c) => c + c).join('')
 
 /**
  * The stored form of a typed color: `#RRGGBB`, or `#RRGGBBAA` where alpha is allowed. `''` is the
- * empty field, which every caller looks like unset. `null` means the text is not a complete color
+ * empty field, which every caller looks like unset. `null` means the text isn't a complete color
  * yet: the caller leaves the value alone and lets the typing continue.
  *
  * Shorthand expands (`#ABC` → `#AABBCC`). Eight digits pasted into a field without alpha lose the

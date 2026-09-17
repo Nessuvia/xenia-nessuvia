@@ -30,17 +30,17 @@ export interface ScopeResult {
   escaped: boolean
   /**
    * The background paints something that moves: its backdrop never holds still. Skins read this
-   * to drop `backdrop-filter`, which is only cheap while what's behind it is static.
+   * to drop `backdrop-filter`, which is only cheap while what's behind it's static.
    *
    * Keyframes are the proxy, not a real answer: a background can move via `transition` on a var, or
    * an `animation` naming a keyframe the app already declares, and neither shows up here. It covers
-   * what animated backgrounds actually look like, and the cost of guessing wrong is a blur that
+   * what animated backgrounds look like, and the cost of guessing wrong is a blur that
    * stutters or one that's missing, not a broken page.
    */
   animated: boolean
 }
 
-/** A user-supplied URL goes inside a CSS `url("…")`; quotes and backslashes would break out of it. */
+/** A user-supplied URL goes inside a CSS `url("...")`; quotes and backslashes would break out of it. */
 export function cssUrl(src: string): string {
   return src.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }

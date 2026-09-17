@@ -4,7 +4,7 @@ import type { TableName } from '../storage/storageInterface.ts'
 
 /** Suppression is module-level rather than a parameter threaded through storage: the callers that
  *  need it (`restoreBackup`, and the pull path) replace whole tables through the same `clear` +
- *  `putAll` that ordinary edits use. There is no signature to distinguish them by. */
+ *  `putAll` that ordinary edits use. There's no signature to distinguish them by. */
 let suppressed = false
 
 /** Called by `db.ts` on every durable write, before the write runs: a write that throws partway
@@ -16,9 +16,9 @@ export function markDirty(table: TableName) {
 
 /**
  * Runs `fn` with dirty tracking off. A wrapper rather than a setSuppressed(true/false) pair: the
- * `finally` means a throw inside `fn` cannot leave tracking dead for the rest of the session.
+ * `finally` means a throw inside `fn` can't leave tracking dead for the rest of the session.
  *
- * Whole-table replacements use it. They are not user edits, and flagging every table as a side
+ * Whole-table replacements use it. They're not user edits, and flagging every table as a side
  * effect of a restore or a pull would queue a push of data that just came from elsewhere. A pull
  * records its own table clean afterwards.
  */

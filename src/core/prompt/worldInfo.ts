@@ -87,7 +87,7 @@ export function matchedEntries(
  * other at the same depth.
  *
  * The three positions feed three block sources (`worldInfo`, `worldInfoAfter`,
- * `worldInfoDepth`). This sort does not decide placement on its own. It still decides
+ * `worldInfoDepth`). This sort doesn't decide placement on its own. It still decides
  * priority: the prompt-wide budget below fills in this order and drops the tail.
  */
 const rank = (entry: WorldInfoEntry) => (entry.position === 'beforeChar' ? 0 : 1)
@@ -184,7 +184,7 @@ export function resolveWorldInfo(
   return {
     before: before.join('\n'),
     after: after.join('\n'),
-    // Deepest first, which is the order they have to be spliced in: each insertion point is
+    // Deepest first, which is the order they've to be spliced in: each insertion point is
     // counted from the end of history. A shallower note inserted first would shift a deeper one.
     atDepth: [...depths.entries()]
       .sort((a, b) => b[0] - a[0])

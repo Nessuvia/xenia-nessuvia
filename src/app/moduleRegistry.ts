@@ -12,7 +12,7 @@ export interface AppModule {
   // Listed in Settings > Miscellaneous > Plugins, and off until enabled there.
   plugin?: boolean
   // Sections contributed to the chat sidebar. Order follows module registration order in main.tsx,
-  // same as the sidebar. A panel that shouldn't show renders null; there is no visibility API.
+  // same as the sidebar. A panel that shouldn't show renders null; there's no visibility API.
   chatPanels?: readonly { label: string; component: ComponentType }[]
   // Text appended to the outgoing user message, before token substitution. '' contributes nothing.
   // No module uses it today. Widen ctx when one needs more.
@@ -53,7 +53,7 @@ export function lazyView(load: ViewLoader) {
 
 let preloading = false
 
-/** Fetch every registered module's chunk, one at a time: a tab is already in memory when it is
+/** Fetch every registered module's chunk, one at a time: a tab is already in memory when it's
  *  clicked. Sequential and idle-scheduled: the point is to stay out of the way of whatever the user
  *  is doing, not to win a race. The browser cache and the import map dedupe against the real
  *  navigation. A click mid-prefetch costs nothing. */
@@ -67,7 +67,7 @@ export function preloadModules() {
   const next = () => {
     const load = queue.shift()
     if (!load) return
-    // A failed chunk is not worth reporting: the route's own Suspense boundary retries on click.
+    // A failed chunk isn't worth reporting: the route's own Suspense boundary retries on click.
     idle(() => void load().then(next, next))
   }
   next()

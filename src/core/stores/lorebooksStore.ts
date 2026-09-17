@@ -39,7 +39,7 @@ interface LorebooksState {
   counts: Record<number, number>
   /** Character names holding each book id, for the Bundled group in the list. Read here for the
    *  same reason `counts` is: attachment lives on the character row, and the view must not reach
-   *  into storage itself. A book attached to a chat is not bundled, only characters travel with
+   *  into storage itself. A book attached to a chat isn't bundled, only characters travel with
    *  a card. */
   bundledTo: Record<number, string[]>
   loading: boolean

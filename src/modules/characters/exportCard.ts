@@ -91,7 +91,7 @@ export function buildCard(c: Character, entries: WorldInfoEntry[] = [], book?: L
       },
     },
   }
-  // Top-level copies are what v1/v2-era readers actually look at.
+  // Top-level copies are what v1/v2-era readers look at.
   return { spec: 'chara_card_v3', spec_version: '3.0', ...data, data }
 }
 

@@ -8,7 +8,7 @@
  * endpoint or the relay, and nothing about the request identifies the browser beyond the URL.
  *
  * Storage is the Cache API rather than Dexie on purpose. A vocab is redownloadable and up to 17 MB;
- * in Dexie it would ride along in every S3 sync push and every exported backup. This also keeps
+ * in Dexie it'd ride along in every S3 sync push and every exported backup. This also keeps
  * core/storage the only importer of Dexie.
  */
 import { tokenizerDef, vocabUrls, type ResolvedTokenizerId } from './tokenizers.ts'
@@ -34,7 +34,7 @@ export async function hasVocab(id: ResolvedTokenizerId): Promise<boolean> {
   return Boolean((await store.match(urls.json)) && (await store.match(urls.config)))
 }
 
-/** Both files, or null if either is missing. Never fetches, that is fetchVocab's job. */
+/** Both files, or null if either is missing. Never fetches, that's fetchVocab's job. */
 export async function readVocab(id: ResolvedTokenizerId) {
   const urls = keys(id)
   const cache = open()

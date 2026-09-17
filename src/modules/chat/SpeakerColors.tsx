@@ -27,7 +27,7 @@ const colorField: Record<MarkerKind, keyof CharacterColors> = {
 export default function SpeakerColors({ chat }: { chat: Chat }) {
   const characters = useCharacters((s) => s.characters)
   const save = useCharacters((s) => s.save)
-  // The order is read from the palette but not editable here: precedence is not a per-character
+  // The order is read from the palette but not editable here: precedence isn't a per-character
   // idea. It stays in Settings → Themes where one list governs every speaker.
   const palette = usePalette()
 

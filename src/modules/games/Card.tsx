@@ -7,7 +7,7 @@ const pips: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' }
 /**
  * One card, drawn in CSS. The suit characters are typography.
  *
- * `rotate` and `shift` are the scatter of the pool. They are passed as vars: the value is
+ * `rotate` and `shift` are the scatter of the pool. They're passed as vars: the value is
  * computed from the card's index. The styling itself stays in games.css.
  */
 export function Card({

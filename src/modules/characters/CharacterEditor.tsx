@@ -46,7 +46,7 @@ const railCount = (summary: string | undefined) => summary?.split(' ')[0] ?? ''
 
 /**
  * `characterId` null means a brand new character, it's written on the first autosave, and
- * `onCreated` hands back its new id. Edits autosave 1s after the last keystroke; there is no
+ * `onCreated` hands back its new id. Edits autosave 1s after the last keystroke; there's no
  * Save button.
  *
  * `header` renders inside the scrolling column above the first section: CharacterSheet passes the
@@ -67,7 +67,7 @@ export default function CharacterEditor({
 }) {
   const { characters, load, save } = useCharacters()
   const connection = useActiveConnection()
-  // For the "this text is not sent" notice below: the card's prompt fields only reach the model
+  // For the "this text isn't sent" notice below: the card's prompt fields only reach the model
   // through a block, and the default stacks carry neither.
   const stacks = useStacks((s) => s.stacks)
   const loadStacks = useStacks((s) => s.load)
@@ -602,7 +602,7 @@ export default function CharacterEditor({
                       {brokenUrls.includes(url) ? (
                         <div className="galleryBroken">
                           <span>Image did not load</span>
-                          {/* A data URL is the whole image; printing it would fill the tile. */}
+                          {/* A data URL is the whole image; printing it'd fill the tile. */}
                           {!url.startsWith('data:') && (
                             <span className="galleryBrokenUrl">{url}</span>
                           )}

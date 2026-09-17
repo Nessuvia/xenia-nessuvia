@@ -1,4 +1,4 @@
-/* Sizing and shape stay with the caller's class (.avatar, .personaSwitchAvatar, …); this only
+/* Sizing and shape stay with the caller's class (.avatar, .personaSwitchAvatar, ...); this only
    sets up the window the cropped image is positioned inside. */
 .cropped {
   position: relative;

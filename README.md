@@ -7,7 +7,7 @@ Alternate Names: Xenia, X.N, Xen (/zɛn/, zen)
 
 Xenia Nessuvia is a character chat app inspired by SillyTavern. It runs entirely in the browser. Chats, characters, and settings live in IndexedDB. Model requests go from your browser to an OpenAI-compatible endpoint, using the key you provide.
 
-There is no backend and no accounts. Download the source and run it fully locally if you prefer.
+There's no backend and no accounts. Download the source and run it fully locally if you prefer.
 
 On [xenia.nessuvia.com](https://xenia.nessuvia.com/), the site installs as a PWA and runs in fullscreen.
 
@@ -33,13 +33,13 @@ The Palette feature covers font loading, app-wide text colors, and panel styles,
 
 Chat is the most conventional feature here. It supports the full TavernV2 specification, plus extras: Alternate Descriptions, a Gallery, per-character text coloring. Lorebooks stay simple today: keyword-triggered world info entries that inject on a match, with no advanced insertion strategies yet.
 
-Model output can be cleaned before it reaches the screen, two ways. The grammar hammer runs a rules pass over the displayed text and leaves the stored message untouched. Second Pass covers heavier cleanup: write post-processing rules, from stripping a repeated tic to long regex replacements. Both change only what you see, never what is saved.
+Model output can be cleaned before it reaches the screen, two ways. The grammar hammer runs a rules pass over the displayed text and leaves the stored message untouched. Second Pass covers heavier cleanup: write post-processing rules, from stripping a repeated tic to long regex replacements. Both change only what you see, never what's saved.
 
 **Write**
 
 Write is the long-form half of the app, and the most rebuilt. Exports come out as HTML, plain text, or JSON.
 
-The Plot Layout is the part I care about most. A Chapter is a row of beats, each with a word target: a plan for the model, not the word "continue." A Premise precedes the first Chapter and an Ending follows the last, marking where the story started and where it lands. Every Chapter also carries a summary and a switch for what it hands to the model (summary and beats, beats only, summary only, or nothing), the mechanism that lets old Chapters shrink to a recap while the current one stays whole. A Direction box holds the standing note that is neither a beat nor a prompt, the "stop having them sigh" kind of thing.
+The Plot Layout is the part I care about most. A Chapter is a row of beats, each with a word target: a plan for the model, not the word "continue." A Premise precedes the first Chapter and an Ending follows the last, marking where the story started and where it lands. Every Chapter also carries a summary and a switch for what it hands to the model (summary and beats, beats only, summary only, or nothing), the mechanism that lets old Chapters shrink to a recap while the current one stays whole. A Direction box holds the standing note that's neither a beat nor a prompt, the "stop having them sigh" kind of thing.
 
 **Prompts**
 
@@ -59,7 +59,7 @@ Role-tag formatting for local backends (Llama-3 headers, `[INST]`, `<|im_start|>
 
 ## Where data goes
 
-Everything stays in your browser, with one exception. Multiplayer messages pass through a Centrifugo relay the host runs. They are not stored there, and they are carried in plaintext. API keys are never sent to the relay.
+Everything stays in your browser, with one exception. Multiplayer messages pass through a Centrifugo relay the host runs. They're not stored there, and they're carried in plaintext. API keys are never sent to the relay.
 
 A host can point a session at a Centrifugo relay on their own machine instead, set up in Settings under Multiplayer. [Click here for more information.](src/resources/self-hosted-relay.md)
 

@@ -54,7 +54,7 @@ export interface SettingsSummary {
  *
  * The background's `css` and `html` are the host's own, and are rendered through the same
  * sanitizeBackgroundHtml/scopeBackgroundCss path as a local background, never innerHTML.
- * An uploaded image lives in the host's `backgroundImages` table and its bytes are not sent.
+ * An uploaded image lives in the host's `backgroundImages` table and its bytes aren't sent.
  * Only `url` travels, and a host on an uploaded image shows guests no image.
  */
 export interface SharedAppearance {

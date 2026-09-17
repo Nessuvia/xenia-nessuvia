@@ -1,13 +1,13 @@
 /**
  * Whether a browser will refuse to reach an endpoint because the page is https and the endpoint
- * is not. Nothing in this app can lift that: it is enforced below fetch, a service worker is bound
- * by the same rule, and there is no flag or header that turns it off for one origin. The only
+ * isn't. Nothing in this app can lift that: it's enforced below fetch, a service worker is bound
+ * by the same rule, and there's no flag or header that turns it off for one origin. The only
  * thing worth doing is saying so where the URL is typed, the way `multiplayer/relayConfig.ts`
  * refuses a `ws://` relay.
  *
  * Loopback is the exception. Browsers treat `http://localhost`, `http://127.0.0.0/8` and
- * `http://[::1]` as potentially trustworthy, so a model served there is reachable from an https
- * page. A LAN or VPN address (`192.168.x`, `10.x`, a ZeroTier IP) is not, and that is the case
+ * `http://[::1]` as potentially trustworthy, so a model served there's reachable from an https
+ * page. A LAN or VPN address (`192.168.x`, `10.x`, a ZeroTier IP) isn't, and that's the case
  * this catches.
  *
  * No imports: `checkMixedContent.ts` runs under node --strip-types.
@@ -23,8 +23,8 @@ export function loopbackHost(host: string): boolean {
 }
 
 /**
- * True when `pageProtocol` is https, `endpointUrl` is plain http, and its host is not loopback.
- * An empty or unparseable URL is false: that is the field's own problem, not this one.
+ * True when `pageProtocol` is https, `endpointUrl` is plain http, and its host isn't loopback.
+ * An empty or unparseable URL is false: that's the field's own problem, not this one.
  */
 export function mixedContentBlocked(endpointUrl: string, pageProtocol: string): boolean {
   if (pageProtocol !== 'https:') return false

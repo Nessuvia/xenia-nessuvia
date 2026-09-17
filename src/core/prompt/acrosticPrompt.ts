@@ -21,8 +21,8 @@ export function acrosticInstruction(template: AcrosticTemplate, jsonMode: boolea
 /**
  * The chat's normal prompt with the acrostic instruction as a final system turn.
  *
- * ponytail: the instruction is not counted against the token budget, which `buildPrompt` already
- * trimmed history to. It is a few hundred tokens at most; route it through `appendSystem` if a
+ * ponytail: the instruction isn't counted against the token budget, which `buildPrompt` already
+ * trimmed history to. It's a few hundred tokens at most; route it through `appendSystem` if a
  * long chat starts overflowing.
  */
 export function acrosticMessages(messages: ChatMessage[], template: AcrosticTemplate, jsonMode: boolean, retryNote?: string): ChatMessage[] {
