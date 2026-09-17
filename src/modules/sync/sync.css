@@ -81,6 +81,17 @@
   color: var(--text);
 }
 
+/* Sits between the title and the status, so the status stays hard against the right edge. */
+.syncPick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--textMuted);
+}
+
 .syncStatus {
   font-size: 12px;
   letter-spacing: 0.04em;

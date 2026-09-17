@@ -18,7 +18,7 @@ export const askKey = 'nessuTavern.ask'
  * pulled blob must not bring another device's dirty set, hashes or bucket config with it: that
  * would tell this device its tables are already synced when they aren't.
  */
-const deviceFields = ['dirtyTables', 'tableHashes', 'lastSyncedAt', 'bucket']
+const deviceFields = ['dirtyTables', 'tableHashes', 'lastSyncedAt', 'bucket', 'dropbox', 'syncProvider']
 
 /** `theirs` with this device's own sync bookkeeping kept. */
 export function keepDeviceFields(theirs: string, mine: string | null): string {

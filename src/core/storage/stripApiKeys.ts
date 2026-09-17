@@ -6,7 +6,7 @@
 
 /** Keys whose value is a credential. Add to this list, never to a path-specific check, a backup
  *  file gets emailed around, and a missed key is the failure that matters. */
-const secretKeys = ['apiKey', 'secretAccessKey', 'accessKeyId', 'passphrase']
+const secretKeys = ['apiKey', 'secretAccessKey', 'accessKeyId', 'passphrase', 'refreshToken']
 
 export function stripApiKeys(settings: string | null): string | null {
   if (settings === null) return null

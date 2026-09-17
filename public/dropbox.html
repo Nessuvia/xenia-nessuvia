@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dropbox</title>
+  </head>
+  <body>
+    <p>Signing in...</p>
+    <!--
+      The Dropbox OAuth redirect lands here. Plain HTML on purpose: booting the whole app inside a
+      popup to read one query parameter would be slower and would mount a second copy of every
+      store. This page posts the code to the tab that opened it and closes.
+    -->
+    <script>
+      var params = new URLSearchParams(location.search)
+      var message = {
+        source: 'dropboxAuth',
+        code: params.get('code') || '',
+        error: params.get('error_description') || params.get('error') || '',
+      }
+      // Same origin only: the opener is this app, and the code must not reach anything else.
+      if (window.opener) window.opener.postMessage(message, location.origin)
+      window.close()
+    </script>
+  </body>
+</html>

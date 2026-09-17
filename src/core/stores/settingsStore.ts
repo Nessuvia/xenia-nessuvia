@@ -5,6 +5,8 @@ import type { ConnectionType, InstructTemplate, ParamValue } from '../params/par
 // Extensioned: this store is reachable from checkDirtyTables.ts under node --strip-types.
 import { tableNames, type TableName } from '../storage/storageInterface.ts'
 import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
+import { emptyDropboxConfig, type DropboxConfig } from '../sync/dropboxConfig.ts'
+import { hashKey, type SyncProvider } from '../sync/syncTypes.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import { defaultAgentConfig, type AgentConfig } from '../agent/agentConfig.ts'
@@ -138,6 +140,11 @@ interface SettingsState {
   /** The user's own S3-compatible bucket, or blank fields when sync isn't set up. Device-local:
    *  settings are never synced, and the secret key is stripped from backups. */
   bucket: BucketConfig
+  /** A Dropbox sign-in, or blank when there isn't one. Device-local, like `bucket`. */
+  dropbox: DropboxConfig
+  /** Which of the two a sync run uses. Both stay configured so switching back doesn't mean
+   *  signing in again. */
+  syncProvider: SyncProvider
   /** The Centrifugo endpoint multiplayer sessions run over, blank when none is set up.
    *  Device-local, like `bucket`. */
   relay: RelayConfig
@@ -146,7 +153,8 @@ interface SettingsState {
    *  everything is pending until it gets one. Written by `core/sync/dirtyTables.ts`. */
   dirtyTables: TableName[]
   /** The hash of each table as it was last pushed, so compare can tell an unchanged table from a
-   *  changed one without downloading anything. A table absent here has never been pushed. */
+   *  changed one without downloading anything. Keyed by `hashKey`, provider and table: the two
+   *  providers hash differently. A key absent here has never been pushed to that provider. */
   tableHashes: Record<string, string>
   /** When the last apply finished, from the device clock. Display only, the store's own
    *  updatedAt is the authority for which side is newer. */
@@ -269,6 +277,8 @@ interface SettingsState {
   /** Records a table as pushed or pulled: its hash is now the cloud's, and it's no longer dirty. */
   setTableSynced(table: TableName, hash: string): void
   setBucket(patch: Partial<BucketConfig>): void
+  setDropbox(patch: Partial<DropboxConfig>): void
+  setSyncProvider(provider: SyncProvider): void
   setRelay(patch: Partial<RelayConfig>): void
   setLastSyncedAt(at: number): void
 }
@@ -277,6 +287,8 @@ export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
       bucket: emptyBucketConfig,
+      dropbox: emptyDropboxConfig,
+      syncProvider: 's3',
       relay: emptyRelayConfig,
       dirtyTables: [...tableNames],
       tableHashes: {},
@@ -396,12 +408,21 @@ export const useSettings = create<SettingsState>()(
       setTableSynced: (table, hash) =>
         set((s) => ({
           dirtyTables: s.dirtyTables.filter((t) => t !== table),
-          tableHashes: { ...s.tableHashes, [table]: hash },
+          tableHashes: { ...s.tableHashes, [hashKey(s.syncProvider, table)]: hash },
         })),
 
       // Merged over the defaults so a blob persisted before this field existed still resolves.
       setBucket: (patch) =>
         set((s) => ({ bucket: { ...emptyBucketConfig, ...s.bucket, ...patch } })),
+
+      setDropbox: (patch) =>
+        set((s) => ({ dropbox: { ...emptyDropboxConfig, ...s.dropbox, ...patch } })),
+
+      // Every table goes dirty on a switch. `dirtyTables` is one set across both providers, so a
+      // table pushed to one and then edited would look clean to the other, which still holds an
+      // older hash for it. The cost is one hash per table on the next compare and no upload.
+      setSyncProvider: (syncProvider) =>
+        set((s) => (s.syncProvider === syncProvider ? s : { syncProvider, dirtyTables: [...tableNames] })),
 
       setRelay: (patch) =>
         set((s) => ({ relay: { ...emptyRelayConfig, ...s.relay, ...patch } })),

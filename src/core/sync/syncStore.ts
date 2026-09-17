@@ -8,6 +8,7 @@ import type { StoredRecord } from '../storage/storageInterface'
 import type { TablePayload } from '../storage/tablePayload'
 import { useSettings } from '../stores/settingsStore'
 import { withDirtySuppressed } from './dirtyTables'
+import { hashKey } from './syncTypes'
 import * as client from './syncClient'
 
 /** Checked here so an oversized table fails before the request instead of as a 413. Chunking is out
@@ -83,12 +84,12 @@ export const useSync = create<SyncState>()((set, get) => ({
     set({ status: 'comparing', error: '', comparison: null })
     try {
       const manifest = await client.fetchManifest()
-      const { dirtyTables, tableHashes } = useSettings.getState()
+      const { dirtyTables, tableHashes, syncProvider } = useSettings.getState()
       const comparison: Comparison = {}
 
       for (const table of tableNames) {
         const cloud = manifest[table] ?? null
-        const synced = tableHashes[table] ?? null
+        const synced = tableHashes[hashKey(syncProvider, table)] ?? null
         // A dirty table gets hashed: the flag says it was written to, not that the content ended up
         // different. An unchanged table then costs one hash and no upload.
         const local = dirtyTables.includes(table) ? (await buildTablePayload(table)).hash : synced
@@ -153,8 +154,9 @@ export const useSync = create<SyncState>()((set, get) => ({
               `${table} is ${(bytes / 1_000_000).toFixed(1)} MB. The limit is ${maxPayloadBytes / 1_000_000} MB.`,
             )
           }
-          await client.pushTable(table, json, hash)
-          settings.setTableSynced(table, hash)
+          // Recorded as what the provider stored rather than what was sent: Dropbox compares on
+          // its own content_hash, and the S3 client hands the same hash straight back.
+          settings.setTableSynced(table, await client.pushTable(table, json, hash))
           step(`Uploaded ${table}, ${size(bytes)}.`, index + 1, total)
         } else {
           step(`Downloading ${table}...`, index, total)

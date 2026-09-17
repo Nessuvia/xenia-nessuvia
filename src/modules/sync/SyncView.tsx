@@ -4,8 +4,12 @@ import { usePalette } from '../../core/stores/palettesStore'
 import { tableNames, type TableName } from '../../core/storage/storageInterface'
 import { useSettings } from '../../core/stores/settingsStore'
 import { bucketConfigured, type BucketConfig } from '../../core/sync/bucketConfig'
+import { connectDropbox, forgetAccessToken, redirectUri } from '../../core/sync/dropboxAuth'
+import { testDropbox } from '../../core/sync/dropboxClient'
+import { dropboxAppKey, dropboxConfigured } from '../../core/sync/dropboxConfig'
 import { r2AccountId, r2Endpoint, r2Region } from '../../core/sync/r2Endpoint'
-import { testBucket } from '../../core/sync/syncClient'
+import { testBucket } from '../../core/sync/s3Client'
+import type { SyncProvider } from '../../core/sync/syncTypes'
 import {
   useSync,
   type Direction,
@@ -62,20 +66,37 @@ export default function SyncView() {
   )
 }
 
+/** `provider` turns the header into the picker: both providers can be set up, and the radio says
+ *  which one a run uses. Sections without one (export, Drive) leave it out. */
 function Section({
   title,
   status,
+  provider,
   children,
 }: {
   title: string
   status: string
+  provider?: SyncProvider
   children: ReactNode
 }) {
+  const active = useSettings((s) => s.syncProvider)
+  const setProvider = useSettings((s) => s.setSyncProvider)
   return (
     // `card` is the skin contract: skins repaint it, sync.css sets the base paint.
     <section className="syncSection card">
       <div className="syncSectionHead">
         <h3>{title}</h3>
+        {provider && (
+          <label className="syncPick">
+            <input
+              type="radio"
+              name="syncProvider"
+              checked={active === provider}
+              onChange={() => setProvider(provider)}
+            />
+            Use for sync
+          </label>
+        )}
         <span className="syncStatus">{status}</span>
       </div>
       {children}
@@ -84,12 +105,11 @@ function Section({
 }
 
 function R2Section() {
-  const { status, error, progress, comparison, compare, apply, clearError } = useSync()
+  const status = useSync((s) => s.status)
+  const clearError = useSync((s) => s.clearError)
   const bucket = useSettings((s) => s.bucket)
   const setBucket = useSettings((s) => s.setBucket)
-  const lastSyncedAt = useSettings((s) => s.lastSyncedAt)
 
-  const [decisions, setDecisions] = useState<Partial<Record<TableName, Direction>>>({})
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok'>('idle')
   // A saved endpoint that isn't R2's opens as the six-field form. An existing Garage or B2
   // config still edits as itself. A blank one is a fresh install, which starts on R2.
@@ -127,6 +147,7 @@ function R2Section() {
   return (
     <Section
       title="Cloudflare R2"
+      provider="s3"
       status={testState === 'ok' ? 'Connected' : ready ? 'Configured' : 'Not set up'}
     >
       {showAll ? (
@@ -145,52 +166,67 @@ function R2Section() {
         {/* A disabled button on its own is a dead end: everything below here is hidden until the
             config is complete. The reason has to be on screen. */}
         {missing.length > 0 && <span className="syncNote">Still needed: {missing.join(', ')}.</span>}
-        <button type="button" onClick={runTest} disabled={!ready || testState === 'testing'}>
+        <button type="button" onClick={runTest} disabled={!ready || busy || testState === 'testing'}>
           {testState === 'testing' ? 'Testing…' : 'Test connection'}
         </button>
       </div>
 
-      {ready && (
-        <div className="syncActions">
-          <button
-            type="button"
-            onClick={() => {
-              setDecisions({})
-              compare()
-            }}
-            disabled={busy}
-          >
-            {status === 'comparing' ? 'Comparing…' : 'Compare'}
-          </button>
-          <SplitButton
-            busy={busy}
-            actions={[
-              ['Upload all', () => apply(allTables('push'), 'push')],
-              ['Upload w/o settings', () => apply(allTables('push'))],
-            ]}
-          />
-          <SplitButton
-            busy={busy}
-            actions={[
-              ['Download all', () => apply(allTables('pull'), 'pull')],
-              ['Download settings', () => apply({}, 'pull')],
-              ['Download content', () => apply(allTables('pull'))],
-            ]}
-          />
-          {lastSyncedAt !== null && (
-            <span className="syncNote">Last synced {stamp(lastSyncedAt)}</span>
-          )}
-        </div>
-      )}
+      {ready && <SyncActions provider="s3" where="bucket" />}
+    </Section>
+  )
+}
 
-      {ready && (
-        <p className="syncNote">
-          Settings include your connections and their API keys, the access keys for this bucket, and
-          the Ask scratchpad. They're written to the bucket as plain text, readable by anyone who can
-          read the bucket and by the provider hosting it. Downloading them replaces the settings in
-          this browser, apart from the bucket details.
-        </p>
-      )}
+/**
+ * Everything that moves data, shown under whichever provider is selected. Both sections render it
+ * and the inactive one renders nothing: one comparison and one progress bar belong to the run, not
+ * to a provider, and two sets on screen would leave the user reading the wrong one.
+ */
+function SyncActions({ provider, where }: { provider: SyncProvider; where: string }) {
+  const { status, error, progress, comparison, compare, apply, clearError } = useSync()
+  const active = useSettings((s) => s.syncProvider)
+  const lastSyncedAt = useSettings((s) => s.lastSyncedAt)
+  const [decisions, setDecisions] = useState<Partial<Record<TableName, Direction>>>({})
+
+  if (active !== provider) return null
+  const busy = status !== 'idle'
+
+  return (
+    <>
+      <div className="syncActions">
+        <button
+          type="button"
+          onClick={() => {
+            setDecisions({})
+            compare()
+          }}
+          disabled={busy}
+        >
+          {status === 'comparing' ? 'Comparing…' : 'Compare'}
+        </button>
+        <SplitButton
+          busy={busy}
+          actions={[
+            ['Upload all', () => apply(allTables('push'), 'push')],
+            ['Upload w/o settings', () => apply(allTables('push'))],
+          ]}
+        />
+        <SplitButton
+          busy={busy}
+          actions={[
+            ['Download all', () => apply(allTables('pull'), 'pull')],
+            ['Download settings', () => apply({}, 'pull')],
+            ['Download content', () => apply(allTables('pull'))],
+          ]}
+        />
+        {lastSyncedAt !== null && <span className="syncNote">Last synced {stamp(lastSyncedAt)}</span>}
+      </div>
+
+      <p className="syncNote">
+        Settings include your connections and their API keys, the credentials for this {where}, and
+        the Ask scratchpad. They're written as plain text, readable by anyone who can read the{' '}
+        {where} and by the provider hosting it. Downloading them replaces the settings in this
+        browser, apart from the sync details.
+      </p>
 
       {comparison && (
         <ComparisonTable
@@ -215,7 +251,7 @@ function R2Section() {
       {progress && <RunProgress progress={progress} />}
 
       {error && <SyncError error={error} onDismiss={clearError} />}
-    </Section>
+    </>
   )
 }
 
@@ -416,13 +452,139 @@ function RunProgress({ progress }: { progress: Progress }) {
 }
 
 function DropboxSection() {
+  const status = useSync((s) => s.status)
+  const clearError = useSync((s) => s.clearError)
+  const dropbox = useSettings((s) => s.dropbox)
+  const setDropbox = useSettings((s) => s.setDropbox)
+  const [state, setState] = useState<'idle' | 'working' | 'ok'>('idle')
+
+  const connected = dropboxConfigured(dropbox)
+  const busy = status !== 'idle' || state === 'working'
+
+  function failed(err: unknown) {
+    setState('idle')
+    useSync.setState({ error: err instanceof Error ? err.message : 'Could not reach Dropbox.' })
+  }
+
+  async function connect() {
+    setState('working')
+    clearError()
+    try {
+      setDropbox(await connectDropbox())
+      setState('ok')
+    } catch (err) {
+      failed(err)
+    }
+  }
+
+  async function runTest() {
+    setState('working')
+    clearError()
+    try {
+      await testDropbox()
+      setState('ok')
+    } catch (err) {
+      failed(err)
+    }
+  }
+
+  // Local only. Revoking the app's access is done from the Dropbox account page, and saying so
+  // beats a button that looks like it did more than it did.
+  function disconnect() {
+    forgetAccessToken()
+    setDropbox({ refreshToken: '', account: '' })
+    setState('idle')
+  }
+
   return (
-    <Section title="Dropbox" status="Not available yet">
-      <p className="syncNote">
-        Dropbox will connect with a sign-in, not API keys. It will store the same files in an app
-        folder.
-      </p>
+    <Section
+      title="Dropbox"
+      provider="dropbox"
+      status={state === 'ok' ? 'Connected' : connected ? 'Signed in' : 'Not set up'}
+    >
+      {!dropboxAppKey && (
+        <p className="syncNote">
+          This copy of the app has no Dropbox app key built in. See Dropbox setup below.
+        </p>
+      )}
+
+      <div className="syncActions">
+        {connected ? (
+          <>
+            <span className="syncNote">
+              Signed in{dropbox.account ? ` as ${dropbox.account}` : ''}.
+            </span>
+            <button type="button" onClick={runTest} disabled={busy}>
+              {state === 'working' ? 'Checking…' : 'Test connection'}
+            </button>
+            <PrimedButton label="Disconnect" onFire={disconnect} disabled={busy} />
+          </>
+        ) : (
+          <button type="button" onClick={connect} disabled={busy || !dropboxAppKey}>
+            {state === 'working' ? 'Waiting for Dropbox…' : 'Connect Dropbox'}
+          </button>
+        )}
+      </div>
+
+      {connected && (
+        <div className="syncBucket">
+          <label>
+            Folder
+            <input
+              value={dropbox.folder}
+              onChange={(e) => setDropbox({ folder: e.target.value })}
+              placeholder="Optional"
+              spellCheck={false}
+            />
+          </label>
+        </div>
+      )}
+
+      <DropboxSetupSteps />
+
+      {connected && <SyncActions provider="dropbox" where="account" />}
     </Section>
+  )
+}
+
+/** The redirect URI is the step that goes wrong, and Dropbox matches it character for character.
+ *  Built from location.origin so it's right for whichever build is running. */
+function DropboxSetupSteps() {
+  const [copied, setCopied] = useState(false)
+  const uri = redirectUri()
+
+  return (
+    <details className="syncSetup">
+      <summary>Dropbox setup</summary>
+      <ol>
+        <li>
+          Create an app at dropbox.com/developers/apps: Scoped access, App folder, and a name of
+          your choosing.
+        </li>
+        <li>
+          On the Permissions tab, tick <code>files.content.read</code> and{' '}
+          <code>files.content.write</code>, then Submit.
+        </li>
+        <li>On the Settings tab, add this redirect URI:</li>
+      </ol>
+      <pre>{uri}</pre>
+      <button
+        type="button"
+        className="syncLinkButton"
+        onClick={() => {
+          navigator.clipboard.writeText(uri)
+          setCopied(true)
+        }}
+      >
+        {copied ? 'Copied' : 'Copy redirect URI'}
+      </button>
+      <p className="syncNote">
+        Then copy the App key from that page into <code>dropboxAppKey</code> in{' '}
+        <code>src/core/sync/dropboxConfig.ts</code> and rebuild. The key is public: the sign-in uses
+        PKCE, which needs no app secret. Files go in Apps/&lt;your app name&gt; and the app cannot
+        see the rest of your Dropbox.
+      </p>
+    </details>
   )
 }
 
