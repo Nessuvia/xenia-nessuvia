@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { dropboxCallbackRoute } from './src/core/sync/dropboxCallback.ts'
 import pkg from './package.json' with { type: 'json' }
 
 // https://vite.dev/config/
@@ -39,12 +40,10 @@ export default defineConfig({
         // The NRC VAD lexicon (~900 kB) only matters once style checks are on. Offline without
         // it, scene temperature rests on the structural signals.
         globIgnores: ['**/cl100k_base-*.js', '**/vadData-*.js'],
-        // The Dropbox OAuth redirect. Both spellings: Cloudflare's asset server strips the
-        // extension, so the browser is redirected from /dropbox.html to /dropbox before the page
-        // loads. Only the first is precached, and without this the SPA fallback answers the second
-        // with index.html, booting the whole app inside the popup instead of the eight lines that
-        // read the code. It looks like a sign-in that redirects and lands on Chat.
-        navigateFallbackDenylist: [/^\/dropbox(\.html)?$/],
+        // The Dropbox OAuth callback has to reach the network rather than the SPA fallback:
+        // index.html here boots the whole app inside the popup and the code is never read. The
+        // pattern is shared with checkDropboxCallback.ts, which is where the reasoning lives.
+        navigateFallbackDenylist: [dropboxCallbackRoute],
       },
     }),
   ],
