@@ -1,9 +1,0 @@
-// Static assets only, no `main`, so there is no Worker script and nothing runs server-side.
-// Deploys separately from the app: `npx wrangler deploy --config kanban/wrangler.jsonc`.
-{
-  "name": "nessuvia-kanban",
-  "compatibility_date": "2026-01-01",
-  "workers_dev": false,
-  "assets": { "directory": "./public" },
-  "routes": [{ "pattern": "kanban.nessuvia.com", "custom_domain": true }]
-}
