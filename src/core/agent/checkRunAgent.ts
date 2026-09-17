@@ -145,3 +145,55 @@ assert.match(r.failed ?? '', /1 sentence kept after 2 tries/)
 m = model(['She sat. "I started lifting after Sarah died," he said.', 'She sat back on the rug.'])
 r = await runAgent('She came back and sat, a testament.', config([rule('testament', 'rewrite')], 2), m.complete)
 assert.equal(r.text, 'She sat back on the rug.')
+
+// Stop mid-pass keeps what the pass had done. The first paragraph's rewrite landed, the second's
+// call aborts, and that paragraph stays as it was.
+const abortErr = () => Object.assign(new Error('Stopped'), { name: 'AbortError' })
+let answered = false
+const stopAfterOne: Complete = async () => {
+  if (answered) throw abortErr()
+  answered = true
+  return 'It showed.'
+}
+r = await runAgent('It was a testament.\n\nSo was that testament.', config([rule('testament', 'rewrite')]), stopAfterOne)
+assert.equal(r.text, 'It showed.\n\nSo was that testament.')
+
+// A real failure still throws through.
+await assert.rejects(
+  runAgent('It was a testament.', config([rule('testament', 'rewrite')]), async () => {
+    throw new TypeError('boom')
+  }),
+  /boom/,
+)
+
+// Paragraph rewrites go out together, three at a time. Four flagged paragraphs open three calls
+// before any answer lands, and the fourth waits for a slot.
+const pendingCalls: ((answer: string) => void)[] = []
+const held: Complete = () => new Promise((done) => pendingCalls.push(done))
+const four = ['A testament.', 'B testament.', 'C testament.', 'D testament.'].join('\n\n')
+const parallel = runAgent(four, config([rule('testament', 'rewrite')]), held)
+await new Promise((done) => setTimeout(done, 0))
+assert.equal(pendingCalls.length, 3)
+pendingCalls[1]('B is done.')
+await new Promise((done) => setTimeout(done, 0))
+assert.equal(pendingCalls.length, 4)
+pendingCalls[0]('A is done.')
+pendingCalls[2]('C is done.')
+pendingCalls[3]('D is done.')
+assert.equal((await parallel).text, 'A is done.\n\nB is done.\n\nC is done.\n\nD is done.')
+
+// Every delete strikes on one beat and they go together, wherever they sit in the reply.
+const deleteStages: string[] = []
+r = await runAgent(
+  'She waits. Only time will tell.\n\nHe nods. Only time will tell.',
+  config([rule('only time will tell', 'delete')]),
+  model([]).complete,
+  (_, __, stage) => deleteStages.push(stage!.marks.map((run) => `${run.mark}:${run.text}`).join('|')),
+  async () => {},
+)
+assert.deepEqual(deleteStages, [
+  'none:She waits. |pending:Only time will tell.|none:\n\nHe nods. |pending:Only time will tell.',
+  'none:She waits. |strike:Only time will tell.|none:\n\nHe nods. |strike:Only time will tell.',
+  'none:She waits.\n\nHe nods.',
+])
+assert.equal(r.text, 'She waits.\n\nHe nods.')

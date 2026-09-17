@@ -61,6 +61,9 @@ export function rewritesParagraph(failingFlags: Flag[][]): boolean {
 
 const maxFlowFixes = 8
 
+/** Paragraph rewrites in flight at once. Above this, the endpoint sees a burst of requests. */
+const maxParallelRewrites = 3
+
 const sentenceSystem = 'You edit one sentence of a story reply. Keep its meaning, voice and tense. Reply with the new sentence only.'
 const passageSystem = 'You edit one passage of a story reply. Keep what happens, the dialogue word for word, and the tense. Use plain words. Add no new details and no dialogue tags. Reply with the new passage only.'
 const flowSystem = 'You smooth the flow of a story reply. Fix the transitions and rhythm between sentences. Keep every event, image and detail, the dialogue word for word, the tense and the paragraph breaks. Use plain words. Reply with the full reply only.'
@@ -194,18 +197,22 @@ export async function runAgent(
       }),
     )
 
+  // Paragraphs with a rewrite still in flight. Rewrites run several at a time, so this is a set
+  // rather than a point in the walk.
+  const inFlight = new Set(plans.flatMap((plan, p) => (plan?.failing.length ? [p] : [])))
+
   // An aborted run can leave the delete walk mid-beat. Nothing reports after the run ends.
   let done = false
-  const report = (from: number) => {
+  const report = () => {
     if (done) return
     if (!wait) {
-      onProgress?.(parts.join(''), plans.slice(from).flatMap((plan) => plan?.failing.map((i) => plan.sents[i].text) ?? []))
+      onProgress?.(parts.join(''), [...inFlight].sort((a, b) => a - b).flatMap((p) => plans[p]!.failing.map((i) => plans[p]!.sents[i].text)))
       return
     }
     const stage = { marks: marks(), beat }
     onProgress?.(stage.marks.map((run) => run.text).join(''), [], stage)
   }
-  report(0)
+  report()
 
   /**
    * Progress for the steps after the rule rewrites. Stylized shows `runs` and, with `pause`, holds a
@@ -218,33 +225,37 @@ export async function runAgent(
       return
     }
     override = mergeMarks(runs)
-    report(0)
+    report()
     if (pause) await wait(beat)
   }
 
-  // Top to bottom, on a timer of its own, so a slow rewrite never holds up the deletes below it.
+  // Every doomed sentence strikes on the same beat and they dissolve together: one motion over the
+  // whole reply rather than a queue draining top to bottom. Runs on its own timer, so a slow
+  // rewrite never holds it up.
   const deletes = async () => {
-    for (let p = 0; p < parts.length; p += 2) {
-      const plan = plans[p]!
-      const show = shown[p]!
-      for (let i = 0; i < plan.ops.length; i++) {
-        if (plan.ops[i] !== 'delete' || show.whole !== null || done) continue
-        show.rows[i] = { text: plan.sents[i].text, mark: 'strike' }
-        report(0)
-        await wait!(beat)
-        show.rows[i] = { text: null, mark: 'none' }
-        report(0)
-      }
-    }
+    const struck = parts.flatMap((_, p) =>
+      p % 2 || shown[p]!.whole !== null ? [] : plans[p]!.ops.flatMap((op, i) => (op === 'delete' ? [[p, i] as const] : [])),
+    )
+    if (!struck.length || done) return
+    struck.forEach(([p, i]) => (shown[p]!.rows[i] = { text: plans[p]!.sents[i].text, mark: 'strike' }))
+    report()
+    await wait!(beat)
+    if (done) return
+    struck.forEach(([p, i]) => (shown[p]!.rows[i] = { text: null, mark: 'none' }))
+    report()
   }
 
-  const rewrites = async () => {
-    for (let p = 0; p < parts.length; p += 2) {
+  // The neighbours a paragraph gets as context, read before any rewrite lands. Paragraphs are
+  // rewritten several at a time now, so a live read would hand one paragraph another's fresh text
+  // and leave the result depending on which call came back first.
+  const neighbours = [...parts]
+
+  const rewriteParagraph = async (p: number) => {
+    {
       const { para, sents, flags, texts, failing } = plans[p]!
       const rows = shown[p]!.rows
       const unblur = (i: number) => (rows[i] = { text: sents[i].text, mark: 'none' })
-      if (!failing.length) continue
-      const around = surroundings(config.context, parts[p - 2], parts[p + 2])
+      const around = surroundings(config.context, neighbours[p - 2], neighbours[p + 2])
       if (rewritesParagraph(failing.map((i) => flags[i]))) {
         const candidate = await tryRewrite([
           { role: 'system', content: paragraphSystem },
@@ -296,10 +307,21 @@ export async function runAgent(
           }
         }
       }
-      report(p + 1)
+      inFlight.delete(p)
+      report()
       // Lets the crossfade play before the next step, or before the stored reply replaces the stream.
       if (wait) await wait(beat)
     }
+  }
+
+  // Up to `maxParallelRewrites` paragraphs at once, so the reply looks worked over in one go rather
+  // than top to bottom. The cap keeps a long reply from opening a dozen requests together.
+  const rewrites = async () => {
+    const queue = [...inFlight].sort((a, b) => a - b)
+    const worker = async () => {
+      for (let p = queue.shift(); p !== undefined; p = queue.shift()) await rewriteParagraph(p)
+    }
+    await Promise.all(Array.from({ length: Math.min(maxParallelRewrites, queue.length) }, worker))
   }
 
   // Message detectors, one hit at a time on the current text, detecting again after each fix so
@@ -400,6 +422,9 @@ ${current}` },
     await show(freshRuns(current, candidate), [], true)
   }
 
+  // Stop keeps the pass where it stood. `complete` throws only on abort (it swallows real call
+  // failures and returns ''), so an AbortError here is the user's Stop and the work so far stands.
+  let stopped = false
   try {
     if (wait) {
       // One beat with every hit flagged before anything resolves.
@@ -414,11 +439,16 @@ ${current}` },
       await flowPass()
       await dialoguePass()
     }
+  } catch (err) {
+    if ((err as Error)?.name !== 'AbortError') throw err
+    stopped = true
   } finally {
     done = true
   }
 
-  const final = parts.join('')
+  // Stylized lags `parts` while deletes strike out one at a time, so a stop stores what was on
+  // screen rather than the deletes that had not played yet.
+  const final = stopped && wait ? marks().map((run) => run.text).join('') : parts.join('')
   const summary = [
     swap(text) !== text && 'swapped words',
     linted.hits.length && `${config.lint?.mode === 'fix' ? 'fixed' : 'flagged'} ${linted.hits.length} style ${linted.hits.length === 1 ? 'issue' : 'issues'}`,

@@ -95,7 +95,7 @@ interface PassResult {
 /**
  * The agent pass around one finished generation.
  * Off, or a sentinel connection, returns the text untouched.
- * Abort throws through. A failed call counts as a rejected candidate.
+ * Abort returns the pass as far as it got. A failed call counts as a rejected candidate.
  */
 async function agentPass(
   chat: Chat,
@@ -1381,7 +1381,8 @@ export const useChats = create<ChatState>()((set, get) => ({
     try {
       result = await agentPass(chat, source, get().messages.slice(0, at), controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), true, cleanOnly)
     } catch {
-      // Only an abort reaches here, and a stopped rewrite leaves the message exactly as it was.
+      // Stop no longer reaches here: runAgent returns what the pass had done so far. Only a real
+      // failure lands here, and it leaves the message as it was.
       set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
       abort = null
       return
