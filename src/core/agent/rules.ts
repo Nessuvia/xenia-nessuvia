@@ -27,8 +27,11 @@ export interface Rule {
    * - `swap`: replace the match in code. No request.
    * - `rewrite`: the model rewrites the sentence, or the paragraph when several sentences in it fail.
    * - `delete`: the sentence is removed.
+   * - `fold`: the model rearranges the sentence so a tacked-on part becomes part of the main
+   *   clause. One fixed instruction for every fold rule, so it needs no note. Never escalates to a
+   *   paragraph: a fold is a surgical move on one sentence.
    */
-  action: 'swap' | 'rewrite' | 'delete'
+  action: 'swap' | 'rewrite' | 'delete' | 'fold'
   /** `swap` only. `$0` is the whole match, `$1..$n` the chips or capture groups. Blank removes the match. */
   replacement?: string
   /** `rewrite` only: one hit sends the whole paragraph to the model, not just the sentence. */
@@ -72,12 +75,14 @@ export const actionLabels: [Rule['action'], string][] = [
   ['swap', 'Replace with'],
   ['rewrite', 'Rewrite sentence'],
   ['delete', 'Delete whole sentence'],
+  ['fold', 'Fold into the sentence'],
 ]
 
 export const actionHints: Record<Rule['action'], string> = {
   swap: 'Replaces only the matched words. A blank replacement removes them, and the spacing, commas and capital letter around them are fixed.',
   rewrite: 'Sends the sentence the match is in to the model to rewrite.',
   delete: 'Removes the whole sentence the match is in. To remove only the matched words, use Replace with and leave it blank.',
+  fold: 'Sends the sentence to the model to rearrange, so the matched part becomes part of the main clause instead of being tacked on. Needs no note.',
 }
 
 /** The name a rule shows: its label, else its sample, else its find. */

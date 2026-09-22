@@ -14,6 +14,9 @@
  *     surrounding whitespace.
  *  7. Capitalization: if the cut was sentence-initial (the char before the cut is start-of-string
  *     or follows terminal punctuation), capitalize the first surviving word.
+ *  8. Article agreement: `a` before a vowel sound becomes `an`, and `an` before a consonant sound
+ *     becomes `a`. Cutting an adjective is what breaks this ("a studied indifference" leaves
+ *     "a indifference"), and every swap-to-empty rule can do it, not just one.
  */
 export function repairAfterCut(text: string, cutStart: number, cutEnd: number): string {
   const before = text.slice(0, cutStart)
@@ -27,6 +30,7 @@ export function repairAfterCut(text: string, cutStart: number, cutEnd: number): 
   out = collapseDoubledComma(out)
   out = removeEmptySentence(out)
   if (wasSentenceInitial) out = capitalizeFirstWord(out, before.length)
+  out = fixArticles(out)
   return out
 }
 
@@ -39,6 +43,7 @@ export function repairAll(text: string): string {
   out = fixSpaceAfterOpenPunct(out)
   out = collapseDoubledComma(out)
   out = removeEmptySentence(out)
+  out = fixArticles(out)
   return out
 }
 
@@ -83,6 +88,35 @@ const EMPTY_SENTENCE = /(^|\n)[^\S\n]*[.;:!?]+[^\S\n]*(?=\n|$)/g
 
 function removeEmptySentence(s: string): string {
   return s.replace(EMPTY_SENTENCE, '$1')
+}
+
+/**
+ * Whether a word starts with a vowel *sound*, which is what a/an follows. Spelling alone gets
+ * "an hour" and "a unicorn" wrong both ways, so the exceptions are listed. Prefix matches, so
+ * "honesty" and "university" ride along with "honest" and "unicorn".
+ */
+const VOWEL_SOUND_CONSONANT = /^(?:hour|honest|honou?r|heir|herb)/i
+const CONSONANT_SOUND_VOWEL = /^(?:uni(?![aeiou])|use|usu|util|ubiqu|euro|eulog|euphem|ewe|one[- ]|once|ouija)/i
+
+function startsWithVowelSound(word: string): boolean {
+  if (VOWEL_SOUND_CONSONANT.test(word)) return true
+  if (CONSONANT_SOUND_VOWEL.test(word)) return false
+  return /^[aeiou]/i.test(word)
+}
+
+// A capital "A" mid-sentence is usually the letter, an initial or a grade ("Exhibit A and B"), so
+// only a sentence-initial capital is treated as an article. A lowercase one always is.
+const ARTICLE = /\b(an?)(\s+)([\p{L}][\p{L}'-]*)/giu
+
+function fixArticles(s: string): string {
+  return s.replace(ARTICLE, (match: string, article: string, gap: string, word: string, at: number) => {
+    // Position rather than a capture group: an optional leading group that matches empty does not
+    // participate in JS, so it reads as absent even at the start of the string.
+    if (article[0] === 'A' && !isSentenceInitial(s.slice(0, at))) return match
+    const wants = startsWithVowelSound(word) ? 'an' : 'a'
+    const cased = article[0] === 'A' ? wants[0].toUpperCase() + wants.slice(1) : wants
+    return article === cased ? match : `${cased}${gap}${word}`
+  })
 }
 
 function isSentenceInitial(before: string): boolean {

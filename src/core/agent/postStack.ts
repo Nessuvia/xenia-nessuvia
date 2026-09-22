@@ -6,6 +6,9 @@ import { defaultVadLimits, type VadLimits } from './vadGuard.ts'
 import { defaultFlowConfig, defaultFlowStyle, type FlowConfig, type FlowStyle } from './flowRules.ts'
 import type { IgnorePair } from '../hammer/exclusions.ts'
 import { defaultRules } from './agentConfig.ts'
+import type { Sensor } from '../sensors/sensor.ts'
+import type { Gate } from '../sensors/gate.ts'
+import { libraryGates, librarySensors } from '../sensors/library.ts'
 
 /** How a reply's shape is drawn before it's written. Filled in by Part B; the stage exists here so
  *  a stack saved today keeps its switch. */
@@ -43,6 +46,12 @@ export interface PostStackConfig {
   flowPass: FlowPassConfig
   /** One call that makes speech sound spoken and answer the last message. Runs last, after the flow pass. */
   dialoguePass: { enabled: boolean }
+  /** Typed questions put to a decisions model before the cleanup runs. Read by `runTrack`, not `runAgent`. */
+  sensors: { enabled: boolean; list: Sensor[] }
+  /** What a reading does: ask the model again, or turn cleanup stages on and off for this reply. */
+  gates: { enabled: boolean; list: Gate[] }
+  /** Retries a gate may ask for on one reply. The best-scoring attempt is kept. 0 never retries. */
+  retryCap: number
 }
 
 export interface FlowPassConfig extends VadLimits {
@@ -61,6 +70,27 @@ export function defaultIgnorePairs(): IgnorePair[] {
   ]
 }
 
+/**
+ * Seeded word swaps. Every one is a deletion: the narrator labelling an action as chosen or an
+ * emotion as visible, instead of showing either. Adverbs only, because an -ly form deletes cleanly
+ * after a verb and a bare adjective leaves "the movement was." The adjective half of the same tic
+ * is `default-intent-adjective`, which needs the word after it to decide.
+ *
+ * The 23 words `intensifierBudget` already holds are deliberately absent. A budget that scales with
+ * scene heat beats a blanket delete, and an entry here would pre-empt it.
+ */
+export function defaultLexicon(): LexiconEntry[] {
+  return [
+    // On purpose, said out loud.
+    'deliberately', 'purposefully', 'intentionally', 'consciously', 'pointedly',
+    // The narrator insisting a feeling was visible rather than describing it.
+    'visibly', 'noticeably', 'perceptibly', 'markedly', 'distinctly',
+    // Narrator confidence. `apparently` is not here: it can report secondhand knowledge, which is
+    // information, so it sits in the hedge budget instead.
+    'decidedly', 'plainly', 'evidently',
+  ].map((phrase) => ({ id: `lex-${phrase}`, phrase, replacement: '', enabled: true }))
+}
+
 export const defaultAcrosticConfig: AcrosticConfig = {
   enabled: false,
   paragraphs: [2, 4],
@@ -73,16 +103,21 @@ export const defaultAcrosticConfig: AcrosticConfig = {
 export function defaultPostStackConfig(): PostStackConfig {
   return {
     acrostic: { ...defaultAcrosticConfig },
-    swaps: { enabled: true, lexicon: [] },
-    lint: { ...defaultLintConfig },
+    swaps: { enabled: true, lexicon: defaultLexicon() },
+    // On and fixing: the three checks did nothing for anyone who never found the switch.
+    lint: { ...defaultLintConfig, enabled: true, mode: 'fix' },
     flow: { ...defaultFlowConfig, off: [] },
-    style: { ...defaultFlowStyle, narrationRatio: [...defaultFlowStyle.narrationRatio] },
+    // 0 to 50%: the old 0 to 35% ceiling pushed hard toward dialogue.
+    style: { ...defaultFlowStyle, narrationRatio: [0, 0.5] },
     rules: { enabled: true, list: defaultRules() },
     ignore: { enabled: false, pairs: defaultIgnorePairs(), useTagRules: true },
     maxTries: 3,
     contextMessages: 4,
     flowPass: { ...defaultFlowPassConfig },
     dialoguePass: { enabled: true },
+    sensors: { enabled: false, list: librarySensors() },
+    gates: { enabled: false, list: libraryGates() },
+    retryCap: 1,
   }
 }
 

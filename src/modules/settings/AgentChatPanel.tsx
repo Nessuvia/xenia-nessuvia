@@ -31,6 +31,11 @@ export default function AgentChatPanel() {
         Run post-processing on replies in this chat
       </label>
 
+      <label className="checkboxRow">
+        <input type="checkbox" checked={settings.sensors} onChange={(e) => set({ sensors: e.target.checked })} />
+        Check replies with sensors in this chat
+      </label>
+
       <label className="passChatPipeline">
         Stack
         <select

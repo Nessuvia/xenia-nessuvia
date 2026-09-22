@@ -1,6 +1,7 @@
 // Extension-ful imports on purpose: checkSwipes.ts runs this under `node --experimental-strip-types`.
 import type { StateParse } from '../trackers/parseState.ts'
 import type { AcrosticRecord } from '../agent/acrostic/parse.ts'
+import type { Reading } from '../sensors/sensor.ts'
 
 /**
  * What these functions need off a record: the selected text, the alternates, and the two arrays
@@ -24,6 +25,9 @@ export interface Swipeable {
   passSummaries?: (string | undefined)[]
   /** Why a stage's candidate was thrown away for a swipe, parallel to `swipes`. */
   passFailed?: (string | undefined)[]
+  /** What the sensors read for each swipe, parallel to `swipes`. Holes where nothing sensed.
+   *  Stored per swipe so swiping back rolls the readings back with the text. */
+  passReadings?: (Reading[] | undefined)[]
   /** The `<state>` parse of each swipe, parallel to `swipes`. */
   trackerUpdates?: (StateParse | undefined)[]
   /** The acrostic behind each swipe, parallel to `swipes`. Holes where a swipe was generated normally. */
@@ -158,6 +162,21 @@ export function withPass<T extends Swipeable>(
   return { ...message, passOriginals, passFailed, passSummaries }
 }
 
+/** The sensor readings for the selected swipe, or undefined when nothing sensed. */
+export function passReadingsFor(message: Swipeable): Reading[] | undefined {
+  return message.passReadings?.[swipeIndex(message)]
+}
+
+/** Record what the sensors read for the selected swipe. Padded like `withPass`. */
+export function withReadings<T extends Swipeable>(message: T, readings?: Reading[]): T {
+  const swipes = seeded(message)
+  const at = Math.min(swipeIndex(message), swipes.length - 1)
+  const passReadings = [...(message.passReadings ?? [])]
+  passReadings.length = swipes.length
+  passReadings[at] = readings?.length ? readings : undefined
+  return { ...message, passReadings }
+}
+
 /** Record the acrostic behind the selected swipe, or a hole when it was generated normally. Padded like `withPass`. */
 export function withAcrostic<T extends Swipeable>(message: T, record?: AcrosticRecord): T {
   const swipes = seeded(message)
@@ -229,6 +248,7 @@ export function deletedSwipes<T extends Swipeable>(message: T, indices: number[]
     passOriginals: keep(message.passOriginals),
     passSummaries: keep(message.passSummaries),
     passFailed: keep(message.passFailed),
+    passReadings: keep(message.passReadings),
     trackerUpdates: keep(message.trackerUpdates),
     acrostics: keep(message.acrostics),
   }

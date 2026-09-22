@@ -197,3 +197,46 @@ assert.deepEqual(deleteStages, [
   'none:She waits.\n\nHe nods.',
 ])
 assert.equal(r.text, 'She waits.\n\nHe nods.')
+
+// Fold: one sentence at a time, and it never escalates to the paragraph.
+m = model(['She waited by the door.'])
+r = await runAgent('She waited, watching the door.', config([rule('watching', 'fold')]), m.complete)
+assert.equal(r.text, 'She waited by the door.')
+assert.equal(m.calls.length, 1)
+assert.ok(r.summary?.includes('folded 1'))
+
+// Two folds in a paragraph are two sentence calls, not one paragraph call. Two rewrites would
+// have escalated; a fold is a surgical move on one sentence.
+m = model(['One fixed.', 'Two fixed.'])
+r = await runAgent('She waited, watching. He stood, watching.', config([rule('watching', 'fold')]), m.complete)
+assert.equal(m.calls.length, 2)
+assert.equal(r.text, 'One fixed. Two fixed.')
+
+// Precedence: delete beats fold. A sentence flagged both ways is still deleted, because a delete
+// rule says "I never want this shape" and a formatting move must not override it.
+m = model(['should not be asked'])
+r = await runAgent('She waited, watching the door.', config([rule('watching', 'fold'), rule('waited', 'delete')]), m.complete)
+assert.equal(r.text, '')
+assert.equal(m.calls.length, 0, 'the sentence was deleted, so nothing was folded')
+
+// Precedence: fold beats rewrite, the gentler move on a sentence flagged both ways.
+m = model(['Folded once.'])
+r = await runAgent('She waited, watching the door.', config([rule('watching', 'fold'), rule('waited', 'rewrite')]), m.complete)
+assert.equal(r.text, 'Folded once.')
+assert.ok(r.summary?.includes('folded 1'))
+assert.ok(!r.summary?.includes('rewrote'))
+
+// A fold rule carries no note, so nothing is quoted at the model about what matched: the
+// instruction is the same for every fold.
+assert.ok(!m.calls[0].includes('Problems:'))
+
+// A paragraph rewrite already had the whole paragraph, so folds inside it are dropped rather than
+// re-editing text the rewrite just produced.
+m = model(['The whole paragraph, rewritten.'])
+r = await runAgent(
+  'She waited here. He stood there. It rained, watching.',
+  config([rule('here', 'rewrite'), rule('there', 'rewrite'), rule('watching', 'fold')]),
+  m.complete,
+)
+assert.equal(m.calls.length, 1, 'one paragraph call, and the fold was dropped')
+assert.equal(r.text, 'The whole paragraph, rewritten.')

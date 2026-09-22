@@ -48,7 +48,7 @@ export function testReplies(
   return { hits, counts }
 }
 
-export type ExplainedOperation = 'keep' | 'rewriteSentence' | 'rewriteParagraph' | 'delete'
+export type ExplainedOperation = 'keep' | 'rewriteSentence' | 'rewriteParagraph' | 'delete' | 'fold'
 
 export interface ExplainedSentence {
   text: string
@@ -75,7 +75,10 @@ export function explainAgent(
     })
     const paragraph = rewritesParagraph(rows.filter((r) => r.op === 'rewrite').map((r) => r.flags))
     for (const r of rows) {
-      const operation = r.op === 'rewrite' ? (paragraph ? 'rewriteParagraph' : 'rewriteSentence') : r.op
+      const operation =
+        r.op === 'rewrite' ? (paragraph ? 'rewriteParagraph' : 'rewriteSentence')
+        : r.op === 'fold' && paragraph ? 'rewriteParagraph'
+        : r.op
       out.push({ text: r.text, operation, rules: r.rules })
     }
   }

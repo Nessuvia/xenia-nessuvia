@@ -26,11 +26,18 @@ export interface AgentOutcome {
   failed?: string
 }
 
-export type Operation = 'keep' | 'rewrite' | 'delete'
+export type Operation = 'keep' | 'rewrite' | 'delete' | 'fold'
 
-/** Delete beats rewrite. Swaps already ran. */
+/**
+ * Delete beats fold beats rewrite. Swaps already ran.
+ *
+ * A delete rule says "I never want this shape", so a formatting move must not override it: a
+ * sentence flagged both ways is still deleted. Fold beats rewrite because it is the gentler move
+ * and keeps more of what the model wrote.
+ */
 export function operationFor(flags: Flag[]): Operation {
   if (flags.some((f) => f.rule.action === 'delete')) return 'delete'
+  if (flags.some((f) => f.rule.action === 'fold')) return 'fold'
   return flags.length ? 'rewrite' : 'keep'
 }
 
@@ -68,6 +75,7 @@ const sentenceSystem = 'You edit one sentence of a story reply. Keep its meaning
 const passageSystem = 'You edit one passage of a story reply. Keep what happens, the dialogue word for word, and the tense. Use plain words. Add no new details and no dialogue tags. Reply with the new passage only.'
 const flowSystem = 'You smooth the flow of a story reply. Fix the transitions and rhythm between sentences. Keep every event, image and detail, the dialogue word for word, the tense and the paragraph breaks. Use plain words. Reply with the full reply only.'
 const dialogueSystem = 'You edit the dialogue in a story reply. Make each quoted line sound spoken, the way this character talks, and answer what was just said to them. You may add one short line of dialogue if it answers the last message and fits the chat. Keep the narration outside the quotes word for word, adding only a tag for a new line. Keep every name, number, refusal and question the dialogue already has. Use plain words. Reply with the full reply only.'
+const foldSystem = 'You edit one sentence of a story reply. The sentence carries a part that restates or decorates what it already says. Rewrite it as one sentence that keeps the concrete detail and drops the decoration. Add no new information. Do not change what happens. Keep the voice and tense, and keep any dialogue word for word. Reply with the new sentence only.'
 const paragraphSystem = 'You edit one paragraph of a story reply. Keep its meaning, voice and tense. Reply with the new paragraph only.'
 
 /** The slice of a chat message `recentContext` reads. */
@@ -139,6 +147,7 @@ export async function runAgent(
   const linted = applyLint(swap(text), config.lint ?? defaultLintConfig, config.ignore ?? [])
   const swapped = linted.text
   let rewritten = 0
+  let folded = 0
   let deleted = 0
   let kept = 0
 
@@ -155,12 +164,16 @@ export async function runAgent(
     const texts: (string | null)[] = sents.map((s, i) => (ops[i] === 'delete' ? null : s.text))
     deleted += ops.filter((op) => op === 'delete').length
     parts[p] = rebuild(para, sents, texts)
-    return { para, at, sents, flags, ops, texts, failing: ops.flatMap((op, i) => (op === 'rewrite' ? [i] : [])) }
+    return {
+      para, at, sents, flags, ops, texts,
+      failing: ops.flatMap((op, i) => (op === 'rewrite' ? [i] : [])),
+      folding: ops.flatMap((op, i) => (op === 'fold' ? [i] : [])),
+    }
   })
 
   // Stylized only: what the reader sees, which lags `parts` while deletes strike out one at a time.
   // `whole` is a paragraph rewrite that replaced every row.
-  const beat = agentBeat(deleted + plans.reduce((n, plan) => n + (plan?.failing.length ?? 0), 0))
+  const beat = agentBeat(deleted + plans.reduce((n, plan) => n + (plan?.failing.length ?? 0) + (plan?.folding.length ?? 0), 0))
   const flashes = wait ? changedRanges(text, swapped) : []
   const shown = plans.map(
     (plan) =>
@@ -199,14 +212,14 @@ export async function runAgent(
 
   // Paragraphs with a rewrite still in flight. Rewrites run several at a time, so this is a set
   // rather than a point in the walk.
-  const inFlight = new Set(plans.flatMap((plan, p) => (plan?.failing.length ? [p] : [])))
+  const inFlight = new Set(plans.flatMap((plan, p) => (plan?.failing.length || plan?.folding.length ? [p] : [])))
 
   // An aborted run can leave the delete walk mid-beat. Nothing reports after the run ends.
   let done = false
   const report = () => {
     if (done) return
     if (!wait) {
-      onProgress?.(parts.join(''), [...inFlight].sort((a, b) => a - b).flatMap((p) => plans[p]!.failing.map((i) => plans[p]!.sents[i].text)))
+      onProgress?.(parts.join(''), [...inFlight].sort((a, b) => a - b).flatMap((p) => [...plans[p]!.failing, ...plans[p]!.folding].map((i) => plans[p]!.sents[i].text)))
       return
     }
     const stage = { marks: marks(), beat }
@@ -252,11 +265,36 @@ export async function runAgent(
 
   const rewriteParagraph = async (p: number) => {
     {
-      const { para, sents, flags, texts, failing } = plans[p]!
+      const { para, sents, flags, texts, failing, folding } = plans[p]!
       const rows = shown[p]!.rows
       const unblur = (i: number) => (rows[i] = { text: sents[i].text, mark: 'none' })
       const around = surroundings(config.context, neighbours[p - 2], neighbours[p + 2])
-      if (rewritesParagraph(failing.map((i) => flags[i]))) {
+
+      /**
+       * One fold. Never escalates and never widens to the paragraph: a fold is a surgical move on
+       * one sentence, so two folds are two calls. The instruction is fixed, so a fold rule carries
+       * no note and nothing is quoted at the model about which words matched.
+       */
+      const foldSentence = async (i: number) => {
+        const candidate = await tryRewrite([
+          { role: 'system', content: foldSystem },
+          { role: 'user', content: `${around}Paragraph:\n${para}\n\nSentence:\n${sents[i].text}` },
+        ], (candidate) => !addsSpeech(sents[i].text, candidate) && !echoes(candidate, parts.map((part, k) => (k === p ? rebuild(para, sents, texts.map((t, j) => (j === i ? null : t))) : part)).join('')))
+        if (candidate) {
+          texts[i] = candidate
+          rows[i] = { text: candidate, mark: 'fresh' }
+          folded += 1
+          parts[p] = rebuild(para, sents, texts)
+        } else {
+          unblur(i)
+          kept += 1
+        }
+      }
+
+      // A paragraph can be queued for its folds alone, with nothing to rewrite.
+      if (failing.length === 0) {
+        // Nothing to do here; the folds below are the whole job.
+      } else if (rewritesParagraph(failing.map((i) => flags[i]))) {
         const candidate = await tryRewrite([
           { role: 'system', content: paragraphSystem },
           { role: 'user', content: `${around}Paragraph:\n${parts[p]}\n\nProblems:\n${problems(failing.flatMap((i) => flags[i]))}` },
@@ -307,6 +345,11 @@ export async function runAgent(
           }
         }
       }
+      // A paragraph rewrite already had the whole paragraph, so its folds are dropped rather than
+      // re-editing text the rewrite just produced.
+      if (shown[p]!.whole !== null) folding.forEach(unblur)
+      else for (const i of folding) await foldSentence(i)
+
       inFlight.delete(p)
       report()
       // Lets the crossfade play before the next step, or before the stored reply replaces the stream.
@@ -453,6 +496,7 @@ ${current}` },
     swap(text) !== text && 'swapped words',
     linted.hits.length && `${config.lint?.mode === 'fix' ? 'fixed' : 'flagged'} ${linted.hits.length} style ${linted.hits.length === 1 ? 'issue' : 'issues'}`,
     rewritten && `rewrote ${rewritten}`,
+    folded && `folded ${folded}`,
     flowed && 'smoothed the flow',
     voiced && 'reworked the dialogue',
     smoothed && `smoothed ${smoothed} ${smoothed === 1 ? 'passage' : 'passages'}`,

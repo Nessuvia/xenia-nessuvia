@@ -33,6 +33,10 @@ export function exportPostStack(stack: PostStack) {
 
 // Fresh rule and swap ids: a file can be imported twice, and two stacks must never share a rule
 // identity while dragging.
+//
+// Sensors and gates keep their ids on purpose: a gate names its sensor by id, and re-iding one
+// without rewriting the other would quietly break every gate in an imported stack. Nothing outside
+// a stack reads those ids, so sharing one across two stacks costs nothing.
 const reid = (config: PostStackConfig): PostStackConfig => ({
   ...config,
   swaps: { ...config.swaps, lexicon: config.swaps.lexicon.map((e) => ({ ...e, id: crypto.randomUUID() })) },

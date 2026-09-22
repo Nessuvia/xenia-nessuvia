@@ -28,6 +28,7 @@ function ruleError(rule: Rule): string | null {
 const groups: [Rule['action'], string][] = [
   ['swap', 'Swap'],
   ['delete', 'Delete'],
+  ['fold', 'Fold'],
   ['rewrite', 'Rewrite'],
 ]
 
