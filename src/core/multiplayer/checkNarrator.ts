@@ -5,6 +5,8 @@ import {
   castBlock,
   isNarrator,
   narratorCharacter,
+  narratorPersona,
+  realPersonas,
   narratorId,
   narratorName,
   type CastMember,
@@ -92,3 +94,23 @@ import {
 }
 
 console.log('ok')
+
+// --- narratorPersona: the user-side role ---------------------------------
+{
+  const p = narratorPersona()
+  assert.strictEqual(p.id, narratorId)
+  assert.strictEqual(p.name, narratorName)
+  assert.strictEqual(p.avatar, '')
+  // The opposite of narratorCharacter: this one MUST carry instructions. It's the only thing
+  // telling the model how to read the user's line, and a fresh install has no persona to hold it.
+  assert.ok(p.description.length > 0)
+  // Never persisted. An ownerId would make it look like a Dexie record.
+  assert.strictEqual(p.ownerId, '')
+}
+
+// --- realPersonas drops it, and only it ----------------------------------
+{
+  const mine = { ...narratorPersona(), id: 3, name: 'Me' }
+  const kept = realPersonas([mine, narratorPersona()])
+  assert.deepStrictEqual(kept.map((p) => p.id), [3])
+}

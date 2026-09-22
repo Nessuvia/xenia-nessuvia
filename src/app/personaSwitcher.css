@@ -31,3 +31,40 @@
   border-radius: calc(var(--radius) + 2px);
   z-index: var(--layer-2);
 }
+
+/* The Narrator's stand-in for a portrait. No image exists, so the circle carries the mark instead:
+   a quill over a ring that drifts round it. User asked for the motion. */
+.narratorPersona {
+  position: relative;
+  color: var(--textBright);
+  overflow: hidden;
+}
+
+.narratorPersona::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--surface) 35%, var(--accent)) 90deg,
+    transparent 180deg
+  );
+  animation: narratorSweep 6s linear infinite;
+}
+
+.narratorPersona svg {
+  position: relative;
+}
+
+@keyframes narratorSweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .narratorPersona::before {
+    animation: none;
+  }
+}

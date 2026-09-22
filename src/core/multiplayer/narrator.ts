@@ -1,4 +1,4 @@
-import type { Character } from '../storage/types'
+import type { Character, Persona } from '../storage/types'
 import { emptyColors } from '../storage/types.ts'
 
 /**
@@ -74,4 +74,36 @@ export function narratorCharacter(systemPrompt = ''): Character {
 /** True for the synthetic Narrator. Use this rather than comparing to `narratorId` inline. */
 export function isNarrator(id: number | undefined): boolean {
   return id === narratorId
+}
+
+/**
+ * The user's side of the same idea: you pick this in the persona switcher and your own messages
+ * are direction for the scene rather than a character speaking. Shares `narratorId` with the
+ * responder-side Narrator on purpose. Personas and characters are separate id spaces, and it's the
+ * same role from the other chair.
+ *
+ * Unlike `narratorCharacter`, this one ships a description. It's the whole feature: nothing tells
+ * the model how to read the user's line except the persona's own description, and a fresh install
+ * has no persona to put it in. `personasStore.load` appends this to the list, so every existing
+ * `personas.find(p => p.id === activePersonaId)` resolves it without a special case. It's never
+ * written to Dexie: `save` and `remove` refuse it.
+ */
+export function narratorPersona(): Persona {
+  return {
+    id: narratorId,
+    ownerId: '',
+    name: narratorName,
+    avatar: '',
+    description: `{{user}} is the Narrator: the storyteller outside the cast, not a character in the scene and not someone the characters can see or address.
+
+A message from the Narrator is direction for what happens next. Treat it as an event in the world, not as speech aimed at anyone. Never have a character answer it or repeat it back.`,
+    createdAt: 0,
+    updatedAt: 0,
+    colors: emptyColors(),
+  }
+}
+
+/** The list without the built-in Narrator: what counts for "you need at least one persona". */
+export function realPersonas(personas: Persona[]): Persona[] {
+  return personas.filter((p) => !isNarrator(p.id))
 }

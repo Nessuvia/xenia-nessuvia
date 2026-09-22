@@ -4,10 +4,28 @@ import { usePersonas } from '../core/stores/personasStore'
 import { useSettings } from '../core/stores/settingsStore'
 import type { Persona } from '../core/storage/types'
 import { Avatar } from './Avatar'
+import { RiQuillPenLine } from '@remixicon/react'
+import { isNarrator, narratorName } from '../core/multiplayer/narrator'
 import './personaSwitcher.css'
 
 function avatarNode(p: Persona, onClick?: () => void) {
   const title = p.description ? `${p.name || 'Unnamed'}, ${p.description}` : p.name || 'Unnamed'
+  // The Narrator has no portrait and never will: it's a role rather than a person. The quill sits
+  // in the same 36px circle as the real avatars, with a slow ring behind it so the odd one out in
+  // the row reads as deliberate.
+  if (isNarrator(p.id)) {
+    return (
+      <span
+        key={p.id}
+        className="personaSwitchAvatar narratorPersona"
+        title="Narrator. Your messages are direction for the scene."
+        onClick={onClick}
+        aria-label={narratorName}
+      >
+        <RiQuillPenLine size={18} />
+      </span>
+    )
+  }
   return (
     <Avatar
       of={p}

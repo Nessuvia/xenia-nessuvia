@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Persona } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import { usePersonas } from '../../core/stores/personasStore'
+import { realPersonas } from '../../core/multiplayer/narrator'
 import { useSettings } from '../../core/stores/settingsStore'
 import { ColorInput } from '../../app/ColorInput'
 import TwoColumn from '../../app/TwoColumn'
@@ -10,7 +11,9 @@ import GalleryLightbox from '../characters/GalleryLightbox'
 
 // one screen, inline editor, a persona is three fields, it doesn't need its own route.
 export default function PersonasView() {
-  const { personas, loading, ensureActive, save, create, remove } = usePersonas()
+  const { personas: allPersonas, loading, ensureActive, save, create, remove } = usePersonas()
+  // The built-in Narrator has no fields to edit and can't be deleted, so it stays off this screen.
+  const personas = realPersonas(allPersonas)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const setActivePersona = useSettings((s) => s.setActivePersona)
   const [draft, setDraft] = useState<Persona | null>(null)
