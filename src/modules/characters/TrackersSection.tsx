@@ -123,7 +123,7 @@ export default function TrackersSection({
 
         {current && (
           <div className="trackersInspector">
-            <label title="The name the model writes in a <state> block and prompt conditions use: [if key > 50].">
+            <label title="The name the model writes in a <state> block and prompt conditions use: {% if key > 50 %}.">
               Key
               <input value={current.key} onChange={(e) => patch({ key: e.target.value.trim() })} />
             </label>

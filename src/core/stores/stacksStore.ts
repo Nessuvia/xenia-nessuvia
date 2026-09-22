@@ -8,8 +8,7 @@ import { useSettings } from './settingsStore'
 // bundled file both live with the prompts module.
 import { parseStack } from '../../modules/prompts/stackFile'
 import storyStackFile from '../../modules/prompts/defaultStoryStack.json'
-import glmChatFile from '../../modules/prompts/glmChatStack.json'
-import glmStoryFile from '../../modules/prompts/glmStoryStack.json'
+import xeniaChatFile from '../../modules/prompts/xeniaChatStack.json'
 
 export function newBlock(partial: Partial<PromptBlock> = {}): PromptBlock {
   return {
@@ -40,7 +39,7 @@ export function defaultStack(name = 'Default'): PromptStack {
 }
 
 /**
- * A chat stack for a hosted session. The first two blocks branch on `[if Narrator]`, so one stack
+ * A chat stack for a hosted session. The first two blocks branch on `{% if Narrator %}`, so one stack
  * covers two kinds of turn: the Narrator is told to write as a third party and gets the whole cast,
  * while a character is told to write as itself and gets only its own description.
  *
@@ -63,26 +62,26 @@ export function defaultMultiplayerStack(name = 'Multiplayer'): PromptStack {
         label: 'Main prompt',
         content: [
           'This is a group roleplay between the characters below.',
-          '[if Narrator]',
+          '{% if Narrator %}',
           'You are the Narrator. You describe the scene, the world, and the characters in it,',
           'including the player characters. You do not play a single character. Write in third',
           'person, present tense.',
-          '[else]',
+          '{% else %}',
           'Write the next reply as {{char}} and no one else.',
-          '[endif]',
+          '{% endif %}',
         ].join('\n'),
       }),
       newBlock({
         label: 'Characters',
         content: [
-          '[if Narrator]',
+          '{% if Narrator %}',
           '{{char1}}\n{{char1Desc}}',
           '{{char2}}\n{{char2Desc}}',
           '{{char3}}\n{{char3Desc}}',
           '{{char4}}\n{{char4Desc}}',
-          '[else]',
+          '{% else %}',
           '{{charDescription}}',
-          '[endif]',
+          '{% endif %}',
         ].join('\n'),
       }),
       newBlock({ label: 'People in the room', content: '{{personas}}' }),
@@ -107,7 +106,7 @@ export function defaultGameStack(name = 'Game'): PromptStack {
       newBlock({
         label: 'Main prompt',
         // {{game}} is the game's title, filled by the games module. One stack covers every game,
-        // so the per-game half is a branch: [if blackjack] and [if goFish] are the game's own
+        // so the per-game half is a branch: {% if blackjack %} and {% if goFish %} are the game's own
         // `kind`, set by the games module and false everywhere else.
         content: [
           [
@@ -115,20 +114,20 @@ export function defaultGameStack(name = 'Game'): PromptStack {
             '{{char}}. Reply in one to three sentences. Do not decide moves, and do not mention',
             'cards you were not told about.',
           ].join(' '),
-          '[if blackjack]',
+          '{% if blackjack %}',
           [
             'You are the dealer. The gameState block is the table as it stands and the round it',
             'belongs to. Read the result off it: a hand is marked bust or blackjack, and a settled',
             'round says who took it. Never say a hand went bust unless that hand is marked bust, and',
             'do not take a result from an earlier round in the history.',
           ].join(' '),
-          '[endif]',
-          '[if goFish]',
+          '{% endif %}',
+          '{% if goFish %}',
           [
             'The gameState block is your hand, both sets of books and whose turn it is. Their hand is',
             'not in it, so anything you say about what they hold is a guess.',
           ].join(' '),
-          '[endif]',
+          '{% endif %}',
         ].join('\n'),
       }),
       newBlock({ label: 'Character description', source: 'characterDescription' }),
@@ -144,18 +143,12 @@ export function defaultGameStack(name = 'Game'): PromptStack {
 /** The Story stack that ships with the build, kept as an exported stack file rather than code so
  *  editing it's an export/replace instead of a diff. Same parser as a user import, so it gets
  *  fresh block ids every time. */
-export function defaultStoryStack(name = 'Story'): PromptStack {
+export function defaultStoryStack(name = 'Xenia - Story'): PromptStack {
   return { ...parseStack(JSON.stringify(storyStackFile)), name }
 }
 
-/** Two halves of one preset tuned for GLM 4.7 through 5.3: a chat stack and a story stack that
- *  carry the same style source, banned list, length tiers and dialogue rules. */
-export function glmChatStack(name = "Nessu's GLM Preset"): PromptStack {
-  return { ...parseStack(JSON.stringify(glmChatFile)), name }
-}
-
-export function glmStoryStack(name = "Nessu's GLM Preset"): PromptStack {
-  return { ...parseStack(JSON.stringify(glmStoryFile)), name }
+export function xeniaChatStack(name = 'Xenia'): PromptStack {
+  return { ...parseStack(JSON.stringify(xeniaChatFile)), name }
 }
 
 /** A stack that ships with the build. Seeding uses two of these; the Bundled picker lists them all,
@@ -179,9 +172,8 @@ export const bundledStacks: BundledStack[] = [
     make: defaultMultiplayerStack,
   },
   { key: 'game', name: 'Game', kind: 'chat', make: defaultGameStack },
-  { key: 'story', name: 'Story', kind: 'story', make: defaultStoryStack },
-  { key: 'glm', name: "Nessu's GLM Preset", kind: 'chat', make: glmChatStack },
-  { key: 'glmStory', name: "Nessu's GLM Preset", kind: 'story', make: glmStoryStack },
+  { key: 'story', name: 'Xenia - Story', kind: 'story', make: defaultStoryStack },
+  { key: 'xenia', name: 'Xenia', kind: 'chat', make: xeniaChatStack },
 ]
 
 const stackKind = (s: PromptStack): 'chat' | 'story' => s.kind ?? 'chat'
@@ -251,9 +243,8 @@ export const useStacks = create<StacksState>()((set, get) => ({
         ? defaultMultiplayerStack(taken('Multiplayer') ? `Multiplayer ${count}` : 'Multiplayer')
         : preset === 'game'
           ? defaultGameStack(taken('Game') ? `Game ${count}` : 'Game')
-          : kind === 'story'
-            ? defaultStoryStack(`Story ${count}`)
-            : defaultStack(`Stack ${count}`)
+          : // Blank: the bundled stacks are one click away in the Bundled picker.
+            { ownerId: currentOwnerId(), name: `${kind === 'story' ? 'Story' : 'Stack'} ${count}`, kind, active: [] }
     const id = await get().save(stack)
     setActiveId(kind, id)
     return id
@@ -268,6 +259,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
       kind: stackKind(source),
       // Fresh ids: two stacks must never share a block identity while dragging.
       active: source.active.map((b) => ({ ...b, id: crypto.randomUUID() })),
+      variables: source.variables,
     }
     const newId = await get().save(copy)
     setActiveId(stackKind(source), newId)

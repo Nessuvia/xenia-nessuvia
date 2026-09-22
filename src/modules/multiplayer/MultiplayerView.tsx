@@ -324,7 +324,7 @@ function DescriptionPicker({
  * before the room opens. Calls `buildPrompt` with the same arguments the session will
  * (`nameSpeakers` on, the cast in slot order). The preview can't drift from what gets sent.
  * Speaker-bound blocks resolve against the row the host picked, slot 1 by default, or the
- * Narrator: that's how `[if Narrator]` branches get read before the room opens.
+ * Narrator: that's how `{% if Narrator %}` branches get read before the room opens.
  */
 function StackPreview({
   stack,

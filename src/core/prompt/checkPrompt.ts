@@ -206,13 +206,13 @@ assert.strictEqual(
   const conditional = stack([
     block({
       content: [
-        '[if Narrator]',
+        '{% if Narrator %}',
         'Write as the Narrator.',
         '{{char1}} & {{char2}}',
-        '[else]',
+        '{% else %}',
         'Write as {{char}}.',
         '{{charDescription}}',
-        '[endif]',
+        '{% endif %}',
       ].join('\n'),
     }),
   ])
@@ -229,7 +229,7 @@ assert.strictEqual(
 
   // Slot conditions follow the cast: char3 is empty here and its branch drops.
   const slots = stack([
-    block({ content: '[if char2]\ntwo\n[endif]\n[if char3]\nthree\n[endif]\ntail' }),
+    block({ content: '{% if char2 %}\ntwo\n{% endif %}\n{% if char3 %}\nthree\n{% endif %}\ntail' }),
   ])
   assert.strictEqual(
     buildPrompt({ stack: slots, character: damien, persona: dom, messages: [], cast }).messages[0]
@@ -239,7 +239,7 @@ assert.strictEqual(
 
   // Outside a session no slot is filled: a cast branch drops and the block goes empty.
   const built = buildPrompt({
-    stack: stack([block({ content: '[if char1]\n{{char1}}\n[endif]' })]),
+    stack: stack([block({ content: '{% if char1 %}\n{{char1}}\n{% endif %}' })]),
     character: damien,
     persona: dom,
     messages: [],
@@ -249,14 +249,14 @@ assert.strictEqual(
 
   // A conditional cannot span two blocks: both halves stay literal text.
   const split = buildPrompt({
-    stack: stack([block({ content: '[if Narrator]\na' }), block({ content: 'b\n[endif]' })]),
+    stack: stack([block({ content: '{% if Narrator %}\na' }), block({ content: 'b\n{% endif %}' })]),
     character: damien,
     persona: dom,
     messages: [],
   }).messages
   assert.strictEqual(split.length, 1, 'both blocks are system turns, merged into one')
   // The blank line is the same-role merge's separator, not the parser's.
-  assert.strictEqual(split[0].content, '[if Narrator]\na\n\nb\n[endif]')
+  assert.strictEqual(split[0].content, '{% if Narrator %}\na\n\nb\n{% endif %}')
 }
 
 // --- tokens resolve in a freeform block, from card and persona alike -----
@@ -268,30 +268,16 @@ assert.strictEqual(
   assert.strictEqual(out[0].content, 'Damien is terse; Dom is a travelling bard')
 }
 
-// --- {{blockVal}} / {{blockVal2}} resolve to the two ends ---------------
+// --- stack variables resolve in block text --------------------------------
 {
-  const out = build(
-    stack([
-      block({
-        content: 'Write about {{blockVal}} to {{blockVal2}} words.',
-        input: { kind: 'range', min: 0, max: 500, step: 10, value: 150, value2: 300 },
-      }),
-    ]),
-  )
+  const out = build({
+    ...stack([block({ content: 'Write about {{words_start}} to {{words_end}} words.\n{% if gore %}\nBlood.\n{% endif %}' })]),
+    variables: [
+      { id: 'words', label: 'Words', kind: 'sliderRange', min: 0, max: 500, step: 10, value: [150, 300] },
+      { id: 'gore', label: 'Gore', kind: 'checkbox', value: false },
+    ],
+  })
   assert.strictEqual(out[0].content, 'Write about 150 to 300 words.')
-}
-
-// --- a single-value scroll: both tokens resolve to `value` --------------
-{
-  const out = build(
-    stack([
-      block({
-        content: 'Write about {{blockVal}} to {{blockVal2}} words.',
-        input: { kind: 'range', min: 0, max: 500, step: 10, value: 150 },
-      }),
-    ]),
-  )
-  assert.strictEqual(out[0].content, 'Write about 150 to 150 words.')
 }
 
 // --- order, merging, history in place -----------------------------------
@@ -972,27 +958,6 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.ok(note.includes('Mary: Nor did I.'))
   // Verbatim, in order, and no name is invented for a turn that has one.
   assert.ok(note.indexOf('and then?') < note.indexOf('I never went back.'))
-}
-
-// --- content options ------------------------------------------------------
-{
-  const opts = [
-    { name: 'Option 1', content: 'hemingway' },
-    { name: 'Option 2', content: 'vonnegut' },
-  ]
-  // Default picks the first option; `content` is ignored when options exist.
-  const first = build(stack([block({ content: 'ignored', options: opts })]))
-  assert.ok(first.some((m) => m.content.includes('hemingway')))
-  assert.ok(!first.some((m) => m.content.includes('vonnegut')))
-  assert.ok(!first.some((m) => m.content.includes('ignored')))
-
-  // activeOption selects the other one.
-  const second = build(stack([block({ content: 'ignored', options: opts, activeOption: 1 })]))
-  assert.ok(second.some((m) => m.content.includes('vonnegut')))
-
-  // Out-of-range index resolves to empty rather than throwing.
-  const bad = build(stack([block({ content: 'ignored', options: opts, activeOption: 9 })]))
-  assert.ok(!bad.some((m) => m.content.includes('hemingway')))
 }
 
 // --- card system_prompt / post_history_instructions ----------------------

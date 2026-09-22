@@ -6,7 +6,7 @@ import type { Character, Chat, Message, PromptStack, SpeakerAs } from '../storag
 import { sendMessage } from '../connectors/openaiCompatible'
 import { snapshotOf } from '../connectors/snapshot'
 import { buildPrompt } from '../prompt/buildPrompt'
-import { blocksMentionCondition } from '../prompt/conditions'
+import { blocksMentionCondition } from '../prompt/template'
 import { loadTokenizer } from '../prompt/budget'
 import { reasoningSpan } from '../prompt/reasoning'
 import { parseState, type StateParse, type TrackerValue } from '../trackers/parseState'
@@ -70,7 +70,7 @@ import { budgetOf, maxTokensOf, withParam } from '../params/connectionParams'
 /**
  * The active session's people as `Name: description` lines, filling {{personas}}, or undefined
  * outside a session. The Narrator's instructions aren't here and never were a store concern:
- * they come from the prompt stack's `[if Narrator]` branch, the one place the user can edit them.
+ * they come from the prompt stack's `{% if Narrator %}` branch, the one place the user can edit them.
  */
 let _sessionPersonas: string | undefined = undefined
 export function setSessionPersonas(personas: string | undefined): void {
@@ -889,7 +889,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       let passReads: Reading[] | undefined
       try {
         const stack = await stackFor(chat)
-        // Blocks first, the stack's Narrator misc prompt second. A stack with an `[if Narrator]`
+        // Blocks first, the stack's Narrator misc prompt second. A stack with an `{% if Narrator %}`
         // branch has already said what the Narrator is, and handing it the misc prompt as well would
         // be two voices arguing. Only a stack that never mentions the Narrator gets the fallback,
         // which rides in on the card's systemPrompt so it lands where a character's own would.

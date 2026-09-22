@@ -45,7 +45,7 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /storage    Dexie + the storage interface; the ONLY place that touches Dexie
     /connectors the model endpoint: request bodies, SSE streaming, model lists
     /stores     Zustand stores
-    /prompt     prompt assembly: buildPrompt, buildStoryPrompt, budget, worldInfo, conditions
+    /prompt     prompt assembly: buildPrompt, buildStoryPrompt, budget, worldInfo, template
     /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
     /params     the sampler library: params as data, not code
     /hammer     the matching engine behind pattern-mode rules
@@ -84,7 +84,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   `budget` (token counting and history trimming; `loadTokenizer` is async, `countTokens` is sync,
   and both have to stay that way; `tokenizers`/`autoTokenizer`/`tokenizerCache` pick and fetch which
   one counts), `flattenPrompt` (text-completion connections), `swapTokens`, `worldInfo`,
-  `conditions`, `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
+  `template` (Django-style `{% if %}` tags and a stack's `{{variables}}`, `PromptStack.variables`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
   one of these.
 - **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`).
   `flattenPrompt` is the only reader: role sequences, first/last turn overrides, newline wrapping,
@@ -110,16 +110,16 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
   `chatStore.retry` branches on it before the round-robin maths and never moves
   `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack's
-  blocks first, the stack's `narrator` misc prompt second. A stack with an `[if Narrator]` branch
+  blocks first, the stack's `narrator` misc prompt second. A stack with an `{% if narrator %}` branch
   owns the Narrator outright; only a stack without one gets `miscPrompt('narrator', stack.miscPrompts)`,
-  passed to `narratorCharacter()` as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/conditions.ts` decides which.
+  passed to `narratorCharacter()` as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/template.ts` decides which.
   The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
   (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
 - **Trackers** live in `core/trackers`. Defs ride on the card (`Character.trackers`,
   `extensions.nessu.trackers`). `parseState` reads a reply's `<state>` tag; each swipe's parse sits
   in `Message.trackerUpdates`. `trackerValues` folds them down the history with player overrides,
   so swiping rolls back. `buildPrompt` injects visible values and hands every value to
-  `conditions.ts` for `[if affection > 50]`. `stripState` hides the tag at render only.
+  `template.ts` for `{% if affection > 50 %}`. `stripState` hides the tag at render only.
 - **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
   decides what needs pushing.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for

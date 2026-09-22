@@ -87,7 +87,7 @@ assert.strictEqual(validateStack(stack('chat', [wrap([b('chatHistory')])])), '')
 
 // --- the stack files that ship with the build are valid for their own kind ---
 // read rather than imported: node's JSON import needs an attribute Vite doesn't want.
-for (const file of ['defaultStoryStack.json', 'glmChatStack.json', 'glmStoryStack.json']) {
+for (const file of ['defaultStoryStack.json', 'xeniaChatStack.json']) {
   const url = new URL(file, import.meta.url)
   const data = JSON.parse(readFileSync(url, 'utf8')) as PromptStack & { format: string }
   assert.strictEqual(data.format, 'nessu-prompt-stack', `${file}: wrong format tag`)

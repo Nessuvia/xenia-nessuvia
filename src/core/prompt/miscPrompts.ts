@@ -164,7 +164,7 @@ Reply with three lines and nothing else:
   {
     id: 'narrator',
     label: 'Narrator',
-    hint: "Used when this stack has no [if Narrator] block. It goes where a character's system prompt goes, so a stack with no system prompt block sends nothing.",
+    hint: "Used when this stack has no {% if Narrator %} block. It goes where a character's system prompt goes, so a stack with no system prompt block sends nothing.",
     // Written against the two things that distinguish a narrated turn: the voice is outside the
     // cast, and the user's line is an instruction to the storyteller rather than dialogue.
     text: `You are the Narrator. You are not one of the characters and you are not the user.

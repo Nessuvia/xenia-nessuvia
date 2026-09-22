@@ -1,6 +1,4 @@
-// What a block *is*, as one flat list for the picker on the card. A type is a source, plus
-// 'scroll': a text block carrying a range input, which is a distinct thing to the user even
-// though the stored difference is just `input`.
+// What a block *is*, as one flat list for the picker on the card: its source.
 import type { BlockSource, PromptBlock } from '../../core/storage/types'
 
 export const sourceLabels: Record<BlockSource, string> = {
@@ -22,43 +20,24 @@ export const sourceLabels: Record<BlockSource, string> = {
   storyTrailing: 'What follows',
 }
 
-export type BlockType = BlockSource | 'scroll'
+export type BlockType = BlockSource
 
-export const typeLabels: Record<BlockType, string> = { ...sourceLabels, scroll: 'Scroll' }
+export const typeLabels = sourceLabels
 
 /** The types a stack of this kind offers, in picker order. */
-export const kindTypes = (sources: BlockSource[]): BlockType[] => {
-  const [text, ...bound] = sources
-  return [text, 'scroll', ...bound]
-}
+export const kindTypes = (sources: BlockSource[]): BlockType[] => sources
 
-export const blockType = (block: PromptBlock): BlockType =>
-  block.input ? 'scroll' : block.source
-
-const seedScroll = 'Write about {{blockVal}} to {{blockVal2}} words.'
+export const blockType = (block: PromptBlock): BlockType => block.source
 
 /** Rewrite a block to be of `type`, keeping everything the new type still uses. The label follows
  *  along when it was the old type's name: a block the user renamed keeps its name. */
 export function applyType(block: PromptBlock, type: BlockType): PromptBlock {
   const named = block.label === typeLabels[blockType(block)]
   const label = named ? typeLabels[type] : block.label
-  if (type === 'scroll') {
-    return {
-      ...block,
-      label,
-      source: 'text',
-      // Options and a scroll value are two ways to vary one block's text; a scroll uses content.
-      options: undefined,
-      activeOption: undefined,
-      content: block.content.trim() ? block.content : seedScroll,
-      input: { kind: 'range', min: 0, max: 500, step: 10, value: 100, value2: 200 },
-    }
-  }
   return {
     ...block,
     label,
     source: type,
-    input: undefined,
     // The point of an author's note block is depth injection: give a new one somewhere to land.
     ...(type === 'authorNote' && block.depth === undefined ? { depth: 2 } : {}),
     // Its entries go in as system turns unless the block says otherwise; a block retyped from a

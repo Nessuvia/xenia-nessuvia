@@ -139,12 +139,6 @@ export interface ParamOverrides {
   params?: Record<string, unknown>
 }
 
-/** A text block's live content: the chosen option, or plain `content` when there are no options. */
-export function activeContent(block: PromptBlock): string {
-  if (!block.options) return block.content
-  return block.options[block.activeOption ?? 0]?.content ?? ''
-}
-
 /** The description used: the active variant, or `description` when there isn't one. */
 export function activeDescription(c: Character): string {
   const variant = c.altDescriptions[c.activeDescriptionIndex]
@@ -390,11 +384,7 @@ export interface PromptBlock {
   label: string // 'Block 1' on creation, renamed in the modal
   source: BlockSource
   role: 'system' | 'user' | 'assistant'
-  content: string // only meaningful when source === 'text' with no options; the text before any children
-  /** Named content variants for a text block. Absent = plain single `content`. Two or more makes
-   *  the block pickable in chat settings; `activeOption` chooses which one is used. */
-  options?: { name: string; content: string }[]
-  activeOption?: number
+  content: string // only meaningful when source === 'text'; the text before any children
   /** Text after the children, the closing half of a wrapper (`</characters>`). */
   closeContent?: string
   /** Only meaningful on an authorNote block: inject N messages from the end of history.
@@ -409,21 +399,19 @@ export interface PromptBlock {
   /** Present (even empty) makes this a container. Children render between content and closeContent,
    *  newline-joined, and inherit this block's role. Chat History can't be nested. */
   children?: PromptBlock[]
-  /** Present makes this an input block: {{blockVal}} in the content resolves to `value` and
-   *  {{blockVal2}} to `value2`. `kind` picks the control shown in chat settings. */
-  input?: BlockInput
 }
 
-/** Only the range arm is built today. A range carries two values, the two ends of a span, dragged
- *  separately. `value2` is held at or above `value`. Omit `value2` for a single-value scroll. */
-export type BlockInput = {
-  kind: 'range'
-  min: number
-  max: number
-  step: number
-  value: number
-  value2?: number
-}
+/**
+ * A named, typed value declared on a stack and read from any of its blocks: `{{id}}` pastes it and
+ * `{% if id ... %}` branches on it. A range is two numbers, read as `{{id_start}}` and `{{id_end}}`.
+ * `value` is the current setting, stored on the stack: every chat on the stack shares it.
+ */
+export type StackVariable =
+  | { id: string; label: string; info?: string; kind: 'sliderSingle'; min: number; max: number; step: number; value: number }
+  | { id: string; label: string; info?: string; kind: 'sliderRange'; min: number; max: number; step: number; value: [number, number] }
+  | { id: string; label: string; info?: string; kind: 'dropdown'; options: string[]; value: string }
+  | { id: string; label: string; info?: string; kind: 'checkbox'; value: boolean }
+  | { id: string; label: string; info?: string; kind: 'text'; value: string }
 
 export interface PromptStack {
   id?: number
@@ -433,6 +421,8 @@ export interface PromptStack {
    *  for rows written before the field existed. */
   kind?: 'chat' | 'story'
   active: PromptBlock[] // order = array order
+  /** Absent = none. */
+  variables?: StackVariable[]
   /** Tokens the three World info slots may take between them. Absent or 0 = no cap. Entries are
    *  filled in priority order (`entry.order`) and the rest are dropped. */
   worldInfoBudget?: number

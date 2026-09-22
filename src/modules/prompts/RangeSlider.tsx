@@ -1,39 +1,41 @@
 import { useRef } from 'react'
-import type { BlockInput } from '../../core/storage/types'
+
+interface Props {
+  min: number
+  max: number
+  step: number
+  /** A pair draws two thumbs, dragged separately. The low end is held at or below the high end. */
+  value: number | [number, number]
+  onChange: (value: number | [number, number]) => void
+}
 
 /**
- * The two-ended slider a scroll block is edited with, one thumb per end, dragged separately.
- * Native `<input type="range">` only carries one value. The track and thumbs are drawn here and
- * driven by pointer events.
+ * A slider variable's control. Native `<input type="range">` only carries one value, so the
+ * two-ended one draws its own track and thumbs and drives them with pointer events.
  */
-export default function RangeSlider({
-  input,
-  onChange,
-}: {
-  input: BlockInput
-  onChange: (input: BlockInput) => void
-}) {
+export default function RangeSlider({ min, max, step, value, onChange }: Props) {
   const track = useRef<HTMLDivElement>(null)
 
-  // One value, one thumb, the native control already does all of this.
-  if (input.value2 === undefined) {
+  if (!Array.isArray(value)) {
     return (
       <div className="rangeSlider">
         <input
           type="range"
           className="rangeSingle"
-          min={input.min}
-          max={input.max}
-          step={input.step || 1}
-          value={input.value}
-          onChange={(e) => onChange({ ...input, value: Number(e.target.value) })}
+          min={min}
+          max={max}
+          step={step || 1}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
         />
-        <span className="rangeVals">{input.value}</span>
+        <span className="rangeVals">{value}</span>
       </div>
     )
   }
 
-  const value2 = input.value2
+  const input = { min, max, step, value: value[0] }
+  const value2 = value[1]
+  const emit = (next: { value: number; value2?: number }) => onChange([next.value, next.value2 ?? value2])
   const span = Math.max(input.max - input.min, 1)
   const pct = (v: number) => ((v - input.min) / span) * 100
 
@@ -51,11 +53,7 @@ export default function RangeSlider({
     e.preventDefault()
     const move = (ev: PointerEvent) => {
       const v = valueAt(ev.clientX)
-      onChange(
-        end === 'value'
-          ? { ...input, value: Math.min(v, value2) }
-          : { ...input, value2: Math.max(v, input.value) },
-      )
+      emit(end === 'value' ? { value: Math.min(v, value2) } : { value: input.value, value2: Math.max(v, input.value) })
     }
     move(e.nativeEvent)
     const up = () => {
@@ -74,10 +72,10 @@ export default function RangeSlider({
     if (!dir) return
     e.preventDefault()
     const v = at(end) + dir * (input.step || 1)
-    onChange(
+    emit(
       end === 'value'
-        ? { ...input, value: Math.max(input.min, Math.min(v, value2)) }
-        : { ...input, value2: Math.min(input.max, Math.max(v, input.value)) },
+        ? { value: Math.max(input.min, Math.min(v, value2)) }
+        : { value: input.value, value2: Math.min(input.max, Math.max(v, input.value)) },
     )
   }
 

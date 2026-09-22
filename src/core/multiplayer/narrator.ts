@@ -34,7 +34,7 @@ export function castBlock(members: CastMember[]): string {
  * else worth reading.
  *
  * `systemPrompt` is the one exception, and it's a fallback rather than a second voice. A stack
- * that has an `[if Narrator]` branch owns the Narrator, and the caller passes nothing here. Only
+ * that has an `{% if Narrator %}` branch owns the Narrator, and the caller passes nothing here. Only
  * a stack that never mentions the Narrator gets its `narrator` misc prompt, which lands in the
  * same slot a character's own system prompt would. The caller decides which case it is; see
  * `mentionsCondition` in core/prompt/conditions.ts and the narrator branch of `chatStore.retry`.

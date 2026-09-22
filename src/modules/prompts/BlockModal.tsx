@@ -1,6 +1,5 @@
-import type { PromptBlock } from '../../core/storage/types'
+import type { PromptBlock, StackVariable } from '../../core/storage/types'
 import type { StackKind } from './stackKinds'
-import RangeSlider from './RangeSlider'
 
 const roles: PromptBlock['role'][] = ['system', 'user', 'assistant']
 
@@ -43,6 +42,7 @@ export default function BlockModal({
   block,
   kind,
   nested,
+  variables,
   onChange,
   onDelete,
   onClose,
@@ -52,6 +52,8 @@ export default function BlockModal({
   kind: StackKind
   /** Inside another block: it shares the parent's role. There's no role to pick. */
   nested: boolean
+  /** The stack's declared variables, listed in the guide. */
+  variables: StackVariable[]
   onChange: (block: PromptBlock) => void
   onDelete: () => void
   onClose: () => void
@@ -60,39 +62,6 @@ export default function BlockModal({
   const draft = block
   const set = (patch: Partial<PromptBlock>) => onChange({ ...draft, ...patch })
   const hasChildren = !!draft.children
-
-  // The selected tab is the active option: picking one here is what the preview and chat use.
-  const opts = draft.options
-  const tab = Math.min(draft.activeOption ?? 0, (opts?.length ?? 1) - 1)
-  const setTab = (i: number) => set({ activeOption: i })
-  const contentVal = opts ? (opts[tab]?.content ?? '') : draft.content
-  const setContent = (content: string) =>
-    opts
-      ? set({ options: opts.map((o, i) => (i === tab ? { ...o, content } : o)) })
-      : set({ content })
-
-  // First click seeds Option 1 from the current content, then adds a fresh tab.
-  function addOption() {
-    const base = opts ?? [{ name: 'Option 1', content: draft.content }]
-    const next = [...base, { name: `Option ${base.length + 1}`, content: '' }]
-    set({ options: next, activeOption: next.length - 1 })
-  }
-
-  function renameTab(name: string) {
-    if (!opts) return
-    set({ options: opts.map((o, i) => (i === tab ? { ...o, name } : o)) })
-  }
-
-  // Deleting down to one option collapses back to a plain single-content block.
-  function deleteTab() {
-    if (!opts) return
-    const rest = opts.filter((_, i) => i !== tab)
-    if (rest.length <= 1) {
-      set({ options: undefined, content: rest[0]?.content ?? '', activeOption: undefined })
-      return
-    }
-    set({ options: rest, activeOption: Math.min(tab, rest.length - 1) })
-  }
 
   return (
     <div className="dialogBackdrop" onClick={onClose}>
@@ -149,113 +118,15 @@ export default function BlockModal({
           </>
         )}
 
-        {draft.input?.kind === 'range' && (
-          <div className="rangeConfig">
-            <label>
-              Min
-              <input
-                type="number"
-                value={draft.input.min}
-                onChange={(e) => set({ input: { ...draft.input!, min: Number(e.target.value) } })}
-              />
-            </label>
-            <label>
-              Max
-              <input
-                type="number"
-                value={draft.input.max}
-                onChange={(e) => set({ input: { ...draft.input!, max: Number(e.target.value) } })}
-              />
-            </label>
-            <label>
-              Step
-              <input
-                type="number"
-                value={draft.input.step}
-                onChange={(e) => set({ input: { ...draft.input!, step: Number(e.target.value) } })}
-              />
-            </label>
-          </div>
-        )}
-
-        {draft.input?.kind === 'range' && (
-          <>
-            <label className="checkboxRow">
-              <input
-                type="checkbox"
-                checked={draft.input.value2 === undefined}
-                onChange={(e) =>
-                  set({
-                    input: {
-                      ...draft.input!,
-                      value2: e.target.checked
-                        ? undefined
-                        : Math.max(draft.input!.value, draft.input!.max),
-                    },
-                  })
-                }
-              />
-              Single value
-            </label>
-            <label className="rangeDefault">
-              {draft.input.value2 === undefined ? 'Default value' : 'Default range'}
-              <RangeSlider
-                input={draft.input}
-                onChange={(input) => set({ input })}
-              />
-            </label>
-            <p className="hint">
-              {draft.input.value2 === undefined
-                ? `${'{{blockVal}}'} in the content resolves to the value. A chat sets its own value in chat settings.`
-                : `${'{{blockVal}}'} in the content resolves to the low end, ${'{{blockVal2}}'} to the high end. A chat sets its own ends in chat settings.`}
-            </p>
-          </>
-        )}
-
         {draft.source === 'text' && (
-          <div className="optionContent">
-            <div className="optionContentHead">
-              <span>{hasChildren ? 'Text before children' : 'Content'}</span>
-              {!draft.input && (
-                <button type="button" className="addOption" title="Add an option" onClick={addOption}>
-                  +
-                </button>
-              )}
-            </div>
-
-            {opts && (
-              <>
-                <div className="optionTabs">
-                  {opts.map((o, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className={i === tab ? 'active' : ''}
-                      onClick={() => setTab(i)}
-                    >
-                      {o.name}
-                    </button>
-                  ))}
-                </div>
-                <label>
-                  Option name
-                  <input value={opts[tab]?.name ?? ''} onChange={(e) => renameTab(e.target.value)} />
-                </label>
-              </>
-            )}
-
+          <label>
+            {hasChildren ? 'Text before children' : 'Content'}
             <textarea
               rows={hasChildren ? 3 : 8}
-              value={contentVal}
-              onChange={(e) => setContent(e.target.value)}
+              value={draft.content}
+              onChange={(e) => set({ content: e.target.value })}
             />
-
-            {opts && (
-              <button type="button" className="secondary" onClick={deleteTab}>
-                Delete option
-              </button>
-            )}
-          </div>
+          </label>
         )}
 
         {hasChildren && (
@@ -301,13 +172,22 @@ export default function BlockModal({
               ? 'Usable in this block’s text. A line whose variables are all empty is dropped: a sentence about a field that is not set does not get sent. A variable in the Story prose itself is left alone.'
               : 'Usable in this block’s text. An unknown variable is left as it is.'}
           </p>
-          {draft.input && (
-            <p className="hint">
-              {draft.input.value2 === undefined
-                ? `This block also has ${'{{blockVal}}'}, its value.`
-                : `This block also has ${'{{blockVal}}'} and ${'{{blockVal2}}'}, the two ends of its range.`}
-            </p>
+          {variables.length > 0 && (
+            <dl className="tokenGuide">
+              {variables.map((v) => (
+                <div key={v.id}>
+                  <dt>{v.kind === 'sliderRange' ? `{{${v.id}_start}} {{${v.id}_end}}` : `{{${v.id}}}`}</dt>
+                  <dd>{v.label}, from this stack's variables</dd>
+                </div>
+              ))}
+            </dl>
           )}
+          <p className="hint">
+            {'{% if name %}'}, {'{% elif name > 3 %}'}, {'{% else %}'} and {'{% endif %}'} include text only when
+            the condition holds. A name is a variable id, a tracker key, narrator, char1 to char4, or game.
+            Comparisons: = != &gt; &lt; &gt;= &lt;=. A tag on its own line can span lines; a tag inside a line
+            closes on that line.
+          </p>
         </details>
 
         <details className="blockInfo">

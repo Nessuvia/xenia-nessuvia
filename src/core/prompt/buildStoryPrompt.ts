@@ -2,10 +2,9 @@
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.
 import type { ChatMessage } from '../connectors/connectorInterface'
 import type { BlockContext, PromptBlock, PromptStack } from '../storage/types'
-import { activeContent } from '../storage/types.ts'
 import type { GuideChapter } from './chapterGuide.ts'
 import { fitStoryProse, storyProseSplit } from './chapterGuide.ts'
-import { swapBlockVals } from './swapTokens.ts'
+import { resolveTemplate, variableValues, type VariableValues } from './template.ts'
 import { swapStoryTokens } from './storyTokens.ts'
 import type { Budget } from './budget.ts'
 import { countTokens, perMessageOverhead } from './budget.ts'
@@ -41,6 +40,8 @@ interface Bound {
   worldInfo: string
   worldInfoAfter: string
   tokens: Record<string, string>
+  /** The stack's variables. A Story has no speaker or cast flags, so these are all `{% if %}` sees. */
+  vars: VariableValues
 }
 
 /**
@@ -62,7 +63,7 @@ export function storyScanText(story: string, extra: string[] = []): { content: s
  * typed into their manuscript is manuscript.
  */
 const ownText = (text: string | undefined, bound: Bound) =>
-  swapStoryTokens(text ?? '', bound.tokens)
+  swapStoryTokens(resolveTemplate(text ?? '', {}, bound.vars), bound.tokens)
 
 /** A bound block wrapped in its own open/close text (e.g. `<cast>...</cast>`). */
 function wrap(block: PromptBlock, inner: string, bound: Bound): string {
@@ -93,8 +94,7 @@ function blockText(block: PromptBlock, bound: Bound): string {
     case 'worldInfoAfter':
       return bound.worldInfoAfter.trim() ? wrap(block, bound.worldInfoAfter, bound) : ''
     default: {
-      let own = block.source === 'text' ? ownText(activeContent(block), bound) : ''
-      if (block.input) own = swapBlockVals(own, block.input)
+      const own = block.source === 'text' ? ownText(block.content, bound) : ''
       const parts = [
         own,
         ...(block.children ?? []).map((c) => blockText(c, bound)),
@@ -255,6 +255,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
   // two runs line up 1:1 and the trim can't shift a block into or out of the prompt.
   const worldInfo = args.worldInfo?.before ?? ''
   const worldInfoAfter = args.worldInfo?.after ?? ''
+  const vars = variableValues(stack.variables)
 
   const render = (story: string) => {
     const turns: ChatMessage[] = []
@@ -266,6 +267,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
         worldInfo,
         worldInfoAfter,
         tokens,
+        vars,
       })
       if (content.trim()) turns.push({ role: block.role, content })
     }

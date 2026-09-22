@@ -29,6 +29,7 @@ import { useHashTab } from '../../app/useHashTab'
 import { exportStack, parseStack } from './stackFile'
 import { parseSillyTavern } from '../../core/sillytavern/importSillyTavern'
 import PromptPreview from './PromptPreview'
+import VariablesPanel from './VariablesPanel'
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
 
@@ -82,6 +83,7 @@ export default function StackEditor() {
   const activeId = kind === 'story' ? activeStoryStackId : activeStackId
   const [draft, setDraft] = useState<PromptStack | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
   // sessionStorage, not a stored setting: survives navigation, clears on tab close.
   // global for the tab, not per stack, key by stack id if that matters.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
@@ -363,6 +365,7 @@ export default function StackEditor() {
     ...(kind === 'chat' && multiplayerEnabled
       ? [{ label: 'New multiplayer', run: () => create('chat', 'multiplayer') }]
       : []),
+    { label: 'Preview', run: () => setPreviewOpen(true) },
     { label: 'Duplicate', run: () => duplicate(draft.id!) },
     { label: 'Import', run: () => fileInput.current?.click(), icon: <RiUploadLine size={14} /> },
     { label: 'Export', run: () => exportStack(draft), icon: <RiDownloadLine size={14} /> },
@@ -566,11 +569,15 @@ export default function StackEditor() {
             'Active stack',
             'Assembled top to bottom. “+” on a block nests another inside it.',
           )}
-          <PromptPreview
-            stack={draft}
-            collapsed={!!collapsed.preview}
-            onToggleCollapsed={() => toggleZone('preview')}
-          />
+          <VariablesPanel stack={draft} onChange={change} />
+        </div>
+      )}
+
+      {previewOpen && (
+        <div className="dialogBackdrop" onClick={() => setPreviewOpen(false)}>
+          <div className="panel dialog promptsPreviewDialog" onClick={(e) => e.stopPropagation()}>
+            <PromptPreview stack={draft} onClose={() => setPreviewOpen(false)} />
+          </div>
         </div>
       )}
 
@@ -579,6 +586,7 @@ export default function StackEditor() {
           block={editing}
           kind={kind}
           nested={!!parentOf(editing.id)}
+          variables={draft.variables ?? []}
           onChange={(b) => replaceBlock(b, false)}
           onDelete={() => deleteBlock(editing.id)}
           onClose={() => setEditingId(null)}

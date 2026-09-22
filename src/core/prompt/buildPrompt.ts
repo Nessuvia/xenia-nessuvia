@@ -11,10 +11,10 @@ import type {
   PromptBlock,
   PromptStack,
 } from '../storage/types'
-import { activeContent, activeDescription } from '../storage/types.ts'
+import { activeDescription } from '../storage/types.ts'
 import { isGroup } from '../stores/roster.ts'
-import { chatTokens, swapBlockVals, swapTokens } from './swapTokens.ts'
-import { promptConditions, resolveConditions } from './conditions.ts'
+import { chatTokens, swapTokens } from './swapTokens.ts'
+import { promptConditions, resolveTemplate, variableValues } from './template.ts'
 import { trackerPrompt, trackerValues } from '../trackers/trackerState.ts'
 import type { Budget } from './budget.ts'
 import { countMessages, countTokens, perMessageOverhead, trimHistory } from './budget.ts'
@@ -30,7 +30,7 @@ import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
  * Per-block: it can't live in swapTokens. {{original}} means *this* block's content.
  */
 function cardOverride(cardText: string, block: PromptBlock): string {
-  const fallback = activeContent(block)
+  const fallback = block.content
   // Not substituted into the fallback itself: {{original}} inside it'd resolve to itself.
   if (!cardText.trim()) return fallback
   return cardText.replace(/\{\{\s*original\s*\}\}/gi, fallback)
@@ -105,10 +105,8 @@ function blockText(
   if (block.disabled) return ''
   let own =
     block.source === 'text'
-      ? activeContent(block)
+      ? block.content
       : boundText(block, character, persona, authorNote, worldInfo)
-  // Per-block: it can't live in swapTokens. {{blockVal}} is this block's own input value.
-  if (block.input) own = swapBlockVals(own, block.input)
   const parts = [
     indentLines(own, depth),
     // Nested chat history resolves to '': it's many messages with their own roles, it can't
@@ -216,8 +214,8 @@ export interface BuildPromptArgs {
   /** The game's title, filling {{game}}. Absent outside the games module, which leaves the token
    *  in place rather than blanking it in an ordinary chat. */
   game?: string
-  /** The game's `GameKind`, behind `[if blackjack]` and `[if goFish]`. Absent outside a game, which
-   *  is also what makes `[if game]` false in an ordinary chat. */
+  /** The game's `GameKind`, behind `{% if blackjack %}` and `{% if goFish %}`. Absent outside a game, which
+   *  is also what makes `{% if game %}` false in an ordinary chat. */
   gameKind?: string
 }
 
@@ -301,10 +299,10 @@ export function buildPrompt(
   const tokens = chatTokens(who, persona, cast, personas, game)
   const swap = (text: string) => swapTokens(text, tokens)
 
-  // [if Narrator] and friends. Resolved per block, before substitution: a token inside a dropped
+  // {% if narrator %} and friends, plus the stack's own {{variables}}. Resolved per block, before substitution: a token inside a dropped
   // branch never gets swapped, and no token's value can be read back as a condition name. A
-  // conditional can't span two blocks: each block's text is parsed on its own. An [if] in one
-  // block and its [endif] in the next are both literal text.
+  // conditional can't span two blocks: each block's text is parsed on its own. An if in one
+  // block and its endif in the next are both literal text.
   // Trackers come off the chat's card, whoever speaks. Built-in names win a clash with a tracker key.
   const trackers = character.trackers ?? []
   const values = trackers.length ? trackerValues(trackers, messages, chat?.trackerOverrides) : {}
@@ -312,6 +310,7 @@ export function buildPrompt(
     ...Object.fromEntries(Object.entries(values).map(([k, v]) => [k.toLowerCase(), v])),
     ...promptConditions(who, cast, gameKind),
   }
+  const vars = variableValues(stack.variables)
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
@@ -338,9 +337,10 @@ export function buildPrompt(
     }
 
     const text = swap(
-      resolveConditions(
+      resolveTemplate(
         blockText(block, who, persona, authorNote, resolvedWorldInfo, !!indent, 0),
         conditions,
+        vars,
       ),
     )
 
@@ -373,7 +373,7 @@ export function buildPrompt(
   if (!depthBlock?.disabled) {
     const depthRole = depthBlock?.role ?? 'system'
     for (const at of resolvedWorldInfo.atDepth) {
-      const content = swap(resolveConditions(at.text, conditions))
+      const content = swap(resolveTemplate(at.text, conditions, vars))
       if (!content.trim()) continue
       depthNotes.push({ message: { role: depthRole, content }, depth: at.depth })
       fixedTokens += countTokens(content) + perMessageOverhead

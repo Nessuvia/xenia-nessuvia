@@ -10,7 +10,6 @@ import { tokenizerFor, defaultTokenizer } from '../../core/prompt/tokenizers'
 import { useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
 import { useSettings, useActiveConnection, type Connection } from '../../core/stores/settingsStore'
-import { CollapseButton, CollapseRail } from '../../app/CollapseButton'
 import { budgetOf, maxTokensOf } from '../../core/params/connectionParams'
 import { hasSource } from './stackKinds'
 
@@ -61,12 +60,10 @@ const exampleTokens = storyTokens({
 
 export default function PromptPreview({
   stack,
-  collapsed,
-  onToggleCollapsed,
+  onClose,
 }: {
   stack: PromptStack
-  collapsed: boolean
-  onToggleCollapsed: () => void
+  onClose: () => void
 }) {
   const [ready, setReady] = useState(false)
   const activeConnection = useActiveConnection()
@@ -77,14 +74,12 @@ export default function PromptPreview({
     loadTokenizer(tokenizerId).then(() => setReady(true))
   }, [tokenizerId])
 
-  if (collapsed) {
-    return <CollapseRail label="Preview" onToggle={onToggleCollapsed} />
-  }
-
   const header = (
     <div className="zoneHeader">
-      <CollapseButton label="Preview" collapsed={false} onToggle={onToggleCollapsed} />
       <h3>Preview</h3>
+      <button type="button" className="secondary" onClick={onClose}>
+        Close
+      </button>
     </div>
   )
 

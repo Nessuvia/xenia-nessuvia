@@ -1,4 +1,4 @@
-import type { BlockInput, Character, Persona } from '../storage/types'
+import type { Character, Persona } from '../storage/types'
 import { activeDescription } from '../storage/types.ts'
 import { stripComments } from './stripComments.ts'
 
@@ -119,12 +119,4 @@ export function chatTokens(
     ...(personas !== undefined ? { personas } : {}),
     ...(game !== undefined ? { game } : {}),
   }
-}
-
-/** A block's own input values. Per-block: it can't ride along in swapTokens' shared table.
- *  {{blockVal}} is the low end of the range and {{blockVal2}} the high end. */
-export function swapBlockVals(text: string, input: BlockInput): string {
-  return text
-    .replaceAll('{{blockVal2}}', String(input.value2 ?? input.value))
-    .replaceAll('{{blockVal}}', String(input.value))
 }
