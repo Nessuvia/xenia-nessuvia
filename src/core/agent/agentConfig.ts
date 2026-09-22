@@ -14,6 +14,9 @@ export interface AgentConfig {
   connectionId: string | null
   /** The stack a chat with no stack of its own runs. null falls back to `defaultPostStackConfig`. */
   defaultStackId: number | null
+  /** The decisions connection the sensors ask. null means sensors don't run. Sits here rather than
+   *  on the stack because it resolves to a connection holding an API key, which must not travel. */
+  sensorConnectionId?: string | null
   /** Stylized animates the edits and ignores a chat's display mode. Absent reads as stylized. Global only. */
   style?: AgentStyle
 }
@@ -27,11 +30,14 @@ export type AgentDisplay = 'blur' | 'hold' | 'reveal'
 export interface ChatAgent {
   enabled?: boolean
   display?: AgentDisplay
+  /** Sensors in this chat. Undefined follows the stack's own switch. False turns them off here
+   *  without editing a stack that other chats share. */
+  sensors?: boolean
 }
 
 /** Global config with a chat's override on top. Display defaults to blur. */
-export function resolveChatAgent(global: AgentConfig, chat: ChatAgent | undefined): { enabled: boolean; display: AgentDisplay } {
-  return { enabled: chat?.enabled ?? global.enabled, display: chat?.display ?? 'blur' }
+export function resolveChatAgent(global: AgentConfig, chat: ChatAgent | undefined): { enabled: boolean; display: AgentDisplay; sensors: boolean } {
+  return { enabled: chat?.enabled ?? global.enabled, display: chat?.display ?? 'blur', sensors: chat?.sensors ?? true }
 }
 
 type RuleSeed = Partial<Rule> & Pick<Rule, 'id' | 'label' | 'find' | 'action'>
@@ -53,8 +59,6 @@ const sentenceStart = '(?<=^|\\n|[.!?]["*]?\\s+|["*])'
 const clauseRest = '[^.!?\\n"]*?(?=,\\s+and\\s|[.!?\\n"]|$)'
 /** Words ending in -ing that aren't a participle clause. */
 const ingNouns = '(?:nothing|something|anything|everything|morning|evening|during|thing|things|king|ring|spring|string|ceiling|building|feeling|wedding|clothing)'
-/** Words that start or end a two-word tail that isn't a noun + adjective: ", he said", ", last night", ", and more". */
-const tailStop = 'I|you|he|she|it|we|they|him|her|them|me|us|said|says|asked|replied|whispered|and|or|but|so|then|too|very|really|right|now|last|next|this|that|each|every|all|in|on|at|to|for|of|from|by|with|again|anyway|though|please|thanks|sir|ma\'am|felt|was|were|is|are|everything|nothing|something|anything'
 /** Outside quoted speech: an even number of straight quotes from here to the paragraph end. Flags match
  *  per paragraph and curly quotes are swapped to straight first, so the count holds. */
 const narration = '(?=(?:[^"\\n]*"[^"\\n]*")*[^"\\n]*$)'
@@ -62,12 +66,12 @@ const narration = '(?=(?:[^"\\n]*"[^"\\n]*")*[^"\\n]*$)'
 const ingKeep = '(?![^.!?\\n"]*\\b(?:when|as|while|until|before|after)\\b)'
 /** Speech openers a stacked-adjective rule mistakes for adjectives: "Yeah, well," or "No, no,". */
 const interjections = '(?:Well|Yeah|Yes|No|Oh|Ah|So|Okay|Right|Fine|Hey|Look|Sure|Uh|Um|Uhm|Tsk|Both)'
-const physical ='(?:hung|hang(?:s|ing)?|sat|sits?|sitting|settled|settles?|settling|stretched|stretch(?:es|ing)?|tasted|tastes?|tasting)'
 
 export const defaultAgentConfig: AgentConfig = {
   enabled: false,
   connectionId: null,
   defaultStackId: null,
+  sensorConnectionId: null,
   style: 'stylized',
 }
 
@@ -99,23 +103,36 @@ export function defaultRules(): Rule[] {
     regex({ id: 'default-with-manner', label: 'With + manner phrase', find: ',?\\s*\\bwith (?!(?:his|her|their|my|your|its|the)\\b)(?:a |an )?(?:[a-z]+ ){1,2}(?:[a-z]+(?:ness|ity|tion|sion|ance|ence)|hand|ease|care|grace)\\b,?', action: 'swap', replacement: '' }),
     // ponytail: regex, either/or on the phrase, an optional "and", and the clause runs past commas up to ", and".
     // One rule for narrator commentary tacked onto a sentence: add the next phrase to the alternation.
-    regex({ id: 'default-commentary-tail', label: 'For the first time in days / back when', find: `,?\\s*(?:and\\s+)?(?:for the first time in \\w+|that was exactly what \\w+ (?:wanted|needed)|back when\\b)${clauseRest}`, action: 'swap', replacement: '' }),
-    pattern({ id: 'default-without-looking', label: 'Without looking', find: 'without looking [clause]*', action: 'swap', replacement: '' }),
+    regex({ id: 'default-commentary-tail', label: 'For the first time in days / back when', find: `,?\\s*(?:and\\s+)?(?:for the first time in \\w+|that was exactly what \\w+ (?:wanted|needed)|back when\\b)${clauseRest}`, action: 'fold' }),
+    pattern({ id: 'default-without-looking', label: 'Without looking', find: 'without looking [clause]*', action: 'fold' }),
     // ponytail: regex, either/or on the determiner and an -ing ending. "A noun, then an -ing word" also catches ", his wedding ring". Tighten when a real miss shows up.
-    regex({ id: 'default-noun-ing-tail', label: ', its lights flaring', find: `,\\s*(?:its|his|her|their|the)\\s+(?:[\\w-]+\\s+){1,3}[a-z]+ing\\b${clauseRest}`, caseSensitive: true, action: 'swap', replacement: '' }),
-    // ponytail: regex. Word types can require the comma now, but have no sentence-end anchor, so "two words then the
-    // sentence end" is still regex, minus a stoplist for tails like ", he said." or ", last night.".
-    // The lookbehind skips a comma inside an adjective list: "a sad, wet cat". Only a/an, since "the rail,
-    // knuckles pale" reads the same to regex. "his calm, neutral voice" still hits.
-    regex({ id: 'default-noun-adj-tail', label: ', knuckles pale', find: `(?<!\\b(?:a|an)\\s+[a-z-]+),\\s*(?:(?:its|his|her|their|the|my|your)\\s+)?(?!(?:${tailStop})\\b)[a-z-]+\\s+(?!(?:${tailStop})\\b)[a-z-]+(?=[.!?]|["*]|\\n|$)`, caseSensitive: true, action: 'swap', replacement: '' }),
+    regex({ id: 'default-noun-ing-tail', label: ', its lights flaring', find: `,\\s*(?:its|his|her|their|the)\\s+(?:[\\w-]+\\s+){1,3}[a-z]+ing\\b${clauseRest}`, caseSensitive: true, action: 'fold' }),
     // ponytail: regex, an -ing ending with a stoplist. Only a tail that runs to the sentence end, and not one
     // carrying its own timing ("straightening up when he heard footsteps"), which is action rather than garnish.
-    regex({ id: 'default-ing-clause', label: ', watching / , sending...', find: `,\\s+(?!${ingNouns}\\b)[a-z]+ing\\b${ingKeep}(?:(?!,\\s+and\\s)[^.!?\\n"])*(?=[.!?\\n"*]|$)`, caseSensitive: true, action: 'swap', replacement: '' }),
+    regex({ id: 'default-ing-clause', label: ', watching / , sending...', find: `,\\s+(?!${ingNouns}\\b)[a-z]+ing\\b${ingKeep}(?:(?!,\\s+and\\s)[^.!?\\n"])*(?=[.!?\\n"*]|$)`, caseSensitive: true, action: 'fold' }),
     // ponytail: regex, lookbehind for the noun phrase and either/or on the pronoun and the verb.
-    regex({ id: 'default-unwanted', label: 'A tea he didn\'t want', find: '(?<=\\b(?:a|an|the|his|her|their|my|your) (?:[\\w-]+ ){0,2}[\\w-]+) (?:he|she|they|I|we|you) (?:didn\'t|did not|doesn\'t|does not|don\'t|do not|wouldn\'t|would not|would never) \\w+(?=[.,!?])', action: 'swap', replacement: '' }),
+    regex({ id: 'default-unwanted', label: 'A tea he didn\'t want', find: '(?<=\\b(?:a|an|the|his|her|their|my|your) (?:[\\w-]+ ){0,2}[\\w-]+) (?:he|she|they|I|we|you) (?:didn\'t|did not|doesn\'t|does not|don\'t|do not|wouldn\'t|would not|would never) \\w+(?=[.,!?])', action: 'fold' }),
     // ponytail: regex, either/or (a, an and tone, voice).
     regex({ id: 'default-tone', label: 'In a measured tone', find: '\\s+in an? (?:[a-z-]+ )?(?:tone|voice)\\b', action: 'swap', replacement: '' }),
     pattern({ id: 'default-once-twice', label: 'Once, twice', find: 'once , twice', action: 'swap', replacement: 'twice' }),
+    // ponytail: regex, either/or on the determiner. An appositive noun phrase restating the sentence
+    // it hangs off: "pulsed, a reminder of what they were capable of". The em dash it usually arrives
+    // with is already a comma by now, swapped by the dash rules above.
+    regex({ id: 'default-appositive-tail', label: ', a reminder of what they were', find: ',\\s*(?:a|an|the)\\s+[a-z-]+\\s+(?:of|to|in|for|that)\\b[^.!?\\n]*(?=[.!?\\n]|$)', caseSensitive: true, action: 'fold' }),
+    // ponytail: regex, and it has to be. Word types would read better, but `compromise` tags the
+    // spatial prepositions as adjectives ("beneath", "against", "atop"), so `[adv] [prep]` misses
+    // most of what this is for and catches only the handful it tags as prep. The list is explicit
+    // instead. Decoration inside a sentence rather than tacked on the end: "pulsed steadily beneath
+    // his shirt". The -ly stoplist covers words that end in -ly without being manner adverbs.
+    regex({ id: 'default-adverb-setting', label: 'pulsed steadily beneath his shirt', find: '\\s+(?!(?:only|early|likely|ugly|family|holy|reply|supply|apply|rely|fly|ally)\\b)[a-z]+ly\\s+(?:beneath|underneath|under|behind|beside|above|below|across|against|along|among|around|atop|between|beyond|inside|into|near|onto|outside|over|past|through|throughout|towards|toward|upon|within|in|on|at)\\s+(?:his|her|their|its|my|your|the|an|a)\\b', action: 'fold' }),
+    // ponytail: regex, either/or on the two shapes. An unnamed "something" standing in for the thing
+    // itself. `default-something-chest` covers the body-part case; this is the other two.
+    regex({ id: 'default-something-tail', label: 'Something deliberate in the way she moved', find: '\\bsomething\\s+(?:[a-z-]+\\s+in the way\\b|like\\s+(?:a |an |the )?[a-z-]+)', action: 'fold' }),
+    // ponytail: regex, either/or on the word list. The adjective half of the "deliberately" tic: the
+    // narrator labelling an action as chosen instead of showing it. Attributive only, so a lowercase
+    // word has to follow: "a deliberate slowness" loses the word and "was deliberate." keeps it.
+    // `repairAfterCut` fixes the article the cut leaves wrong ("a studied indifference").
+    regex({ id: 'default-intent-adjective', label: 'A deliberate slowness', find: '\\b(?:deliberate|careful|measured|practiced|practised|studied|calculated|purposeful|conscious|slight)\\s+(?!(?:and|or|but|about|in|to|as|enough|with|for)\\b)(?=[a-z])', action: 'swap', replacement: '' }),
     // ponytail: regex, sentence-start anchor.
     regex({ id: 'default-not-lead', label: 'Not X, Y', find: `${sentenceStart}Not\\b[^,.!?\\n]*,[^.!?\\n]*`, caseSensitive: true, action: 'delete' }),
     // ponytail: regex, an optional just/only/merely and a length cap in characters.
@@ -125,17 +142,6 @@ export function defaultRules(): Rule[] {
     pattern({ id: 'default-less-more', label: 'Less X, more Y', find: 'less [word]{1,2} , more [word]', action: 'delete' }),
     // ponytail: regex, a backreference, and the match crosses a sentence.
     regex({ id: 'default-did-pair', label: 'She didn\'t X. She Y.', find: '\\b(I|he|she|they|we|you|it)\\s+(?:did not|didn\'t|did)\\b[^.!?\\n]*[.!?]["*]?\\s+\\1\\b', action: 'delete' }),
-    // ponytail: regex, crosses sentences. "Short" is a fixed four words, not relative to the paragraph. Relative needs code in runAgent.
-    // Narration only: "Right. Yeah. Sorry." is how people talk.
-    regex({ id: 'default-short-triple', label: 'Three short sentences', find: `${sentenceStart}${narration}(?:[^\\s.!?"]+(?: [^\\s.!?"]+){0,3}[.!?]["*]? +){2}[^\\s.!?"]+(?: [^\\s.!?"]+){0,3}[.!?]`, action: 'rewrite', note: 'Three short sentences in a row. Combine them into fewer, longer sentences.' }),
-    // ponytail: regex, either/or on both words. Also catches "letting the silence settle".
-    regex({ id: 'default-words-physical', label: 'Words/silence doing physical things', find: `\\b(?:words?|silence|question|name)\\s+${physical}\\b`, action: 'delete' }),
-    // ponytail: regex, negative lookahead for food words.
-    regex({ id: 'default-taste', label: 'Taste outside food', find: `${sentenceStart}(?![^.!?\\n]*\\b(?:eat|eats|ate|eating|food|drink|drinks|drank|drinking|sip|sipped|bite|chew|chewed|swallow|swallowed|meal|dinner|lunch|breakfast|wine|tea|coffee|soup|bread)\\b)[^.!?\\n]*\\btast(?:e|es|ed|ing)\\b`, action: 'delete' }),
-    // ponytail: regex, crosses sentences. Narration only, like the short triple.
-    regex({ id: 'default-staccato', label: 'One-word sentences', find: `${sentenceStart}${narration}\\w+\\.["*]?\\s+\\w+\\.`, action: 'delete' }),
-    // ponytail: regex, either/or (pooled, pooling).
-    regex({ id: 'default-pooled', label: 'Shade pooled', find: '\\bpool(?:ed|ing)\\b', action: 'delete' }),
     // ponytail: regex, sentence-start anchor. Not Word types: the tagger reads "tired" and "eyes" as verbs, so a
     // verbless pattern misses "Dark eyes, tired, a stranger." A pronoun opener is an action list ("He typed,
     // deleted, then typed again.") and is skipped, as is speech.
@@ -166,7 +172,5 @@ export function defaultRules(): Rule[] {
     regex({ id: 'default-punch-gut', label: 'Like a punch to the gut', find: '\\blike a (?:punch|blow|kick|slap) (?:to|in) the (?:gut|stomach|throat|chest|face)\\b', action: 'rewrite', note: 'A stock simile. Say what the character did or felt instead.' }),
     // ponytail: regex, crosses sentences.
     regex({ id: 'default-no-words-just', label: 'No words. Just breath.', find: `${sentenceStart}No \\w+(?: \\w+)?\\.["*]?\\s+Just\\b[^.!?\\n]*[.!?]`, caseSensitive: true, action: 'delete' }),
-    // ponytail: regex, either/or on both determiners.
-    regex({ id: 'default-made', label: 'The X made Y', find: '\\b(?:the|her|his|their|my|your) \\w+ made (?:her|him|them|me|my|his|their|your)\\b', action: 'delete' }),
   ]
 }

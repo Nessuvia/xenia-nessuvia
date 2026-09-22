@@ -134,7 +134,9 @@
   gap: 8px;
   list-style: none;
   margin: 0;
-  padding: 0;
+  /* The track line. The reply travels down it, and each stage is a stop. */
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--border);
 }
 
 .postStage {
@@ -356,4 +358,196 @@
 
 .postShapeDialogue {
   color: var(--accent);
+}
+
+/* The track: the reply enters at the top, travels down the stops, and leaves at the bottom. The
+   line is a left border on the stage list rather than SVG, so it follows the palette and costs
+   nothing to keep in sync with the cards. */
+.postTrackEnd {
+  margin: 8px 0;
+  padding-left: 16px;
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+.postSensorList,
+.postGateList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postSensor,
+.postGate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.postSensorHead,
+.postGateHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.postSensorName,
+.postGateName {
+  flex: 1;
+  min-width: 0;
+}
+
+.postSensorKind {
+  flex: 0 0 auto;
+}
+
+.postSensorRemove {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  color: var(--textMuted);
+}
+
+.postSensorField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postSensorQuestion {
+  width: 100%;
+  resize: vertical;
+}
+
+.postSensorScale {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--surfaceSunken);
+  border-radius: var(--radius);
+}
+
+.postSensorScaleTitle {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postSensorLevel,
+.postSensorOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.postSensorLevel input,
+.postSensorOption input {
+  flex: 1;
+  min-width: 0;
+}
+
+.postSensorLevelNumber {
+  flex: 0 0 24px;
+  color: var(--textMuted);
+  font-size: 11px;
+}
+
+.postSensorOptionName {
+  flex: 0 0 96px;
+}
+
+.postSensorPayload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postSensorNumber {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postSensorNumber input {
+  width: 56px;
+}
+
+.postSensorAdd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.postSensorAddButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postSensorProblem {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.postGateWhen,
+.postGateThen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.postGateWord {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
+.postGateValue {
+  width: 72px;
+}
+
+.postGateStages {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: var(--surfaceSunken);
+  border-radius: var(--radius);
+}
+
+.postGateStage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.postGateStageName {
+  flex: 1;
+  color: var(--textMuted);
+  font-size: 12px;
 }

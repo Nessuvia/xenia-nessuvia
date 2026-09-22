@@ -3,6 +3,7 @@ import { CompromiseTagger, memoizeTagger, wordTokens, type Token } from '../hamm
 import { computeExclusions, type IgnorePair } from '../hammer/exclusions.ts'
 import { quotedRanges, sceneTemperature } from '../quality/temperature.ts'
 import { adverbPlacement } from './lint/adverbPlacement.ts'
+import { hedgeBudget } from './lint/hedgeBudget.ts'
 import { ambientFiller } from './lint/ambientFiller.ts'
 import { intensifierBudget } from './lint/intensifierBudget.ts'
 
@@ -46,7 +47,7 @@ export interface LintRule {
   check(paragraph: string, ctx: LintContext): LintHit[]
 }
 
-export const lintRules: LintRule[] = [adverbPlacement, intensifierBudget, ambientFiller]
+export const lintRules: LintRule[] = [adverbPlacement, intensifierBudget, hedgeBudget, ambientFiller]
 
 const tagger = memoizeTagger(new CompromiseTagger())
 

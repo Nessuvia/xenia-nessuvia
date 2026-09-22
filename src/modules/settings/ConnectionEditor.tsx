@@ -306,6 +306,19 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
             </select>
             <small>Sends a GBNF grammar with acrostic replies.</small>
           </label>
+
+          <label className="checkboxRow">
+            <input
+              type="checkbox"
+              checked={!!draft.decisions}
+              onChange={(e) => set('decisions', e.target.checked || undefined)}
+            />
+            Decisions endpoint
+          </label>
+          <small>
+            This endpoint answers typed questions instead of writing prose. The URL is used as
+            written. Post-processing sensors can use it; chats cannot.
+          </small>
         </div>
       </details>
 

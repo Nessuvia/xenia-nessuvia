@@ -18,11 +18,14 @@ import { loadVad } from '../../core/quality/vad'
 import type { Chat } from '../../core/storage/types'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import RulesPanel from './RulesPanel'
+import SensorEditor from './SensorEditor'
+import GateEditor from './GateEditor'
+import { usableSensor } from '../../core/sensors/sensor'
 import { exportPostStack, parsePostStack } from './postStackFile'
 import './postProcessing.css'
 
 /** The stages, in the order the pass runs them. */
-type StageId = 'acrostic' | 'swaps' | 'lint' | 'rules' | 'flow' | 'ignore'
+type StageId = 'acrostic' | 'sensors' | 'gates' | 'swaps' | 'lint' | 'rules' | 'flow' | 'ignore'
 
 /** Which stage a tester key belongs to. */
 const stageOf: Record<string, StageId> = { swap: 'swaps', lint: 'lint', rule: 'rules', flow: 'flow' }
@@ -68,6 +71,18 @@ export default function PostProcessingView() {
   const style = config.style ?? defaultFlowStyle
   const patch = (over: Partial<PostStackConfig>) => stack?.id && patchConfig(stack.id, over)
   const toggle = (id: StageId) => setOpen(open === id ? null : id)
+
+  // A sensor that isn't finished is never sent, so the counts say what actually gets asked.
+  const sensorList = config.sensors?.list ?? []
+  const askedCount = sensorList.filter(usableSensor).length
+  const sensorSummary = sensorList.length === 0
+    ? 'No questions yet'
+    : `${askedCount} of ${sensorList.length} ready`
+  const gateList = config.gates?.list ?? []
+  const retryCount = gateList.filter((gate) => gate.enabled && gate.then.kind === 'retry').length
+  const gateSummary = gateList.length === 0
+    ? 'No gates yet'
+    : `${gateList.filter((gate) => gate.enabled).length} on · ${retryCount} ask again`
 
   // Debounced: every keystroke in a rule re-runs the whole chat otherwise.
   useEffect(() => {
@@ -210,6 +225,10 @@ export default function PostProcessingView() {
               />
             </label>
           </div>
+          <p className="hint">
+            New starts from the built-in stack, with its rules, swaps and sensors. An existing stack
+            keeps what it had.
+          </p>
           {error && <p className="hint danger">{error}</p>}
         </section>
 
@@ -227,14 +246,25 @@ export default function PostProcessingView() {
               </select>
             </label>
             <ConnectionPicker value={agent.connectionId} allowActive onChange={(connectionId) => setAgent({ connectionId })} />
+            <ConnectionPicker
+              label="Sensors"
+              value={agent.sensorConnectionId ?? null}
+              filter={(c) => !!c.decisions}
+              allowNone="Off"
+              onChange={(sensorConnectionId) => setAgent({ sensorConnectionId })}
+            />
           </div>
-          <p className="hint">These three apply to every stack. A chat can override the switch in its sidebar.</p>
+          <p className="hint">
+            These apply to every stack. A chat can override the switch in its sidebar. Sensors need a
+            connection marked as a decisions endpoint.
+          </p>
 
           {!stack ? (
             <p className="hint">No stacks. Add one to edit the pass.</p>
           ) : (
             <>
               <div className="postStageSummary">
+                {(config.sensors?.enabled ?? false) && <span className="postChip">{askedCount} sensors</span>}
                 <span className="postChip">{config.acrostic.enabled ? 'Acrostic on' : 'Acrostic off'}</span>
                 <span className="postChip">{config.swaps.lexicon.length} swaps</span>
                 <span className="postChip">{lintRules.length - config.lint.off.length} checks</span>
@@ -246,7 +276,39 @@ export default function PostProcessingView() {
                 )}
               </div>
 
+              <p className="postTrackEnd">reply in</p>
               <ul className="postStages">
+                <StageHead
+                  id="sensors"
+                  title="Check it"
+                  summary={sensorSummary}
+                  enabled={config.sensors?.enabled ?? false}
+                  open={open === 'sensors'}
+                  onOpen={() => toggle('sensors')}
+                  onToggleEnabled={(enabled) => patch({ sensors: { ...(config.sensors ?? { list: [] }), enabled } })}
+                >
+                  <SensorEditor
+                    sensors={config.sensors?.list ?? []}
+                    onChange={(list) => patch({ sensors: { enabled: config.sensors?.enabled ?? false, list } })}
+                  />
+                </StageHead>
+                <StageHead
+                  id="gates"
+                  title="What a reading does"
+                  summary={gateSummary}
+                  enabled={config.gates?.enabled ?? false}
+                  open={open === 'gates'}
+                  onOpen={() => toggle('gates')}
+                  onToggleEnabled={(enabled) => patch({ gates: { ...(config.gates ?? { list: [] }), enabled } })}
+                >
+                  <GateEditor
+                    gates={config.gates?.list ?? []}
+                    sensors={config.sensors?.list ?? []}
+                    retryCap={config.retryCap ?? 0}
+                    onChange={(list) => patch({ gates: { enabled: config.gates?.enabled ?? false, list } })}
+                    onRetryCap={(retryCap) => patch({ retryCap })}
+                  />
+                </StageHead>
                 <StageHead
                   id="acrostic"
                   title="Acrostic"
@@ -399,6 +461,7 @@ export default function PostProcessingView() {
                   Runs last. One call that makes speech sound spoken and answer the last message. It may add one line. Narration stays word for word.
                 </p>
               </section>
+              <p className="postTrackEnd">reply out</p>
             </>
           )}
         </section>

@@ -23,6 +23,7 @@ import {
   continued,
   deletedSwipes,
   passOriginalFor,
+  passReadingsFor,
   passSummaryFor,
   passed,
   regenerated,
@@ -31,9 +32,14 @@ import {
   swipeIndex,
   withAcrostic,
   withPass,
+  withReadings,
 } from './swipes'
 import { forgetSwipes, rememberSnapshot } from './snapshots'
 import { recentContext, runAgent, type Complete } from '../agent/runAgent'
+import { runTrack, type TrackDeps } from '../agent/runTrack'
+import { askSensors } from '../sensors/decisions'
+import { sensorState } from '../sensors/state'
+import type { Reading } from '../sensors/sensor'
 import { resolveChatAgent } from '../agent/agentConfig'
 import { resolvePostStack, runStages, type AcrosticConfig } from '../agent/postStack'
 import { drawAcrostic } from '../agent/acrostic/draw'
@@ -90,10 +96,13 @@ interface PassResult {
   failed?: string
   /** What the pass did, in one line. Set only when it changed something. */
   summary?: string
+  /** What the sensors read for the kept attempt. Empty when nothing sensed. */
+  readings?: Reading[]
 }
 
 /**
- * The agent pass around one finished generation.
+ * The post-processing track around one finished generation: sense, retry while a gate says so,
+ * then clean the winner with the stages the readings chose.
  * Off, or a sentinel connection, returns the text untouched.
  * Abort returns the pass as far as it got. A failed call counts as a rejected candidate.
  */
@@ -108,6 +117,12 @@ async function agentPass(
   force = false,
   /** "Post-process (clean only)": every stage that runs in code, and no rewrite rules, so no request. */
   cleanOnly = false,
+  /** How this call site asks the main model again, with the nudge appended at prompt build time
+   *  only. Absent means a retry gate can't fire here: the track senses and cleans, and never
+   *  re-rolls. Wiring a site up is adding this one closure. */
+  regenerate?: (nudge: string) => Promise<string>,
+  /** The card, persona and system prompt as one block, for a sensor that asked for `context`. */
+  sensorContext?: string,
 ): Promise<PassResult> {
   const config = useSettings.getState().agent
   if (!force && !resolveChatAgent(config, chat.agent).enabled) return { text }
@@ -116,8 +131,8 @@ async function agentPass(
   // What the pass does comes from the stack; the global config only says whether and how.
   const stack = resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks)
   const staged = { ...runStages(stack, useSettings.getState().appearance.tagRules), context: recentContext(history, stack.contextMessages), lastMessage: history.at(-1)?.content.slice(history.at(-1)?.reasoningEnd ?? 0) }
-  // Detector fixes are model calls too, so clean only drops them with the rewrite rules.
-  const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite'), flow: undefined, flowPass: undefined, dialoguePass: false } : staged
+  // Detector fixes and folds are model calls too, so clean only drops them with the rewrite rules.
+  const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite' && r.action !== 'fold'), flow: undefined, flowPass: undefined, dialoguePass: false } : staged
 
   const complete: Complete = async (messages) => {
     // Unreachable with clean only: with no rewrite rules, runAgent never asks.
@@ -133,12 +148,50 @@ async function agentPass(
     return out
   }
   const wait = (config.style ?? 'stylized') === 'stylized' ? (ms: number) => new Promise<void>((done) => setTimeout(done, ms)) : undefined
-  const outcome = await runAgent(text, run, complete, onProgress, wait).finally(() => onProgress(text, []))
+
+  // Clean only makes no request at all, so it never senses: asking a decisions model would be a
+  // request, and the promise that action makes is that there isn't one.
+  if (cleanOnly) {
+    const outcome = await runAgent(text, run, complete, onProgress, wait).finally(() => onProgress(text, []))
+    return { text: outcome.text, original: outcome.text === text ? undefined : text, summary: outcome.summary, failed: outcome.failed }
+  }
+
+  // A null id means sensors are off. Not `resolveConnection`, which falls back to the active
+  // connection: a chat endpoint can't answer a decisions call, and silently asking one would fail
+  // on every reply.
+  const sensorId = resolveChatAgent(config, chat.agent).sensors ? config.sensorConnectionId : null
+  const sensorConnection = sensorId ? useSettings.getState().connections.find((c) => c.id === sensorId) : undefined
+
+  const deps: TrackDeps = {
+    ask: async (body, sensors) => {
+      if (!sensorConnection) return []
+      const state = sensorState(sensors, body, history.map((m) => ({ role: m.role, content: m.content })), sensorContext)
+      return (await askSensors(sensors, state, sensorConnection, signal)).readings
+    },
+    // A site that hasn't wired a regenerate can't re-roll. An empty reply reads as a failed call,
+    // so the track keeps what it has instead of replacing it with nothing.
+    regenerate: regenerate ?? (async () => ''),
+    complete,
+  }
+
+  const outcome = await runTrack(text, stack, deps, {
+    // Each earlier reply's own readings feed the windows. They're stored per swipe, so swiping
+    // back rolls the averages back too.
+    history: history.filter((m) => m.role === 'assistant').map((m) => passReadingsFor(m) ?? []),
+    tagRules: useSettings.getState().appearance.tagRules,
+    context: staged.context,
+    lastMessage: staged.lastMessage,
+    onProgress,
+    wait,
+  }).finally(() => onProgress(text, []))
+
   return {
     text: outcome.text,
-    original: outcome.text === text ? undefined : text,
-    summary: outcome.summary,
+    // What the writing model produced is the attempt that was kept, which a retry may have changed.
+    original: outcome.text === outcome.kept ? undefined : outcome.kept,
+    summary: [outcome.senseSummary, outcome.summary].filter(Boolean).join(' ') || undefined,
     failed: outcome.failed,
+    readings: outcome.readings,
   }
 }
 
@@ -833,6 +886,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       let passOriginal: string | undefined
       let passFail: string | undefined
       let passSummary: string | undefined
+      let passReads: Reading[] | undefined
       try {
         const stack = await stackFor(chat)
         // Blocks first, the stack's Narrator misc prompt second. A stack with an `[if Narrator]`
@@ -844,20 +898,21 @@ export const useChats = create<ChatState>()((set, get) => ({
           : narratorCharacter(miscPrompt('narrator', stack.miscPrompts))
         const persona = await usePersonas.getState().ensureActive()
         await loadTokenizer(tokenizerFor(connection))
+        // Held so a sensor retry can build the same prompt again with a nudge in place of the idea.
+        const promptArgs = {
+          stack,
+          character,
+          persona,
+          chat,
+          speaker: told,
+          messages: get().messages,
+          worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
+          tagRules: useSettings.getState().appearance.tagRules,
+          cast: _sessionCast,
+          personas: _sessionPersonas,
+        }
         const promptMessages = buildPrompt(
-          {
-            stack,
-            character,
-            persona,
-            chat,
-            speaker: told,
-            messages: get().messages,
-            worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
-            tagRules: useSettings.getState().appearance.tagRules,
-            cast: _sessionCast,
-            personas: _sessionPersonas,
-            appendSystem: takeIdea(stack.miscPrompts),
-          },
+          { ...promptArgs, appendSystem: takeIdea(stack.miscPrompts) },
           budgetOf(connection),
         )
         set({ trimmedCount: promptMessages.droppedCount })
@@ -867,14 +922,30 @@ export const useChats = create<ChatState>()((set, get) => ({
         finishReason = reply.finishReason
         snapshot = reply.snapshot
 
+        /**
+         * A retry gate's re-roll. The nudge rides in on `appendSystem`, which is prompt-time only:
+         * the user's own message is never edited, and nothing about the nudge is stored.
+         */
+        const regenerate = async (nudge: string) => {
+          const again = buildPrompt({ ...promptArgs, appendSystem: nudge }, budgetOf(connection))
+          const retried = newReply()
+          set({ streamingText: '' })
+          await generateReply(chat, again.messages, connection, get().messages, controller.signal, retried)
+          return retried.text
+        }
+        // The system block the prompt already built: the card, the persona and the system prompt,
+        // which is exactly what a sensor asking about intent needs to compare against.
+        const sensorContext = promptMessages.messages.find((m) => m.role === 'system')?.content
+
         // Agent pass over the finished reply.
         if (text && !controller.signal.aborted) {
           set({ passing: true })
-          const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
+          const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), false, false, regenerate, sensorContext)
           text = pass.text
           passOriginal = pass.original
           passFail = pass.failed
           passSummary = pass.summary
+          passReads = pass.readings
           set({ streamingText: text })
         }
       } catch (err) {
@@ -926,6 +997,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           passOriginals: [passOriginal],
           passFailed: [passFail],
           passSummaries: [joinNotes(reply.note, passSummary)],
+          passReadings: [passReads],
           acrostics: [reply.acrostic],
           trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
           createdAt: Date.now(),
@@ -964,6 +1036,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     let passOriginal: string | undefined
     let passFail: string | undefined
     let passSummary: string | undefined
+    let passReads: Reading[] | undefined
     let snapshot: string | undefined
     const reply = newReply()
     try {
@@ -1001,6 +1074,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         passOriginal = pass.original
         passFail = pass.failed
         passSummary = pass.summary
+        passReads = pass.readings
         set({ streamingText: text })
       }
     } catch (err) {
@@ -1052,6 +1126,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         passOriginals: [passOriginal],
         passFailed: [passFail],
         passSummaries: [joinNotes(reply.note, passSummary)],
+        passReadings: [passReads],
         acrostics: [reply.acrostic],
         trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
         createdAt: Date.now(),
@@ -1122,6 +1197,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     let passOriginal: string | undefined
     let passFail: string | undefined
     let passSummary: string | undefined
+    let passReads: Reading[] | undefined
     let finishReason = ''
     let snapshot: string | undefined
     const reply = newReply()
@@ -1161,6 +1237,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         passOriginal = pass.original
         passFail = pass.failed
         passSummary = pass.summary
+        passReads = pass.readings
         set({ streamingText: text })
       }
     } catch (err) {
@@ -1198,7 +1275,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     const regen = regenerated(target, text, reasoning, instruction)
     // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
     // count itself. An older message's holes stay where they belong.
-    const passedRegen = regen && withAcrostic(withPass(regen, passOriginal, passFail, joinNotes(reply.note, passSummary)), reply.acrostic)
+    const passedRegen = regen && withAcrostic(withReadings(withPass(regen, passOriginal, passFail, joinNotes(reply.note, passSummary)), passReads), reply.acrostic)
     const tracked = passedRegen && trackerUpdate(character, chat, get().messages.slice(0, at), passOriginal ?? text, connection)
     const updated = tracked ? withTrackerUpdate(passedRegen, tracked) : passedRegen
     if (updated) {
@@ -1391,7 +1468,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
 
     const updated = result.original
-      ? passed(target, result.text, result.original ?? source, result.summary, result.failed)
+      ? withReadings(passed(target, result.text, result.original ?? source, result.summary, result.failed), result.readings)
       : withPass(selectSwipe(target, swipeIndex(target)), passOriginalFor(target), result.failed)
     await storage.put('messages', updated as unknown as StoredRecord)
     if (get().chat?.id === chat.id) await get().load(chat.id!)

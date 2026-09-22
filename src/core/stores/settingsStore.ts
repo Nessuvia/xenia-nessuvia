@@ -56,6 +56,11 @@ export interface Connection {
   /** How much structure this endpoint accepts on a request, learned on the first palette ask
    *  rather than configured. Undefined means it hasn't been tried yet. */
   structuredOutput?: StructuredMode
+  /** This endpoint answers typed questions rather than writing prose: it speaks the Decisions API,
+   *  not chat completions. Its `endpointUrl` is used verbatim, because the decisions path differs
+   *  per provider and can't be derived. A flagged connection is offered to sensors and hidden from
+   *  the chat pickers. */
+  decisions?: boolean
   /** Where an acrostic reply's GBNF grammar goes. Undefined sends none, and the reply relies on the
    *  instruction and the parser alone. */
   grammarField?: GrammarField

@@ -49,4 +49,34 @@ for (const s of samples) {
   assert.ok(!/ [.;:!?]/.test(r), `space before punct in ${JSON.stringify(r)}`)
 }
 
+// Operation 8: article agreement, the seam a cut adjective leaves behind.
+assert.equal(repairAll('a studied indifference'), 'a studied indifference')
+assert.equal(repairAll('a indifference'), 'an indifference')
+assert.equal(repairAll('an silence'), 'a silence')
+assert.equal(repairAll('a angry silence'), 'an angry silence')
+// Vowel sound, not vowel spelling. Both directions have exceptions.
+assert.equal(repairAll('a hour'), 'an hour')
+assert.equal(repairAll('a honest answer'), 'an honest answer')
+assert.equal(repairAll('a heir'), 'an heir')
+assert.equal(repairAll('an unicorn'), 'a unicorn')
+assert.equal(repairAll('an user'), 'a user')
+assert.equal(repairAll('an European city'), 'a European city')
+assert.equal(repairAll('an one-off'), 'a one-off')
+// Prefix matching carries the exceptions to inflections.
+assert.equal(repairAll('a honesty'), 'an honesty')
+assert.equal(repairAll('an university'), 'a university')
+// Already right, left alone.
+assert.equal(repairAll('an apple and a pear'), 'an apple and a pear')
+// Not part of a longer word.
+assert.equal(repairAll('Dan indifference'), 'Dan indifference')
+// The whole point: repairing after a real cut.
+assert.equal(repairAfterCut('a studied indifference', 2, 10), 'an indifference')
+
+// A sentence-initial capital is an article and is fixed, keeping its case.
+assert.equal(repairAll('A indifference'), 'An indifference')
+assert.equal(repairAll('He left. A indifference settled.'), 'He left. An indifference settled.')
+assert.equal(repairAll('An slowness'), 'A slowness')
+// Mid-sentence a capital A is the letter, an initial or a grade.
+assert.equal(repairAll('Exhibit A and Exhibit B'), 'Exhibit A and Exhibit B')
+
 console.log('checkRepair OK')
