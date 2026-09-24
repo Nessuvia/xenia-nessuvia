@@ -337,16 +337,28 @@ export function labelFromKey(key: string): string {
 }
 
 /**
+ * Provider docs show snippets like `"reasoning": { "effort": "high" // Options: ... }`: a bare
+ * member without its braces, with `//` comments. Strict JSON first, then that shape.
+ */
+function parseSnippet(raw: string): unknown {
+  // Strings are matched first and kept, so a `//` inside one (a URL) survives.
+  const stripped = raw.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*/g, (_, str) => str ?? '').trim()
+  for (const text of [raw, stripped, `{${stripped}}`]) {
+    try {
+      return JSON.parse(text)
+    } catch {
+      // next shape
+    }
+  }
+  return null
+}
+
+/**
  * The first key/value of a pasted snippet, as a def. `{"dry_multiplier": 0.8}` is the whole input
  * the modal asks for; everything else on the def is refinement.
  */
 export function defFromSnippet(raw: string): ParamDef | null {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
+  const parsed = parseSnippet(raw)
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null
   const entries = Object.entries(parsed as Record<string, unknown>)
   if (!entries.length) return null

@@ -27,6 +27,12 @@ const find = (key: string) => defs.find((d) => d.key === key)!
   // Only the first key is read: the modal makes one element at a time.
   assert.strictEqual(defFromSnippet('{"a":1,"b":2}')!.key, 'a')
 
+  // A provider-docs snippet: no outer braces, a `//` comment, a URL that must survive.
+  const docs = defFromSnippet('"reasoning": {\n  "effort": "high", // Options: "none", "low"\n  "u": "http://x"\n}')!
+  assert.strictEqual(docs.key, 'reasoning')
+  assert.strictEqual(docs.kind, 'json')
+  assert.deepStrictEqual(JSON.parse(docs.default as string), { effort: 'high', u: 'http://x' })
+
   // Anything that isn't a JSON object is refused rather than guessed at.
   assert.strictEqual(defFromSnippet('not json'), null)
   assert.strictEqual(defFromSnippet('[1,2]'), null)
