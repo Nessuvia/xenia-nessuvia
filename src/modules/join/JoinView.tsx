@@ -127,7 +127,7 @@ function openGuestChannel(sessionId: string, relay: RelayConfig, persona: GuestP
       },
     })
   } catch (e) {
-    useMultiplayer.getState().setPhase('ended', e instanceof Error ? e.message : 'Could not connect.')
+    useMultiplayer.getState().setPhase('ended', e instanceof Error ? e.message : "Couldn't connect.")
   }
 }
 
@@ -162,7 +162,7 @@ export default function JoinView(): JSX.Element {
   if (!relay) {
     return (
       <div id="join">
-        <p>This link points at a relay that cannot be used.</p>
+        <p>This link points at a relay that can't be used.</p>
       </div>
     )
   }

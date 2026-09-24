@@ -50,7 +50,7 @@ export function builtinParamDefs(): ParamDef[] {
     }),
     def('banned_strings', 'Banned strings', {
       kind: 'stringList', default: [], appliesTo: both,
-      hint: 'Phrases the model may not produce. A rewrite stage fills this in when it is on the connection.',
+      hint: "Phrases the model may not produce. A rewrite stage fills this in when it's on the connection.",
     }),
     def('seed', 'Seed', {
       kind: 'number', step: 1, default: -1, appliesTo: both,

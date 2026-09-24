@@ -249,7 +249,7 @@ function Landing(): JSX.Element {
             </label>
             <p className="pickerHint">
               {personaLock
-                ? 'Guests cannot edit their name, description or picture. You can edit anyone’s.'
+                ? "Guests can't edit their name, description or picture. You can edit anyone’s."
                 : 'Guests can edit their name, description and picture. A change takes effect on their next turn.'}
             </p>
           </section>

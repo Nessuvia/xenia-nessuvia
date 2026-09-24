@@ -57,10 +57,10 @@ export function parseStack(text: string): PromptStack {
   try {
     data = JSON.parse(text)
   } catch {
-    throw new Error('That file is not JSON.')
+    throw new Error("That file isn't JSON.")
   }
   const file = data as Partial<StackFile>
-  if (file?.format !== 'nessu-prompt-stack') throw new Error('That file is not a prompt stack.')
+  if (file?.format !== 'nessu-prompt-stack') throw new Error("That file isn't a prompt stack.")
   if (!Array.isArray(file.active)) throw new Error('The stack file is missing its blocks.')
   // An older file's parked blocks import as disabled ones rather than being dropped.
   const parked = Array.isArray(file.inactive) ? file.inactive.map((b) => ({ ...b, disabled: true })) : []

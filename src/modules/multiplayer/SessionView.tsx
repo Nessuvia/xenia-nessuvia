@@ -514,7 +514,7 @@ function GuestBar(): JSX.Element {
 
       <Composer
         streaming={false}
-        disabledReason={myTurn ? '' : `It is ${holder?.name ?? 'someone else'}'s turn.`}
+        disabledReason={myTurn ? '' : `It's ${holder?.name ?? 'someone else'}'s turn.`}
         // Completed from the roster the host sent; the command itself is read on the host.
         // This side only has to offer the names.
         commandTargets={characters}

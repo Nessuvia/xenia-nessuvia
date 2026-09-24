@@ -106,7 +106,7 @@ export async function askSensors(
         signal: controller.signal,
       })
     } catch {
-      throw stopped() ?? new SensorError('The request could not reach the endpoint.', 'other')
+      throw stopped() ?? new SensorError("The request couldn't reach the endpoint.", 'other')
     }
   }
 

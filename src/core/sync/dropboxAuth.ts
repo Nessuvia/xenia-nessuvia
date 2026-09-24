@@ -56,7 +56,7 @@ async function postForm(body: Record<string, string>): Promise<Record<string, un
       body: new URLSearchParams(body),
     })
   } catch {
-    throw new Error('Could not reach Dropbox.')
+    throw new Error("Couldn't reach Dropbox.")
   }
   const text = await response.text()
   if (!response.ok) {
@@ -78,7 +78,7 @@ async function postForm(body: Record<string, string>): Promise<Record<string, un
 export async function accessToken(): Promise<string> {
   if (access && Date.now() < access.expiresAt) return access.token
   const { refreshToken } = useSettings.getState().dropbox
-  if (!refreshToken) throw new Error('Dropbox is not connected.')
+  if (!refreshToken) throw new Error("Dropbox isn't connected.")
 
   let result: Record<string, unknown>
   try {
@@ -94,7 +94,7 @@ export async function accessToken(): Promise<string> {
   }
 
   const token = String(result.access_token ?? '')
-  if (!token) throw new Error('Dropbox did not return an access token.')
+  if (!token) throw new Error("Dropbox didn't return an access token.")
   access = { token, expiresAt: Date.now() + (Number(result.expires_in) || 14400) * 1000 - 60_000 }
   return token
 }
@@ -123,7 +123,7 @@ function waitForCode(popup: Window): Promise<string> {
       // `||`, not `??`: the callback page always sends an `error` string and it's empty when
       // Dropbox sent neither a code nor a reason. That case has to reach the fallback message
       // rather than surfacing as a blank error.
-      done(() => reject(new Error(data.error || 'Dropbox did not return a code.')))
+      done(() => reject(new Error(data.error || "Dropbox didn't return a code.")))
     }
     window.addEventListener('message', onMessage)
     // A closed popup posts nothing, and the promise would hang on a user who changed their mind.
@@ -176,7 +176,7 @@ export async function connectDropbox(): Promise<DropboxAccount> {
       code_verifier: verifier,
     })
     const refreshToken = String(result.refresh_token ?? '')
-    if (!refreshToken) throw new Error('Dropbox did not return a refresh token.')
+    if (!refreshToken) throw new Error("Dropbox didn't return a refresh token.")
     // Usable right away: the sign-in already handed us an access token, and reading the account
     // email below shouldn't cost a second round trip.
     access = {

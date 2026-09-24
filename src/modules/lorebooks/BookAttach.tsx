@@ -49,7 +49,7 @@ export default function BookAttach({
       onChange([...ids, id])
       setCreatedId(id)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not read that file.')
+      setError(e instanceof Error ? e.message : "Couldn't read that file.")
     }
   }
 

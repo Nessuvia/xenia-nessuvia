@@ -219,7 +219,7 @@ function GateRow({
             placeholder="What to tell the model on the retry"
             onChange={(e) => onChange({ then: { kind: 'retry', nudge: e.target.value } })}
           />
-          <span className="hint">Added to the prompt for the retry only. Your message is not edited.</span>
+          <span className="hint">Added to the prompt for the retry only. Your message isn't edited.</span>
         </label>
       ) : (
         <ul className="postGateStages">

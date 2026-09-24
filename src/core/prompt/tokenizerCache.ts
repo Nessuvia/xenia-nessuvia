@@ -49,7 +49,7 @@ export async function readVocab(id: ResolvedTokenizerId) {
 export async function fetchVocab(id: ResolvedTokenizerId): Promise<void> {
   const urls = keys(id)
   const cache = open()
-  if (!urls || !cache) throw new Error('This browser cannot store tokenizers.')
+  if (!urls || !cache) throw new Error("This browser can't store tokenizers.")
   const store = await cache
   // addAll is atomic enough for this: it rejects without writing if either file fails. A
   // half-downloaded vocab never looks cached.

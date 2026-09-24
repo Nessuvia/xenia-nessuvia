@@ -128,7 +128,7 @@ export default function MultiplayerPanel({ isHost }: { isHost: boolean }): JSX.E
           </label>
           <p className="panelHint">
             {personaLock
-              ? 'Guests cannot edit their own persona.'
+              ? "Guests can't edit their own persona."
               : 'A guest edit takes effect on their next turn.'}
           </p>
         </section>
@@ -176,7 +176,7 @@ export default function MultiplayerPanel({ isHost }: { isHost: boolean }): JSX.E
             type="button"
             className="endSessionButton"
             onClick={() => {
-              if (confirm('End the session for everyone? This cannot be undone.')) {
+              if (confirm("End the session for everyone? This can't be undone.")) {
                 session?.close()
               }
             }}

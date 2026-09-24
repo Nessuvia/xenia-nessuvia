@@ -49,10 +49,10 @@ export function parsePostStack(text: string): PostStack {
   try {
     data = JSON.parse(text)
   } catch {
-    throw new Error('That file is not JSON.')
+    throw new Error("That file isn't JSON.")
   }
   const file = data as Partial<PostStackFile>
-  if (file?.format !== 'nessu-post-stack') throw new Error('That file is not a post-processing stack.')
+  if (file?.format !== 'nessu-post-stack') throw new Error("That file isn't a post-processing stack.")
   if (!file.config) throw new Error('The stack file is missing its config.')
   const now = Date.now()
   return {

@@ -183,7 +183,7 @@ export default function SettingsView() {
               Debug mode
             </label>
             <p className="debugHint">
-              Replies come from a local lorem ipsum generator. Requests are not sent to the connection.
+              Replies come from a local lorem ipsum generator. Requests aren't sent to the connection.
             </p>
           </section>
           <section className="settingsCard">
@@ -318,7 +318,7 @@ export default function SettingsView() {
         <div className="dialogBackdrop" onClick={() => setResetting(false)}>
           <div className="panel dialog" onClick={(e) => e.stopPropagation()}>
             <h3>Clear all data</h3>
-            <p>This cannot be undone. Type xenia-nessuvia to confirm.</p>
+            <p>This can't be undone. Type xenia-nessuvia to confirm.</p>
             <input
               value={resetPhrase}
               onChange={(e) => setResetPhrase(e.target.value)}

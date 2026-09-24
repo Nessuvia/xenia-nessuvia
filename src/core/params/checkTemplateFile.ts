@@ -40,8 +40,8 @@ import { templateFromJson, templateToJson } from './templateFile.ts'
 
 // --- bad input is refused with something a user can read -----------------
 {
-  assert.throws(() => templateFromJson('not json'), /not JSON/)
-  assert.throws(() => templateFromJson('[]'), /not a template/)
+  assert.throws(() => templateFromJson('not json'), /isn't JSON/)
+  assert.throws(() => templateFromJson('[]'), /isn't a template/)
   assert.throws(() => templateFromJson('{"kind":"somethingElse"}'), /SillyTavern/)
   assert.throws(() => templateFromJson('{"kind":"xeniaInstructTemplate"}'), /no template/)
 }

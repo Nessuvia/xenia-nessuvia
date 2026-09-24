@@ -43,7 +43,7 @@ export function parseBulkBeats(input: string): BulkParse {
   try {
     raw = JSON.parse(text)
   } catch (err) {
-    return { beats: [], unknown: [], error: `That is not valid JSON: ${(err as Error).message}` }
+    return { beats: [], unknown: [], error: `That's not valid JSON: ${(err as Error).message}` }
   }
   if (!Array.isArray(raw)) {
     return { beats: [], unknown: [], error: 'Expected an array of beats, in square brackets.' }

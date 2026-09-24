@@ -109,7 +109,7 @@ const textgenKeys = ['temp', 'rep_pen', 'genamt', 'max_length', 'sampler_order',
 
 /** Which ST export this is. Throws with a message meant for the user. */
 export function sniffShape(data: unknown): StShape {
-  if (!isObject(data)) throw new Error('That file is not a SillyTavern preset.')
+  if (!isObject(data)) throw new Error("That file isn't a SillyTavern preset.")
   if (Array.isArray(data.prompts) || Array.isArray(data.prompt_order)) return 'chatPreset'
   if (
     isObject(data.instruct) ||
@@ -125,7 +125,7 @@ export function sniffShape(data: unknown): StShape {
   if (typeof data.story_string === 'string') return 'context'
   if (typeof data.content === 'string' && !textgenKeys.some((k) => k in data)) return 'sysprompt'
   if (textgenKeys.some((k) => k in data)) return 'textgenPreset'
-  throw new Error('That file is not a SillyTavern preset.')
+  throw new Error("That file isn't a SillyTavern preset.")
 }
 
 /** The five sections, wherever they came from: a bundle splits, a standalone file is one section. */

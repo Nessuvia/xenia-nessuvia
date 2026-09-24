@@ -242,7 +242,7 @@ function outlineObject(text: string): unknown {
       return JSON.parse(repairJsonStrings(json))
     } catch {
       throw new Error(
-        `The reply's JSON did not parse: ${(err as Error).message}\n\n${aroundFailure(json, (err as Error).message)}`,
+        `The reply's JSON didn't parse: ${(err as Error).message}\n\n${aroundFailure(json, (err as Error).message)}`,
       )
     }
   }

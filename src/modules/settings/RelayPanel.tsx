@@ -86,7 +86,7 @@ export default function RelayPanel() {
           />
         </label>
         <p className="debugHint">
-          Must be wss. A ws address cannot be reached from this site.
+          Must be wss. A ws address can't be reached from this site.
         </p>
         <div className="dialogActions">
           <button type="button" disabled={!urlOk || testState === 'testing'} onClick={test}>

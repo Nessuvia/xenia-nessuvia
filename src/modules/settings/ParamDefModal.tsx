@@ -59,7 +59,7 @@ export default function ParamDefModal({
   async function save() {
     if (!draft) return
     if (!draft.key.trim()) {
-      setError('The key is what gets sent. It cannot be blank.')
+      setError("The key is what gets sent. It can't be blank.")
       return
     }
     if (defs.some((d) => d.key === draft.key && d.id !== edit?.id)) {

@@ -64,7 +64,7 @@ export function openCentrifugoChannel(
   }
 
   const timer = setTimeout(() => {
-    reportReady('The room connection failed (the relay did not respond).')
+    reportReady("The room connection failed (the relay didn't respond).")
   }, connectTimeoutMs)
 
   function announce() {

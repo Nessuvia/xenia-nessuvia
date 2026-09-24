@@ -500,7 +500,7 @@ function AppearanceSection() {
       </label>
       <p className="hint">Overrides the Story width in the palette.</p>
       {/* The same global switch as the chat's, shown here to stay reachable without opening a
-          chat. There is no per-beat toggle. */}
+          chat. There's no per-beat toggle. */}
       <label
         className="checkboxRow"
         title="Hides reasoning on beats. It's still stored."

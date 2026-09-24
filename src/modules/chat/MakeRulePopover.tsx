@@ -76,7 +76,7 @@ export default function MakeRulePopover({ at, text, onClose }: { at: { x: number
       {action === 'rewrite' && (
         <textarea className="chatMakeRuleText" rows={2} value={extra} placeholder="Tell the model" onChange={(e) => setExtra(e.target.value)} />
       )}
-      {stack ? <p className="hint">Saves to {stack.name}.</p> : <p className="hint">There is no stack to save to.</p>}
+      {stack ? <p className="hint">Saves to {stack.name}.</p> : <p className="hint">There's no stack to save to.</p>}
       <div className="chatMakeRuleActions">
         <button type="button" disabled={disabled} onClick={() => save().then(onClose)}>
           Save

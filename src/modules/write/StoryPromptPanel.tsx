@@ -66,7 +66,7 @@ export default function StoryPromptPanel() {
   }, [story, chapters, activeChapterId, activeBlockId, typed, worldInfoBudget, refreshWorldInfo])
 
   if (!story || chapters.length === 0) return null
-  if (!stack) return <p className="hint">No Story stack yet. It is created on the first generation.</p>
+  if (!stack) return <p className="hint">No Story stack yet. It's created on the first generation.</p>
 
   // Same fallback generate() uses: no cursor yet means the last Chapter.
   const active = chapters.find((c) => c.id === activeChapterId) ?? chapters.at(-1)

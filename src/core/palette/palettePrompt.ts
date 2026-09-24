@@ -157,7 +157,7 @@ export function parsePaletteReply(text: string, base: Palette): Palette {
   try {
     raw = JSON.parse(json)
   } catch (err) {
-    throw new Error(`The reply's JSON did not parse: ${(err as Error).message}`)
+    throw new Error(`The reply's JSON didn't parse: ${(err as Error).message}`)
   }
   const next = coerceFields(raw, base)
   // The name is the one field worth keeping tidy: a model that skips it leaves the old name.

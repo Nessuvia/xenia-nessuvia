@@ -29,7 +29,7 @@ async function fetchChubCard(fullPath: string): Promise<FetchedCard> {
       headers: { Accept: 'application/json' },
     })
   } catch {
-    throw new Error('Could not reach chub.ai')
+    throw new Error("Couldn't reach chub.ai")
   }
   if (!res.ok) throw new Error(`chub.ai request failed: ${res.status}`)
   const node = ((await res.json())?.node ?? {}) as Record<string, unknown>
@@ -90,7 +90,7 @@ async function fetchAiccCard(id: string): Promise<FetchedCard> {
   try {
     res = await fetch(`/aicc/${id}`)
   } catch {
-    throw new Error('Could not reach aicharactercards.com')
+    throw new Error("Couldn't reach aicharactercards.com")
   }
   if (!res.ok) throw new Error(`aicharactercards.com request failed: ${res.status}`)
   const buffer = await res.arrayBuffer()
@@ -131,14 +131,14 @@ export async function fetchCard(url: string): Promise<FetchedCard> {
   try {
     res = await fetch(url)
   } catch {
-    throw new Error('Could not reach that URL')
+    throw new Error("Couldn't reach that URL")
   }
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   const text = await res.text()
   try {
     return { json: JSON.parse(text), avatar: '' }
   } catch {
-    throw new Error('That URL did not return valid JSON')
+    throw new Error("That URL didn't return valid JSON")
   }
 }
 

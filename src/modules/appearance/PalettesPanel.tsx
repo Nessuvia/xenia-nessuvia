@@ -225,7 +225,7 @@ export default function PalettesPanel() {
                         disabled={palettes.length === 1}
                         aria-label="Delete"
                         title={
-                          palettes.length === 1 ? 'The last preset cannot be deleted.' : 'Delete'
+                          palettes.length === 1 ? "The last preset can't be deleted." : 'Delete'
                         }
                         onClick={(e) => {
                           e.stopPropagation()

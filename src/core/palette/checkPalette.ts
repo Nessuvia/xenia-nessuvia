@@ -294,7 +294,7 @@ assert.strictEqual(sloppy.radius, 9)
 
 // Each way a reply can fail says which way it was: the panel isn't one message for everything.
 assert.throws(() => parsePaletteReply('I cannot help with that.', base), /no JSON object/)
-assert.throws(() => parsePaletteReply('{"bg": #fff}', base), /did not parse/)
+assert.throws(() => parsePaletteReply('{"bg": #fff}', base), /didn't parse/)
 assert.throws(() => parsePaletteReply('{"bg":"#fff","accent":', base), /cut off/)
 assert.throws(() => parsePaletteReply('', base), /no JSON object/)
 // The object is cut out of the text: a reply that leads with an array still yields its object.

@@ -29,7 +29,7 @@ export default function FindReplacePanel() {
     <section className="textRules screenFrame">
       <h3>Find & Replace</h3>
       <p className="hint">
-        Changes how message text is shown. The stored message is not altered.
+        Changes how message text is shown. The stored message isn't altered.
       </p>
 
       <ul className="tagRules screenBody">

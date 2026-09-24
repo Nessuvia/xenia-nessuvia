@@ -142,8 +142,8 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.strictEqual(sniffShape({ temp: 0.8, rep_pen: 1.1 }), 'textgenPreset')
   assert.strictEqual(sniffShape({ prompts: [] }), 'chatPreset')
   assert.strictEqual(sniffShape({ instruct: {} }), 'bundle')
-  assert.throws(() => sniffShape({ hello: 'world' }), /not a SillyTavern preset/)
-  assert.throws(() => parseSillyTavern('not json'), /not JSON/)
+  assert.throws(() => sniffShape({ hello: 'world' }), /isn't a SillyTavern preset/)
+  assert.throws(() => parseSillyTavern('not json'), /isn't JSON/)
   // A shape we can read but with nothing usable in it.
   assert.throws(() => parseSillyTavern('{"story_string": ""}'), /nothing in that file/)
 }

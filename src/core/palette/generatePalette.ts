@@ -74,7 +74,7 @@ export async function generatePalette(
     }
   }
 
-  throw lastError ?? new Error('The request was not sent.')
+  throw lastError ?? new Error("The request wasn't sent.")
 }
 
 /**

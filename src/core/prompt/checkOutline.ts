@@ -91,7 +91,7 @@ const bad = (input: string, parse: (s: string) => unknown) => {
 }
 assert.match(bad('Sorry, I cannot help with that.', parseStoryOutlineReply), /no JSON object/)
 assert.match(bad('{"chapters":[{"title":"A"', parseStoryOutlineReply), /never closed it/)
-assert.match(bad('{"chapters":[}', parseStoryOutlineReply), /did not parse/)
+assert.match(bad('{"chapters":[}', parseStoryOutlineReply), /didn't parse/)
 assert.match(bad('{"outline":[]}', parseStoryOutlineReply), /no chapters array/)
 assert.match(bad('{"chapters":[]}', parseStoryOutlineReply), /no chapters\./)
 // Every entry unusable is the same as none: nothing is written, the existing chapters survive.
@@ -240,7 +240,7 @@ assert.strictEqual(
   // Still unusable after the repair, and the message carries the text it choked on.
   assert.throws(
     () => parseChapterOutlineReply('{"beats":[{"content":,}]}'),
-    (err: Error) => err.message.includes('did not parse') && err.message.includes('"beats"'),
+    (err: Error) => err.message.includes("didn't parse") && err.message.includes('"beats"'),
   )
 }
 

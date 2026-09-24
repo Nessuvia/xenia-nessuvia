@@ -234,7 +234,7 @@ interface Reply {
 const newReply = (): Reply => ({ text: '', reasoning: '', finishReason: '' })
 
 const acrosticRetryNote = 'Your last reply lost the line tags. Write every line with its tag.'
-const acrosticFallbackNote = 'Acrostic lines did not come back, so this reply was generated normally.'
+const acrosticFallbackNote = "Acrostic lines didn't come back, so this reply was generated normally."
 
 /** One-line notes as one line. Undefined when there are none. */
 const joinNotes = (...notes: (string | undefined)[]) => notes.filter(Boolean).join(' ') || undefined
@@ -1339,7 +1339,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     if (!chat) return
     const target = get().messages.at(-1)
     if (!target || target.role !== 'assistant') {
-      set({ error: 'Nothing to continue, the last message is not a reply.' })
+      set({ error: "Nothing to continue, the last message isn't a reply." })
       return
     }
     // Trailing whitespace isn't part of what was said, and some endpoints reject a prefill that

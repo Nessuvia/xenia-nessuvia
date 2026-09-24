@@ -80,7 +80,7 @@ export default function LorebooksView() {
       const id = await importFile(await file.text(), nameOf(file))
       setOpenId(id)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not read that file.')
+      setError(e instanceof Error ? e.message : "Couldn't read that file.")
     }
   }
 

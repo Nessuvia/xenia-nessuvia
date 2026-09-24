@@ -57,7 +57,7 @@ export default function TemplateEditor({
     try {
       onChange(templateFromJson(await file.text()).template)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'That file could not be read.')
+      setError(e instanceof Error ? e.message : "That file couldn't be read.")
     }
   }
 

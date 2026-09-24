@@ -147,7 +147,7 @@ export default function CharacterEditor({
   // field has nothing to drop.
   const missingBlock = (source: BlockSource, value: string | undefined) =>
     value?.trim() && activeStack && !hasSource(activeStack, source) ? (
-      <p className="hint">The active prompt stack has no {sourceLabels[source]} block. This text is not sent.</p>
+      <p className="hint">The active prompt stack has no {sourceLabels[source]} block. This text isn't sent.</p>
     ) : null
 
   const set = <K extends keyof Character>(key: K, value: Character[K]) =>
@@ -601,7 +601,7 @@ export default function CharacterEditor({
                     <figure key={url}>
                       {brokenUrls.includes(url) ? (
                         <div className="galleryBroken">
-                          <span>Image did not load</span>
+                          <span>Image didn't load</span>
                           {/* A data URL is the whole image; printing it'd fill the tile. */}
                           {!url.startsWith('data:') && (
                             <span className="galleryBrokenUrl">{url}</span>

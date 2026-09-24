@@ -104,7 +104,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
   try {
     data = JSON.parse(source)
   } catch {
-    throw new Error('That file is not JSON.')
+    throw new Error("That file isn't JSON.")
   }
   const shape = sniffShape(data)
   const sections = sectionsOf(shape, data as Record<string, unknown>)

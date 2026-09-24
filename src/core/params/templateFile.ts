@@ -39,11 +39,11 @@ export function templateFromJson(source: string): { name: string; template: Inst
   try {
     data = JSON.parse(source)
   } catch {
-    throw new Error('That file is not JSON.')
+    throw new Error("That file isn't JSON.")
   }
-  if (!isObject(data)) throw new Error('That file is not a template.')
+  if (!isObject(data)) throw new Error("That file isn't a template.")
   if (data.kind !== 'xeniaInstructTemplate') {
-    throw new Error('That file is not an instruct template. Use the SillyTavern import for theirs.')
+    throw new Error("That file isn't an instruct template. Use the SillyTavern import for theirs.")
   }
   if (!isObject(data.template)) throw new Error('That template file has no template in it.')
 

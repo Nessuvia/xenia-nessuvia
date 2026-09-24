@@ -141,13 +141,13 @@ useEffect(() => {
     what: 'Keep a value between interactions',
     old: `request.session['lastChatId'] = chatId`,
     now: `useChats.setState({ lastChatId: chatId })`,
-    note: 'The store is memory. It is gone on refresh. Use storage for anything that must survive.',
+    note: "The store is memory. It's gone on refresh. Use storage for anything that must survive.",
   },
   {
     what: 'Carry a value to the next step of a form',
     old: `<input type="hidden" name="characterId" value="{{ id }}">`,
     now: `const [draft, setDraft] = useState({ characterId: id })`,
-    note: 'There is no next request to carry it to. One object in state holds every step.',
+    note: "There's no next request to carry it to. One object in state holds every step.",
   },
   {
     what: 'Add a column to a table',
@@ -197,7 +197,7 @@ const habits = [
   },
   {
     old: `$('#form').serialize()`,
-    breaks: 'There is nothing to POST to',
+    breaks: "There's nothing to POST to",
     now: `the state object you already built`,
   },
   {
@@ -218,7 +218,7 @@ export default function LearnView() {
       <div className="screenBody">
         <h1>Learn this codebase</h1>
         <p className="learnLead">
-          For someone who writes Django, jQuery and vanilla JS daily and has not written React.{' '}
+          For someone who writes Django, jQuery and vanilla JS daily and hasn't written React.{' '}
           <code>src/resources/DevGuide.md</code> covers the procedures.
         </p>
 
@@ -278,7 +278,7 @@ export default function CharacterPicker() {
   return <div className="chatPicker"><h2>Characters</h2></div>
 }`}</Code>
         <p>
-          That file runs as it stands. It is the stub template and the stub view at once: there
+          That file runs as it stands. It's the stub template and the stub view at once: there
           is no server to hand markup to. The route comes next, and in this repo it lives in
           the module's own <code>index.tsx</code> rather than a central file:
         </p>
@@ -286,7 +286,7 @@ export default function CharacterPicker() {
 registerModule({ id: 'chat', label: 'Chat', icon: RiChat3Line, route: '/chat', component: ChatModule })`}</Code>
         <FigRegistry />
         <p>
-          That one call produces both the sidebar link and the router entry. There is no{' '}
+          That one call produces both the sidebar link and the router entry. There's no{' '}
           <code>urls.py</code> to edit and no list of screens to keep current. Adding a screen
           means adding a folder and one import line in <code>main.tsx</code>.
         </p>
@@ -350,27 +350,27 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <p>
           Then <code>shown.map(…)</code> instead of <code>characters.map(…)</code>, and no code
           anywhere hides a row or walks the DOM. Typing sets <code>search</code>, which reruns the
-          function, which produces a shorter list, which React diffs against what is currently on
+          function, which produces a shorter list, which React diffs against what's currently on
           screen.
         </p>
         <FigStateToScreen />
         <Rule>
-          Anything you can compute from state, compute during render. Do not put it in state and
+          Anything you can compute from state, compute during render. Don't put it in state and
           keep it in sync.
         </Rule>
         <Why>
           <p>
             <code>shown</code> is derived: given <code>characters</code> and <code>search</code>{' '}
-            there is exactly one correct value for it. Storing it in its own{' '}
+            there's exactly one correct value for it. Storing it in its own{' '}
             <code>useState</code> creates a second source of truth that can disagree with the first,
-            and then you are writing the sync code by hand: an effect that watches{' '}
+            and then you're writing the sync code by hand: an effect that watches{' '}
             <code>search</code> and calls <code>setShown</code>. That effect runs a render late.
             For one frame the list on screen doesn't match the box. Computing it during render makes
             the mismatch unrepresentable.
           </p>
         </Why>
 
-        <h2>2. The DOM is not yours anymore</h2>
+        <h2>2. The DOM isn't yours anymore</h2>
         <p>
           Most of this page renames something you already do. This section removes a tool you use
           constantly, and it comes early for that reason.
@@ -384,13 +384,13 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
           <p>
             React keeps its own record of what it last put on screen. When state changes it re-runs
             your component, compares the new markup to that record, and applies the difference. It
-            never reads the live document to find out what is there.
+            never reads the live document to find out what's there.
           </p>
           <p>
             A change you made with jQuery is invisible to it. The record still says the old text.
             The next render compares new markup against that stale record, decides that node is
             already correct or needs a different edit, and your change is gone. Touching the DOM
-            is not forbidden on principle. React will silently undo it at an unpredictable time,
+            isn't forbidden on principle. React will silently undo it at an unpredictable time,
             worse than an error.
           </p>
         </Why>
@@ -433,7 +433,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
           note="The first one looks like it works, and does, until any unrelated state change rerenders the component and the old title reappears in the box."
         />
         <p>
-          There is an escape hatch: <code>useRef</code> hands you the real node, for focusing an
+          There's an escape hatch: <code>useRef</code> hands you the real node, for focusing an
           input, measuring a size, or driving a <code>&lt;canvas&gt;</code>. It exists for the cases
           where the browser API itself is the point, rather than as a way around state.
         </p>
@@ -442,7 +442,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Code>{`const [text, setText] = useState('')`}</Code>
         <p>
           <code>text</code> is a plain string, fixed for the duration of this call.{' '}
-          <code>setText</code> does not change it, it hands React a new value and asks for another
+          <code>setText</code> doesn't change it, it hands React a new value and asks for another
           run of the function, and on that run <code>text</code> comes back different.
         </p>
 
@@ -474,8 +474,8 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
           <p>
             <code>setText</code> schedules. It returns immediately and React runs the component
             again after your handler finishes: three <code>set</code> calls in one
-            handler produce one rerender rather than three. You are still inside the render that had
-            the old value. That is what you see. If you need the new value in the same handler,
+            handler produce one rerender rather than three. You're still inside the render that had
+            the old value. That's what you see. If you need the new value in the same handler,
             use the local variable you passed in.
           </p>
         </Why>
@@ -495,7 +495,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Code>{`<input value={text} onChange={(e) => setText(e.target.value)} />`}</Code>
         <Why>
           <p>
-            You never call <code>.val()</code>. There is nothing to ask. The box shows{' '}
+            You never call <code>.val()</code>. There's nothing to ask. The box shows{' '}
             <code>text</code>, and every keystroke calls <code>setText</code>. The two can't
             drift. Validation gets shorter for the same reason: the value you would validate is already
             a variable in scope, not something you have to go and collect from five inputs at submit
@@ -525,7 +525,7 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
 
         <h2>4. Lists, filters, and what replaces DataTables</h2>
         <p>
-          DataTables is your default for anything with rows, and it is also the sharpest collision
+          DataTables is your default for anything with rows, and it's also the sharpest collision
           with React: it takes a <code>&lt;table&gt;</code> and rewrites it, adding a header, a
           pager, and its own copies of your rows, which leaves two systems that both believe they
           own those nodes. React's rerenders wipe DataTables' work, and DataTables' mutations get
@@ -535,8 +535,8 @@ const shown = characters.filter((c) => !q || displayName(c).toLowerCase().includ
         <Why>
           <p>
             The reason DataTables was worth the dependency is that it did the DOM work, building
-            rows, hiding them on search, reordering them on a header click. That is the exact work
-            React already does. What is left is deciding which records to show and in what order,
+            rows, hiding them on search, reordering them on a header click. That's the exact work
+            React already does. What's left is deciding which records to show and in what order,
             which is three array methods over data you already have in memory.
           </p>
         </Why>
@@ -549,7 +549,7 @@ const shown = [...characters]
         <p>
           Sorting by a clicked column is one more piece of state (<code>sortKey</code>) read by the
           comparator. Paging is <code>.slice(page * 50, page * 50 + 50)</code>. Export is a function
-          over <code>shown</code>, and it exports exactly what is on screen: the same array
+          over <code>shown</code>, and it exports exactly what's on screen: the same array
           produced both.
         </p>
         <p>
@@ -578,7 +578,7 @@ const shown = [...characters]
         <FigThreeStates />
         <p>
           Django queried and <em>then</em> rendered: a template could assume its context was
-          populated. Every read here is async and there is no moment before the first render to put
+          populated. Every read here is async and there's no moment before the first render to put
           one in. A screen that shows data has three cases, and two of them look identical in the
           data.
         </p>
@@ -593,12 +593,12 @@ const shown = [...characters]
           <p>
             Get the order wrong and the empty-state message flashes on every page load before the
             real list arrives: for the first frame the store genuinely holds{' '}
-            <code>[]</code>. It only shows up on a slow read, and that is how it tends to get past
+            <code>[]</code>. It only shows up on a slow read, and that's how it tends to get past
             review.
           </p>
         </Why>
 
-        <h2>6. Effects, and why most code is not one</h2>
+        <h2>6. Effects, and why most code isn't one</h2>
         <p>
           Rendering has one job: return markup for the current state. It must not do anything else
           no reads, no requests, no timers, no writing to anything outside the component. React may
@@ -625,7 +625,7 @@ const shown = [...characters]
             watches one value and sets another, when a plain <code>const</code> during render would
             do. The second is treating an effect as an event handler: setting a flag in{' '}
             <code>onClick</code> and putting the real work in an effect that watches the flag. The
-            work belongs in the handler. The user clicked; that is the event; there is nothing to
+            work belongs in the handler. The user clicked; that's the event; there's nothing to
             wait for.
           </p>
           <p>
@@ -651,7 +651,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           <code>request.session</code> becomes a store, with the difference that a store is memory
           and dies on refresh unless it was written to IndexedDB via <code>core/storage</code>, or
           to localStorage for small settings. The <strong>hidden field</strong> has no equivalent at
-          all: there is no next request to smuggle a value into. A multi-step form becomes
+          all: there's no next request to smuggle a value into. A multi-step form becomes
           one draft object held in state or a store for the whole flow, with every step reading and
           writing it.
         </p>
@@ -709,7 +709,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           queries stay in the view. A sproc call scattered across five views is wrong: it lives
           behind <code>db_utils.py</code>. Django doesn't enforce any of that either, the imports
           would work. It holds on agreement: everyone agrees where things go. Same here: nothing stops you
-          importing <code>db</code> into a component, and it is a review rule, not an error.
+          importing <code>db</code> into a component, and it's a review rule, not an error.
         </p>
 
         <h2>10. When it breaks</h2>
@@ -717,13 +717,13 @@ const save = useCharacters((s) => s.save)`}</Code>
           Your ladder elsewhere is fixed: IIS catches the 500, the Django log says what blew up,
           you read the view, then you check whether the sproc failed quietly, then you look at
           whether the template used the data or the JS went and fetched it itself. The same ladder
-          applies here, except that the whole stack is in one process. There is no server log to
+          applies here, except that the whole stack is in one process. There's no server log to
           start from and the rungs sit closer together.
         </p>
         <ol>
           <li>
             <strong>The overlay and the console.</strong> A thrown error in a render puts a stack
-            trace on the page in dev. This is the error log, and it is the only rung that tells you
+            trace on the page in dev. This is the error log, and it's the only rung that tells you
             the answer outright.
           </li>
           <li>
@@ -754,13 +754,13 @@ const save = useCharacters((s) => s.save)`}</Code>
         <p>
           The two failures with no analogue: a rerender that never fired, state
           mutated in place (§3), and a change you made to the DOM that React reverted (§2). Both
-          present as the code running with the screen not moving. That could not happen in Django:
+          present as the code running with the screen not moving. That couldn't happen in Django:
           the screen was the response.
         </p>
 
         <h2 className="learnPart">Part two, look it up</h2>
         <p className="learnPartNote">
-          For scanning mid-task, find the row that matches whatever you are stuck on.
+          For scanning mid-task, find the row that matches whatever you're stuck on.
         </p>
 
         <h2>Every rule in one list</h2>
@@ -773,7 +773,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           <li>Hooks at the top level, unconditionally, same order every render (§3).</li>
           <li>Compute derived values during render, never in state (§1).</li>
           <li>
-            Every <code>.map()</code> item needs a <code>key</code>, and it is the record's id (§4).
+            Every <code>.map()</code> item needs a <code>key</code>, and it's the record's id (§4).
           </li>
           <li>
             Check <code>loading</code> before <code>length === 0</code> (§5).
@@ -949,7 +949,7 @@ const save = useCharacters((s) => s.save)`}</Code>
             camelCase for everything else, the only exception to the camelCase rule.
           </li>
           <li>
-            <code>.tsx</code> if the file contains markup, <code>.ts</code> if it is plain logic.
+            <code>.tsx</code> if the file contains markup, <code>.ts</code> if it's plain logic.
           </li>
           <li>One <code>.css</code> per module, imported by it.</li>
           <li>
@@ -974,7 +974,7 @@ const save = useCharacters((s) => s.save)`}</Code>
           </li>
           <li>Every tag self-closes. A component returns one root, use <code>&lt;&gt;…&lt;/&gt;</code> for siblings.</li>
           <li>
-            <code>{'{}'}</code> drops into JS. There is no <code>{'{% if %}'}</code>. Use{' '}
+            <code>{'{}'}</code> drops into JS. There's no <code>{'{% if %}'}</code>. Use{' '}
             <code>&amp;&amp;</code> and <code>?:</code>.
           </li>
           <li>

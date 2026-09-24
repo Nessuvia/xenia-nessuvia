@@ -27,7 +27,7 @@ export function keepDeviceFields(theirs: string, mine: string | null): string {
   const local = (mine === null ? {} : (JSON.parse(mine) as Blob).state) ?? {}
   // Whatever came back isn't a settings blob, and writing it'd break every store on reload.
   if (!parsed.state || typeof parsed.state !== 'object') {
-    throw new Error('The settings object in the bucket is not readable.')
+    throw new Error("The settings object in the bucket isn't readable.")
   }
   for (const field of deviceFields) {
     if (field in local) parsed.state[field] = local[field]

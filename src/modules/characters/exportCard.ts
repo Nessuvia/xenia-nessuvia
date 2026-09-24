@@ -196,7 +196,7 @@ async function avatarPngBytes(avatar: string): Promise<Uint8Array> {
   img.crossOrigin = 'anonymous'
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
-    img.onerror = () => reject(new Error('Could not load the avatar image.'))
+    img.onerror = () => reject(new Error("Couldn't load the avatar image."))
     img.src = avatar
   })
   const canvas = document.createElement('canvas')
@@ -204,7 +204,7 @@ async function avatarPngBytes(avatar: string): Promise<Uint8Array> {
   canvas.height = img.naturalHeight
   canvas.getContext('2d')!.drawImage(img, 0, 0)
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'))
-  if (!blob) throw new Error('Could not read the avatar image.')
+  if (!blob) throw new Error("Couldn't read the avatar image.")
   return new Uint8Array(await blob.arrayBuffer())
 }
 

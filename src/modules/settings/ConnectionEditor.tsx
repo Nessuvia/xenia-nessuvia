@@ -86,7 +86,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
     setTestResult('')
     // The sentinel host has no server to test against. Report what it does: it never resolves.
     if (isSentinel(draft.endpointUrl)) {
-      setTestResult(`OK. ${sentinelHost} is a stand-in endpoint. Requests are not sent.`)
+      setTestResult(`OK. ${sentinelHost} is a stand-in endpoint. Requests aren't sent.`)
       setTesting(false)
       return
     }
@@ -109,7 +109,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
         // A text-completion reply puts the text on the choice, with no message object.
         message = choice?.message ?? (typeof choice?.text === 'string' ? { content: choice.text } : undefined)
       } catch {
-        setTestResult(`OK, ${res.status}, but the response is not JSON:\n${body.slice(0, 800)}`)
+        setTestResult(`OK, ${res.status}, but the response isn't JSON:\n${body.slice(0, 800)}`)
         return
       }
       const content = message?.content ?? ''
@@ -146,7 +146,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
     setReading(true)
     setContextNote('')
     const found = await readContextLimit(draft)
-    if (found === null) setContextNote('The server did not report a context length.')
+    if (found === null) setContextNote("The server didn't report a context length.")
     else {
       set('contextLimit', found)
       setContextNote(`Read ${found} from the server.`)
@@ -204,7 +204,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
             {blocked && (
               <small className="mixedWarning">
                 This site is served over https, so the browser blocks a plain http address unless
-                it is localhost. Reach the model on http://localhost, or put https in front of it.
+                it's localhost. Reach the model on http://localhost, or put https in front of it.
               </small>
             )}
           </label>

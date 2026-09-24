@@ -11,5 +11,5 @@ export function describeFetchError(err: unknown, url: string): string {
   } catch {
     // A malformed URL is its own answer; the message below still names what was tried.
   }
-  return `No response from ${origin}. The server is not running, or it is not sending CORS headers for this page.`
+  return `No response from ${origin}. The server isn't running, or it's not sending CORS headers for this page.`
 }

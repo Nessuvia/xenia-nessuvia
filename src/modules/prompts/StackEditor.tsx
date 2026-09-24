@@ -39,7 +39,7 @@ function stackFromSt(text: string) {
   try {
     found = parseSillyTavern(text)
   } catch {
-    throw new Error('That file is not a prompt stack or a SillyTavern preset.')
+    throw new Error("That file isn't a prompt stack or a SillyTavern preset.")
   }
   if (!found.stack) {
     throw new Error(
