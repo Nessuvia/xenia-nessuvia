@@ -332,3 +332,14 @@
   padding: 0.1rem 0.35rem;
   font-size: 0.75rem;
 }
+
+.prefillPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prefillText {
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+}

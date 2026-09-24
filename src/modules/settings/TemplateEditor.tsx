@@ -128,16 +128,6 @@ export default function TemplateEditor({
             </label>
           ))}
           <label className="templateField">
-            Start reply with
-            <input
-              value={template.prefill ?? ''}
-              onChange={(e) => set('prefill', e.target.value)}
-            />
-            <span className="templateHint">
-              Written at the end of the prompt. The reply continues it.
-            </span>
-          </label>
-          <label className="templateField">
             Speaker names
             <select
               value={template.names ?? 'never'}

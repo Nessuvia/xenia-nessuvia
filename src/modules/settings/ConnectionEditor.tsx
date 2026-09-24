@@ -14,6 +14,7 @@ import { useParamDefs } from '../../core/stores/paramDefsStore'
 import { recommendedParams } from '../../core/params/connectionParams'
 import ParamBuilder from './ParamBuilder'
 import TemplateEditor from './TemplateEditor'
+import PrefillPanel from './PrefillPanel'
 import StopStringsPanel from './StopStringsPanel'
 import ReasoningPanel from './ReasoningPanel'
 import { readContextLimit } from './readContextLimit'
@@ -322,6 +323,15 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
         </div>
       </details>
 
+      <details className="editorSection">
+        <summary>Prefill</summary>
+        <PrefillPanel
+          template={draft.template ?? defaultTemplate()}
+          type={draft.type === 'text' ? 'text' : 'chat'}
+          onChange={(template) => set('template', template)}
+        />
+      </details>
+
       {draft.type === 'text' && (
         <>
           <details className="editorSection" open>
@@ -340,15 +350,18 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
               onChange={(template) => set('template', template)}
             />
           </details>
-          <details className="editorSection">
-            <summary>Reasoning</summary>
-            <ReasoningPanel
-              template={draft.template ?? defaultTemplate()}
-              onChange={(template) => set('template', template)}
-            />
-          </details>
         </>
       )}
+
+      {/* Not text-only: `reasoningEnd` is read off this for every connection type, and a chat
+          endpoint that writes its think block inline needs the markers set here too. */}
+      <details className="editorSection">
+        <summary>Reasoning</summary>
+        <ReasoningPanel
+          template={draft.template ?? defaultTemplate()}
+          onChange={(template) => set('template', template)}
+        />
+      </details>
 
       <ParamBuilder
         connection={draft}

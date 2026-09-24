@@ -3,6 +3,7 @@ import type { Connection } from '../stores/settingsStore'
 import type { ParamDef } from '../params/paramDef.ts'
 import { coerceValue, defaultTemplate } from '../params/paramDef.ts'
 import { flattenPrompt, sequencesOf } from '../prompt/flattenPrompt.ts'
+import { continueFields } from '../prompt/prefill.ts'
 
 /**
  * The one place a request body is shaped. The preview, the inspector and the send path all call
@@ -34,6 +35,11 @@ export function buildRequestBody(
     if (stops.size) body.stop = [...stops]
   } else {
     body.messages = messages
+    // A trailing assistant turn is a prefill: the reply continues it. Some backends need telling,
+    // or they close the turn and answer underneath it. Off unless the connection asks.
+    if (messages.at(-1)?.role === 'assistant') {
+      Object.assign(body, continueFields(connection.template))
+    }
   }
 
   const byKey = new Map(defs.map((d) => [d.key, d]))

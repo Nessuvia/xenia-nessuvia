@@ -3,6 +3,7 @@
 import type { ChatMessage } from '../connectors/connectorInterface'
 import type { InstructTemplate } from '../params/paramDef.ts'
 import { stripReasoning } from './reasoning.ts'
+import { prefillOf } from './prefill.ts'
 
 /** Whether this history has more than one speaker on the assistant side, for `names: 'group'`. */
 function isGroup(messages: ChatMessage[]): boolean {
@@ -36,6 +37,26 @@ export function sequencesOf(template: InstructTemplate): string[] {
   ].filter((s) => s.trim().length > 0)
 }
 
+/** `{{char}}`/`{{user}}` expansion against the speakers in a message list, or a passthrough when
+ *  the template turns macros off. */
+function macroExpander(messages: ChatMessage[], template: InstructTemplate): (s: string) => string {
+  if (template.expandMacros === false) return (s) => s
+  const char = [...messages].reverse().find((m) => m.role === 'assistant' && m.name)?.name ?? ''
+  const user = [...messages].reverse().find((m) => m.role === 'user' && m.name)?.name ?? ''
+  return (s) => expand(s, char, user)
+}
+
+/**
+ * The prefill exactly as it goes into the request: the template's string with macros expanded.
+ * The stream comes back without it, so this is also what gets prepended to the reply. One
+ * function for both endpoint kinds keeps the two copies identical.
+ */
+export function expandedPrefill(messages: ChatMessage[], template: InstructTemplate | undefined): string {
+  const prefill = prefillOf(template)
+  if (!prefill || !template) return ''
+  return macroExpander(messages, template)(prefill)
+}
+
 /**
  * A message list as one string, for a text-completion endpoint. Each message is wrapped in its
  * role's prefix and suffix; `firstPrefix` (the BOS token) is emitted once at the very front, and
@@ -48,8 +69,7 @@ export function sequencesOf(template: InstructTemplate): string[] {
  */
 export function flattenPrompt(messages: ChatMessage[], template: InstructTemplate): string {
   const char = [...messages].reverse().find((m) => m.role === 'assistant' && m.name)?.name ?? ''
-  const user = [...messages].reverse().find((m) => m.role === 'user' && m.name)?.name ?? ''
-  const macro = template.expandMacros === false ? (s: string) => s : (s: string) => expand(s, char, user)
+  const macro = macroExpander(messages, template)
   const seq = (s: string | undefined) => macro(s ?? '')
 
   const group = isGroup(messages)
@@ -119,7 +139,8 @@ export function flattenPrompt(messages: ChatMessage[], template: InstructTemplat
   if (labelled && char) out += `${char}: `
   // Text the reply has to begin with. Written into the prompt: the model continues it rather
   // than deciding whether to use it.
-  if (template.prefill) out += macro(template.prefill)
+  const prefill = prefillOf(template)
+  if (prefill) out += macro(prefill)
   // A trailing space after the prefix costs a token on most tokenizers and shifts the reply.
   return template.trimTrailingSpace ? out.replace(/[ \t]+$/, '') : out
 }

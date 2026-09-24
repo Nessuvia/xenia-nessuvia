@@ -9,6 +9,8 @@ import { buildPrompt } from '../prompt/buildPrompt'
 import { blocksMentionCondition } from '../prompt/template'
 import { loadTokenizer } from '../prompt/budget'
 import { reasoningSpan } from '../prompt/reasoning'
+import { expandedPrefill } from '../prompt/flattenPrompt'
+import { markRefusedPrefill, rejectsPrefill, skipsPrefill } from '../prompt/prefill'
 import { parseState, type StateParse, type TrackerValue } from '../trackers/parseState'
 import { trackerValues, withTrackerUpdate } from '../trackers/trackerState'
 import { tokenizerFor } from '../prompt/tokenizers'
@@ -328,17 +330,60 @@ async function generateReply(
     reply.reasoning = ''
     useChats.setState({ streamingReasoning: '' })
   }
-  reply.snapshot = snapshotOf(prompt, connection)
-  for await (const chunk of sendMessage(prompt, connection, signal)) {
-    if (chunk.reasoning) {
-      reply.reasoning += chunk.reasoning
-      useChats.setState({ streamingReasoning: reply.reasoning })
+  await streamReply(prompt, connection, signal, reply)
+}
+
+/**
+ * The ordinary stream, with the connection's prefill in place.
+ *
+ * A text connection gets the prefill from `flattenPrompt`, written after the open model prefix. A
+ * chat connection gets it as a trailing assistant turn, which `buildRequestBody` labels with
+ * `continue_final_message` when the connection asks. Either way the model continues the string
+ * rather than repeating it, so `reply.text` starts as the prefill and the stored reply is whole.
+ *
+ * A backend that refuses a trailing assistant turn is retried once without the prefill, and
+ * remembered for the rest of the session so the next reply doesn't pay for the same 400.
+ */
+async function streamReply(
+  prompt: ChatMessage[],
+  connection: Connection,
+  signal: AbortSignal,
+  reply: Reply,
+): Promise<void> {
+  const prefill = skipsPrefill(connection.endpointUrl)
+    ? ''
+    : expandedPrefill(prompt, connection.template)
+  // Text connections carry it inside the flattened prompt, so only chat needs the extra turn.
+  const messages =
+    prefill && connection.type !== 'text'
+      ? [...prompt, { role: 'assistant' as const, content: prefill }]
+      : prompt
+  reply.snapshot = snapshotOf(messages, connection)
+  const start = reply.text
+  reply.text = start + prefill
+  if (prefill) useChats.setState({ streamingText: reply.text })
+  try {
+    for await (const chunk of sendMessage(messages, connection, signal)) {
+      if (chunk.reasoning) {
+        reply.reasoning += chunk.reasoning
+        useChats.setState({ streamingReasoning: reply.reasoning })
+      }
+      if (chunk.content) {
+        reply.text += chunk.content
+        useChats.setState({ streamingText: reply.text })
+      }
+      if (chunk.finishReason) reply.finishReason = chunk.finishReason
     }
-    if (chunk.content) {
-      reply.text += chunk.content
-      useChats.setState({ streamingText: reply.text })
+  } catch (err) {
+    const message = (err as Error).message
+    // Nothing arrived and the backend named the assistant turn: it's the prefill it objected to.
+    if (!prefill || signal.aborted || reply.text !== start + prefill || !rejectsPrefill(message)) {
+      throw err
     }
-    if (chunk.finishReason) reply.finishReason = chunk.finishReason
+    markRefusedPrefill(connection.endpointUrl, message)
+    reply.text = start
+    useChats.setState({ streamingText: reply.text })
+    await streamReply(prompt, connection, signal, reply)
   }
 }
 

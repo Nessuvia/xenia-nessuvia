@@ -65,6 +65,8 @@ export function templateFromJson(source: string): { name: string; template: Inst
   if (str(raw.firstModelPrefix)) template.firstModelPrefix = str(raw.firstModelPrefix)
   if (str(raw.lastModelPrefix)) template.lastModelPrefix = str(raw.lastModelPrefix)
   if (str(raw.prefill)) template.prefill = str(raw.prefill)
+  if (raw.prefillEnabled === false) template.prefillEnabled = false
+  if (raw.prefillContinue === true) template.prefillContinue = true
   if (raw.systemAsUser === true) template.systemAsUser = true
   if (raw.wrapNewlines === true) template.wrapNewlines = true
   if (raw.expandMacros === false) template.expandMacros = false

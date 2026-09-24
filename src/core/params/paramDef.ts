@@ -73,6 +73,12 @@ export interface InstructTemplate {
   names?: NamesBehavior
   /** Text the reply is forced to begin with, written after the open model prefix. */
   prefill?: string
+  /** Whether the prefill is sent. Unset counts as on, so a template written before the toggle
+   *  existed keeps working. */
+  prefillEnabled?: boolean
+  /** Send `continue_final_message`/`add_generation_prompt` with a chat-completions prefill. vLLM
+   *  and its lookalikes need them; OpenAI proper rejects the fields outright. */
+  prefillContinue?: boolean
   /** Think-block handling for this model. Unset falls back to the global tag rules. */
   reasoning?: ReasoningConfig
 }
