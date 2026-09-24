@@ -2085,3 +2085,28 @@
   font-size: 12px;
   color: var(--textMuted);
 }
+
+/* A contributed chat panel that renders null leaves only its summary; drop the whole section. */
+.chatPanelSection:not(:has(> :not(summary))) {
+  display: none;
+}
+
+/* "Show full API call" from a message's quick actions. */
+.apiCallDialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(720px, 90vw);
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.apiCallHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.apiCallHead h3 {
+  margin: 0;
+}

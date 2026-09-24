@@ -10,6 +10,7 @@ import { effectiveFont } from '../../core/palette/palette'
 import { usePersonas } from '../../core/stores/personasStore'
 import { useDraft } from '../../core/stores/draftStore'
 import MessageBubble, { colorVars } from './MessageBubble'
+import { Avatar } from '../../app/Avatar'
 import Composer from './Composer'
 import RosterBar from './RosterBar'
 import ResponderPicker from './ResponderPicker'
@@ -269,8 +270,10 @@ export default function ChatView() {
               <span className="messageWho">
                 {/* Matches MessageBubble's header: the icon is there from the first token rather
                     than appearing once the reply is stored. */}
-                {isNarrator(speakingId ?? undefined) && (
+                {isNarrator(speakingId ?? undefined) ? (
                   <RiRobot2Line className="avatar messageAvatar narratorAvatar" size={18} />
+                ) : (
+                  <Avatar of={speakerOf(speakingId ?? undefined) ?? null} className="avatar messageAvatar" />
                 )}
                 {speakingName || character.name}
               </span>
@@ -294,7 +297,7 @@ export default function ChatView() {
             <div className="messageBody">
               {/* Mid-stream an opener has no closer yet. The block looks like plain text
                   until the model finishes it and folds away. */}
-              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: appearance.tagRules, order: palette.colorOrder })} />
+              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: appearance.tagRules, order: palette.colorOrder, streaming: true })} />
             </div>
           </div>
         )}

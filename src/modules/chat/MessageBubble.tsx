@@ -2,7 +2,6 @@ import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
   RiCloseLine,
-  RiCodeSSlashLine,
   RiDeleteBinLine,
   RiErrorWarningLine,
   RiMoreLine,
@@ -41,6 +40,7 @@ import { useMediaQuery } from '../../app/useMediaQuery'
 import SelectionMenu from './SelectionMenu'
 import { cutSpan, locate, occurrenceBefore, replaceSpan, textOffset, type Span } from './selectionEdit'
 import PromptInspector from '../../app/PromptInspector'
+import { createPortal } from 'react-dom'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 
 
@@ -275,16 +275,6 @@ export default function MessageBubble({
               </button>
             </span>
           )}
-          {assistant && (
-            <button
-              type="button"
-              title="Show the request that produced this"
-              aria-pressed={inspecting}
-              onClick={() => setInspecting(!inspecting)}
-            >
-              <RiCodeSSlashLine size={16} />
-            </button>
-          )}
           {passOriginal !== undefined && (
             <button
               type="button"
@@ -325,6 +315,40 @@ export default function MessageBubble({
               <RiMoreLine size={16} />
             </summary>
             <div className="quickActionsMenu">
+              {assistant && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteSwipes([at])
+                    setQuickActions(false)
+                  }}
+                >
+                  Delete swipe
+                </button>
+              )}
+              {assistant && count > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickingSwipes(true)
+                    setQuickActions(false)
+                  }}
+                >
+                  Delete multiple swipes
+                </button>
+              )}
+              {assistant && (
+                <button
+                  type="button"
+                  disabled={!modelRegen}
+                  onClick={() => {
+                    onRewriteOpen(true)
+                    setQuickActions(false)
+                  }}
+                >
+                  Regen with instructions
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -343,6 +367,28 @@ export default function MessageBubble({
               >
                 Add newlines
               </button>
+              {assistant && onPass && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPass()
+                    setQuickActions(false)
+                  }}
+                >
+                  {passOriginal === undefined ? "Post-process" : "Post-process again"}
+                </button>
+              )}
+              {assistant && onPassClean && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassClean()
+                    setQuickActions(false)
+                  }}
+                >
+                  Post-process (clean only)
+                </button>
+              )}
               {assistant && (
                 <button
                   type="button"
@@ -358,23 +404,11 @@ export default function MessageBubble({
                 <button
                   type="button"
                   onClick={() => {
-                    setInspecting(!inspecting)
+                    setInspecting(true)
                     setQuickActions(false)
                   }}
                 >
-                  {inspecting ? 'Hide prompt preview' : 'Prompt preview'}
-                </button>
-              )}
-              {assistant && (
-                <button
-                  type="button"
-                  disabled={!modelRegen}
-                  onClick={() => {
-                    onRewriteOpen(true)
-                    setQuickActions(false)
-                  }}
-                >
-                  Regen with instructions
+                  Show full API call
                 </button>
               )}
               {assistant && onRandomSwipe && (
@@ -398,39 +432,6 @@ export default function MessageBubble({
               >
                 Copy
               </button>
-              {assistant && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onDeleteSwipes([at])
-                    setQuickActions(false)
-                  }}
-                >
-                  Delete swipe
-                </button>
-              )}
-              {assistant && onPassClean && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPassClean()
-                    setQuickActions(false)
-                  }}
-                >
-                  Post-process (clean only)
-                </button>
-              )}
-              {assistant && onPass && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPass()
-                    setQuickActions(false)
-                  }}
-                >
-                  {passOriginal === undefined ? "Post-process" : "Post-process again"}
-                </button>
-              )}
               {assistant && onPassRevert && passOriginal !== undefined && (
                 <button
                   type="button"
@@ -441,17 +442,6 @@ export default function MessageBubble({
                   }}
                 >
                   Revert the sweep
-                </button>
-              )}
-              {assistant && count > 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPickingSwipes(true)
-                    setQuickActions(false)
-                  }}
-                >
-                  Delete swipe(s)
                 </button>
               )}
             </div>
@@ -482,7 +472,7 @@ export default function MessageBubble({
 
       {streamingText !== null ? (
         <div className="messageBody">
-          <AgentStream segments={streamingSegments === undefined ? [{ text: streamingText, mark: 'none' }] : streamingSegments} render={(t) => renderText(stripState(t), { tagRules, replaceRules, order, role: message.role })} />
+          <AgentStream segments={streamingSegments === undefined ? [{ text: streamingText, mark: 'none' }] : streamingSegments} render={(t) => renderText(stripState(t), { tagRules, replaceRules, order, role: message.role, streaming: true })} />
         </div>
       ) : draft === null ? (
         <div
@@ -585,7 +575,22 @@ export default function MessageBubble({
 
       {draft !== null && <p className="editHint">Enter or click out saves · Shift+Enter for a new line · Esc discards</p>}
 
-      {inspecting && <PromptInspector json={snapshotFor(message)} />}
+      {inspecting &&
+        // Portalled: a bubble ancestor could otherwise clip or re-anchor the fixed backdrop.
+        createPortal(
+          <div className="dialogBackdrop" onClick={() => setInspecting(false)}>
+            <div className="panel dialog apiCallDialog" onClick={(e) => e.stopPropagation()}>
+              <div className="apiCallHead">
+                <h3>Full API call</h3>
+                <button type="button" title="Close" onClick={() => setInspecting(false)}>
+                  <RiCloseLine size={16} />
+                </button>
+              </div>
+              <PromptInspector json={snapshotFor(message)} />
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {pickingSwipes && (
         <SwipePicker

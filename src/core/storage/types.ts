@@ -184,6 +184,8 @@ export interface Chat {
   /** Lorebooks attached to this chat alone, on top of the speaker's and every global one. Absent =
    *  none. Never exported with the chat. */
   lorebookIds?: number[]
+  /** Character and global books switched off for this chat alone. Absent = none. */
+  lorebooksOff?: number[]
   /** Player tracker edits made before any message. Messages carry later ones. */
   trackerOverrides?: Record<string, TrackerValue>
   authorNote?: string

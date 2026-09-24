@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReplaceRule } from '../../core/stores/settingsStore'
 import { newReplaceRule, useAppearance, useSettings } from '../../core/stores/settingsStore'
+import { RuleCard } from './RuleCard'
 import './settings.css'
 
 /** Returns the syntax error message for a rule's pattern, or null if it compiles. */
@@ -36,7 +37,11 @@ export default function FindReplacePanel() {
         {appearance.replaceRules.map((rule) => {
           const error = ruleError(rule)
           return (
-            <li key={rule.id}>
+            <RuleCard
+              key={rule.id}
+              startOpen={!rule.find}
+              summary={rule.find ? `${rule.find} → ${rule.replace}` : 'New rule'}
+            >
               <input
                 value={rule.find}
                 placeholder={rule.regex ? 'pattern' : 'find'}
@@ -83,7 +88,7 @@ export default function FindReplacePanel() {
                 Delete
               </button>
               {error && <p className="hint danger">{error}</p>}
-            </li>
+            </RuleCard>
           )
         })}
       </ul>

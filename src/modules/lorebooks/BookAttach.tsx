@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { RiCloseLine } from '@remixicon/react'
 import { newBook, useLorebooks } from '../../core/stores/lorebooksStore'
@@ -15,10 +15,16 @@ export default function BookAttach({
   ids,
   onChange,
   emptyText,
+  canCreate = true,
+  children,
 }: {
   ids: number[]
   onChange: (ids: number[]) => void
   emptyText: string
+  /** The "New book" button. The chat sidebar leaves it out. */
+  canCreate?: boolean
+  /** Rows shown between the attached list and the buttons. */
+  children?: ReactNode
 }) {
   const { books, counts, load, importFile } = useLorebooks()
   const [picking, setPicking] = useState(false)
@@ -77,6 +83,8 @@ export default function BookAttach({
         ))}
       </ul>
 
+      {children}
+
       {picking ? (
         <EntityPicker
           items={books.map((b) => ({ key: String(b.id), label: b.name || 'Unnamed' }))}
@@ -108,7 +116,7 @@ export default function BookAttach({
               e.target.value = '' // let the same file be picked again
             }}
           />
-          <button
+          {canCreate && <button
             type="button"
             className="secondary"
             onClick={async () => {
@@ -120,7 +128,7 @@ export default function BookAttach({
             }}
           >
             New book
-          </button>
+          </button>}
           {createdId !== null && (
             <Link className="lorebooksGoEdit" to={`/lorebooks#book-${createdId}`}>
               Go to edit →

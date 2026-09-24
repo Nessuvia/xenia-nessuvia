@@ -122,6 +122,11 @@ const unclosed = renderText('a<think>b', { tagRules: hide })
 assert.deepStrictEqual(tags(unclosed), [Fragment])
 assert.deepStrictEqual(kids(unclosed[0]), ['a<think>b'])
 
+// mid-stream, an unclosed opener runs to the end instead
+assert.deepStrictEqual(tags(renderText('a<think>b', { tagRules: hide, streaming: true })), [Fragment])
+assert.deepStrictEqual(kids(renderText('a<think>b', { tagRules: hide, streaming: true })[0]), ['a'])
+assert.deepStrictEqual(tags(renderText('a<think>b', { tagRules: think, streaming: true })), [Fragment, 'details'])
+
 // bracket-style delimiters work the same way
 const bracket = [{ id: '1', open: '[h]', close: '[/h]', mode: 'hide' as const }]
 assert.deepStrictEqual(tags(renderText('x[h]y[/h]z', { tagRules: bracket })), [Fragment, Fragment])

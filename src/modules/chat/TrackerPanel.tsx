@@ -23,7 +23,7 @@ export default function TrackerPanel() {
   const trackers = useChatTrackers()
   const pref = useTrackerPanelPref()
   const phone = useMediaQuery('(max-width: 700px)')
-  if (!trackers) return <p className="hint">This character has no trackers.</p>
+  if (!trackers) return null
 
   if (pref.floating && !phone) {
     return (

@@ -202,7 +202,7 @@ export default function ChatSettingsPanel({
 
       {/* Sections contributed by other modules. Order is module registration order (main.tsx). */}
       {chatPanels(enabledPlugins).map(({ label, component: Panel }) => (
-        <details key={label}>
+        <details key={label} className="chatPanelSection">
           <summary>{label}</summary>
           <Panel />
         </details>

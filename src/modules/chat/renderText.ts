@@ -49,6 +49,9 @@ export interface RenderOpts {
   role?: 'user' | 'assistant'
   /** Color precedence, top-first. Omitted → module default. */
   order?: MarkerKind[]
+  /** Mid-stream: an unclosed opener runs to the end of the text, so the block collapses (or hides)
+      as soon as the opener arrives instead of showing as literal text and snapping shut later. */
+  streaming?: boolean
 }
 
 /**
@@ -104,8 +107,9 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
   let trimLeadingNewline = false
   while (i < text.length) {
     const rule = rules.find((r) => text.startsWith(r.open, i))
-    const close = rule ? text.indexOf(rule.close, i + rule.open.length) : -1
-    // An unclosed opener is literal text, same as an unmatched `**`.
+    const found = rule ? text.indexOf(rule.close, i + rule.open.length) : -1
+    const close = found < 0 && rule && opts?.streaming ? text.length : found
+    // An unclosed opener is literal text, same as an unmatched `**`. Except mid-stream, see RenderOpts.
     if (rule && close >= 0) {
       let before = text.slice(last, i).replace(/\n+$/, '')
       if (trimLeadingNewline) before = before.replace(/^\n+/, '')
@@ -125,7 +129,7 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
         pushText(text.slice(i + rule.open.length, close).replace(/^\n+|\n+$/g, ''))
       }
       // 'hide' pushes nothing: the block just doesn't render.
-      i = close + rule.close.length
+      i = found < 0 ? text.length : close + rule.close.length
       last = i
       continue
     }

@@ -1,6 +1,13 @@
 import type { TagRule } from '../../core/stores/settingsStore'
 import { newTagRule, useAppearance, useSettings } from '../../core/stores/settingsStore'
+import { RuleCard } from './RuleCard'
 import './settings.css'
+
+const modeLabel: Record<TagRule['mode'], string> = {
+  collapse: 'Collapse',
+  hide: 'Hide',
+  unwrap: 'Content only',
+}
 
 /** Tag rules: hide or collapse text between two markers. Global, same as the rest of appearance. */
 export default function TagRulesPanel() {
@@ -24,7 +31,11 @@ export default function TagRulesPanel() {
 
       <ul className="tagRules screenBody">
         {appearance.tagRules.map((rule) => (
-          <li key={rule.id}>
+          <RuleCard
+            key={rule.id}
+            startOpen={!rule.open && !rule.close}
+            summary={rule.open || rule.close ? `${rule.label || rule.open} · ${modeLabel[rule.mode]}` : 'New tag'}
+          >
             <input
               value={rule.open}
               placeholder="<think>"
@@ -69,7 +80,7 @@ export default function TagRulesPanel() {
             >
               Delete
             </button>
-          </li>
+          </RuleCard>
         ))}
       </ul>
 

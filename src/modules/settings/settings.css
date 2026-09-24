@@ -348,12 +348,44 @@
   padding: 0;
 }
 
-.tagRules li {
+/* Tags and Find & Replace rows (RuleCard): a one-line summary that opens into the fields. */
+.ruleCard {
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.ruleCardSummary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ruleCardSummary::-webkit-details-marker {
+  display: none;
+}
+
+.ruleCardLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruleCard details[open] .ruleCardChevron {
+  transform: rotate(90deg);
+}
+
+.ruleCardBody {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  padding: 0 10px 10px;
 }
 
 .tagRules input,

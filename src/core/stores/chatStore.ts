@@ -452,7 +452,7 @@ function characterAt(chat: Chat, index: number, fallback: Character): Character 
  * itself is `narratorBookIds`, which is pure and checked. A participant whose card has been
  * deleted contributes nothing rather than throwing.
  */
-function rosterBookIds(chat: Chat | null): number[] {
+export function rosterBookIds(chat: Chat | null): number[] {
   if (!chat) return []
   const cards = useCharacters.getState().characters
   return narratorBookIds(participants(chat).map((id) => cards.find((c) => c.id === id)?.lorebookIds))
@@ -481,7 +481,8 @@ export async function worldInfoFor(
   if (!state.books.length && !state.loading) await state.load()
   const books = useLorebooks.getState().books
   const own = isNarrator(speaker.id) ? rosterBookIds(chat) : speaker.lorebookIds
-  const ids = bookIdsFor(books, own, chat?.lorebookIds)
+  const off = chat?.lorebooksOff ?? []
+  const ids = bookIdsFor(books, own, chat?.lorebookIds).filter((id) => !off.includes(id))
   if (!ids.length) return emptyWorldInfo
   const entries = await useWorldInfo.getState().fetchForBooks(ids)
   if (!entries.length) return emptyWorldInfo
