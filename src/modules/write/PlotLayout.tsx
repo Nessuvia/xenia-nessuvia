@@ -80,8 +80,7 @@ function RewriteChapterDialog({
           }}
         />
         <p className="hint">
-          Each beat is written again as a new version. Its own regen instructions are sent with this
-          one. Nothing is replaced.
+          Each beat is written again as a new version, with its own regen instructions.
         </p>
         {rewriting && (
           <p className="hint rewriteProgress">
@@ -323,7 +322,7 @@ function BeatText({ value, onSave }: { value: string; onSave: (text: string) => 
       rows={1}
       className="plotBeatText"
       placeholder="What happens in this beat"
-      title="What is meant to happen in this beat. Sent in place of its prose when the prose no longer fits."
+      title="What's meant to happen in this beat. Sent in place of its prose when the prose no longer fits."
     />
   )
 }

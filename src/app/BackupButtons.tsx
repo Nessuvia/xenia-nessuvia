@@ -22,7 +22,7 @@ export default function BackupButtons({ className }: { className: string }) {
         Import
         <input
           type="file"
-          accept="application/json,.json"
+          accept="application/zip,.zip"
           onChange={async (e) => {
             const file = e.target.files?.[0]
             e.target.value = ''
@@ -32,7 +32,7 @@ export default function BackupButtons({ className }: { className: string }) {
             // clearing a table. Failures are silent otherwise, nothing renders this throw.
             let backup
             try {
-              backup = parseBackup(await file.text())
+              backup = await parseBackup(new Uint8Array(await file.arrayBuffer()))
             } catch (err) {
               alert(err instanceof Error ? err.message : 'Not a backup file.')
               return

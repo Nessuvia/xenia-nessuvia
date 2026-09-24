@@ -187,7 +187,7 @@ export default function ChatSettingsPanel({
         <summary>Chat Settings</summary>
         <label
           className="checkboxRow"
-          title="Hides the reasoning collapsible block on assistant messages. Visual only, the reasoning is still stored and sent to the model."
+          title="Hides reasoning on assistant messages. It's still stored and sent."
         >
           <input
             type="checkbox"

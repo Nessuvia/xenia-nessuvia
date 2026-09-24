@@ -19,6 +19,7 @@
     "centrifuge": "^5.7.1",
     "compromise": "^14.16.0",
     "dexie": "^4.4.4",
+    "fflate": "^0.8.3",
     "gpt-tokenizer": "^3.4.0",
     "react": "^19.2.8",
     "react-colorful": "^5.8.0",

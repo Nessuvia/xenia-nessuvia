@@ -1,7 +1,7 @@
 /**
  * The S3 half of sync: one S3-compatible bucket, supplied by the user. `syncClient.ts` picks
- * between this and `dropboxClient.ts`, and the store above only sees the three functions they
- * both export.
+ * between this and `dropboxClient.ts`, and the store above only sees the functions they both
+ * export.
  *
  * There's no account and no server of ours. The bucket is the identity: whoever holds its keys
  * holds the data, and it lives wherever the user put it (Garage, Backblaze B2, any S3 API).
@@ -21,6 +21,7 @@ import { tableNames, type TableName } from '../storage/storageInterface'
 import { useSettings } from '../stores/settingsStore'
 import { bucketConfigured, type BucketConfig } from './bucketConfig'
 import type { Manifest, ObjectName, PulledTable } from './syncTypes'
+import { imageNamePattern, mimeOf } from '../storage/imageRefs'
 
 function config(): BucketConfig {
   const c = useSettings.getState().bucket
@@ -58,7 +59,7 @@ function objectKey(c: BucketConfig, name: string): string {
 const hashMeta = 'x-amz-meta-hash'
 
 const missingHash =
-  "The bucket did not return the stored hash. Add x-amz-meta-hash to the bucket's CORS ExposeHeaders, and check that the server keeps object metadata."
+  "The bucket didn't return the stored hash. Add x-amz-meta-hash to the bucket's CORS ExposeHeaders, and check that the server keeps object metadata."
 
 /** S3 errors are XML, not JSON. The message element is the useful part; the status is the fallback
  *  for a bucket that returns an empty body. */
@@ -81,7 +82,7 @@ async function signedFetch(url: string, init: RequestInit, c: BucketConfig): Pro
     return await signer(c).fetch(url, init)
   } catch {
     throw new Error(
-      'Could not reach the bucket. Check the endpoint, and that the bucket allows requests from this site (CORS).',
+      "Couldn't reach the bucket. Check the endpoint, and that the bucket allows requests from this site (CORS).",
     )
   }
 }
@@ -90,6 +91,50 @@ async function signedFetch(url: string, init: RequestInit, c: BucketConfig): Pro
  *  token. Bounded rather than a bare `while`: a server that keeps returning a token would otherwise
  *  spin forever, and a thousand pages is already far past any bucket this app should be reading. */
 const maxListPages = 1000
+
+function prefixOf(c: BucketConfig): string {
+  const prefix = c.prefix.replace(/^\/+|\/+$/g, '')
+  return prefix ? `${prefix}/` : ''
+}
+
+interface ListedObject {
+  key: string
+  updatedAt: number
+  size: number
+}
+
+/** Every object under `prefix`, paged through to the end. */
+async function listObjects(c: BucketConfig, prefix: string): Promise<ListedObject[]> {
+  const base = `${c.endpoint.replace(/\/+$/, '')}/${encodeURIComponent(c.bucket)}?list-type=2${
+    prefix ? `&prefix=${encodeURIComponent(prefix)}` : ''
+  }`
+  const objects: ListedObject[] = []
+  let token: string | null = null
+  for (let page = 0; page < maxListPages; page++) {
+    const listUrl: string =
+      token === null ? base : `${base}&continuation-token=${encodeURIComponent(token)}`
+    const response: Response = await signedFetch(listUrl, { method: 'GET' }, c)
+    if (!response.ok) throw await failure(response)
+
+    // Parsed as XML rather than by regex: the key is user-controlled through `prefix`.
+    const doc = new DOMParser().parseFromString(await response.text(), 'application/xml')
+    for (const node of doc.getElementsByTagName('Contents')) {
+      objects.push({
+        key: node.getElementsByTagName('Key')[0]?.textContent ?? '',
+        updatedAt: Date.parse(node.getElementsByTagName('LastModified')[0]?.textContent ?? '') || 0,
+        size: Number(node.getElementsByTagName('Size')[0]?.textContent ?? 0),
+      })
+    }
+
+    // The token decides whether to continue. A page that says truncated has nowhere to send us
+    // without one, and an S3 clone that omits the flag but supplies a token still has more to
+    // give. A token that repeats means the server isn't advancing. Stop rather than loop.
+    const next = doc.getElementsByTagName('NextContinuationToken')[0]?.textContent ?? ''
+    if (!next || next === token) break
+    token = next
+  }
+  return objects
+}
 
 /**
  * One ListObjectsV2 for what exists, then a HEAD per present table for its hash: a list response
@@ -103,39 +148,13 @@ const maxListPages = 1000
  */
 export async function fetchManifest(): Promise<Manifest> {
   const c = config()
-  const prefix = c.prefix.replace(/^\/+|\/+$/g, '')
-  const base = `${c.endpoint.replace(/\/+$/, '')}/${encodeURIComponent(c.bucket)}?list-type=2${
-    prefix ? `&prefix=${encodeURIComponent(prefix + '/')}` : ''
-  }`
-
   const present = new Map<TableName, { updatedAt: number; size: number }>()
-  let token: string | null = null
-  for (let page = 0; page < maxListPages; page++) {
-    const listUrl: string =
-      token === null ? base : `${base}&continuation-token=${encodeURIComponent(token)}`
-    const response: Response = await signedFetch(listUrl, { method: 'GET' }, c)
-    if (!response.ok) throw await failure(response)
-
-    // Parsed as XML rather than by regex: the key is user-controlled through `prefix`.
-    const doc = new DOMParser().parseFromString(await response.text(), 'application/xml')
-    for (const node of doc.getElementsByTagName('Contents')) {
-      const key = node.getElementsByTagName('Key')[0]?.textContent ?? ''
-      const name = key.slice(key.lastIndexOf('/') + 1).replace(/\.json$/, '') as TableName
-      // Anything else living at this prefix isn't ours to report: the Test button's probe object,
-      // or whatever the user keeps alongside. The key must match exactly, folders included.
-      if (!tableNames.includes(name) || key !== objectKey(c, name)) continue
-      present.set(name, {
-        updatedAt: Date.parse(node.getElementsByTagName('LastModified')[0]?.textContent ?? '') || 0,
-        size: Number(node.getElementsByTagName('Size')[0]?.textContent ?? 0),
-      })
-    }
-
-    // The token decides whether to continue. A page that says truncated has nowhere to send us
-    // without one, and an S3 clone that omits the flag but supplies a token still has more to
-    // give. A token that repeats means the server isn't advancing. Stop rather than loop.
-    const next = doc.getElementsByTagName('NextContinuationToken')[0]?.textContent ?? ''
-    if (!next || next === token) break
-    token = next
+  for (const object of await listObjects(c, prefixOf(c))) {
+    const name = object.key.slice(object.key.lastIndexOf('/') + 1).replace(/\.json$/, '') as TableName
+    // Anything else living at this prefix isn't ours to report: the Test button's probe object,
+    // images, or whatever the user keeps alongside. The key must match exactly, folders included.
+    if (!tableNames.includes(name) || object.key !== objectKey(c, name)) continue
+    present.set(name, { updatedAt: object.updatedAt, size: object.size })
   }
 
   const manifest: Manifest = {}
@@ -183,6 +202,38 @@ export async function pushTable(table: ObjectName, json: string, hash: string): 
   )
   if (!response.ok) throw await failure(response)
   return hash
+}
+
+/** Image objects sit under `images/` beside the tables, named by content (imageRefs.ts). */
+function imageKey(c: BucketConfig, name: string): string {
+  return `${prefixOf(c)}images/${name}`
+}
+
+export async function listImages(): Promise<Set<string>> {
+  const c = config()
+  const folder = `${prefixOf(c)}images/`
+  return new Set(
+    (await listObjects(c, folder)).map((o) => o.key.slice(folder.length)).filter((n) => imageNamePattern.test(n)),
+  )
+}
+
+export async function pushImage(name: string, bytes: Uint8Array): Promise<void> {
+  const c = config()
+  const response = await signedFetch(
+    objectUrl(c, imageKey(c, name)),
+    { method: 'PUT', headers: { 'content-type': mimeOf(name) }, body: bytes as Uint8Array<ArrayBuffer> },
+    c,
+  )
+  if (!response.ok) throw await failure(response)
+}
+
+/** Null when the bucket doesn't have it. */
+export async function pullImage(name: string): Promise<Uint8Array | null> {
+  const c = config()
+  const response = await signedFetch(objectUrl(c, imageKey(c, name)), { method: 'GET' }, c)
+  if (response.status === 404) return null
+  if (!response.ok) throw await failure(response)
+  return new Uint8Array(await response.arrayBuffer())
 }
 
 /**

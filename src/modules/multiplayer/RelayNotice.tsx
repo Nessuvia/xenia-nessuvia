@@ -40,19 +40,17 @@ export function RelayNotice({
       <h2>Multiplayer uses a relay</h2>
       {host ? (
         <p>
-          Messages in a session pass through the relay server at {host}. It is run by whoever sent
+          Messages in a session pass through the relay server at {host}. It's run by whoever sent
           you the link, not by the developer of this app.
         </p>
       ) : (
         <p>
-          Messages in a session pass through the relay server you set up in Settings. No relay is
-          run by the developer of this app.
+          Messages in a session pass through the relay server you set up in Settings.
         </p>
       )}
       <p>The relay carries messages in plaintext. Whoever runs it can read what passes through it.</p>
-      <p>Messages are not stored on the relay.</p>
+      <p>Messages aren't stored on the relay.</p>
       <p>API keys are never sent to the relay. Model requests go from your browser straight to your provider.</p>
-      <p>Everything outside multiplayer stays in your browser.</p>
       <button type="button" onClick={onAccept}>
         Accept
       </button>

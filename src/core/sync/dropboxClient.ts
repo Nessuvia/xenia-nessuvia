@@ -1,5 +1,5 @@
 /**
- * The Dropbox half of sync. Same three functions as s3Client.ts, picked between by syncClient.ts.
+ * The Dropbox half of sync. Same functions as s3Client.ts, picked between by syncClient.ts.
  *
  * The app is registered for App folder access, so Dropbox confines it to `/Apps/<app>/` and every
  * path here is relative to that. A bug in this file cannot reach the rest of the user's Dropbox.
@@ -17,13 +17,14 @@ import { dropboxContentHash } from './dropboxHash'
 import { dropboxConfigured, type DropboxConfig } from './dropboxConfig'
 import { apiArg, filePath, folderPath } from './dropboxPath'
 import type { Manifest, ObjectName, PulledTable } from './syncTypes'
+import { imageNamePattern } from '../storage/imageRefs'
 
 const rpc = 'https://api.dropboxapi.com/2'
 const content = 'https://content.dropboxapi.com/2'
 
 function config(): DropboxConfig {
   const c = useSettings.getState().dropbox
-  if (!dropboxConfigured(c)) throw new Error('Dropbox is not connected.')
+  if (!dropboxConfigured(c)) throw new Error("Dropbox isn't connected.")
   return c
 }
 
@@ -72,7 +73,7 @@ async function call(url: string, init: RequestInit): Promise<Response> {
       headers: { ...init.headers, authorization: `Bearer ${token}` },
     })
   } catch {
-    throw new Error('Could not reach Dropbox. Check the connection and try again.')
+    throw new Error("Couldn't reach Dropbox. Check the connection and try again.")
   }
 }
 
@@ -110,33 +111,36 @@ interface ListResult {
  * the first upload, so that's the state of a fresh account with the folder field filled in.
  */
 export async function fetchManifest(): Promise<Manifest> {
-  const c = config()
   const manifest: Manifest = {}
+  for (const entry of await listFolder(folderPath(config()))) {
+    const name = entry.name.replace(/\.json$/, '') as TableName
+    // Whatever else the user keeps in the folder isn't ours to report on.
+    if (name === entry.name || !tableNames.includes(name)) continue
+    manifest[name] = {
+      updatedAt: Date.parse(entry.server_modified) || 0,
+      hash: entry.content_hash,
+      size: entry.size,
+    }
+  }
+  return manifest
+}
 
+/** Every file directly in `path`. A folder that doesn't exist yet is empty. */
+async function listFolder(path: string): Promise<FileEntry[]> {
+  const files: FileEntry[] = []
   let page: ListResult
   try {
-    page = await rpcCall<ListResult>('/files/list_folder', { path: folderPath(c), recursive: false })
+    page = await rpcCall<ListResult>('/files/list_folder', { path, recursive: false })
   } catch (err) {
-    if (err instanceof Error && err.message.includes('path/not_found')) return manifest
+    if (err instanceof Error && err.message.includes('path/not_found')) return files
     throw err
   }
-
   for (;;) {
-    for (const entry of page.entries) {
-      if (entry['.tag'] !== 'file') continue
-      const name = entry.name.replace(/\.json$/, '') as TableName
-      // Whatever else the user keeps in the folder isn't ours to report on.
-      if (name === entry.name || !tableNames.includes(name)) continue
-      manifest[name] = {
-        updatedAt: Date.parse(entry.server_modified) || 0,
-        hash: entry.content_hash,
-        size: entry.size,
-      }
-    }
+    files.push(...page.entries.filter((e) => e['.tag'] === 'file'))
     if (!page.has_more) break
     page = await rpcCall<ListResult>('/files/list_folder/continue', { cursor: page.cursor })
   }
-  return manifest
+  return files
 }
 
 /** Null when the file has never been pushed: Dropbox answers 409 with `path/not_found`, which is
@@ -178,6 +182,44 @@ export async function pushTable(table: ObjectName, json: string, _hash: string):
   })
   if (!response.ok) throw await failure('/files/upload', response)
   return String(((await response.json()) as FileEntry).content_hash ?? '')
+}
+
+/** Images sit in an `images` folder beside the tables, named by content (imageRefs.ts). */
+function imagePath(c: DropboxConfig, name: string): string {
+  return `${folderPath(c)}/images/${name}`
+}
+
+export async function listImages(): Promise<Set<string>> {
+  const entries = await listFolder(`${folderPath(config())}/images`)
+  return new Set(entries.map((e) => e.name).filter((n) => imageNamePattern.test(n)))
+}
+
+export async function pushImage(name: string, bytes: Uint8Array): Promise<void> {
+  const response = await call(`${content}/files/upload`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/octet-stream',
+      // A name is its content, so overwriting an existing one writes the same bytes.
+      'Dropbox-API-Arg': apiArg({ path: imagePath(config(), name), mode: 'overwrite', mute: true }),
+    },
+    body: bytes as Uint8Array<ArrayBuffer>,
+  })
+  if (!response.ok) throw await failure('/files/upload', response)
+}
+
+/** Null when Dropbox doesn't have it. */
+export async function pullImage(name: string): Promise<Uint8Array | null> {
+  const response = await call(`${content}/files/download`, {
+    method: 'POST',
+    headers: { 'Dropbox-API-Arg': apiArg({ path: imagePath(config(), name) }) },
+  })
+  if (response.status === 409) {
+    const error = await failure('/files/download', response)
+    if (error.message.includes('path/not_found')) return null
+    throw error
+  }
+  if (!response.ok) throw await failure('/files/download', response)
+  return new Uint8Array(await response.arrayBuffer())
 }
 
 /**

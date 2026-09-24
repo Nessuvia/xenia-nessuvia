@@ -27,3 +27,16 @@ export function pullTable(table: ObjectName): Promise<PulledTable | null> {
 export function pushTable(table: ObjectName, json: string, hash: string): Promise<string> {
   return client().pushTable(table, json, hash)
 }
+
+/** Every image name the provider holds. */
+export function listImages(): Promise<Set<string>> {
+  return client().listImages()
+}
+
+export function pushImage(name: string, bytes: Uint8Array): Promise<void> {
+  return client().pushImage(name, bytes)
+}
+
+export function pullImage(name: string): Promise<Uint8Array | null> {
+  return client().pullImage(name)
+}

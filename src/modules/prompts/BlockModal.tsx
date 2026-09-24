@@ -169,7 +169,7 @@ export default function BlockModal({
           </dl>
           <p className="hint">
             {kind === 'story'
-              ? 'Usable in this block’s text. A line whose variables are all empty is dropped: a sentence about a field that is not set does not get sent. A variable in the Story prose itself is left alone.'
+              ? 'Usable in this block’s text. A line whose variables are all empty is dropped. A variable in the Story prose itself is left alone.'
               : 'Usable in this block’s text. An unknown variable is left as it is.'}
           </p>
           {variables.length > 0 && (

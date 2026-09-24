@@ -70,7 +70,7 @@ export default function SpeakerColors({ chat }: { chat: Chat }) {
         {palette.overwriteCharColor
           ? 'The theme is overwriting character colors. These are ignored. Turn off Overwrite Char. Color in Settings → Themes to use them.'
           : group
-            ? 'Cannot edit character colors in a group chat. Change it manually at each character’s landing page, or return to a 1-on-1 chat to restore it'
+            ? 'Character colors can’t be edited in a group chat. Set them on each character’s page.'
             : 'Overrides the palette colors for this character. Empty uses the palette.'}
       </p>
     </>

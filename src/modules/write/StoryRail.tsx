@@ -369,7 +369,7 @@ function DirectionSection() {
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => setDirection(draft)}
       />
-      <p className="hint">Sent with every generation. It is not cleared after one.</p>
+      <p className="hint">Sent with every generation (not cleared)</p>
     </>
   )
 }
@@ -503,7 +503,7 @@ function AppearanceSection() {
           chat. There is no per-beat toggle. */}
       <label
         className="checkboxRow"
-        title="Hides the reasoning block on beats. Visual only - the reasoning is still stored."
+        title="Hides reasoning on beats. It's still stored."
       >
         <input
           type="checkbox"

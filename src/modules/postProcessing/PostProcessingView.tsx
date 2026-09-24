@@ -417,8 +417,7 @@ export default function PostProcessingView() {
                     </label>
                     <p className="hint">
                       Also skip the {tagRules.length} {tagRules.length === 1 ? 'tag' : 'tags'} set up in{' '}
-                      <Link to="/settings#textRules">Settings, Text, Tags</Link>. Those are global, so every stack
-                      that ticks this gets the same list.
+                      <Link to="/settings#textRules">Settings, Text, Tags</Link>.
                     </p>
                   </div>
                 )}
@@ -888,7 +887,7 @@ function Tester({
           Run
         </button>
       </div>
-      <p className="hint">Runs this stack over the chat's replies as the model wrote them. Switched-off items are counted too. Nothing is sent or saved.</p>
+      <p className="hint">Runs this stack over the chat's replies as the model wrote them. Switched-off items are counted too.</p>
 
       {replies && hits && (
         <>

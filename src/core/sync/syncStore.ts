@@ -10,6 +10,7 @@ import { useSettings } from '../stores/settingsStore'
 import { withDirtySuppressed } from './dirtyTables'
 import { hashKey } from './syncTypes'
 import * as client from './syncClient'
+import { inlineImages, referencedImages } from '../storage/imageRefs'
 
 /** Checked here so an oversized table fails before the request instead of as a 413. Chunking is out
  *  of scope: a partial write is worse than a refusal. */
@@ -153,17 +154,27 @@ export const useSync = create<SyncState>()((set, get) => ({
     const settings = useSettings.getState()
     const pulled: TableName[] = []
     let settingsPulled = false
+    // Listed once, on the first push that has images, and grown as this run uploads.
+    let cloudImages: Set<string> | null = null
     try {
       for (const [index, [name, direction]] of queue.entries()) {
         const table = name as TableName
         if (direction === 'push') {
           step(`Uploading ${table}...`, index, total)
-          const { json, hash } = await buildTablePayload(table)
+          const { json, hash, images } = await buildTablePayload(table)
           const bytes = new Blob([json]).size
           if (bytes > maxPayloadBytes) {
             throw new Error(
               `${table} is ${(bytes / 1_000_000).toFixed(1)} MB. The limit is ${maxPayloadBytes / 1_000_000} MB.`,
             )
+          }
+          // Images first: a table in the bucket must never refer to an image that isn't there yet.
+          const known = images.size ? (cloudImages ??= await client.listImages()) : new Set<string>()
+          for (const [imageName, bytes] of images) {
+            if (known.has(imageName)) continue
+            step(`Uploading ${table} images...`, index, total)
+            await client.pushImage(imageName, bytes)
+            known.add(imageName)
           }
           // Recorded as what the provider stored rather than what was sent: Dropbox compares on
           // its own content_hash, and the S3 client hands the same hash straight back.
@@ -173,14 +184,19 @@ export const useSync = create<SyncState>()((set, get) => ({
           step(`Downloading ${table}...`, index, total)
           const object = await client.pullTable(table)
           if (!object) {
-            step(`${table} is not in the bucket. Skipped.`, index + 1, total)
+            step(`${table} isn't in the bucket. Skipped.`, index + 1, total)
             continue
           }
           const payload = JSON.parse(object.json) as TablePayload
           if (payload.format !== 'nessuTavern.table' || payload.table !== table) {
             throw new Error(`${table} came back in an unrecognized format.`)
           }
-          const rows = payload.rows as StoredRecord[]
+          const images = new Map<string, Uint8Array>()
+          for (const imageName of referencedImages(object.json)) {
+            const bytes = await client.pullImage(imageName)
+            if (bytes) images.set(imageName, bytes)
+          }
+          const rows = await inlineImages(payload.rows as StoredRecord[], images)
           // Suppressed: a pull isn't a user edit. The table is recorded clean below, with the
           // hash it was pulled at, rather than left holding whatever flag it had.
           await withDirtySuppressed(async () => {
@@ -251,3 +267,19 @@ export const useSync = create<SyncState>()((set, get) => ({
 
   clearError: () => set({ error: '' }),
 }))
+
+/**
+ * Image names in the bucket that no table in the bucket refers to: what replacing an avatar
+ * leaves behind. Read-only. Deleting, previewing or restoring them is for a tool built on this.
+ *
+ * Reads the bucket's tables rather than local ones: this device may be behind or ahead, and an
+ * image only this device's copy refers to still belongs to someone.
+ */
+export async function findUnreferencedImages(): Promise<string[]> {
+  const present = await client.listImages()
+  for (const table of tableNames) {
+    const object = await client.pullTable(table)
+    if (object) for (const name of referencedImages(object.json)) present.delete(name)
+  }
+  return [...present]
+}

@@ -1,26 +1,18 @@
 import { storage } from './db'
 import { stripApiKeys } from './stripApiKeys'
 import { isPartialRestore, mergeConnections, renameConnections } from './shareable'
-import { tableNames, type StoredRecord, type TableName } from './storageInterface'
+import { tableNames, type TableName } from './storageInterface'
 import { withDirtySuppressed } from '../sync/dirtyTables'
 import { askKey, settingsKey } from '../sync/settingsObject'
 import { hashPayload, tablePayload } from './tablePayload'
 import { withSeedFlags } from './seedFlags'
+import { packBackup, unpackBackup, type Backup } from './backupZip'
+import { extractImages } from './imageRefs'
 
 // settingsKey is the persisted settings store; askKey is the Ask scratchpad's transcript. Both live
 // in localStorage rather than a Dexie table, and both ride in a backup and in a sync.
 
-export interface Backup {
-  format: 'nessuTavern.backup'
-  version: 1
-  exportedAt: number
-  /** Whether the file is a sanitized export. Restore reads it to decide whether the file replaces
-   *  the library or adds to it. Written either way since 0.0.43; absent on a file older than the
-   *  field. Restore still carries a fallback for that case. */
-  shareable?: boolean
-  tables: Record<string, StoredRecord[]>
-  localStorage: Record<string, string>
-}
+export type { Backup }
 
 /**
  * What a shareable export keeps: the things a user made, rather than what they did with them.
@@ -58,7 +50,7 @@ export async function buildBackup({ keys, shareable }: BackupOptions = {}): Prom
   if (ask !== null) blobs[askKey] = ask
   return {
     format: 'nessuTavern.backup',
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     // Written on a full export too, not just a sanitized one. Left off, restore has to guess, and
     // the guess is what broke: a table added in a later version made every older full backup look
@@ -79,21 +71,22 @@ export async function buildBackup({ keys, shareable }: BackupOptions = {}): Prom
  * on the device.
  */
 export async function buildTablePayload(name: TableName) {
-  const payload = tablePayload(name, await storage.getAll(name))
+  // Images leave as their own files: the payload carries refs, and `images` the bytes behind them.
+  const { rows, images } = await extractImages(await storage.getAll(name))
+  const payload = tablePayload(name, rows)
   const json = JSON.stringify(payload)
-  return { payload, json, hash: await hashPayload(json) }
+  return { payload, json, images, hash: await hashPayload(json) }
 }
 
-export function downloadBackup(backup: Backup, tag = '') {
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(backup)], { type: 'application/json' }),
-  )
+export async function downloadBackup(backup: Backup, tag = '') {
+  const zip = await packBackup(backup)
+  const url = URL.createObjectURL(new Blob([zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' }))
   const link = document.createElement('a')
   link.href = url
   // Minutes as well as the date: exporting twice in one day is the normal case when moving between
   // devices, and two files called the same thing is how the wrong one gets imported.
   const at = new Date(backup.exportedAt).toISOString().slice(0, 16).replace('T', '-').replace(':', '')
-  link.download = `XeniaNessuvia${tag}-${at}.json`
+  link.download = `XeniaNessuvia${tag}-${at}.zip`
   document.body.append(link)
   link.click()
   link.remove()
@@ -102,17 +95,7 @@ export function downloadBackup(backup: Backup, tag = '') {
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
-/** Untrusted file input: reject anything that isn't a backup before touching the database. */
-export function parseBackup(text: string): Backup {
-  const data = JSON.parse(text) as Partial<Backup>
-  if (data.format !== 'nessuTavern.backup' || !data.tables) throw new Error('Not a backup file.')
-  // A newer version could carry a table this build clears but can't repopulate. A restore from
-  // one would lose data rather than fail.
-  if (typeof data.version === 'number' && data.version > 1) {
-    throw new Error('This backup is from a newer version of the app.')
-  }
-  return data as Backup
-}
+export { unpackBackup as parseBackup }
 
 /**
  * Replaces everything a full backup carries. The caller reloads afterwards so every store

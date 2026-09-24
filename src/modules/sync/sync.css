@@ -62,6 +62,14 @@
   gap: 14px;
 }
 
+/* Chrome lays a <details> body out in this slot, and the slot is the flex item beside the summary.
+   With align-items: flex-start it shrink-wraps its content, so every width: 100% inside resolved
+   against the widest line of text: typing or clearing a field changed the "Still needed" note and
+   the whole form resized with it. */
+.syncSection::details-content {
+  width: 100%;
+}
+
 .syncSection {
   width: 100%;
   padding: 16px 18px;

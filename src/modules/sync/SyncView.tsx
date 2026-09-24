@@ -52,8 +52,7 @@ export default function SyncView() {
           <header className="syncHead">
             <h2>Online Sync</h2>
             <p className="syncLede">
-              Copies your library to storage you own. Settings, connections and API keys stay on
-              this device unless you upload them separately.
+              Copies your library to your own storage. Settings upload separately.
             </p>
           </header>
 
@@ -161,7 +160,7 @@ function R2Section() {
       setTestState('ok')
     } catch (err) {
       setTestState('idle')
-      useSync.setState({ error: err instanceof Error ? err.message : 'Could not reach the bucket.' })
+      useSync.setState({ error: err instanceof Error ? err.message : "Couldn't reach the bucket." })
     }
   }
 
@@ -442,8 +441,7 @@ function SetupSteps() {
         {copied ? 'Copied' : 'Copy policy'}
       </button>
       <p className="syncNote">
-        Without the policy the browser blocks every request before it is sent. Press Test connection
-        once the policy is saved.
+        Press Test connection once the policy is saved.
       </p>
     </details>
   )
@@ -486,7 +484,7 @@ function DropboxSection() {
 
   function failed(err: unknown) {
     setState('idle')
-    useSync.setState({ error: err instanceof Error ? err.message : 'Could not reach Dropbox.' })
+    useSync.setState({ error: err instanceof Error ? err.message : "Couldn't reach Dropbox." })
   }
 
   async function connect() {
@@ -558,33 +556,8 @@ function DropboxSection() {
         </div>
       )}
 
-      <DropboxSetupSteps />
-
       {connected && <SyncActions provider="dropbox" where="account" />}
     </Section>
-  )
-}
-
-/** What signing in gives Dropbox access to, and what it doesn't. The app registration is built
- *  into this copy of the app, so there's nothing here for the user to set up. */
-function DropboxSetupSteps() {
-  return (
-    <details className="syncSetup">
-      <summary>What this connects to</summary>
-      <p className="syncNote">
-        Connect opens Dropbox in a new window and asks for access to one folder,
-        Apps/Xenia Nessuvia, inside your own Dropbox. The app cannot read the rest of your files.
-      </p>
-      <p className="syncNote">
-        Your library is written there as JSON files, one per table. They are the same files Export
-        writes, so you can open them, copy them, or keep your own backups of them. Nothing passes
-        through a server of ours.
-      </p>
-      <p className="syncNote">
-        Disconnect removes the sign-in from this browser. To revoke it everywhere, remove the app
-        under Connected apps in your Dropbox account settings.
-      </p>
-    </details>
   )
 }
 
@@ -592,7 +565,7 @@ function BackupSection() {
   return (
     <Section title="Export and import" status="Always available" startOpen>
       <p className="syncNote">
-        Writes to a single JSON file; importing replaces everything in the browser.
+        Writes to a ZIP file; importing replaces everything in the browser.
       </p>
       <div className="syncBackupRow">
         <BackupButtons className="syncBackupButton" />

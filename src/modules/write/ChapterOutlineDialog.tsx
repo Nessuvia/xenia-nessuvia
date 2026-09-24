@@ -128,7 +128,7 @@ export function ChapterOutlineDialog({
         <p className="hint">
           {previous
             ? `Chapter ${index} goes in as context, ${hasProse(previous) ? 'its prose' : 'its summary'}.`
-            : 'This is the first chapter. There is nothing before it to carry in.'}
+            : 'First chapter. Nothing to carry in.'}
         </p>
 
         {error ? (
