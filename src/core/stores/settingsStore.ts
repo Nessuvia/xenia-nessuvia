@@ -91,7 +91,7 @@ export interface TagRule {
   id: string
   open: string
   close: string
-  mode: 'hide' | 'collapse'
+  mode: 'hide' | 'collapse' | 'unwrap'
   /** Summary text in collapse mode. Falls back to the open marker. */
   label?: string
   /** How many messages, counting from the newest (1 = only while it's the last message), this

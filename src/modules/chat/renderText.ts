@@ -121,6 +121,8 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
             ...inner,
           ),
         )
+      } else if (rule.mode === 'unwrap') {
+        pushText(text.slice(i + rule.open.length, close).replace(/^\n+|\n+$/g, ''))
       }
       // 'hide' pushes nothing: the block just doesn't render.
       i = close + rule.close.length

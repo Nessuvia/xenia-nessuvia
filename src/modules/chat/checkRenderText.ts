@@ -111,6 +111,12 @@ assert.deepStrictEqual(tags(hidden), [Fragment, Fragment])
 assert.deepStrictEqual(kids(hidden[0]), ['before'])
 assert.deepStrictEqual(kids(hidden[1]), ['after'])
 
+// unwrap drops the delimiters and keeps the content
+const unwrap = [{ id: '1', open: '<final>', close: '</final>', mode: 'unwrap' as const }]
+const unwrapped = renderText('a\n<final>\nbody\n</final>', { tagRules: unwrap })
+assert.deepStrictEqual(tags(unwrapped), [Fragment, Fragment])
+assert.deepStrictEqual(kids(unwrapped[1]), ['body'])
+
 // an unclosed opener is literal text; nothing after it gets swallowed
 const unclosed = renderText('a<think>b', { tagRules: hide })
 assert.deepStrictEqual(tags(unclosed), [Fragment])

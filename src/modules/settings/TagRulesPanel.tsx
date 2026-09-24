@@ -41,6 +41,7 @@ export default function TagRulesPanel() {
             >
               <option value="collapse">Collapse</option>
               <option value="hide">Hide</option>
+              <option value="unwrap">Content only</option>
             </select>
             <input
               value={rule.label ?? ''}
