@@ -38,7 +38,8 @@ import SelectionEditDialog from './SelectionEditDialog'
 import { contract } from './contract'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import SelectionMenu from './SelectionMenu'
-import { cutSpan, locate, occurrenceBefore, replaceSpan, textOffset, type Span } from './selectionEdit'
+import { cutSpan, replaceSpan, textOffset, type Span } from './selectionEdit'
+import { storedSpan, type SourceMap } from './sourceMap'
 import PromptInspector from '../../app/PromptInspector'
 import { createPortal } from 'react-dom'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
@@ -190,6 +191,8 @@ export default function MessageBubble({
   // Right-click on a run of selected text in a reply. Shift falls through to the browser's own
   // menu, and so does anything the selection can't be traced back to: a selection that leaves this
   // body, the pre-sweep preview, a reply that's still streaming.
+  // Filled by the body's renderText below: where each rendered character sits in bodyText.
+  const bodyMap: SourceMap = { runs: [], mapped: { text: '', from: [], to: [] } }
   const openSelectionMenu = (x: number, y: number): boolean => {
     if (!assistant || readOnly || showOriginal || streamingText !== null) return false
     const root = bodyRef.current
@@ -197,13 +200,12 @@ export default function MessageBubble({
     if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return false
     const range = selection.getRangeAt(0)
     if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return false
-    const text = selection.toString()
-    if (!text.trim()) return false
+    if (!selection.toString().trim()) return false
 
-    const rendered = root.textContent ?? ''
     const start = textOffset(root, range.startContainer, range.startOffset)
-    if (start < 0) return false
-    const span = locate(bodyText, text, occurrenceBefore(rendered, text, start))
+    const end = textOffset(root, range.endContainer, range.endOffset)
+    if (start < 0 || end <= start) return false
+    const span = storedSpan(bodyMap, start, end)
     if (!span) return false
 
     setSelectionMenu({
@@ -481,7 +483,9 @@ export default function MessageBubble({
           onPointerUp={onBodyPointerUp}
           className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}
         >
-          {renderText(stripState(showOriginal && passOriginal !== undefined ? passOriginal : bodyText), {
+          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
+            stripState: true,
+            map: bodyMap,
             tagRules,
             replaceRules,
             order,

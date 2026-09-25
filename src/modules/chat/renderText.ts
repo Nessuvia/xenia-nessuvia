@@ -4,6 +4,7 @@
 import { createElement, Fragment } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { MarkerKind, ReplaceRule, TagRule } from '../../core/stores/settingsStore'
+import { identity, replaceMapped, trimEndMapped, type Mapped, type SourceMap } from './sourceMap.ts'
 
 // Which color a marker's text takes when several overlap. Text is the implicit baseline below
 // all three. `order` is top-first (strongest first); the highest-ranked kind present on a run
@@ -52,7 +53,18 @@ export interface RenderOpts {
   /** Mid-stream: an unclosed opener runs to the end of the text, so the block collapses (or hides)
       as soon as the opener arrives instead of showing as literal text and snapping shut later. */
   streaming?: boolean
+  /** Drop `<state>` tags first, as stripState does. Here rather than at the caller so `map` sees it. */
+  stripState?: boolean
+  /** Filled with where each rendered character came from. See sourceMap.ts. */
+  map?: SourceMap
 }
+
+/** Records one run of rendered text: display index it starts at (-1 = no source) and its length. */
+type Recorder = (at: number, len: number) => void
+const noRecord: Recorder = () => {}
+
+// Same pattern as core/trackers stripState.
+const statePattern = /\s*<state>[\s\S]*?(<\/state>|$)/gi
 
 /**
  * Display-only find/replace pass. Rules are skipped if disabled, off-target for this role, or an
@@ -64,15 +76,19 @@ export function applyReplaceRules(
   rules?: ReplaceRule[],
   role?: 'user' | 'assistant',
 ): string {
-  if (!rules?.length) return text
-  let out = text
+  return replaceRulesMapped(identity(text), rules, role).text
+}
+
+function replaceRulesMapped(m: Mapped, rules?: ReplaceRule[], role?: 'user' | 'assistant'): Mapped {
+  if (!rules?.length) return m
+  let out = m
   for (const rule of rules) {
     if (!rule.enabled || !rule.find) continue
     if (rule.target !== 'both' && role && rule.target !== role) continue
     const pattern = rule.regex ? rule.find : rule.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     try {
       // compiles per render; memoize if a long rule list lags.
-      out = out.replace(new RegExp(pattern, rule.flags), rule.replace)
+      out = replaceMapped(out, new RegExp(pattern, rule.flags), rule.replace)
     } catch {
       // Invalid pattern or flags: skip, leaving the text untouched.
     }
@@ -88,15 +104,31 @@ export function applyReplaceRules(
  * Two stages: tag rules split the text into blocks, then each block gets the inline marker scan.
  */
 export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
-  let text = applyReplaceRules(input, opts?.replaceRules, opts?.role)
+  let mapped = identity(input)
+  if (opts?.stripState && /<state>/i.test(input)) mapped = trimEndMapped(replaceMapped(mapped, statePattern, ''))
+  mapped = replaceRulesMapped(mapped, opts?.replaceRules, opts?.role)
+  const text = mapped.text
+  const map = opts?.map
+  if (map) {
+    map.runs = []
+    map.mapped = mapped
+  }
+  const record: Recorder = map ? (at, len) => void (len > 0 && map.runs.push({ at, len })) : noRecord
   const order = opts?.order ?? defaultOrder
   const rules = opts?.tagRules?.filter((r) => r.open && r.close)
-  if (!rules?.length) return renderInline(text, order)
+  if (!rules?.length) return renderInline(text, order, -1, 0, record)
 
   const out: ReactNode[] = []
   // Text runs are wrapped so the keys renderInline hands out stay unique within `out`.
-  const pushText = (slice: string) => {
-    if (slice) out.push(createElement(Fragment, { key: out.length }, ...renderInline(slice, order)))
+  // `at` is where the slice starts in `text`, for the map.
+  const pushText = (slice: string, at: number) => {
+    if (slice) out.push(createElement(Fragment, { key: out.length }, ...renderInline(slice, order, -1, at, record)))
+  }
+  // text.slice(start, end) with the newline runs at either edge trimmed, and where it now starts.
+  const trimmed = (start: number, end: number, lead: boolean, trail: boolean): [string, number] => {
+    while (lead && start < end && text[start] === '\n') start++
+    while (trail && end > start && text[end - 1] === '\n') end--
+    return [text.slice(start, end), start]
   }
 
   let i = 0
@@ -111,22 +143,22 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
     const close = found < 0 && rule && opts?.streaming ? text.length : found
     // An unclosed opener is literal text, same as an unmatched `**`. Except mid-stream, see RenderOpts.
     if (rule && close >= 0) {
-      let before = text.slice(last, i).replace(/\n+$/, '')
-      if (trimLeadingNewline) before = before.replace(/^\n+/, '')
-      pushText(before)
+      pushText(...trimmed(last, i, trimLeadingNewline, true))
       trimLeadingNewline = true
       if (rule.mode === 'collapse') {
-        const inner = renderInline(text.slice(i + rule.open.length, close), order)
+        const label = rule.label || rule.open
+        record(-1, label.length)
+        const inner = renderInline(text.slice(i + rule.open.length, close), order, -1, i + rule.open.length, record)
         out.push(
           createElement(
             'details',
             { key: out.length, className: 'taggedBlock' },
-            createElement('summary', { key: 'summary' }, rule.label || rule.open),
+            createElement('summary', { key: 'summary' }, label),
             ...inner,
           ),
         )
       } else if (rule.mode === 'unwrap') {
-        pushText(text.slice(i + rule.open.length, close).replace(/^\n+|\n+$/g, ''))
+        pushText(...trimmed(i + rule.open.length, close, true, true))
       }
       // 'hide' pushes nothing: the block just doesn't render.
       i = found < 0 ? text.length : close + rule.close.length
@@ -135,22 +167,31 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
     }
     i += 1
   }
-  let tail = text.slice(last)
-  if (trimLeadingNewline) tail = tail.replace(/^\n+/, '')
-  pushText(tail)
+  pushText(...trimmed(last, text.length, trimLeadingNewline, false))
   return out
 }
 
 // `bestRank` is the strongest color rank an ancestor marker already claims. A marker only paints
 // its own color when it outranks that; otherwise it defers with `color: inherit`, so the strongest
 // kind on a run wins no matter the nesting order. Text baseline is -1, below every marker.
-function renderInline(text: string, order: MarkerKind[], bestRank = -1): ReactNode[] {
+// `base` is where `text` starts in the display text, and `record` gets every run in DOM order.
+function renderInline(
+  text: string,
+  order: MarkerKind[],
+  bestRank = -1,
+  base = 0,
+  record: Recorder = noRecord,
+): ReactNode[] {
   const out: ReactNode[] = []
   let buffer = ''
+  let bufferAt = 0
   let i = 0
 
   const flush = () => {
-    if (buffer) out.push(buffer)
+    if (buffer) {
+      out.push(buffer)
+      record(base + bufferAt, buffer.length)
+    }
     buffer = ''
   }
 
@@ -161,10 +202,17 @@ function renderInline(text: string, order: MarkerKind[], bestRank = -1): ReactNo
     if (marker && close > i + marker.mark.length) {
       flush()
       if (marker.raw) {
-        let content = text.slice(i + marker.mark.length, close)
+        let start = i + marker.mark.length
+        let end = close
         // A fence usually opens with a language tag on its own line; drop it, then the newlines
         // that hug the fence so <pre> doesn't render a blank first and last row.
-        if (marker.tag === 'pre') content = content.replace(/^[^\s`]*\n/, '').replace(/^\n+|\n+$/g, '')
+        if (marker.tag === 'pre') {
+          start += text.slice(start, end).match(/^[^\s`]*\n/)?.[0].length ?? 0
+          while (start < end && text[start] === '\n') start++
+          while (end > start && text[end - 1] === '\n') end--
+        }
+        const content = text.slice(start, end)
+        record(base + start, content.length)
         out.push(
           createElement(
             marker.tag,
@@ -182,7 +230,9 @@ function renderInline(text: string, order: MarkerKind[], bestRank = -1): ReactNo
       // run just inherits text color; skip unset ranks here if that ever surprises.
       const emRank = marker.wrap ? rankOf('emphasis', order) : rank
       const innerBest = Math.max(bestRank, rank, emRank)
-      const inner = renderInline(text.slice(i + marker.mark.length, close), order, innerBest)
+      if (marker.keepMark) record(base + i, marker.mark.length)
+      const inner = renderInline(text.slice(i + marker.mark.length, close), order, innerBest, base + i + marker.mark.length, record)
+      if (marker.keepMark) record(base + close, marker.mark.length)
       // Children as variadic args, not a joined string: inner holds React elements (nested
       // markers), so concatenating would stringify them to "[object Object]". keepMark keeps the
       // literal marker visible around the content (the quote), otherwise just the inner nodes.
@@ -215,6 +265,7 @@ function renderInline(text: string, order: MarkerKind[], bestRank = -1): ReactNo
       i = close + marker.mark.length
       continue
     }
+    if (!buffer) bufferAt = i
     buffer += text[i]
     i += 1
   }
