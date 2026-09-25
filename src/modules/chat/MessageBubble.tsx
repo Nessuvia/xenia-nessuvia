@@ -529,6 +529,11 @@ export default function MessageBubble({
             setEditingSelection({ span: selectionMenu.span, text: selectionMenu.text })
             setSelectionMenu(null)
           }}
+          onWrap={(mark) => {
+            const { start, end } = selectionMenu.span
+            onEdit(replaceSpan(message.content, selectionMenu.span, mark + message.content.slice(start, end) + mark))
+            setSelectionMenu(null)
+          }}
           onMakeRule={() => {
             setMakingRule({ x: selectionMenu.x, y: selectionMenu.y, text: selectionMenu.text })
             setSelectionMenu(null)
