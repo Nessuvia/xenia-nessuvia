@@ -2110,3 +2110,36 @@
 .apiCallHead h3 {
   margin: 0;
 }
+
+/* Text rules panel: one row per rule set, in priority order. */
+.textRulesChatList {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.textRulesChatRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.textRulesChatRow {
+  min-width: 0;
+}
+
+/* Fills the panel and never scrolls it sideways: a long set name truncates. */
+.textRulesChatSelect {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textRulesChatRow button {
+  flex: none;
+}

@@ -417,7 +417,7 @@ export default function PostProcessingView() {
                     </label>
                     <p className="hint">
                       Also skip the {tagRules.length} {tagRules.length === 1 ? 'tag' : 'tags'} set up in{' '}
-                      <Link to="/settings#textRules">Settings, Text, Tags</Link>.
+                      <Link to="/appearance#textRules">Palette, Text rules</Link>.
                     </p>
                   </div>
                 )}

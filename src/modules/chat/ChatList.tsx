@@ -1,3 +1,4 @@
+import { textRulesFor } from '../../core/stores/textRules'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { RiStarFill, RiStarLine } from '@remixicon/react'
@@ -29,7 +30,6 @@ function ExportMenu({ chat, character }: { chat: Chat; character: Character }) {
   const characters = useCharacters((s) => s.characters)
   const personas = usePersonas((s) => s.personas)
   const activePersonaId = useSettings((s) => s.activePersonaId)
-  const tagRules = useSettings((s) => s.appearance.tagRules)
   const palette = usePalette()
 
   // The same credits ChatView shows, resolved once for the whole transcript.
@@ -43,7 +43,7 @@ function ExportMenu({ chat, character }: { chat: Chat; character: Character }) {
     setOpen(false)
     messagesOf(chat.id!).then((messages) => {
       if (format === 'json') return exportChatJson(chat, messages)
-      const transcript = buildTranscript(chat, messages, names, tagRules)
+      const transcript = buildTranscript(chat, messages, names, textRulesFor(chat).tagRules)
       if (format === 'txt') exportChatTxt(transcript)
       else exportChatHtml(transcript, palette)
     })

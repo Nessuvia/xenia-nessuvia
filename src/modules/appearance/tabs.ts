@@ -3,4 +3,5 @@
 export const tabs = [
   ['themes', 'Themes'],
   ['backgrounds', 'Backgrounds'],
+  ['textRules', 'Text rules'],
 ] as const

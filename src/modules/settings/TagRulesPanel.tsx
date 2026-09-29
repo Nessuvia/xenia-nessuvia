@@ -1,5 +1,5 @@
 import type { TagRule } from '../../core/stores/settingsStore'
-import { newTagRule, useAppearance, useSettings } from '../../core/stores/settingsStore'
+import { newTagRule } from '../../core/stores/settingsStore'
 import { RuleCard } from './RuleCard'
 import './settings.css'
 
@@ -9,15 +9,10 @@ const modeLabel: Record<TagRule['mode'], string> = {
   unwrap: 'Content only',
 }
 
-/** Tag rules: hide or collapse text between two markers. Global, same as the rest of appearance. */
-export default function TagRulesPanel() {
-  const appearance = useAppearance()
-  const setAppearance = useSettings((s) => s.setAppearance)
-
+/** Tag rules: hide or collapse text between two markers. Edits whichever set it's handed. */
+export default function TagRulesPanel({ rules, onChange }: { rules: TagRule[]; onChange(rules: TagRule[]): void }) {
   const patchRule = (id: string, patch: Partial<TagRule>) =>
-    setAppearance({
-      tagRules: appearance.tagRules.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-    })
+    onChange(rules.map((r) => (r.id === id ? { ...r, ...patch } : r)))
 
   return (
     <section className="textRules screenFrame">
@@ -30,7 +25,7 @@ export default function TagRulesPanel() {
       </p>
 
       <ul className="tagRules screenBody">
-        {appearance.tagRules.map((rule) => (
+        {rules.map((rule) => (
           <RuleCard
             key={rule.id}
             startOpen={!rule.open && !rule.close}
@@ -74,9 +69,7 @@ export default function TagRulesPanel() {
             <button
               type="button"
               className="danger"
-              onClick={() =>
-                setAppearance({ tagRules: appearance.tagRules.filter((r) => r.id !== rule.id) })
-              }
+              onClick={() => onChange(rules.filter((r) => r.id !== rule.id))}
             >
               Delete
             </button>
@@ -86,7 +79,7 @@ export default function TagRulesPanel() {
 
       <button
         type="button"
-        onClick={() => setAppearance({ tagRules: [...appearance.tagRules, newTagRule()] })}
+        onClick={() => onChange([...rules, newTagRule()])}
       >
         Add tag
       </button>

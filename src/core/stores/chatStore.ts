@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { textRulesFor } from './textRules'
 import { storage } from '../storage/db'
 import { currentOwnerId } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
@@ -132,7 +133,7 @@ async function agentPass(
   if (!cleanOnly && (!connection || isSentinel(connection.endpointUrl))) return { text }
   // What the pass does comes from the stack; the global config only says whether and how.
   const stack = resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks)
-  const staged = { ...runStages(stack, useSettings.getState().appearance.tagRules), context: recentContext(history, stack.contextMessages), lastMessage: history.at(-1)?.content.slice(history.at(-1)?.reasoningEnd ?? 0) }
+  const staged = { ...runStages(stack, textRulesFor(chat).tagRules), context: recentContext(history, stack.contextMessages), lastMessage: history.at(-1)?.content.slice(history.at(-1)?.reasoningEnd ?? 0) }
   // Detector fixes and folds are model calls too, so clean only drops them with the rewrite rules.
   const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite' && r.action !== 'fold'), flow: undefined, flowPass: undefined, dialoguePass: false } : staged
 
@@ -180,7 +181,7 @@ async function agentPass(
     // Each earlier reply's own readings feed the windows. They're stored per swipe, so swiping
     // back rolls the averages back too.
     history: history.filter((m) => m.role === 'assistant').map((m) => passReadingsFor(m) ?? []),
-    tagRules: useSettings.getState().appearance.tagRules,
+    tagRules: textRulesFor(chat).tagRules,
     context: staged.context,
     lastMessage: staged.lastMessage,
     onProgress,
@@ -953,7 +954,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           speaker: told,
           messages: get().messages,
           worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
-          tagRules: useSettings.getState().appearance.tagRules,
+          ...textRulesFor(chat),
           cast: _sessionCast,
           personas: _sessionPersonas,
         }
@@ -1098,7 +1099,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           speaker,
           messages: get().messages,
           worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
-          tagRules: useSettings.getState().appearance.tagRules,
+          ...textRulesFor(chat),
           cast: _sessionCast,
           personas: _sessionPersonas,
           appendSystem: takeIdea(stack.miscPrompts),
@@ -1262,7 +1263,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           messages: get().messages.slice(0, at),
           worldInfo: await worldInfoFor(speaker, chat, get().messages.slice(0, at), stack.worldInfoBudget),
           appendSystem,
-          tagRules: useSettings.getState().appearance.tagRules,
+          ...textRulesFor(chat),
           cast: _sessionCast,
           personas: _sessionPersonas,
         },
@@ -1397,7 +1398,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           worldInfo: await worldInfoFor(speaker, chat, get().messages.slice(0, -1), stack.worldInfoBudget),
           appendSystem: continuePrompt(stack.miscPrompts),
           appendAssistant: prefix,
-          tagRules: useSettings.getState().appearance.tagRules,
+          ...textRulesFor(chat),
           cast: _sessionCast,
           personas: _sessionPersonas,
         },

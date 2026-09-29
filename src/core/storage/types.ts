@@ -4,6 +4,7 @@ import type { ChatAgent } from '../agent/agentConfig.ts'
 import type { PostStackConfig } from '../agent/postStack.ts'
 import type { AcrosticRecord } from '../agent/acrostic/parse.ts'
 import type { GameEvent, GameKind } from '../games/gameEvent'
+import type { ReplaceRule, TagRule } from '../stores/settingsStore.ts'
 
 export interface Character {
   id?: number
@@ -197,6 +198,9 @@ export interface Chat {
   agent?: ChatAgent
   /** This chat's post-processing stack, overriding the global default. Absent = use the default. */
   postStackId?: number
+  /** Text rule sets in priority order: 'global', 'stack:<id>', or a user set's id. Absent =
+   *  Global plus the stack's own set, if it has one. */
+  ruleSetIds?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -441,6 +445,13 @@ export interface PromptStack {
   /** Lets the look load addresses outside the page (images, fonts). Set by this browser's user,
    *  never by a file: `stackFile.ts` drops it on export and import. */
   allowRemote?: boolean
+  /** The stack's own tag and find/replace rules, picked per chat. Travels with the stack file. */
+  textRules?: TextRules
+}
+
+export interface TextRules {
+  tagRules: TagRule[]
+  replaceRules: ReplaceRule[]
 }
 
 /** Maker-written HTML and CSS for a stack's controls. `data-var="id"` marks where a control goes. */

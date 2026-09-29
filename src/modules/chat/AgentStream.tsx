@@ -21,7 +21,10 @@ export default function AgentStream({ segments, render }: { segments: Segment[] 
   }
   // Keyed by content, not position: a run keeps its element (and its finished animation) while the
   // runs around it change, and a run whose mark changes remounts and starts its own animation.
+  // Unmarked runs have no animation to keep, and a content key would remount them on every token,
+  // snapping shut any collapsible block the reader opened mid-stream. They key by position instead.
   const seen = new Map<string, number>()
+  let plain = 0
   return (
     <>
       {segments.map((s) => {
@@ -30,7 +33,7 @@ export default function AgentStream({ segments, render }: { segments: Segment[] 
         seen.set(id, n + 1)
         const key = `${id}:${n}`
         return s.mark === 'none' ? (
-          <Fragment key={key}>{render(s.text)}</Fragment>
+          <Fragment key={`none:${plain++}`}>{render(s.text)}</Fragment>
         ) : (
           <span key={key} className={markClass[s.mark]}>
             {render(s.text)}

@@ -1,3 +1,4 @@
+import { useChatTextRules } from '../../core/stores/textRules'
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
@@ -142,6 +143,15 @@ export default function MessageBubble({
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const editing = draft !== null
+  // Where the reader was looking when editing began: a viewport y and how far down the body it
+  // sat. The textarea mounts with that same fraction at that same y, caret there too.
+  const editAnchor = useRef<{ y: number; frac: number } | null>(null)
+  const startEdit = () => {
+    const r = bodyRef.current?.getBoundingClientRect()
+    const y = r ? Math.min(Math.max(window.innerHeight / 2, r.top), r.bottom) : 0
+    editAnchor.current = r ? { y, frac: r.height ? (y - r.top) / r.height : 0 } : null
+    setDraft(message.content)
+  }
   const editingCb = useRef(onEditingChange)
   editingCb.current = onEditingChange
   useEffect(() => editingCb.current?.(editing), [editing])
@@ -154,8 +164,7 @@ export default function MessageBubble({
   const [inspecting, setInspecting] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
   const appearance = useAppearance()
-  const tagRules = appearance.tagRules
-  const replaceRules = appearance.replaceRules
+  const { tagRules, replaceRules } = useChatTextRules()
   const palette = usePalette()
   const order = palette.colorOrder
 
@@ -193,15 +202,15 @@ export default function MessageBubble({
   const swipeNext = () =>
     greeting ? onSwipe((at + 1) % count) : nextIsNew ? onRegenerate() : onSwipe(at + 1)
 
-  const keys = useRef({ swipePrev, swipeNext, canPrev, canNext, content: message.content })
-  keys.current = { swipePrev, swipeNext, canPrev, canNext, content: message.content }
+  const keys = useRef({ swipePrev, swipeNext, canPrev, canNext, startEdit })
+  keys.current = { swipePrev, swipeNext, canPrev, canNext, startEdit }
   useEffect(() => {
     if (readOnly || (!lastMessage && !lastUserMessage)) return
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.shiftKey || e.metaKey || !hotkeysOn() || typingIn(e.target)) return
       const k = keys.current
       let act: (() => void) | null = null
-      if (e.key === 'ArrowUp' && (e.ctrlKey ? lastUserMessage : lastMessage)) act = () => setDraft(k.content)
+      if (e.key === 'ArrowUp' && (e.ctrlKey ? lastUserMessage : lastMessage)) act = k.startEdit
       else if (e.ctrlKey || !lastMessage || !assistant) return
       else if (e.key === 'ArrowLeft' && k.canPrev) act = k.swipePrev
       else if (e.key === 'ArrowRight' && k.canNext) act = k.swipeNext
@@ -323,7 +332,7 @@ export default function MessageBubble({
             type="button"
             title={lastMessage ? 'Edit (Up)' : lastUserMessage ? 'Edit (Ctrl+Up)' : 'Edit'}
             aria-keyshortcuts={lastMessage ? 'ArrowUp' : lastUserMessage ? 'Control+ArrowUp' : undefined}
-            onClick={() => setDraft(message.content)}>
+            onClick={startEdit}>
             <RiPencilLine size={16} />
           </button>
           {onReprompt && (
@@ -526,13 +535,24 @@ export default function MessageBubble({
         </div>
       ) : (
         <textarea
-          autoFocus
           className="messageEdit"
           rows={draft.split('\n').length + 2}
           ref={(el) => {
             if (!el) return
             el.style.height = 'auto'
             el.style.height = el.scrollHeight + 'px'
+            const anchor = editAnchor.current
+            if (!anchor) return
+            editAnchor.current = null
+            const caret = Math.round(anchor.frac * draft.length)
+            el.setSelectionRange(caret, caret)
+            el.focus({ preventScroll: true })
+            const r = el.getBoundingClientRect()
+            const delta = r.top + anchor.frac * r.height - anchor.y
+            let box = el.parentElement
+            while (box && !/auto|scroll/.test(getComputedStyle(box).overflowY)) box = box.parentElement
+            if (box) box.scrollTop += delta
+            else window.scrollBy(0, delta)
           }}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

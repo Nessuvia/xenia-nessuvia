@@ -1,3 +1,4 @@
+import { useChatTextRules } from '../../core/stores/textRules'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { RiDeleteBinLine, RiRobot2Line, RiSparkling2Line } from '@remixicon/react'
@@ -71,6 +72,7 @@ export default function ChatView() {
   const ensurePersona = usePersonas((s) => s.ensureActive)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const appearance = useAppearance()
+  const textRules = useChatTextRules()
   const agentConfig = useSettings((s) => s.agent)
   const ideasEnabled = useSettings((s) => s.ideas.enabled)
   const palette = usePalette()
@@ -317,7 +319,7 @@ export default function ChatView() {
             {appearance.showReasoning && streamingReasoning && (
               <details className="taggedBlock reasoningBlock">
                 <summary>Reasoning</summary>
-                {renderText(streamingReasoning, { tagRules: appearance.tagRules, order: palette.colorOrder })}
+                {renderText(streamingReasoning, { tagRules: textRules.tagRules, order: palette.colorOrder })}
               </details>
             )}
             {/* A pass stage is overwriting the reply that just finished: what's on screen is
@@ -331,7 +333,7 @@ export default function ChatView() {
             <div className="messageBody">
               {/* Mid-stream an opener has no closer yet. The block looks like plain text
                   until the model finishes it and folds away. */}
-              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: appearance.tagRules, order: palette.colorOrder, streaming: true })} />
+              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: textRules.tagRules, order: palette.colorOrder, streaming: true })} />
             </div>
           </div>
         )}

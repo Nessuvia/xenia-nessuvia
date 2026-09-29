@@ -11,6 +11,7 @@ import { paramsFromPreset } from './stSamplers.ts'
 import { blocksFromStoryString } from './stStoryString.ts'
 import { blocksFromPrompts } from './stPrompts.ts'
 import { stBlock } from './stBlock.ts'
+import { rulesFromScripts } from './stRegex.ts'
 
 /** The connection fields an import can fill. The panel merges these over `newConnection()`, which
  *  is where the id and the blank endpoint/key come from. */
@@ -96,6 +97,11 @@ function labelOf(sections: StBundle & { chat?: { name?: string } }, fallback: st
     sections.sysprompt?.name ??
     sections.instruct?.name
   return text(named).trim() || fallback
+}
+
+function sectionsExtensions(sections: { chat?: unknown; preset?: unknown }): { regex_scripts?: unknown } | undefined {
+  const holder = (sections.chat ?? sections.preset) as { extensions?: { regex_scripts?: unknown } } | undefined
+  return holder?.extensions
 }
 
 /** Parse a SillyTavern export. Throws with a message meant for the user. */
@@ -188,6 +194,10 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
     stack = { ownerId: currentOwnerId(), name: label, kind: 'chat', active: blocks, ...(variables.length ? { variables } : {}) }
     const nudge = text(sections.chat?.continue_nudge_prompt).trim()
     if (nudge) stack.miscPrompts = { continue: nudge }
+    // Regex scripts become the stack's own text rule set, picked per chat.
+    const regex = rulesFromScripts(sectionsExtensions(sections)?.regex_scripts)
+    if (regex.rules.length) stack.textRules = { tagRules: [], replaceRules: regex.rules }
+    notes.push(...regex.notes)
     // A stack the editor would refuse to save must not reach the summary as importable.
     const invalid = validateStack(stack)
     if (invalid) throw new Error(`That preset can't become a stack: ${invalid.toLowerCase()}.`)

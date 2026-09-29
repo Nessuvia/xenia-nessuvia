@@ -101,7 +101,7 @@ export interface TagRule {
 }
 
 /**
- * Display-only find/replace. `find` is a literal string unless `regex` is set, in which case it's
+ * Find/replace. `find` is a literal string unless `regex` is set, in which case it's
  * a raw JS pattern; `flags` and `$1` capture refs in `replace` then work like `String.replace`.
  * Applied at render time only, stored message content is never rewritten.
  */
@@ -113,6 +113,22 @@ export interface ReplaceRule {
   flags: string // e.g. 'g', 'gi'; simple rows default to 'g'
   target: 'both' | 'user' | 'assistant'
   enabled: boolean
+  /** Where it applies: on screen, in the prompt sent to the model, or both. Absent = display.
+   *  Stored message content is never rewritten either way. */
+  applies?: 'display' | 'prompt' | 'both'
+  /** A SillyTavern script's name, shown as the summary. */
+  name?: string
+  /** Imported from SillyTavern with HTML in its replacement, which renders as literal text here.
+   *  Imported switched off; the Text rules editor offers conversions. */
+  convert?: boolean
+}
+
+/** A user-made set of text rules, picked per chat alongside Global and a stack's own set. */
+export interface RuleSet {
+  id: string
+  name: string
+  tagRules: TagRule[]
+  replaceRules: ReplaceRule[]
 }
 
 
@@ -252,6 +268,9 @@ interface SettingsState {
     askAssistantPrompt?: string
   }): void
   setAppearance(patch: Partial<Appearance>): void
+  /** User-made text rule sets. Global is `appearance`; a stack's set lives on the stack. */
+  ruleSets: RuleSet[]
+  setRuleSets(ruleSets: RuleSet[]): void
   setDebugMode(on: boolean): void
   setOpenStoryDirectly(on: boolean): void
   setGameChatBack(on: boolean): void
@@ -350,6 +369,9 @@ export const useSettings = create<SettingsState>()(
       // Merged into the defaults so a settings blob persisted before a field existed still resolves.
       setAppearance: (patch) =>
         set((s) => ({ appearance: { ...defaultAppearance, ...s.appearance, ...patch } })),
+
+      ruleSets: [],
+      setRuleSets: (ruleSets) => set({ ruleSets }),
 
       setAgent: (patch) => set((s) => ({ agent: { ...defaultAgentConfig, ...s.agent, ...patch } })),
 

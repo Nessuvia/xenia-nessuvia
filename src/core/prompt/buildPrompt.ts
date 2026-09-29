@@ -1,7 +1,7 @@
 // Extension-ful imports on purpose: checkPrompt.ts runs this under `node --experimental-strip-types`,
 // which can't resolve extensionless app imports.
 import type { ChatMessage } from '../connectors/connectorInterface'
-import type { TagRule } from '../stores/settingsStore'
+import type { ReplaceRule, TagRule } from '../stores/settingsStore'
 import type {
   BlockSource,
   Chat,
@@ -21,6 +21,7 @@ import { countMessages, countTokens, perMessageOverhead, trimHistory } from './b
 import { fillSlots, miscPrompt } from './miscPrompts.ts'
 import type { MiscPrompts } from './miscPrompts.ts'
 import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
+import { applyReplace } from './textRules.ts'
 
 /**
  * The card's text, or the block's own content when the card has none. That's the spec's
@@ -203,6 +204,8 @@ export interface BuildPromptArgs {
   indent?: boolean
   /** Tag rules with a `depth` strip their block from older history turns. Absent = nothing stripped. */
   tagRules?: TagRule[]
+  /** Find/replace rules set to apply in the prompt run over history turns. Absent = none. */
+  replaceRules?: ReplaceRule[]
   /** Force speaker labels on even outside a group. Multiplayer needs them with one character. */
   nameSpeakers?: boolean
   /** The multiplayer roster in host-chosen slot order, filling {{char1}}...{{char4}}. Absent
@@ -257,6 +260,7 @@ export function buildPrompt(
     appendAssistant,
     indent,
     tagRules,
+    replaceRules,
     nameSpeakers,
     cast,
     personas,
@@ -434,7 +438,7 @@ export function buildPrompt(
   // noise against the reply reserve; count it in trimHistory if long group chats start overflowing.
   const history: ChatMessage[] = trimmed.messages.map((m, idx) => {
     // Newest turn is distance 1; a depth-N tag stays in the prompt only while distance ≤ N.
-    const content = stripDepthTags(m.content, trimmed.messages.length - idx, tagRules)
+    const content = applyReplace(stripDepthTags(m.content, trimmed.messages.length - idx, tagRules), replaceRules, m.role)
     return {
       role: m.role,
       content: group ? `${speakerLabel(m, character, persona)}: ${content}` : content,

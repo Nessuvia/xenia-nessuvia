@@ -817,3 +817,12 @@
 .settingsAgentResultHit {
   border-left-color: var(--accent);
 }
+
+/* A flagged SillyTavern script's conversion choices, full width under the fields. */
+.convertRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-basis: 100%;
+}

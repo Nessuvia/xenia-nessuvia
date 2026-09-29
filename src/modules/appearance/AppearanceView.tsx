@@ -1,5 +1,6 @@
 import PalettesPanel from './PalettesPanel'
 import BackgroundsPanel from './BackgroundsPanel'
+import TextRulesView from './TextRulesView'
 import { useHashTab } from '../../app/useHashTab'
 import '../../app/formPage.css'
 import './appearance.css'
@@ -30,6 +31,8 @@ export default function AppearanceView() {
       {/* Themes brings its own scrolling columns; Backgrounds is one column and takes the frame's. */}
       {tab === 'themes' ? (
         <PalettesPanel />
+      ) : tab === 'textRules' ? (
+        <TextRulesView />
       ) : (
         <div className="screenBody">
           <BackgroundsPanel />

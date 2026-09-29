@@ -1,6 +1,6 @@
 // Prompt stack files: the stack's own fields, without the row id or ownerId. Those belong to the
 // browser that stores it, not to the file.
-import type { PromptBlock, PromptStack, StackLook, StackVariable } from '../../core/storage/types'
+import type { PromptBlock, PromptStack, StackLook, StackVariable, TextRules } from '../../core/storage/types'
 import { currentOwnerId } from '../../core/storage/storageInterface'
 import { stackKind } from './stackKinds'
 import { coerceMiscPrompts } from '../../core/prompt/miscPrompts'
@@ -17,6 +17,8 @@ interface StackFile {
   miscPrompts?: Record<string, string>
   /** The custom layout. `allowRemote` never travels: a downloaded file can't switch it on. */
   look?: StackLook
+  /** The stack's own tag and find/replace rules. */
+  textRules?: TextRules
   /** Written by older builds, when blocks could be parked out of the stack. Read, never written. */
   inactive?: PromptBlock[]
 }
@@ -34,6 +36,7 @@ export function exportStack(stack: PromptStack) {
     variables: stack.variables ?? [],
     ...(stack.miscPrompts ? { miscPrompts: stack.miscPrompts } : {}),
     ...(stack.look ? { look: stack.look } : {}),
+    ...(stack.textRules ? { textRules: stack.textRules } : {}),
   }
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }),
@@ -77,6 +80,9 @@ export function parseStack(text: string): PromptStack {
     ...(misc ? { miscPrompts: misc } : {}),
     ...(typeof file.look?.html === 'string' && typeof file.look.css === 'string'
       ? { look: { html: file.look.html, css: file.look.css } }
+      : {}),
+    ...(Array.isArray(file.textRules?.tagRules) && Array.isArray(file.textRules.replaceRules)
+      ? { textRules: { tagRules: file.textRules.tagRules, replaceRules: file.textRules.replaceRules } }
       : {}),
   }
 }

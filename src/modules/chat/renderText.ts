@@ -83,7 +83,7 @@ function replaceRulesMapped(m: Mapped, rules?: ReplaceRule[], role?: 'user' | 'a
   if (!rules?.length) return m
   let out = m
   for (const rule of rules) {
-    if (!rule.enabled || !rule.find) continue
+    if (!rule.enabled || !rule.find || rule.applies === 'prompt') continue
     if (rule.target !== 'both' && role && rule.target !== role) continue
     const pattern = rule.regex ? rule.find : rule.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     try {

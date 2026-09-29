@@ -1,3 +1,4 @@
+import { useChatTextRules } from '../../core/stores/textRules'
 import { useEffect, useState } from 'react'
 import type { Message } from '../../core/storage/types'
 import { buildRequestBody, redact } from '../../core/connectors/buildRequestBody'
@@ -31,7 +32,7 @@ export default function PromptPanel() {
   const personas = usePersonas((s) => s.personas)
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const activeStackId = useSettings((s) => s.activeStackId)
-  const tagRules = useSettings((s) => s.appearance.tagRules)
+  const { tagRules, replaceRules } = useChatTextRules()
   // Subscribed to only so edits in Settings re-render this; the value comes from the store helper
   // below, which is the one place override precedence is applied.
   const activeConnection = useActiveConnection()
@@ -101,6 +102,7 @@ export default function PromptPanel() {
       messages: pending,
       worldInfo,
       tagRules,
+      replaceRules,
     },
     budgetOf(connection),
   )

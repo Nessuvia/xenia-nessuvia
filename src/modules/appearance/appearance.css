@@ -690,3 +690,12 @@
     white-space: nowrap;
   }
 }
+
+/* Text rules: the set picker above the two editors. */
+.textRulesSetBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
