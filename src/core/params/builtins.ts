@@ -11,6 +11,8 @@ function def(
 }
 
 const both: ConnectionType[] = ['chat', 'text']
+// The samplers the Anthropic Messages API accepts. It rejects the rest with a 400.
+const all: ConnectionType[] = [...both, 'anthropic']
 
 /**
  * The samplers seeded on first run, as ordinary rows. Editable, and once deleted they stay
@@ -21,18 +23,18 @@ const both: ConnectionType[] = ['chat', 'text']
 export function builtinParamDefs(): ParamDef[] {
   return [
     def('temperature', 'Temperature', {
-      kind: 'slider', min: 0, max: 2, step: 0.01, default: 1, appliesTo: both,
+      kind: 'slider', min: 0, max: 2, step: 0.01, default: 1, appliesTo: all,
       hint: 'Higher is more random.',
     }),
     def('max_tokens', 'Max tokens', {
-      kind: 'number', min: 1, step: 1, default: 512, appliesTo: both,
+      kind: 'number', min: 1, step: 1, default: 512, appliesTo: all,
       hint: 'Length cap on the reply.',
     }),
     def('top_p', 'Top P', {
-      kind: 'slider', min: 0, max: 1, step: 0.01, default: 1, appliesTo: both,
+      kind: 'slider', min: 0, max: 1, step: 0.01, default: 1, appliesTo: all,
     }),
     def('top_k', 'Top K', {
-      kind: 'number', min: 0, step: 1, default: 0, appliesTo: both,
+      kind: 'number', min: 0, step: 1, default: 0, appliesTo: all,
       hint: '0 disables it.',
     }),
     def('min_p', 'Min P', {
@@ -45,7 +47,7 @@ export function builtinParamDefs(): ParamDef[] {
       kind: 'slider', min: 0, max: 1, step: 0.01, default: 1, appliesTo: both,
     }),
     def('stop', 'Stop sequences', {
-      kind: 'stringList', default: [], appliesTo: both,
+      kind: 'stringList', default: [], appliesTo: all,
       hint: 'Comma-separated. Generation ends at the first match.',
     }),
     def('banned_strings', 'Banned strings', {
@@ -123,4 +125,5 @@ export function builtinParamDefs(): ParamDef[] {
 export const recommendedKeys: Record<ConnectionType, string[]> = {
   chat: ['temperature', 'top_p', 'max_tokens', 'frequency_penalty', 'presence_penalty', 'stop'],
   text: ['temperature', 'top_p', 'min_p', 'top_k', 'repetition_penalty', 'max_tokens', 'stop'],
+  anthropic: ['temperature', 'max_tokens', 'stop'],
 }

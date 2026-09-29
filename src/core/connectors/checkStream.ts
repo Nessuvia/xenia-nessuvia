@@ -62,3 +62,17 @@ assert.deepStrictEqual(out, ['Hel', 'lo'])
 }
 
 console.log('ok')
+
+// Anthropic frames: thinking and text deltas, max_tokens maps to 'length'.
+{
+  const frame = (o: unknown) => `event: x\ndata: ${JSON.stringify(o)}\n\n`
+  const wire3 = [
+    frame({ type: 'message_start', message: {} }),
+    frame({ type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: 'hm' } }),
+    frame({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'yo' } }),
+    frame({ type: 'message_delta', delta: { stop_reason: 'max_tokens' } }),
+  ].join('').match(/.{1,11}/gs)!
+  const got = []
+  for await (const chunk of parseSse(sse(wire3))) got.push(chunk)
+  assert.deepStrictEqual(got, [{ reasoning: 'hm' }, { content: 'yo' }, { finishReason: 'length' }])
+}

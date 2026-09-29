@@ -1,5 +1,5 @@
 import type { Connection } from '../../core/stores/settingsStore'
-import { completionUrl } from '../../core/connectors/buildRequestBody'
+import { completionUrl, requestHeaders } from '../../core/connectors/buildRequestBody'
 import { modelsUrl } from '../../core/connectors/listModels'
 import { isSentinel, sentinelContextLimit } from '../../core/connectors/sentinel'
 
@@ -16,12 +16,10 @@ export async function readContextLimit(connection: Connection): Promise<number |
   // Nothing to ask: the sentinel host has no server behind it.
   if (isSentinel(connection.endpointUrl)) return sentinelContextLimit
   const base = completionUrl(connection.endpointUrl, connection.type).replace(
-    /\/(chat\/)?completions$/,
+    /\/((chat\/)?completions|messages)$/,
     '',
   )
-  const headers: Record<string, string> = connection.apiKey
-    ? { Authorization: `Bearer ${connection.apiKey}` }
-    : {}
+  const headers = requestHeaders(connection)
 
   try {
     const res = await fetch(`${base}/props`, { headers })

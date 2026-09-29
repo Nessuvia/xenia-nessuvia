@@ -4,7 +4,7 @@ import { localOwnerId } from '../storage/storageInterface.ts'
 
 /** What a connection speaks. `chat` posts `messages` to /chat/completions; `text` posts a flattened
  *  `prompt` string to /completions. */
-export type ConnectionType = 'chat' | 'text'
+export type ConnectionType = 'chat' | 'text' | 'anthropic'
 
 /** How a param renders and how its value is coerced before it goes in the body. */
 export type ParamKind = 'number' | 'slider' | 'text' | 'bool' | 'select' | 'stringList' | 'json'

@@ -105,9 +105,18 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
       }
       let message: { content?: string; reasoning_content?: string; reasoning?: string } | undefined
       try {
-        const choice = JSON.parse(body).choices?.[0]
-        // A text-completion reply puts the text on the choice, with no message object.
+        const parsed = JSON.parse(body)
+        const choice = parsed.choices?.[0]
+        // A text-completion reply puts the text on the choice, with no message object. An
+        // Anthropic reply has no choices, only a list of content blocks.
         message = choice?.message ?? (typeof choice?.text === 'string' ? { content: choice.text } : undefined)
+        if (!message && Array.isArray(parsed.content)) {
+          const blocks = parsed.content as { type: string; text?: string; thinking?: string }[]
+          message = {
+            content: blocks.filter((b) => b.type === 'text').map((b) => b.text).join(''),
+            reasoning: blocks.filter((b) => b.type === 'thinking').map((b) => b.thinking).join(''),
+          }
+        }
       } catch {
         setTestResult(`OK, ${res.status}, but the response isn't JSON:\n${body.slice(0, 800)}`)
         return
@@ -186,6 +195,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
             >
               <option value="chat">Chat completion</option>
               <option value="text">Text completion</option>
+              <option value="anthropic">Anthropic messages</option>
             </select>
           </label>
 

@@ -1,5 +1,5 @@
 import type { Connection } from '../stores/settingsStore'
-import { completionUrl } from './buildRequestBody.ts'
+import { completionUrl, requestHeaders } from './buildRequestBody.ts'
 import { isSentinel, sentinelModel } from './sentinel.ts'
 
 export interface ModelInfo {
@@ -32,7 +32,7 @@ export function modelsUrl(endpointUrl: string, query: string | undefined): strin
   const params = parseModelQuery(query)
   const scope = params.get('scope')
   params.delete('scope')
-  let url = completionUrl(endpointUrl).replace(/\/(chat\/)?completions$/, '/models')
+  let url = completionUrl(endpointUrl).replace(/\/((chat\/)?completions|messages)$/, '/models')
   if (scope) url = url.replace(/\/v1\/models$/, `/${scope}/v1/models`)
   return `${url}?${params}`
 }
@@ -43,7 +43,7 @@ export async function listModels(connection: Connection): Promise<ModelInfo[]> {
   if (isSentinel(connection.endpointUrl)) return [{ id: sentinelModel, vision: false }]
   try {
     const res = await fetch(modelsUrl(connection.endpointUrl, connection.modelQuery), {
-      headers: connection.apiKey ? { Authorization: `Bearer ${connection.apiKey}` } : {},
+      headers: requestHeaders(connection),
     })
     if (!res.ok) return []
     const data = (await res.json()).data

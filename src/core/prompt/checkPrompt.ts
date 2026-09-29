@@ -780,6 +780,21 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.strictEqual(out[3].content, 'd') // the last real turn still comes before it
 }
 
+// Any block takes a depth, not only the author's note. It lands there wherever it sits.
+{
+  const out = buildPrompt({
+    stack: stack([
+      block({ source: 'text', role: 'user', content: 'stay in character', depth: 0 }),
+      block({ source: 'chatHistory' }),
+    ]),
+    character: damien,
+    persona: dom,
+    messages: longHistory,
+  }).messages
+  assert.strictEqual(out.at(-1)?.content, 'stay in character')
+  assert.strictEqual(out[0].content, 'a')
+}
+
 // The chat's own depth beats the stack block's, and clearing it hands control back.
 {
   const withBlock = stack([

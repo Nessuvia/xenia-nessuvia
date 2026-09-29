@@ -20,8 +20,8 @@ export interface StreamChunk {
   finishReason?: string
 }
 
-// every backend here speaks the OpenAI /chat/completions SSE dialect. The
-// stream parsing lives here once. Split it if a backend ever needs a different wire format.
+// Two SSE dialects: OpenAI's (/chat/completions, /completions) and Anthropic's (/messages).
+// Anthropic frames carry a top-level `type`; OpenAI frames carry `choices`.
 export async function* parseSse(body: ReadableStream<BufferSource>): AsyncGenerator<StreamChunk> {
   const reader = body.pipeThrough(new TextDecoderStream()).getReader()
   let buffer = ''
@@ -32,7 +32,18 @@ export async function* parseSse(body: ReadableStream<BufferSource>): AsyncGenera
       if (!line.startsWith('data:')) continue
       const data = line.slice(5).trim()
       if (data === '[DONE]' || !data) continue
-      const choice = JSON.parse(data).choices?.[0]
+      const frame = JSON.parse(data)
+      if (frame.type === 'content_block_delta') {
+        if (frame.delta?.thinking) yield { reasoning: frame.delta.thinking }
+        if (frame.delta?.text) yield { content: frame.delta.text }
+        continue
+      }
+      if (frame.type === 'message_delta' && frame.delta?.stop_reason) {
+        yield { finishReason: frame.delta.stop_reason === 'max_tokens' ? 'length' : frame.delta.stop_reason }
+        continue
+      }
+      if (frame.type === 'error') throw new Error(frame.error?.message ?? 'Stream error')
+      const choice = frame.choices?.[0]
       if (!choice) continue
       const delta = choice.delta
       // Reasoning field name isn't standardised: DeepSeek/llama.cpp use reasoning_content,

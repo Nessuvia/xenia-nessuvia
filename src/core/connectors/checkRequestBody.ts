@@ -169,3 +169,27 @@ const messages = [{ role: 'user' as const, content: 'hello' }]
 }
 
 console.log('ok')
+
+// --- anthropic: leading system lifted out, deeper system as user, stop renamed, max_tokens filled
+{
+  const anthropic: Connection = { ...connection, type: 'anthropic', params: [{ key: 'stop', value: ['END'] }] }
+  const body = buildRequestBody([
+    { role: 'system', content: 'a' },
+    { role: 'system', content: 'b' },
+    { role: 'user', content: 'hi' },
+    { role: 'system', content: 'note' },
+    { role: 'assistant', content: 'pre' },
+  ], anthropic, defs)
+  assert.deepStrictEqual(body.system, [{ type: 'text', text: 'a\n\nb' }])
+  assert.deepStrictEqual(body.messages, [
+    { role: 'user', content: 'hi' },
+    { role: 'user', content: 'note' },
+    { role: 'assistant', content: 'pre' },
+  ])
+  assert.deepStrictEqual(body.stop_sequences, ['END'])
+  assert.ok(!('stop' in body))
+  assert.strictEqual(body.max_tokens, 8192)
+  assert.strictEqual(completionUrl('http://h:42070', 'anthropic'), 'http://h:42070/v1/messages')
+  const out = JSON.stringify(redact(body, anthropic))
+  assert.ok(!out.includes(key), 'key leaked from x-api-key')
+}

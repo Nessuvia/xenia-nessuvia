@@ -320,8 +320,8 @@ export function buildPrompt(
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
-  // Author's notes with a depth, and lorebook entries positioned at one, leave the stack and get
-  // spliced into history below.
+  // Blocks with a depth, and lorebook entries positioned at one, leave the stack and get spliced
+  // into history below.
   const depthNotes: { message: ChatMessage; depth: number }[] = []
   const skipped: SkippedBlock[] = []
   let fixedTokens = 0
@@ -363,8 +363,8 @@ export function buildPrompt(
     // defined relative to history; a stack without history has nothing to be N messages from.
     // The chat's own depth beats the stack's, same shape as the param overrides: the stack block
     // carries the default, one chat can move the note without touching the stack.
-    const depth = chat?.authorNoteDepth ?? block.depth
-    if (block.source === 'authorNote' && depth !== undefined) {
+    const depth = block.source === 'authorNote' ? chat?.authorNoteDepth ?? block.depth : block.depth
+    if (depth !== undefined) {
       depthNotes.push({ message, depth })
       continue
     }

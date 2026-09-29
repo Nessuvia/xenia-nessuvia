@@ -187,6 +187,14 @@ export default function ParamDefModal({
                 />
                 Text completion
               </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={draft.appliesTo.includes('anthropic')}
+                  onChange={() => toggleApplies('anthropic')}
+                />
+                Anthropic messages
+              </label>
             </fieldset>
           </>
         )}

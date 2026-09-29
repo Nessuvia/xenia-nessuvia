@@ -393,8 +393,8 @@ export interface PromptBlock {
   content: string // only meaningful when source === 'text'; the text before any children
   /** Text after the children, the closing half of a wrapper (`</characters>`). */
   closeContent?: string
-  /** Only meaningful on an authorNote block: inject N messages from the end of history.
-   *  Undefined = the block sits where it sits in the stack. */
+  /** Inject N messages from the end of history; 0 is after the last message. Undefined = the
+   *  block sits where it sits in the stack. */
   depth?: number
   /** Switched off: contributes nothing, children included, but keeps its place in the stack. */
   disabled?: boolean

@@ -102,7 +102,7 @@ export default function BlockModal({
           </>
         )}
 
-        {draft.source === 'authorNote' && (
+        {draft.source !== 'chatHistory' && draft.source !== 'worldInfoDepth' && (
           <>
             <label>
               Depth
@@ -117,8 +117,9 @@ export default function BlockModal({
             </label>
             <p className="hint">
               Messages from the end of the chat history. 0 is after the last message. Empty puts the
-              note where the block sits in the stack. With a depth, dragging the block does not
-              change where the note lands. A chat can set its own depth in chat settings.
+              block where it sits in the stack. With a depth, dragging the block does not change
+              where it lands.
+              {draft.source === 'authorNote' && ' A chat can set its own depth in chat settings.'}
             </p>
           </>
         )}

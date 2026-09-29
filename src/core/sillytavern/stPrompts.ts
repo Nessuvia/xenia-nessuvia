@@ -49,7 +49,6 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
   const blocks: PromptBlock[] = []
   const notes: string[] = []
   const used = new Set<BlockSource>()
-  const depthPrompts: string[] = []
   let skippedEmpty = 0
 
   for (const entry of entries) {
@@ -82,12 +81,6 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
       skippedEmpty += 1
       continue
     }
-    // injection_position 1 means ST splices this into the chat at a depth. The only depth block we
-    // have is the author's note, and it takes its text from the chat rather than from the stack.
-    // The prompt's own wording has nowhere to live there. It goes in where it sits in the order.
-    if (prompt.injection_position === 1) {
-      depthPrompts.push(prompt.name?.trim() || (entry.identifier ?? 'a prompt'))
-    }
     blocks.push(
       stBlock({
         label: prompt.name?.trim() || 'Prompt',
@@ -95,16 +88,13 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
         content,
         ...(info ? { info } : {}),
         ...(disabled ? { disabled: true } : {}),
+        // injection_position 1 means ST splices this into the chat at a depth. 4 is ST's default.
+        ...(prompt.injection_position === 1 ? { depth: prompt.injection_depth ?? 4 } : {}),
       }),
     )
   }
 
   if (skippedEmpty) notes.push(`${skippedEmpty} empty prompts were skipped.`)
-  if (depthPrompts.length) {
-    notes.push(
-      `Injected at a depth in SillyTavern, imported in place: ${depthPrompts.join(', ')}.`,
-    )
-  }
   const converted = convertVariables(blocks)
   notes.push(...converted.notes)
   const unmapped = unmappedMacros(converted.blocks)

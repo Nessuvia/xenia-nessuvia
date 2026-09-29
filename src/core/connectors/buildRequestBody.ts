@@ -33,6 +33,19 @@ export function buildRequestBody(
       ...(template.sequencesAsStops ? sequencesOf(template) : []),
     ])
     if (stops.size) body.stop = [...stops]
+  } else if (connection.type === 'anthropic') {
+    // Leading system turns become the `system` field. A system turn deeper in the history (an
+    // injection at depth) has no Anthropic equivalent and goes in as a user turn at its place.
+    const lead = messages.findIndex((m) => m.role !== 'system')
+    const head = lead === -1 ? messages : messages.slice(0, lead)
+    // Blocks rather than a string: proxies that prepend their own system block (claude-code-proxy)
+    // wrap a string raw into an array, which the API rejects.
+    if (head.length) body.system = [{ type: 'text', text: head.map((m) => m.content).join('\n\n') }]
+    // A trailing assistant turn is a native prefill here: no continue fields needed.
+    body.messages = messages.slice(head.length).map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }))
   } else {
     body.messages = messages
     // A trailing assistant turn is a prefill: the reply continues it. Some backends need telling,
@@ -57,6 +70,15 @@ export function buildRequestBody(
     }
   }
 
+  if (connection.type === 'anthropic') {
+    // Required by the API. 8192 when the connection doesn't set it.
+    body.max_tokens ??= 8192
+    if (body.stop !== undefined) {
+      body.stop_sequences = body.stop
+      delete body.stop
+    }
+  }
+
   if (extra) Object.assign(body, extra)
   return body
 }
@@ -69,13 +91,22 @@ export function buildRequestBody(
  */
 export function completionUrl(endpointUrl: string, type: Connection['type'] = 'chat'): string {
   const url = endpointUrl.replace(/\/+$/, '')
-  const tail = type === 'text' ? '/completions' : '/chat/completions'
-  if (/\/(chat\/)?completions?$/.test(url)) return url
+  const tail = type === 'text' ? '/completions' : type === 'anthropic' ? '/messages' : '/chat/completions'
+  if (/\/((chat\/)?completions?|messages)$/.test(url)) return url
   if (url.endsWith('/v1')) return `${url}${tail}`
   return `${url}/v1${tail}`
 }
 
 export function requestHeaders(connection: Connection): Record<string, string> {
+  if (connection.type === 'anthropic') {
+    return {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      // api.anthropic.com refuses a browser-origin request without it.
+      'anthropic-dangerous-direct-browser-access': 'true',
+      ...(connection.apiKey ? { 'x-api-key': connection.apiKey } : {}),
+    }
+  }
   return {
     'Content-Type': 'application/json',
     // Local backends usually take no key. An empty one means no header at all rather than an
@@ -98,7 +129,7 @@ export interface RedactedRequest {
 export function redact(body: Record<string, unknown>, connection: Connection): RedactedRequest {
   const request: RedactedRequest = {
     url: completionUrl(connection.endpointUrl, connection.type),
-    headers: { ...requestHeaders(connection), ...(connection.apiKey ? { Authorization: 'Bearer ****' } : {}) },
+    headers: requestHeaders(connection),
     body,
   }
   if (!connection.apiKey) return request

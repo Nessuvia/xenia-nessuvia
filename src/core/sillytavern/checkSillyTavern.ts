@@ -123,14 +123,11 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
     blocks.some((b) => b.role === 'assistant'),
     'the assistant-role prompt lost its role',
   )
-  // The depth-injected prompt is in place, with a note saying so.
+  // The depth-injected prompt keeps its depth.
   const bolt = blocks.find((b) => b.label.includes('BOLT'))!
   assert.strictEqual(bolt.role, 'user')
   assert.ok(bolt.content.length > 100)
-  assert.ok(
-    out.notes.some((n) => n.includes('Injected at a depth')),
-    'no note about the depth prompt',
-  )
+  assert.strictEqual(typeof bolt.depth, 'number', 'the depth prompt lost its depth')
   // The card's post-history block keeps the preset's jailbreak wording as its fallback text.
   const post = blocks.find((b) => b.source === 'characterPostHistory')!
   assert.ok(post.content.trim().length > 0, 'the jailbreak text was dropped')
