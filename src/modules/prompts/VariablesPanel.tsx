@@ -10,6 +10,7 @@ const kindLabels: Record<Kind, string> = {
   dropdown: 'Dropdown',
   checkbox: 'Checkbox',
   text: 'Text',
+  dice: 'Dice',
 }
 
 /** A variable retyped to `kind`, keeping its name. Bounds and options start over. */
@@ -26,6 +27,8 @@ function withKind(v: StackVariable, kind: Kind): StackVariable {
       return { ...base, kind, value: false }
     case 'text':
       return { ...base, kind, value: '' }
+    case 'dice':
+      return { ...base, kind, value: '1d20' }
   }
 }
 

@@ -3,6 +3,8 @@
 import type { Character, PromptBlock, StackVariable } from '../storage/types'
 import { isNarrator } from '../multiplayer/narrator.ts'
 import { castSlots } from './swapTokens.ts'
+import { rollDice, rollInline } from './dice.ts'
+import { stripComments } from './stripComments.ts'
 
 /**
  * The names a prompt can branch on, lowercased. Two sources merge here: the built-in flags below
@@ -37,12 +39,19 @@ export function promptConditions(speaker: Character, cast?: Character[], game?: 
   return flags
 }
 
-/** A stack's variables by lowercased id. A range reads as `{{id_start}}` and `{{id_end}}`. */
-export function variableValues(variables: StackVariable[] | undefined): VariableValues {
+/**
+ * A stack's variables by lowercased id. A range reads as `{{id_start}}` and `{{id_end}}`. A dice
+ * variable is rolled here, once per call: call this once per send and every block sees one number.
+ * A malformed expression leaves `{{id}}` unresolved, where it shows in the preview.
+ */
+export function variableValues(variables: StackVariable[] | undefined, random: () => number = Math.random): VariableValues {
   const out: VariableValues = {}
   for (const v of variables ?? []) {
     const id = v.id.toLowerCase()
-    if (Array.isArray(v.value)) {
+    if (v.kind === 'dice') {
+      const total = rollDice(v.value, random)
+      if (total !== undefined) out[id] = total
+    } else if (Array.isArray(v.value)) {
       out[`${id}_start`] = v.value[0]
       out[`${id}_end`] = v.value[1]
     } else out[id] = v.value
@@ -230,7 +239,7 @@ function resolveInline(line: string, flags: PromptConditions): string {
 const varPattern = /\{\{([A-Za-z0-9_]+)\}\}/g
 
 /**
- * Resolves Django-style tags, then a stack's `{{variable}}`s. Runs before token substitution: a
+ * Resolves Django-style tags, then a stack's `{{variable}}`s, then inline `{{roll::1d20}}`s. Runs before token substitution: a
  * token inside a dropped branch is never swapped.
  *
  * A tag alone on its line is a block tag and is consumed with its line, so a taken branch leaves no
@@ -240,6 +249,8 @@ const varPattern = /\{\{([A-Za-z0-9_]+)\}\}/g
  */
 export function resolveTemplate(text: string, conditions: PromptConditions, vars: VariableValues = {}): string {
   if (!text.includes('{')) return text
+  // Comments first: a tag or roll written inside an author's note is never evaluated.
+  text = stripComments(text)
   const flags = { ...conditions, ...vars }
   let result = text
   if (text.includes('{%')) {
@@ -247,8 +258,52 @@ export function resolveTemplate(text: string, conditions: PromptConditions, vars
     render(parse(text.split('\n')), flags, out, (line) => resolveInline(line, flags))
     result = out.join('\n')
   }
-  return result.replace(varPattern, (whole, name: string) => {
-    const value = vars[name.toLowerCase()]
-    return value === undefined ? whole : String(value)
+  // Inline rolls go last: one inside a dropped branch is never rolled.
+  return rollInline(
+    result.replace(varPattern, (whole, name: string) => {
+      const value = vars[name.toLowerCase()]
+      return value === undefined ? whole : String(value)
+    }),
+  )
+}
+
+/** A block's `when`: one `{% if %}` expression without the braces. Undefined when it isn't one. */
+export function parseCondition(expr: string): Directive | undefined {
+  const found = directive(`{% if ${expr.trim()} %}`)
+  return found?.keyword === 'if' && found.name ? found : undefined
+}
+
+/** Whether a block's `when` holds. Blank holds. Malformed is false, the same as an unknown name. */
+export function conditionHolds(expr: string | undefined, flags: PromptConditions): boolean {
+  if (!expr?.trim()) return true
+  const found = parseCondition(expr)
+  if (!found) return false
+  return holds(flags[found.name], found.op, found.value) !== found.negated
+}
+
+/**
+ * The stack as this send sees it: a block whose `when` fails is switched off, its children with it.
+ * Everything downstream already skips a disabled block, so a condition needs no other handling.
+ */
+export function applyConditions(blocks: PromptBlock[], flags: PromptConditions): PromptBlock[] {
+  return blocks.map((b) => {
+    if (b.disabled) return b
+    if (!conditionHolds(b.when, flags)) return { ...b, disabled: true }
+    return b.children ? { ...b, children: applyConditions(b.children, flags) } : b
   })
+}
+
+// Flags every send carries, whatever the stack declares. Trackers and game kinds also exist but come
+// from the card and the game, which the stack editor can't see.
+const builtInFlags = new Set(['narrator', 'game', 'char1', 'char2', 'char3', 'char4'])
+
+/** Why a `when` won't work, for the editor. Empty when it's fine or blank. */
+export function conditionProblem(expr: string | undefined, variables: StackVariable[] | undefined): string {
+  if (!expr?.trim()) return ''
+  const found = parseCondition(expr)
+  if (!found) return 'Not a condition. Write it the way it goes inside {% if %}.'
+  const names = new Set(Object.keys(variableValues(variables)))
+  for (const v of variables ?? []) names.add(v.id.toLowerCase())
+  if (builtInFlags.has(found.name) || names.has(found.name)) return ''
+  return `No variable named ${found.name}. A tracker key also works here.`
 }

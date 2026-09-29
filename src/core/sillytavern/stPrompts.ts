@@ -1,9 +1,10 @@
 // A chat-completion preset's prompt list as a stack. This is the closer of the two mappings: ST's
 // `prompts` + `prompt_order` is already an ordered list of text and placeholders, which is what a
 // stack is.
-import type { BlockSource, PromptBlock } from '../storage/types.ts'
+import type { BlockSource, PromptBlock, StackVariable } from '../storage/types.ts'
 import type { StChatPreset, StPrompt } from './stShapes.ts'
 import { stBlock } from './stBlock.ts'
+import { convertComments, convertVariables, unmappedMacros } from './stMacros.ts'
 
 /** ST's marker identifiers, and the one non-marker identifier with a bound source of its own. */
 const identifierSources: Record<string, BlockSource> = {
@@ -24,6 +25,7 @@ const roleOf = (prompt: StPrompt): PromptBlock['role'] =>
 
 export interface PromptsImport {
   blocks: PromptBlock[]
+  variables: StackVariable[]
   notes: string[]
 }
 
@@ -67,14 +69,15 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
           source,
           // characterPostHistory falls back to the block's own text when the card has none.
           // ST's jailbreak wording is worth keeping.
-          content: source === 'characterPostHistory' ? (prompt.content ?? '') : '',
-          ...(disabled ? { disabled: true, toggleable: true } : {}),
+          content: source === 'characterPostHistory' ? convertComments(prompt.content ?? '').content : '',
+          ...(disabled ? { disabled: true } : {}),
         }),
       )
       continue
     }
 
-    const content = prompt.content ?? ''
+    // A prompt that was only an author's note (ST's "Pick one" dividers) comes out empty and goes.
+    const { content, info } = convertComments(prompt.content ?? '')
     if (!content.trim()) {
       skippedEmpty += 1
       continue
@@ -90,7 +93,7 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
         label: prompt.name?.trim() || 'Prompt',
         role: roleOf(prompt),
         content,
-        toggleable: true,
+        ...(info ? { info } : {}),
         ...(disabled ? { disabled: true } : {}),
       }),
     )
@@ -102,5 +105,11 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
       `Injected at a depth in SillyTavern, imported in place: ${depthPrompts.join(', ')}.`,
     )
   }
-  return { blocks, notes }
+  const converted = convertVariables(blocks)
+  notes.push(...converted.notes)
+  const unmapped = unmappedMacros(converted.blocks)
+  if (unmapped.length) {
+    notes.push(`SillyTavern macros left as plain text: ${unmapped.map((m) => `{{${m}}}`).join(', ')}.`)
+  }
+  return { blocks: converted.blocks, variables: converted.variables, notes }
 }

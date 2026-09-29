@@ -39,4 +39,13 @@ assert.equal(stripComments('{{// a}} kept {{// b}} too'), ' kept  too')
 assert.equal(stripComments('plain text'), 'plain text')
 assert.equal(stripComments(''), '')
 
+// A comment followed by text on its line doesn't reach for a later line's }}.
+assert.equal(stripComments('{{// a}} keep\n{{char}}\nx'), ' keep\n{{char}}\nx')
+
+// Jinja comments: own line takes the line, inline leaves the text, and one may hold tokens and }}.
+assert.equal(stripComments('a\n{# note #}\nb'), 'a\nb')
+assert.equal(stripComments('a\n  {# one\n{{user}} }} two #}\nb'), 'a\nb')
+assert.equal(stripComments('keep {# drop #}this'), 'keep this')
+assert.equal(stripComments('{# a #} keep\n{# b #}\nx'), ' keep\nx')
+
 console.log('stripComments ok')

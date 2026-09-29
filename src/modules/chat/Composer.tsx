@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import { useDraft } from '../../core/stores/draftStore'
+import { useSettings } from '../../core/stores/settingsStore'
+import { markdownMarker, wrapSelection } from '../../app/markdownKeys'
 import { completeWith, menuFor } from '../../core/stores/slashCommands'
 import type { CharacterTarget } from '../../core/stores/slashCommands'
 import PersonaSwitcher from '../../app/PersonaSwitcher'
@@ -87,7 +89,17 @@ export default function Composer({
               return
             }
           }
-          if (onPhone || e.key !== 'Enter' || e.shiftKey) return
+          const marker = useSettings.getState().hotkeysOff ? null : markdownMarker(e)
+          if (marker) {
+            e.preventDefault()
+            const el = e.currentTarget
+            const next = wrapSelection(text, el.selectionStart, el.selectionEnd, marker)
+            setText(next.text)
+            requestAnimationFrame(() => el.setSelectionRange(next.start, next.end))
+            return
+          }
+          // Ctrl+Enter and Alt+Enter are ChatView's regenerate and continue.
+          if (onPhone || e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
           e.preventDefault()
           submit()
         }}
@@ -95,7 +107,7 @@ export default function Composer({
       <div className="composerControls">
         <PersonaSwitcher />
         {streaming ? (
-          <button type="button" onClick={onStop}>
+          <button type="button" aria-keyshortcuts="Escape" title="Stop (Escape)" onClick={onStop}>
             Stop
           </button>
         ) : (

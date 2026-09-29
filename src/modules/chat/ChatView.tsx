@@ -26,6 +26,7 @@ import { agentSegments } from './agentSegments'
 import { TrackerFloat } from './TrackerPanel'
 import AgentStream from './AgentStream'
 import IdeaChips from './IdeaChips'
+import { hotkeysOn } from '../../app/hotkeys'
 
 export default function ChatView() {
   const chatId = Number(useParams().chatId)
@@ -46,6 +47,7 @@ export default function ChatView() {
     send,
     retry,
     retryLast,
+    continueLast,
     clearError,
     patchChat,
     regenerate,
@@ -119,6 +121,36 @@ export default function ChatView() {
 
   const character = characters.find((c) => c.id === chat?.characterId)
 
+  // Ctrl+Enter regenerates, Alt+Enter continues, Escape stops. They fire from the composer too.
+  // Swipe and edit keys live on the bubble that owns them. Read through a ref: the listener is
+  // bound once.
+  const keyState = useRef({ character, chat, messages, streaming })
+  keyState.current = { character, chat, messages, streaming }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!hotkeysOn()) return
+      const { character, chat, messages, streaming } = keyState.current
+      if (e.key === 'Escape' && streaming) {
+        e.preventDefault()
+        stop()
+        return
+      }
+      if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey === e.altKey) return
+      if (streaming || !character || !chat) return
+      const last = messages.at(-1)
+      if (!last) return
+      e.preventDefault()
+      if (e.altKey) {
+        if (last.role === 'assistant') continueLast(character)
+      } else if (last.role === 'user') retry(character, chat.respondWith)
+      // The greeting cycles rather than regenerates. Ctrl+Enter on it does nothing.
+      else if (messages.length > 1) regenerate(character, last.id!)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [stop, continueLast, retry, regenerate])
+
+  const lastUserId = messages.findLast((m) => m.role === 'user')?.id
   if (!chat || !character) return <p className="placeholder">Loading…</p>
   const agent = resolveChatAgent(agentConfig, chat.agent)
   // Stylized hands over its own marks and streams plainly until they arrive. A manual pass in a
@@ -238,6 +270,8 @@ export default function ChatView() {
             rewriting={rewritingId === m.id}
             onRewriteOpen={(open) => setRewritingId(open ? m.id! : null)}
             onEdit={(content) => editMessage(m.id!, content)}
+            lastMessage={i === messages.length - 1}
+            lastUserMessage={m.role === 'user' && m.id === lastUserId}
             onEditingChange={(on) =>
               setEditingId((cur) => (on ? m.id! : cur === m.id ? null : cur))
             }

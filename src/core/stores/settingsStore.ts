@@ -191,6 +191,10 @@ interface SettingsState {
   customTitle: string
   /** On, the logo reveal on page load is skipped. Global: there's one splash. */
   splashOff: boolean
+  /** On, the sidebar footer (persona, Import/Export) stays put instead of hiding on scroll. */
+  footerAutoHideOff: boolean
+  /** On, the chat and Write keyboard shortcuts are ignored. Global: one keyboard. */
+  hotkeysOff: boolean
   /** On, a full export keeps API keys in the file. Off is the default and the safe one: a backup
    *  gets emailed around. Turning it on is gated behind typing CONFIRM in Settings. */
   exportKeys: boolean
@@ -261,6 +265,8 @@ interface SettingsState {
   setPersonaTitleOff(on: boolean): void
   setCustomTitle(title: string): void
   setSplashOff(on: boolean): void
+  setFooterAutoHideOff(on: boolean): void
+  setHotkeysOff(on: boolean): void
   setExportKeys(on: boolean): void
   setWriteEnabled(on: boolean): void
   setMultiplayerEnabled(on: boolean): void
@@ -314,6 +320,8 @@ export const useSettings = create<SettingsState>()(
       personaTitleOff: false,
       customTitle: '',
       splashOff: false,
+      footerAutoHideOff: false,
+      hotkeysOff: false,
       exportKeys: false,
       openStoryDirectly: false,
       gameChatBack: false,
@@ -362,6 +370,8 @@ export const useSettings = create<SettingsState>()(
 
       setPersonaTitleOff: (personaTitleOff) => set({ personaTitleOff }),
       setSplashOff: (splashOff) => set({ splashOff }),
+      setFooterAutoHideOff: (footerAutoHideOff) => set({ footerAutoHideOff }),
+      setHotkeysOff: (hotkeysOff) => set({ hotkeysOff }),
       setExportKeys: (exportKeys) => set({ exportKeys }),
 
       setCustomTitle: (customTitle) => set({ customTitle }),

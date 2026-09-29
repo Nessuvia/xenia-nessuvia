@@ -12,6 +12,7 @@ import {
   RiSparkling2Line,
 } from '@remixicon/react'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
+import { hotkeysOn, typingIn } from '../../app/hotkeys'
 import type { AvatarSource, CharacterColors, Message } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import { isNarrator } from '../../core/multiplayer/narrator'
@@ -71,6 +72,8 @@ export default function MessageBubble({
   onRewriteOpen,
   onEdit,
   onEditingChange,
+  lastMessage,
+  lastUserMessage,
   onReprompt,
   onDelete,
   onRegenerate,
@@ -107,6 +110,10 @@ export default function MessageBubble({
   onEdit: (content: string) => void
   /** Fires when the inline edit box opens and closes. The composer hides while it's open. */
   onEditingChange?: (editing: boolean) => void
+  /** Left/Right swipe this message and Up edits it. */
+  lastMessage?: boolean
+  /** Ctrl+Up edits this message. */
+  lastUserMessage?: boolean
   /** Only passed for the last user message: generate a reply to it, as if it were just sent. */
   onReprompt?: () => void
   onDelete: () => void
@@ -180,6 +187,31 @@ export default function MessageBubble({
   // The right arrow at the end re-rolls, the familiar behaviour. The greeting never re-rolls:
   // its arrows loop through the greeting options instead.
   const nextIsNew = !greeting && at >= count - 1
+  const canPrev = greeting ? count > 1 : at > 0 && !!canRegenerate
+  const canNext = greeting ? count > 1 : !!canRegenerate
+  const swipePrev = () => onSwipe(greeting ? (at - 1 + count) % count : at - 1)
+  const swipeNext = () =>
+    greeting ? onSwipe((at + 1) % count) : nextIsNew ? onRegenerate() : onSwipe(at + 1)
+
+  const keys = useRef({ swipePrev, swipeNext, canPrev, canNext, content: message.content })
+  keys.current = { swipePrev, swipeNext, canPrev, canNext, content: message.content }
+  useEffect(() => {
+    if (readOnly || (!lastMessage && !lastUserMessage)) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.shiftKey || e.metaKey || !hotkeysOn() || typingIn(e.target)) return
+      const k = keys.current
+      let act: (() => void) | null = null
+      if (e.key === 'ArrowUp' && (e.ctrlKey ? lastUserMessage : lastMessage)) act = () => setDraft(k.content)
+      else if (e.ctrlKey || !lastMessage || !assistant) return
+      else if (e.key === 'ArrowLeft' && k.canPrev) act = k.swipePrev
+      else if (e.key === 'ArrowRight' && k.canNext) act = k.swipeNext
+      if (!act) return
+      e.preventDefault()
+      act()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [readOnly, lastMessage, lastUserMessage, assistant])
   // The greeting has no model regeneration at all, arrows only cycle the seeded greetings.
   const modelRegen = canRegenerate && !greeting
   // `who` already resolves the speaker's display name (or the stamped name for a deleted card).
@@ -253,8 +285,9 @@ export default function MessageBubble({
               <button
                 type="button"
                 title={greeting ? 'Previous greeting' : 'Previous alternate'}
-                disabled={greeting ? count <= 1 : at === 0 || !canRegenerate}
-                onClick={() => onSwipe(greeting ? (at - 1 + count) % count : at - 1)}
+                disabled={!canPrev}
+                aria-keyshortcuts={lastMessage ? "ArrowLeft" : undefined}
+                onClick={swipePrev}
               >
                 <RiArrowLeftSLine size={16} />
               </button>
@@ -264,14 +297,9 @@ export default function MessageBubble({
               <button
                 type="button"
                 title={greeting ? 'Next greeting' : nextIsNew ? 'Generate another' : 'Next alternate'}
-                disabled={greeting ? count <= 1 : !canRegenerate}
-                onClick={() =>
-                  greeting
-                    ? onSwipe((at + 1) % count)
-                    : nextIsNew
-                      ? onRegenerate()
-                      : onSwipe(at + 1)
-                }
+                disabled={!canNext}
+                aria-keyshortcuts={lastMessage ? "ArrowRight" : undefined}
+                onClick={swipeNext}
               >
                 <RiArrowRightSLine size={16} />
               </button>
@@ -291,7 +319,11 @@ export default function MessageBubble({
               <RiSparkling2Line size={16} />
             </button>
           )}
-          <button type="button" title="Edit" onClick={() => setDraft(message.content)}>
+          <button
+            type="button"
+            title={lastMessage ? 'Edit (Up)' : lastUserMessage ? 'Edit (Ctrl+Up)' : 'Edit'}
+            aria-keyshortcuts={lastMessage ? 'ArrowUp' : lastUserMessage ? 'Control+ArrowUp' : undefined}
+            onClick={() => setDraft(message.content)}>
             <RiPencilLine size={16} />
           </button>
           {onReprompt && (

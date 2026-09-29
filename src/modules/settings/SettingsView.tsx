@@ -32,6 +32,10 @@ export default function SettingsView() {
     setCustomTitle,
     splashOff,
     setSplashOff,
+    footerAutoHideOff,
+    setFooterAutoHideOff,
+    hotkeysOff,
+    setHotkeysOff,
     writeEnabled,
     setWriteEnabled,
     enabledPlugins,
@@ -220,6 +224,37 @@ export default function SettingsView() {
               />
               Disable the logo animation on page load
             </label>
+          </section>
+          <section className="settingsCard">
+            <h3>Side panel footer</h3>
+            <label className="debugToggle">
+              <input
+                type="checkbox"
+                checked={footerAutoHideOff}
+                onChange={(e) => setFooterAutoHideOff(e.target.checked)}
+              />
+              Don't auto-hide side panel footer
+            </label>
+            <p className="debugHint">
+              The footer hides while you scroll down the side panel and comes back when you scroll up.
+            </p>
+          </section>
+          <section className="settingsCard">
+            <h3>Keyboard shortcuts</h3>
+            <label className="debugToggle">
+              <input
+                type="checkbox"
+                checked={hotkeysOff}
+                onChange={(e) => setHotkeysOff(e.target.checked)}
+              />
+              Disable keyboard shortcuts
+            </label>
+            <p className="debugHint">
+              Chat: Left and Right swipe the last reply. Up edits the last message, Ctrl+Up the last
+              one you sent. Ctrl+Enter regenerates, Alt+Enter continues, Escape stops. In the message
+              box, Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K and Ctrl+Shift+X wrap the selection in markdown.
+              Write: Ctrl+Enter writes the current beat, Escape stops.
+            </p>
           </section>
           <section className="settingsCard">
             <h3>Write mode</h3>

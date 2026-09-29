@@ -2,7 +2,7 @@
 // Nothing here writes to a store or to Dexie. The panel decides which parts get applied.
 import type { Connection, TagRule } from '../stores/settingsStore.ts'
 import type { InstructTemplate, NamesBehavior, ParamDef, ParamValue } from '../params/paramDef.ts'
-import type { PromptBlock, PromptStack } from '../storage/types.ts'
+import type { PromptBlock, PromptStack, StackVariable } from '../storage/types.ts'
 import { currentOwnerId } from '../storage/storageInterface.ts'
 import { validateStack } from '../../modules/prompts/stackKinds.ts'
 import { sectionsOf, sniffShape } from './stShapes.ts'
@@ -152,6 +152,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
 
   // --- stack ------------------------------------------------------------
   const blocks: PromptBlock[] = []
+  let variables: StackVariable[] = []
   const systemPrompt = text(sections.sysprompt?.content).trim()
   if (systemPrompt) {
     blocks.push(stBlock({ label: 'System prompt', content: systemPrompt }))
@@ -159,6 +160,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
   if (sections.chat) {
     const fromPrompts = blocksFromPrompts(sections.chat)
     blocks.push(...fromPrompts.blocks)
+    variables = fromPrompts.variables
     notes.push(...fromPrompts.notes)
   }
   const story = text(sections.context?.story_string)
@@ -183,7 +185,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
     if (postHistory) {
       blocks.push(stBlock({ label: 'Post-history instructions', content: postHistory }))
     }
-    stack = { ownerId: currentOwnerId(), name: label, kind: 'chat', active: blocks }
+    stack = { ownerId: currentOwnerId(), name: label, kind: 'chat', active: blocks, ...(variables.length ? { variables } : {}) }
     const nudge = text(sections.chat?.continue_nudge_prompt).trim()
     if (nudge) stack.miscPrompts = { continue: nudge }
     // A stack the editor would refuse to save must not reach the summary as importable.

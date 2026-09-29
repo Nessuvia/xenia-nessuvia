@@ -394,9 +394,11 @@ export interface PromptBlock {
   depth?: number
   /** Switched off: contributes nothing, children included, but keeps its place in the stack. */
   disabled?: boolean
-  /** Shown in chat settings as an on/off checkbox. The on/off value is `disabled`. */
-  toggleable?: boolean
-  /** Creator's explanation of this block, shown as the tooltip on its control in chat settings. */
+  /** Included only when this holds: a `{% if %}` expression without the braces (`dndSim`,
+   *  `cot = MAX`, `not narrator`). Blank = always. Players switch blocks through the variables it
+   *  names; `disabled` is the maker's own switch and players never see it. */
+  when?: string
+  /** The maker's note on this block. Shown in the stack editor only. */
   info?: string
   /** Present (even empty) makes this a container. Children render between content and closeContent,
    *  newline-joined, and inherit this block's role. Chat History can't be nested. */
@@ -414,6 +416,8 @@ export type StackVariable =
   | { id: string; label: string; info?: string; kind: 'dropdown'; options: string[]; value: string }
   | { id: string; label: string; info?: string; kind: 'checkbox'; value: boolean }
   | { id: string; label: string; info?: string; kind: 'text'; value: string }
+  /** `value` is dice notation (`1d20`, `2d6+3`), rolled once per send. See `core/prompt/dice.ts`. */
+  | { id: string; label: string; info?: string; kind: 'dice'; value: string }
 
 export interface PromptStack {
   id?: number
@@ -431,6 +435,18 @@ export interface PromptStack {
   /** Overrides for the small utility prompts (`core/prompt/miscPrompts.ts`), keyed by def id.
    *  Absent, or a blank entry, means the built-in wording. */
   miscPrompts?: Record<string, string>
+  /** A custom layout for the stack's controls in the chat and Story panels. Absent = the standard
+   *  list. See `modules/prompts/stackLook.ts`. */
+  look?: StackLook
+  /** Lets the look load addresses outside the page (images, fonts). Set by this browser's user,
+   *  never by a file: `stackFile.ts` drops it on export and import. */
+  allowRemote?: boolean
+}
+
+/** Maker-written HTML and CSS for a stack's controls. `data-var="id"` marks where a control goes. */
+export interface StackLook {
+  html: string
+  css: string
 }
 
 /** A named post-processing config. Shareable: it carries no connection and no key. */

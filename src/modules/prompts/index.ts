@@ -8,6 +8,7 @@ registerModule({
   route: '/prompts',
   tabs: [
     ['stacks', 'Stacks'],
+    ['look', 'Look'],
     ['misc', 'Misc Prompts'],
   ],
   component: lazyView(() => import('./StackEditor')),

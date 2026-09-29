@@ -30,6 +30,7 @@ import { exportStack, parseStack } from './stackFile'
 import { parseSillyTavern } from '../../core/sillytavern/importSillyTavern'
 import PromptPreview from './PromptPreview'
 import VariablesPanel from './VariablesPanel'
+import LookPanel from './LookPanel'
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
 
@@ -72,7 +73,7 @@ export default function StackEditor() {
   const [params] = useSearchParams()
   // Blocks or the utility prompts. Both edit the same open stack: the picker row above stays put
   // and only the body swaps.
-  const [tab] = useHashTab(['stacks', 'misc'] as const)
+  const [tab] = useHashTab(['stacks', 'look', 'misc'] as const)
   const writeEnabled = useSettings((s) => s.writeEnabled)
   const multiplayerEnabled = useSettings((s) => s.multiplayerEnabled)
   const [kind, setKind] = useState<StackKind>(
@@ -562,6 +563,10 @@ export default function StackEditor() {
       {tab === 'misc' ? (
         <div className="screenBody">
           <MiscPromptsPanel stack={draft} onChange={change} />
+        </div>
+      ) : tab === 'look' ? (
+        <div className="screenBody zones">
+          <LookPanel stack={draft} onChange={change} />
         </div>
       ) : (
         <div className="screenBody zones">

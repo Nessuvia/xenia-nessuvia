@@ -109,12 +109,15 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
     'chatHistory',
     'characterPostHistory',
   ])
-  // The main prompt is first and on; the "=Pick one POV=" entries are off and still in place.
+  // Each prompt's on/off became a checkbox its block names in `when`: main on, 1st person POV off.
   assert.ok(blocks[0].label.includes('Main Prompt'), `unexpected first block: ${blocks[0].label}`)
+  const variables = out.stack!.variables ?? []
+  const switchOf = (b: PromptBlock) => variables.find((v) => v.id === b.when)?.value
   assert.strictEqual(blocks[0].disabled, undefined)
+  assert.strictEqual(switchOf(blocks[0]), true)
   const pov = blocks.find((b) => b.label.includes('1st person POV'))!
-  assert.strictEqual(pov.disabled, true)
-  assert.strictEqual(pov.toggleable, true)
+  assert.strictEqual(pov.disabled, undefined, 'the maker switch starts on; the checkbox is off')
+  assert.strictEqual(switchOf(pov), false)
   // Roles survive: the Ice Breaker prompt is an assistant turn.
   assert.ok(
     blocks.some((b) => b.role === 'assistant'),

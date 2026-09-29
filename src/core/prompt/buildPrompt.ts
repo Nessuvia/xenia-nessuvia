@@ -14,7 +14,7 @@ import type {
 import { activeDescription } from '../storage/types.ts'
 import { isGroup } from '../stores/roster.ts'
 import { chatTokens, swapTokens } from './swapTokens.ts'
-import { promptConditions, resolveTemplate, variableValues } from './template.ts'
+import { applyConditions, promptConditions, resolveTemplate, variableValues } from './template.ts'
 import { trackerPrompt, trackerValues } from '../trackers/trackerState.ts'
 import type { Budget } from './budget.ts'
 import { countMessages, countTokens, perMessageOverhead, trimHistory } from './budget.ts'
@@ -311,6 +311,8 @@ export function buildPrompt(
     ...promptConditions(who, cast, gameKind),
   }
   const vars = variableValues(stack.variables)
+  // Blocks whose `when` fails are switched off for this send, before anything reads them.
+  const active = applyConditions(stack.active, { ...conditions, ...vars })
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
@@ -320,7 +322,7 @@ export function buildPrompt(
   const skipped: SkippedBlock[] = []
   let fixedTokens = 0
 
-  for (const block of stack.active) {
+  for (const block of active) {
     if (block.disabled) {
       skipped.push({ label: block.label, reason: 'disabled' })
       continue
@@ -370,7 +372,7 @@ export function buildPrompt(
   // note. The `worldInfoDepth` block gives them a role and a switch: no such block means the role
   // is `system`, which is what every stack written before the block existed already did, and a
   // disabled one drops them entirely.
-  if (!depthBlock?.disabled) {
+  if (!findBlock(active, 'worldInfoDepth')?.disabled) {
     const depthRole = depthBlock?.role ?? 'system'
     for (const at of resolvedWorldInfo.atDepth) {
       const content = swap(resolveTemplate(at.text, conditions, vars))

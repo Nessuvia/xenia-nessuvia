@@ -47,6 +47,7 @@ import { useSideDrawer } from '../../app/useSideDrawer'
 import { CollapseButton } from '../../app/CollapseButton'
 import { Avatar } from '../../app/Avatar'
 import '../../app/sideDrawer.css'
+import { hotkeysOn } from '../../app/hotkeys'
 
 // Landing screen: the grid of Story cover cards, plus the preview panel for the picked Story.
 function Shelf() {
@@ -622,7 +623,7 @@ function BlockHead({
       )}
 
       {streamingHere ? (
-        <button type="button" className="blockWrite" title="Stop writing. The text so far is kept." onClick={stop}>
+        <button type="button" className="blockWrite" title="Stop writing. The text so far is kept. (Escape)" aria-keyshortcuts="Escape" onClick={stop}>
           <RiStopCircleLine size={21} />
         </button>
       ) : (
@@ -1217,6 +1218,20 @@ function StoryEditor() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [streaming])
+
+  // Ctrl+Enter writes the beat the caret was last in, a new version if it has text.
+  useEffect(() => {
+    if (streaming) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || !hotkeysOn()) return
+      const { activeChapterId, activeBlockId } = useWrite.getState()
+      if (activeChapterId === null || activeBlockId === null) return
+      e.preventDefault()
+      writeBlock(activeChapterId, activeBlockId)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [streaming, writeBlock])
 
   // The tab moves first, so the Block's region is mounted before the stream starts and the caret
   // handover lands in a live DOM.

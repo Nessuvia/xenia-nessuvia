@@ -4,7 +4,7 @@ import type { ChatMessage } from '../connectors/connectorInterface'
 import type { BlockContext, PromptBlock, PromptStack } from '../storage/types'
 import type { GuideChapter } from './chapterGuide.ts'
 import { fitStoryProse, storyProseSplit } from './chapterGuide.ts'
-import { resolveTemplate, variableValues, type VariableValues } from './template.ts'
+import { applyConditions, resolveTemplate, variableValues, type VariableValues } from './template.ts'
 import { swapStoryTokens } from './storyTokens.ts'
 import type { Budget } from './budget.ts'
 import { countTokens, perMessageOverhead } from './budget.ts'
@@ -256,10 +256,11 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
   const worldInfo = args.worldInfo?.before ?? ''
   const worldInfoAfter = args.worldInfo?.after ?? ''
   const vars = variableValues(stack.variables)
+  const active = applyConditions(stack.active, vars)
 
   const render = (story: string) => {
     const turns: ChatMessage[] = []
-    for (const block of stack.active) {
+    for (const block of active) {
       const content = blockText(block, {
         cast,
         story,
@@ -283,7 +284,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
 
   let storyIncluded = ''
   let droppedChars = 0
-  if (hasStory(stack.active) && storyText.trim()) {
+  if (hasStory(active) && storyText.trim()) {
     if (budget) {
       const margin = (budget.contextLimit * budget.safetyMarginPct) / 100
       const available = Math.floor(budget.contextLimit - fixedTokens - budget.maxTokens - margin)

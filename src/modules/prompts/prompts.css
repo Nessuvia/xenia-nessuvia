@@ -649,3 +649,23 @@
     flex-direction: column;
   }
 }
+
+/* The Look tab. Its zones hold a form rather than a list, so the zone itself scrolls. */
+.promptsLookZone {
+  overflow-y: auto;
+}
+
+/* Label above its box, as in the block dialog. */
+.promptsLookField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--textMuted);
+}
+
+.promptsLookField textarea {
+  width: 100%;
+  resize: vertical;
+  /* Same as the palette HTML and CSS boxes (backgrounds.css). */
+  font-family: ui-monospace, monospace;
+}

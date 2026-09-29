@@ -26,6 +26,24 @@ const allowedTags = new Set(['div', 'span', 'hr', 'br', 'p', 'img'])
  *  unscoped CSS, and CSS can't run script. */
 const allowedAttrs = new Set(['class', 'id', 'src', 'alt', 'style'])
 
+/** What a caller lets through. Backgrounds use the lists above. */
+export interface HtmlPolicy {
+  tags: Set<string>
+  attrs: Set<string>
+}
+
+const backgroundPolicy: HtmlPolicy = { tags: allowedTags, attrs: allowedAttrs }
+
+/**
+ * A prompt stack's custom look (the chat panel's preset options). The background lists plus
+ * headings, lists, inline emphasis and `<details>`, all inert, and `data-var`, which names the
+ * variable whose control goes in that element. No form elements: the controls are the app's own.
+ */
+export const lookPolicy: HtmlPolicy = {
+  tags: new Set([...allowedTags, 'h1', 'h2', 'h3', 'h4', 'section', 'ul', 'ol', 'li', 'b', 'i', 'strong', 'em', 'small', 'details', 'summary']),
+  attrs: new Set([...allowedAttrs, 'data-var']),
+}
+
 /** Elements whose content is raw text, not markup. Unwrapping one would dump its stylesheet or
  *  script source into the page as visible text. They're dropped whole. */
 const rawTextTags = new Set(['style', 'script', 'title', 'textarea', 'noscript', 'template'])
@@ -57,7 +75,7 @@ export function isBackgroundImageRef(src: string): boolean {
  * @param imageSrc the slot's background image, substituted for `src="image.jpg"`. Omit to validate
  *   without resolving: the panel only needs `invalid`.
  */
-export function sanitizeBackgroundHtml(raw: string, imageSrc = ''): SanitizeResult {
+export function sanitizeBackgroundHtml(raw: string, imageSrc = '', policy: HtmlPolicy = backgroundPolicy): SanitizeResult {
   const template = document.createElement('template')
   template.innerHTML = raw
   const invalid = new Set<string>()
@@ -67,22 +85,22 @@ export function sanitizeBackgroundHtml(raw: string, imageSrc = ''): SanitizeResu
     // markup can hold text (a <p> with a line in it); loose text outside any element can't, and
     // rendering it paints the paste across the page. Flag it so the panel refuses instead.
     if (child.nodeType === Node.TEXT_NODE && (child.nodeValue ?? '').trim()) invalid.add('text')
-    out.append(...clean(child, invalid, imageSrc))
+    out.append(...clean(child, invalid, imageSrc, policy))
   }
   return { nodes: out, invalid: [...invalid] }
 }
 
 /** A source node → the safe nodes it becomes. A kept element returns itself rebuilt; a disallowed one
  *  returns its cleaned children (unwrapped); a text node returns a copy; anything else, nothing. */
-function clean(node: Node, invalid: Set<string>, imageSrc: string): Node[] {
+function clean(node: Node, invalid: Set<string>, imageSrc: string, policy: HtmlPolicy): Node[] {
   if (node.nodeType === Node.TEXT_NODE) return [document.createTextNode(node.nodeValue ?? '')]
   if (node.nodeType !== Node.ELEMENT_NODE) return [] // comments, etc.
 
   const el = node as Element
   const tag = el.tagName.toLowerCase()
-  const children = Array.from(el.childNodes).flatMap((c) => clean(c, invalid, imageSrc))
+  const children = Array.from(el.childNodes).flatMap((c) => clean(c, invalid, imageSrc, policy))
 
-  if (!allowedTags.has(tag)) {
+  if (!policy.tags.has(tag)) {
     invalid.add(`<${tag}>`)
     // unwrap: drop the tag, keep what it held, except raw-text elements, whose "children" are
     // stylesheet or script source that would render as visible text.
@@ -96,7 +114,7 @@ function clean(node: Node, invalid: Set<string>, imageSrc: string): Node[] {
       // (which has no image to hand) neither resolves nor rejects it.
       if (imageSrc) safe.setAttribute('src', imageSrc)
       else safe.setAttribute('src', attr.value)
-    } else if (allowedAttrs.has(attr.name)) safe.setAttribute(attr.name, attr.value)
+    } else if (policy.attrs.has(attr.name)) safe.setAttribute(attr.name, attr.value)
     else invalid.add(attr.name)
   }
   safe.append(...children)

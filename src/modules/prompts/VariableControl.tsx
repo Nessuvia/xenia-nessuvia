@@ -1,5 +1,6 @@
 import type { StackVariable } from '../../core/storage/types'
 import RangeSlider from './RangeSlider'
+import { rollDice } from '../../core/prompt/dice'
 
 /** One stack variable's value control. The declaration (kind, bounds, options) isn't edited here. */
 export default function VariableControl({
@@ -35,6 +36,18 @@ export default function VariableControl({
         <label className="optionPick" title={v.info || undefined}>
           {v.label}
           <input value={v.value} onChange={(e) => onChange({ ...v, value: e.target.value })} />
+        </label>
+      )
+    case 'dice':
+      return (
+        <label className="optionPick" title={v.info || undefined}>
+          {v.label}
+          <input
+            value={v.value}
+            placeholder="1d20"
+            aria-invalid={rollDice(v.value) === undefined}
+            onChange={(e) => onChange({ ...v, value: e.target.value })}
+          />
         </label>
       )
     case 'sliderSingle':

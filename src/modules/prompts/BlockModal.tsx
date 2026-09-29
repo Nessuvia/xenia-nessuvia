@@ -1,5 +1,6 @@
 import type { PromptBlock, StackVariable } from '../../core/storage/types'
 import type { StackKind } from './stackKinds'
+import { conditionProblem } from '../../core/prompt/template'
 
 const roles: PromptBlock['role'][] = ['system', 'user', 'assistant']
 
@@ -18,9 +19,13 @@ const tokenGuide: Record<StackKind, [string, string][]> = {
     ['{{char1Desc}} … {{char4Desc}}', 'Their descriptions'],
     ['{{personas}}', 'Everyone in the session, one per line'],
     ['{{game}}', 'The game being played, in a game'],
+    ['{{roll::1d20}}', 'A dice roll, new each time it appears'],
+    ['{# note #}', 'A comment. Not sent to the model'],
   ],
   story: [
     ['{{storyTitle}}', "The Story's title"],
+    ['{{roll::1d20}}', 'A dice roll, new each time it appears'],
+    ['{# note #}', 'A comment. Not sent to the model'],
     ['{{premise}}', 'The opening situation, from the Plot Layout tab'],
     ['{{ending}}', 'The intended ending, from the Plot Layout tab'],
     ['{{castNames}}', 'Enabled cast members by name, comma separated'],
@@ -147,14 +152,24 @@ export default function BlockModal({
         )}
 
         {draft.source !== 'chatHistory' && (
-          <label className="checkboxRow">
-            <input
-              type="checkbox"
-              checked={!!draft.toggleable}
-              onChange={(e) => set({ toggleable: e.target.checked })}
-            />
-            Make toggleable
-          </label>
+          <>
+            <label>
+              Include when
+              <input
+                value={draft.when ?? ''}
+                placeholder="Always"
+                onChange={(e) => set({ when: e.target.value || undefined })}
+              />
+            </label>
+            {conditionProblem(draft.when, variables) ? (
+              <p className="error">{conditionProblem(draft.when, variables)}</p>
+            ) : (
+              <p className="hint">
+                A condition on this stack's variables, written as inside {'{% if %}'}: dndSim, not narrator,
+                cot = MAX. Players switch the block through those variables.
+              </p>
+            )}
+          </>
         )}
 
         <details className="blockInfo">
@@ -197,7 +212,7 @@ export default function BlockModal({
             value={draft.info ?? ''}
             onChange={(e) => set({ info: e.target.value })}
           />
-          <p className="hint">Shown when hovering this block's control in chat settings.</p>
+          <p className="hint">A note for whoever edits this stack. Not sent to the model.</p>
         </details>
 
         <div className="dialogActions">

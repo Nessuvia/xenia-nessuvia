@@ -84,7 +84,7 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   `budget` (token counting and history trimming; `loadTokenizer` is async, `countTokens` is sync,
   and both have to stay that way; `tokenizers`/`autoTokenizer`/`tokenizerCache` pick and fetch which
   one counts), `flattenPrompt` (text-completion connections), `swapTokens`, `worldInfo`,
-  `template` (Django-style `{% if %}` tags and a stack's `{{variables}}`, `PromptStack.variables`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
+  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`, `PromptStack.variables`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
   one of these.
 - **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`).
   `flattenPrompt` is the only reader: role sequences, first/last turn overrides, newline wrapping,
@@ -120,6 +120,19 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   in `Message.trackerUpdates`. `trackerValues` folds them down the history with player overrides,
   so swiping rolls back. `buildPrompt` injects visible values and hands every value to
   `template.ts` for `{% if affection > 50 %}`. `stripState` hides the tag at render only.
+- **Block switches** are conditions. `PromptBlock.when` is an `{% if %}` expression on the stack's
+  variables, applied by `applyConditions` before either prompt builder reads the stack: a failing
+  block is switched off like a `disabled` one. `disabled` is the maker's switch and players never see
+  it. Players only see variables (`PromptToggles`).
+- **Stack looks**: `PromptStack.look` is maker HTML and CSS laying out those variables in the chat and
+  Story panels. `modules/prompts/stackLook.ts` holds the rules: `lookPolicy` in the palette
+  sanitizer, `@scope` CSS, `data-var` slots filled by portals (`StackLookView`), values mirrored as
+  `data-*` attributes on the root, fallback to the standard list on any error. Outside addresses
+  (`core/palette/remoteRefs.ts`, checked on parsed CSS and the sanitized DOM) need
+  `PromptStack.allowRemote`, which `stackFile.ts` never exports or imports.
+- **SillyTavern import** lives in `core/sillytavern`. `stMacros.ts` rewrites ST's runtime macros into
+  stack features: leading comments become a block's `info`, setvar/getvar pairs become checkbox
+  variables and `{% if %}` branches. `{{roll}}` needs no rewrite.
 - **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
   decides what needs pushing.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for

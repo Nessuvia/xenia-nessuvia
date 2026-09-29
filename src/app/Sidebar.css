@@ -203,6 +203,32 @@
   color: var(--text);
 }
 
+/* The footer's rows without the credit line. `contents` keeps them laid out as direct children of
+   .sidebarBackup, as they were before the wrapper. */
+.sidebarFooterBody {
+  display: contents;
+}
+
+/* Folded by the caret, or hidden while scrolling down. The credit line stays: the caret lives there. */
+.sidebarBackup.footerHidden .sidebarFooterBody {
+  display: none;
+}
+
+/* The caret in the credit line. Styled as the links beside it. */
+.sidebarFooterFold {
+  padding: 0;
+  margin-right: 4px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  vertical-align: -2px;
+  cursor: pointer;
+}
+
+.sidebarFooterFold:hover {
+  color: var(--text);
+}
+
 .sidebarBackup label {
   cursor: pointer;
 }

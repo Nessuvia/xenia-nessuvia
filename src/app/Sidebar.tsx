@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { Link, NavLink, useMatch } from 'react-router-dom'
-import { RiArrowLeftLine, RiArrowRightSLine, RiCloseLine, RiGithubFill, RiMenuFoldLine, RiMenuLine, RiRedditFill } from '@remixicon/react'
+import { RiArrowDownSLine, RiArrowLeftLine, RiArrowRightSLine, RiArrowUpSLine, RiCloseLine, RiGithubFill, RiMenuFoldLine, RiMenuLine, RiRedditFill } from '@remixicon/react'
 import { useSettings } from '../core/stores/settingsStore'
 import { lockedHint, usePaletteEditor } from '../core/stores/palettesStore'
 import { usePersonas } from '../core/stores/personasStore'
 import { isEnabled, modules } from './moduleRegistry'
 import { useMediaQuery } from './useMediaQuery'
 import { useSideDrawer } from './useSideDrawer'
+import { useAutoHide } from './useAutoHide'
 import PersonaSwitcher from './PersonaSwitcher'
 import ChatSettingsPanel from '../modules/chat/ChatSettingsPanel'
 import StoryRail from '../modules/write/StoryRail'
@@ -56,6 +57,14 @@ export default function Sidebar() {
   const phone = useMediaQuery('(max-width: 700px)')
   const sidebarWidth = phone ? 0 : palette.sidebarWidth
   const rail = useRef<HTMLElement>(null)
+  const footerAutoHideOff = useSettings((s) => s.footerAutoHideOff)
+  const footerAutoHidden = useAutoHide(rail, chatId ?? storyId ?? gameId, !footerAutoHideOff)
+  // Folded by hand with the caret. This browser's view state, not the user's data: localStorage.
+  const [footerFolded, setFooterFolded] = useState(() => localStorage.getItem('nessuTavern.sidebarFooterFolded') === '1')
+  const foldFooter = (folded: boolean) => {
+    setFooterFolded(folded)
+    localStorage.setItem('nessuTavern.sidebarFooterFolded', folded ? '1' : '0')
+  }
   // narrow screens start collapsed, once, until the user picks a side. Read at mount
   // only, rotating the phone won't re-collapse it.
   const [collapsedPref, setCollapsed] = useState(() => {
@@ -374,7 +383,8 @@ export default function Sidebar() {
 
           {debugMode && <div className="debugBadge">DEBUG ON</div>}
 
-          <div className="sidebarBackup">
+          <div className={`sidebarBackup${footerFolded || footerAutoHidden ? ' footerHidden' : ''}`}>
+            <div className="sidebarFooterBody">
             {personasModule && (
               <div className="sidebarPersona">
                 <PersonaSwitcher />
@@ -416,8 +426,19 @@ export default function Sidebar() {
                 ))}
               <TourButton className="sidebar-item sidebarIconButton" />
             </div>
+            </div>
 
             <div className="sidebarCredit">
+              <button
+                type="button"
+                className="sidebarFooterFold"
+                title={footerFolded ? 'Show footer' : 'Hide footer'}
+                aria-label={footerFolded ? 'Show footer' : 'Hide footer'}
+                aria-expanded={!footerFolded}
+                onClick={() => foldFooter(!footerFolded)}
+              >
+                {footerFolded ? <RiArrowUpSLine size={13} /> : <RiArrowDownSLine size={13} />}
+              </button>
               made by nessuvia •{' '}
               <a
                 className="sidebarCreditLink"
