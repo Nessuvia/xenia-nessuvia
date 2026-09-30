@@ -107,6 +107,8 @@ export interface TagRule {
    *  tag's block stays in the prompt sent to the model. Undefined = always sent. Stored text and
    *  the on-screen block are never affected, this is a send-path filter only. */
   depth?: number
+  /** Whose messages it applies to. Absent = both, same as a find/replace rule's `target`. */
+  target?: 'both' | 'user' | 'assistant'
 }
 
 /**

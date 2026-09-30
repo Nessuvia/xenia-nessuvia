@@ -61,11 +61,12 @@ export default function TextRulesView() {
         <TagRulesPanel rules={set.tagRules} onChange={(tagRules) => saveSet(set.id, { tagRules })} />
         <FindReplacePanel
           rules={set.replaceRules}
+          tagRules={set.tagRules}
           onChange={(replaceRules) => saveSet(set.id, { replaceRules })}
-          onMakeTag={(tag, replacing) =>
+          onMakeTag={(tags, replacing) =>
             saveSet(set.id, {
-              tagRules: [...set.tagRules, tag],
-              replaceRules: set.replaceRules.filter((r) => r.id !== replacing),
+              tagRules: [...set.tagRules, ...tags],
+              replaceRules: set.replaceRules.filter((r) => !replacing.includes(r.id)),
             })
           }
         />

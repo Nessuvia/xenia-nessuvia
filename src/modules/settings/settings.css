@@ -837,3 +837,38 @@
   width: 100%;
   margin: 8px 0;
 }
+
+/* Convert to tags modal */
+.convertTagsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.convertTagsCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.convertTagsCode {
+  overflow-wrap: anywhere;
+}
+
+.convertTagsArrow {
+  color: var(--textMuted);
+}
+
+.convertTagsCovered {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

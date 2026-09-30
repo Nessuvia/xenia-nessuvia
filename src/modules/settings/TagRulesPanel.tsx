@@ -49,6 +49,14 @@ export default function TagRulesPanel({ rules, onChange }: { rules: TagRule[]; o
               <option value="hide">Hide</option>
               <option value="unwrap">Content only</option>
             </select>
+            <select
+              value={rule.target ?? 'both'}
+              onChange={(e) => patchRule(rule.id, { target: e.target.value as TagRule['target'] })}
+            >
+              <option value="both">Both</option>
+              <option value="assistant">Model</option>
+              <option value="user">User</option>
+            </select>
             <input
               value={rule.label ?? ''}
               placeholder="Label"

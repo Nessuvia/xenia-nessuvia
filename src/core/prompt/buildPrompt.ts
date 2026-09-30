@@ -14,7 +14,7 @@ import { countMessages, countTokens, perMessageOverhead, trimHistory } from './b
 import { fillSlots, miscPrompt } from './miscPrompts.ts'
 import type { MiscPrompts } from './miscPrompts.ts'
 import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
-import { applyReplace } from './textRules.ts'
+import { applyReplace, tagApplies } from './textRules.ts'
 
 /**
  * The card's text, or the stack's fallback when the card has none. That's the spec's "empty string
@@ -71,9 +71,9 @@ function speakerLabel(message: Message, character: Character, persona: Persona):
  * depth 1 rides along only while its message is last. Same literal open/close scan as renderText;
  * a rule with no `depth` is display-only and never touches the sent text. Storage is untouched.
  */
-export function stripDepthTags(content: string, distance: number, rules?: TagRule[]): string {
+export function stripDepthTags(content: string, distance: number, rules?: TagRule[], role?: Message['role']): string {
   const active = rules?.filter(
-    (r) => r.open && r.close && r.depth !== undefined && distance > r.depth,
+    (r) => r.open && r.close && r.depth !== undefined && distance > r.depth && tagApplies(r, role),
   )
   if (!active?.length) return content
   let out = ''
@@ -340,7 +340,7 @@ export function buildPrompt(
   // noise against the reply reserve; count it in trimHistory if long group chats start overflowing.
   const history: ChatMessage[] = trimmed.messages.map((m, idx) => {
     // Newest turn is distance 1; a depth-N tag stays in the prompt only while distance ≤ N.
-    const content = applyReplace(stripDepthTags(m.content, trimmed.messages.length - idx, tagRules), replaceRules, m.role)
+    const content = applyReplace(stripDepthTags(m.content, trimmed.messages.length - idx, tagRules, m.role), replaceRules, m.role)
     return {
       role: m.role,
       content: group ? `${speakerLabel(m, character, persona)}: ${content}` : content,

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { ReplaceRule, TagRule } from '../../core/stores/settingsStore'
 import { newReplaceRule } from '../../core/stores/settingsStore'
-import { guessTag, stripHtml } from '../../core/prompt/textRules'
+import { guessTag, stripHtml, tagFromRule } from '../../core/prompt/textRules'
+import ConvertTagsModal from './ConvertTagsModal'
 import { RuleCard } from './RuleCard'
 import './settings.css'
 
@@ -17,17 +18,22 @@ function ruleError(rule: ReplaceRule): string | null {
 }
 
 /** Find & replace on screen, in the prompt, or both. Edits whichever set it's handed.
- *  `onMakeTag` swaps a flagged SillyTavern script for a tag rule in the same set. */
+ *  `onMakeTag` swaps rules for tag rules in the same set: a flagged SillyTavern script one at a
+ *  time, or everything Convert finds in `tagRules`' terms. */
 export default function FindReplacePanel({
   rules,
+  tagRules,
   onChange,
   onMakeTag,
 }: {
   rules: ReplaceRule[]
+  tagRules?: TagRule[]
   onChange(rules: ReplaceRule[]): void
-  onMakeTag?(tag: TagRule, replacing: string): void
+  onMakeTag?(tags: TagRule[], replacing: string[]): void
 }) {
   const [advanced, setAdvanced] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const conversions = tagRules && onMakeTag ? rules.flatMap((r) => tagFromRule(r, tagRules) ?? []) : []
 
   const patchRule = (id: string, patch: Partial<ReplaceRule>) =>
     onChange(rules.map((r) => (r.id === id ? { ...r, ...patch } : r)))
@@ -71,7 +77,7 @@ export default function FindReplacePanel({
               >
                 <option value="both">Both</option>
                 <option value="assistant">Model</option>
-                <option value="user">You</option>
+                <option value="user">User</option>
               </select>
               <select
                 value={rule.applies ?? 'display'}
@@ -131,6 +137,19 @@ export default function FindReplacePanel({
       <button type="button" onClick={() => setAdvanced(!advanced)}>
         {advanced ? 'Simple' : 'Advanced'}
       </button>
+      {conversions.length > 0 && (
+        <button type="button" onClick={() => setConverting(true)}>
+          Convert
+        </button>
+      )}
+      {converting && onMakeTag && (
+        <ConvertTagsModal
+          conversions={conversions}
+          onDelete={(id) => onMakeTag([], [id])}
+          onAccept={onMakeTag}
+          onClose={() => setConverting(false)}
+        />
+      )}
     </section>
   )
 }
@@ -144,7 +163,7 @@ function ConvertRow({
 }: {
   rule: ReplaceRule
   onPatch(patch: Partial<ReplaceRule>): void
-  onMakeTag?(tag: TagRule, replacing: string): void
+  onMakeTag?(tags: TagRule[], replacing: string[]): void
 }) {
   const tag = guessTag(rule.find)
   const [mode, setMode] = useState<TagRule['mode']>('collapse')
@@ -160,7 +179,7 @@ function ConvertRow({
           </select>
           <button
             type="button"
-            onClick={() => onMakeTag({ id: crypto.randomUUID(), ...tag, mode, label: rule.name }, rule.id)}
+            onClick={() => onMakeTag([{ id: crypto.randomUUID(), ...tag, mode, label: rule.name }], [rule.id])}
           >
             Make tag rule for {tag.open}
           </button>

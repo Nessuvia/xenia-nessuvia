@@ -4,6 +4,7 @@
 import { createElement, Fragment } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { MarkerKind, ReplaceRule, TagRule } from '../../core/stores/settingsStore'
+import { tagApplies } from '../../core/prompt/textRules.ts'
 import { identity, replaceMapped, trimEndMapped, type Mapped, type SourceMap } from './sourceMap.ts'
 
 // Which color a marker's text takes when several overlap. Text is the implicit baseline below
@@ -115,7 +116,7 @@ export function renderText(input: string, opts?: RenderOpts): ReactNode[] {
   }
   const record: Recorder = map ? (at, len) => void (len > 0 && map.runs.push({ at, len })) : noRecord
   const order = opts?.order ?? defaultOrder
-  const rules = opts?.tagRules?.filter((r) => r.open && r.close)
+  const rules = opts?.tagRules?.filter((r) => r.open && r.close && tagApplies(r, opts?.role))
   if (!rules?.length) return renderInline(text, order, -1, 0, record)
 
   const out: ReactNode[] = []

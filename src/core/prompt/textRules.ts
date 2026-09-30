@@ -68,3 +68,55 @@ export function guessTag(find: string): { open: string; close: string } | null {
 }
 
 export const stripHtml = (s: string) => s.replace(/<[^>]*>/g, '')
+
+/** Whether a tag rule applies to a message from `role`. No role (a stream, an export) = yes. */
+export const tagApplies = (rule: TagRule, role?: string) =>
+  !rule.target || rule.target === 'both' || !role || rule.target === role
+
+export interface TagConversion {
+  rule: ReplaceRule
+  tag: Omit<TagRule, 'id'>
+  /** An existing tag with the same markers already does this job. */
+  covered: boolean
+}
+
+// A lazy any-character body, optionally captured. `.` only crosses lines with the `s` flag.
+const bodyShapes = [String.raw`[\s\S]*?`, '[^]*?', String.raw`[\s\S]+?`, '[^]+?']
+const dotShapes = ['.*?', '.+?']
+const edgeSpace = String.raw`(?:\\[sn][*+])?`
+const tagShape = new RegExp(
+  String.raw`^${edgeSpace}<([a-z][\w-]*)>(\(?)(.+?)(\)?)<(?:\\)?\/\1>${edgeSpace}$`,
+  'i',
+)
+const detailsShape = /^\s*<details>\s*<summary>([\s\S]*?)<\/summary>\s*\$1\s*<\/details>\s*$/i
+
+/**
+ * The tag rule a find/replace rule is equivalent to, or null. Deliberately narrow: the whole
+ * pattern must be `<x>`, a lazy any-character body, `</x>`, with at most a whitespace eater at
+ * either end, and the replacement must be empty (hide), `$1` (content only) or a `<details>`
+ * around `$1` (collapse). Off rules and rules that touch the prompt are skipped: a tag is
+ * display-only, so converting one would silently change what the model sees.
+ */
+export function tagFromRule(rule: ReplaceRule, tags: TagRule[]): TagConversion | null {
+  if (!rule.enabled || !rule.regex || (rule.applies ?? 'display') !== 'display') return null
+  const m = tagShape.exec(rule.find)
+  if (!m) return null
+  const [, name, openParen, body, closeParen] = m
+  const captured = openParen === '('
+  if (captured !== (closeParen === ')')) return null
+  if (!bodyShapes.includes(body) && !(dotShapes.includes(body) && rule.flags.includes('s'))) return null
+
+  const replace = rule.replace.trim()
+  const details = detailsShape.exec(replace)
+  let mode: TagRule['mode']
+  let label = rule.name
+  if (!replace) mode = 'hide'
+  else if (captured && replace === '$1') mode = 'unwrap'
+  else if (captured && details) {
+    mode = 'collapse'
+    label = stripHtml(details[1]).trim() || label
+  } else return null
+
+  const tag = { open: `<${name}>`, close: `</${name}>`, mode, label, target: rule.target }
+  return { rule, tag, covered: tags.some((t) => t.open === tag.open && t.close === tag.close) }
+}
