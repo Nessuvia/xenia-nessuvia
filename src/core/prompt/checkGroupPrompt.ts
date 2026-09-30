@@ -1,16 +1,11 @@
 // Run: node --experimental-strip-types src/core/prompt/checkGroupPrompt.ts
 import assert from 'node:assert'
-import type { Character, Chat, Message, Persona, PromptBlock, PromptStack } from '../storage/types'
+import type { Character, Chat, Message, Persona, PromptStack } from '../storage/types'
 import { autoTurns, isGroup, nextSpeakerId, nextSpeakerIndex, participants } from '../stores/roster.ts'
 import { buildPrompt, nextSpeakerHint } from './buildPrompt.ts'
 
-let n = 0
-function block(b: Partial<PromptBlock>): PromptBlock {
-  return { id: `b${++n}`, label: 'b', source: 'text', role: 'system', content: '', ...b }
-}
-
-function stack(active: PromptBlock[]): PromptStack {
-  return { ownerId: 'local', name: 's', active }
+function stack(template: string): PromptStack {
+  return { ownerId: 'local', name: 's', template }
 }
 
 function character(id: number, name: string): Character {
@@ -59,12 +54,9 @@ const messages: Message[] = [
   { id: 3, ownerId: 'local', chatId: 1, role: 'assistant', content: 'Hello.', speakerId: 2, speakerName: 'Mary', createdAt: 3 },
 ]
 
-const cards = stack([
-  block({ source: 'characterDescription' }),
-  block({ source: 'characterPersonality' }),
-  block({ source: 'characterScenario' }),
-  block({ source: 'chatHistory' }),
-])
+const cards = stack(
+  ['{{ charDescription }}', '{{ charPersonality }}', '{{ charScenario }}', '{{ history }}'].join('\n'),
+)
 
 // --- the roster ------------------------------------------------------------
 // A chat with no participantIds is a roster of one: its own character.
@@ -210,7 +202,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
     { id: 9, ownerId: 'local', chatId: 1, role: 'assistant', content: 'Gone but quoted.', speakerId: 42, speakerName: 'Ghost', createdAt: 9 },
   ]
   const out = buildPrompt({
-    stack: stack([block({ source: 'chatHistory' })]),
+    stack: stack('{{ history }}'),
     character: damien,
     persona: dom,
     messages: orphan,
@@ -227,7 +219,7 @@ assert.strictEqual(isGroup(chatOf({ participantIds: [1, 2] })), true)
     { id: 9, ownerId: 'local', chatId: 1, role: 'user', content: 'Also Phase 1.', createdAt: 9 },
   ]
   const out = buildPrompt({
-    stack: stack([block({ source: 'chatHistory' })]),
+    stack: stack('{{ history }}'),
     character: damien,
     persona: dom,
     messages: old,

@@ -5,6 +5,7 @@ import type { BlackjackState } from '../../core/games/blackjack'
 import { handValue, isBust, legalActions, winner } from '../../core/games/blackjack'
 import { Card } from './Card'
 import CharacterLine from './CharacterLine'
+import { secretRanks } from '../../core/games/cardSpoilers'
 import { useCardMotion } from './useCardMotion'
 import { useDiffOrigin } from './useDiffOrigin'
 
@@ -85,7 +86,13 @@ export default function BlackjackBoard({
           className={`avatar cardTableAvatar${state.turn === 'char' && !state.over ? ' cardTableAvatarActive' : ''}`}
           title={characterName}
         />
-        <CharacterLine line={line} streaming={streaming} awaitingNext={awaitingNext} onNext={onNext} />
+        <CharacterLine
+          line={line}
+          secret={secretRanks(state)}
+          streaming={streaming}
+          awaitingNext={awaitingNext}
+          onNext={onNext}
+        />
       </div>
 
       <div className="cardTableField">
@@ -152,10 +159,10 @@ export default function BlackjackBoard({
         <div className="blackjackActions">
           {canAct && (
             <>
-              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('hit')}>
+              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('Hit.')}>
                 Hit
               </button>
-              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('stand')}>
+              <button type="button" className="blackjackButton" onClick={() => onSubmit?.('Stand.')}>
                 Stand
               </button>
             </>

@@ -363,56 +363,11 @@ export interface Chapter {
   updatedAt: number
 }
 
-export type BlockSource =
-  | 'text' // freeform; chat stacks swap {{char}} / {{user}}, story stacks the Story tokens
-  | 'characterDescription' // resolves the active description variant
-  | 'characterPersonality'
-  | 'characterScenario'
-  | 'characterExampleDialogue'
-  // The card's system_prompt / post_history_instructions. On these two the block's own `content`
-  // is the fallback used when the character has none, and is what {{original}} resolves to.
-  | 'characterSystemPrompt'
-  | 'characterPostHistory'
-  | 'personaDescription' // the active persona's description
-  | 'authorNote' // the chat's author's note; skipped when empty. Chat stacks only.
-  // The three lorebook slots, one per EntryPosition.
-  | 'worldInfo' // matched entries positioned beforeChar
-  | 'worldInfoAfter' // matched entries positioned afterChar
-  | 'worldInfoDepth' // matched entries positioned atDepth
-  | 'chatHistory' // mandatory, exactly one per chat stack
-  // Story-stack bound sources (Write mode).
-  | 'cast' // the Story's enabled characters/personas (full cards)
-  | 'storyContext' // the scrolling Story prose; mandatory, exactly one per story stack
-  | 'storyTrailing' // prose after the caret, to the end of the active Chapter; empty with no caret
-
-export interface PromptBlock {
-  id: string // crypto.randomUUID()
-  label: string // 'Block 1' on creation, renamed in the modal
-  source: BlockSource
-  role: 'system' | 'user' | 'assistant'
-  content: string // only meaningful when source === 'text'; the text before any children
-  /** Text after the children, the closing half of a wrapper (`</characters>`). */
-  closeContent?: string
-  /** Inject N messages from the end of history; 0 is after the last message. Undefined = the
-   *  block sits where it sits in the stack. */
-  depth?: number
-  /** Switched off: contributes nothing, children included, but keeps its place in the stack. */
-  disabled?: boolean
-  /** Included only when this holds: a `{% if %}` expression without the braces (`dndSim`,
-   *  `cot = MAX`, `not narrator`). Blank = always. Players switch blocks through the variables it
-   *  names; `disabled` is the maker's own switch and players never see it. */
-  when?: string
-  /** The maker's note on this block. Shown in the stack editor only. */
-  info?: string
-  /** Present (even empty) makes this a container. Children render between content and closeContent,
-   *  newline-joined, and inherit this block's role. Chat History can't be nested. */
-  children?: PromptBlock[]
-}
-
 /**
- * A named, typed value declared on a stack and read from any of its blocks: `{{id}}` pastes it and
- * `{% if id ... %}` branches on it. A range is two numbers, read as `{{id_start}}` and `{{id_end}}`.
- * `value` is the current setting, stored on the stack: every chat on the stack shares it.
+ * A named, typed value declared in a stack's template with `{% var %}` (see
+ * `core/prompt/stackTemplate.ts`): `{{id}}` pastes it and `{% if id ... %}` branches on it. A range
+ * is two numbers, read as `{{id_start}}` and `{{id_end}}`. Never stored: parsed from the template,
+ * with `value` taken from `PromptStack.values` when set there.
  */
 export type StackVariable =
   | { id: string; label: string; info?: string; kind: 'sliderSingle'; min: number; max: number; step: number; value: number }
@@ -422,6 +377,10 @@ export type StackVariable =
   | { id: string; label: string; info?: string; kind: 'text'; value: string }
   /** `value` is dice notation (`1d20`, `2d6+3`), rolled once per send. See `core/prompt/dice.ts`. */
   | { id: string; label: string; info?: string; kind: 'dice'; value: string }
+  /** One item per line in `value`. The prompt reads the non-blank lines joined by `sep`. */
+  | { id: string; label: string; info?: string; kind: 'list'; sep: string; value: string }
+
+export type StackValue = StackVariable['value']
 
 export interface PromptStack {
   id?: number
@@ -430,9 +389,11 @@ export interface PromptStack {
   /** Chat stacks and Story (Write mode) stacks share this table but never mix. Absent = 'chat'
    *  for rows written before the field existed. */
   kind?: 'chat' | 'story'
-  active: PromptBlock[] // order = array order
-  /** Absent = none. */
-  variables?: StackVariable[]
+  /** The whole prompt as one template. See `core/prompt/stackTemplate.ts`. */
+  template: string
+  /** Players' current variable values by id. Absent key = the template's default. Shared by every
+   *  chat on the stack. */
+  values?: Record<string, StackValue>
   /** Tokens the three World info slots may take between them. Absent or 0 = no cap. Entries are
    *  filled in priority order (`entry.order`) and the rest are dropped. */
   worldInfoBudget?: number
@@ -458,6 +419,8 @@ export interface TextRules {
 export interface StackLook {
   html: string
   css: string
+  /** Variables without a data-var slot aren't shown. Their values still apply. */
+  hideUnplaced?: boolean
 }
 
 /** A named post-processing config. Shareable: it carries no connection and no key. */

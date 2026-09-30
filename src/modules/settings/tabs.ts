@@ -4,4 +4,5 @@ export const tabs = [
   ['connections', 'Connections'],
   ['relay', 'Multiplayer'],
   ['debug', 'Misc'],
+  ['xenia', 'Xenia Prompts'],
 ] as const

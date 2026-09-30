@@ -223,8 +223,8 @@ function state(patch: Partial<GoFishState>): GoFishState {
   assert.ok(block.startsWith('<gameState>\n') && block.endsWith('\n</gameState>'), block)
   assert.ok(block.includes('You are playing Go Fish.'), 'the block has to name the game')
   assert.ok(block.includes('Your hand: 3, 3, 7, K'), block)
-  assert.ok(block.includes('Your books: 9'), block)
-  assert.ok(block.includes('Their books: 2'), block)
+  assert.ok(block.includes('Your books: 1 total (9)'), block)
+  assert.ok(block.includes('Their books: 1 total (2)'), block)
   assert.ok(block.includes('Cards left in the deck: 2'), block)
   assert.ok(block.includes('Your turn.'), block)
   // No rank suggestion may reach the model: the only ask it sees is the one the code already made.

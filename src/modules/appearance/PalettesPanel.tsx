@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   RiAddLine,
   RiArrowDownLine,
@@ -8,8 +8,6 @@ import {
   RiDownloadLine,
   RiFileCopyLine,
   RiPaletteLine,
-  RiSparkling2Line,
-  RiStopFill,
   RiUploadLine,
 } from '@remixicon/react'
 import { ColorInput } from '../../app/ColorInput'
@@ -27,7 +25,8 @@ import {
 import { bundledPalettes } from '../../core/palette/bundledPalettes'
 import { useBackgroundImages } from '../../core/stores/backgroundImagesStore'
 import { lockedHint, usePalette, usePalettes } from '../../core/stores/palettesStore'
-import { useSettings, useActiveConnection, type MarkerKind } from '../../core/stores/settingsStore'
+import { useSettings, type MarkerKind } from '../../core/stores/settingsStore'
+import { AskError, useAskContext, type AskContext } from '../../core/stores/askStore'
 import TwoColumn from '../../app/TwoColumn'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import AppearancePanel, { colorField as chatColorField, fonts } from './AppearancePanel'
@@ -60,22 +59,48 @@ export default function PalettesPanel() {
   const update = usePalettes((s) => s.update)
   const add = usePalettes((s) => s.add)
   const move = usePalettes((s) => s.move)
-  const generate = usePalettes((s) => s.generate)
-  const generating = usePalettes((s) => s.generating)
-  const cancelGenerate = usePalettes((s) => s.cancelGenerate)
-  const generateError = usePalettes((s) => s.generateError)
-  const generateAttempt = usePalettes((s) => s.generateAttempt)
   const snapshot = usePalettes((s) => s.snapshot)
   const rewind = usePalettes((s) => s.rewind)
-  const rewindAll = usePalettes((s) => s.rewindAll)
   const importImages = useBackgroundImages((s) => s.importImages)
   const activeId = useSettings((s) => s.activePaletteId)
   const setActive = useSettings((s) => s.setActivePalette)
-  const connection = useActiveConnection()
   const palette = usePalette()
+  // The Ask run reads the palette as it is at send time.
+  const latestPalette = useRef(palette)
+  latestPalette.current = palette
+  const askContext = useMemo<AskContext>(
+    () => ({
+      id: 'palettes',
+      label: 'Appearance → Palettes',
+      info: '',
+      run: async (text, signal, connection) => {
+        const store = usePalettes.getState()
+        const target = latestPalette.current
+        if (target.id === undefined) throw new Error(lockedHint)
+        signal.addEventListener('abort', () => store.cancelGenerate())
+        await store.generate(text, target, connection)
+        const { generateError, generateAttempt: attempt } = usePalettes.getState()
+        if (signal.aborted) throw new Error('Cancelled.')
+        if (generateError) {
+          throw new AskError(
+            generateError,
+            attempt
+              ? `Request mode: ${attempt.mode} · finish_reason: ${attempt.finishReason || 'none'}
+
+${attempt.reasoning ? `${attempt.reasoning}
+
+` : ''}${attempt.reply || '(empty)'}`
+              : undefined,
+          )
+        }
+        return { reply: 'Palette updated.', undo: () => usePalettes.getState().rewindAll() }
+      },
+    }),
+    [],
+  )
+  useAskContext(askContext)
   // No row matches the active id, every palette deleted, or a stale id. Nothing to write to.
   const locked = palette.id === undefined
-  const [ask, setAsk] = useState('')
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [editorOpen, setEditorOpen] = useState(true)
   const [bundledOpen, setBundledOpen] = useState(false)
@@ -313,62 +338,7 @@ export default function PalettesPanel() {
         detail={
           editorOpen && (
             <>
-      {locked ? (
-        <p className="hint">{lockedHint}</p>
-      ) : (
-        <div className="paletteAsk">
-          <input
-            value={ask}
-            placeholder="What should it look like?"
-            disabled={generating}
-            onChange={(e) => setAsk(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && connection) generate(ask, palette, connection)
-            }}
-          />
-          <button
-            type="button"
-            disabled={generating || !connection}
-            title={connection ? 'Use your current connection to prompt for a palette.' : 'Set an active connection in Connections.'}
-            onClick={() => connection && generate(ask, palette, connection)}
-          >
-            <RiSparkling2Line size={16} />
-            {generating ? 'Asking…' : 'Send to AI'}
-          </button>
-          {generating && (
-            <button type="button" title="Cancel the request" onClick={() => cancelGenerate()}>
-              <RiStopFill size={16} />
-            </button>
-          )}
-          {before && (
-            <button type="button" onClick={() => rewindAll()}>
-              Revert all
-            </button>
-          )}
-        </div>
-      )}
-      {generateError && (
-        <>
-          <p className="hint danger">{generateError}</p>
-          {generateAttempt && (
-            <details className="paletteReply">
-              <summary>What the model returned</summary>
-              <p className="hint">
-                Request mode: {generateAttempt.mode} · finish_reason:{' '}
-                {generateAttempt.finishReason || 'none'}
-              </p>
-              {generateAttempt.reasoning && (
-                <>
-                  <p className="hint">Reasoning</p>
-                  <pre>{generateAttempt.reasoning}</pre>
-                </>
-              )}
-              <p className="hint">Reply</p>
-              <pre>{generateAttempt.reply || '(empty)'}</pre>
-            </details>
-          )}
-        </>
-      )}
+      {locked && <p className="hint">{lockedHint}</p>}
 
       <fieldset className="panel paletteEditor" disabled={locked}>
         <div className="appearanceRow nameRow">

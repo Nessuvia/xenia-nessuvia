@@ -4,6 +4,7 @@ import type { Connection } from '../../core/stores/settingsStore'
 import { newConnection, useSettings } from '../../core/stores/settingsStore'
 import ConnectionEditor from './ConnectionEditor'
 import RelayPanel from './RelayPanel'
+import XeniaPromptsPanel from './XeniaPromptsPanel'
 import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
@@ -337,6 +338,8 @@ export default function SettingsView() {
             </p>
           </section>
         </div>
+      ) : tab === 'xenia' ? (
+        <XeniaPromptsPanel />
       ) : (
         <RelayPanel />
       )}

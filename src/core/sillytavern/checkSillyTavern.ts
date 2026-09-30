@@ -1,14 +1,17 @@
 // Run: node --experimental-strip-types src/core/sillytavern/checkSillyTavern.ts
 import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
-import type { PromptBlock } from '../storage/types.ts'
+import { stackVariables, templateProblems } from '../prompt/stackTemplate.ts'
 import { parseSillyTavern } from './importSillyTavern.ts'
 import { sniffShape } from './stShapes.ts'
 import { paramsFromPreset } from './stSamplers.ts'
 import { blocksFromStoryString } from './stStoryString.ts'
 
 const fixture = (name: string) => readFileSync(`src/assets/testAssets/${name}`, 'utf8')
-const sources = (blocks: PromptBlock[]) => blocks.map((b) => b.source)
+const sources = (blocks: { source: string }[]) => blocks.map((b) => b.source)
+// The slots a template pulls in, in the order it pulls them.
+const slots = (template: string) =>
+  [...template.matchAll(/\{\{ (\w+) \}\}|\{% (postHistory) %\}/g)].map((m) => m[1] ?? m[2])
 const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   params.find((p) => p.key === key)?.value
 
@@ -60,19 +63,23 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   const stack = out.stack!
   assert.ok(stack, 'the bundle made no stack')
   assert.strictEqual(stack.kind, 'chat')
+  assert.deepStrictEqual(templateProblems(stack.template, 'chat'), [])
   // The sysprompt leads, then story_string's slots in template order, then chat history.
-  assert.deepStrictEqual(sources(stack.active).filter((s) => s !== 'text'), [
-    'characterDescription',
+  assert.deepStrictEqual(slots(stack.template), [
+    'charDescription',
     'worldInfo',
     'worldInfoAfter',
     'personaDescription',
-    'characterExampleDialogue',
-    'characterScenario',
-    'chatHistory',
+    'charExampleDialogue',
+    'charScenario',
+    'history',
   ])
-  assert.ok(stack.active[0].content.includes('### Core Principles:'), 'no system prompt block')
+  assert.ok(
+    stack.template.indexOf('### Core Principles:') < stack.template.indexOf('{{ charDescription }}'),
+    'the system prompt is not first',
+  )
   // {{#if}} machinery and {{! comments }} are gone; the literal text between slots is not.
-  const literal = stack.active.map((b) => b.content).join('\n')
+  const literal = stack.template
   assert.ok(!literal.includes('{{#if'), 'an #if survived')
   assert.ok(!literal.includes('{{!'), 'a comment survived')
   assert.ok(literal.includes('### Universe Overview'), 'literal text was dropped')
@@ -95,42 +102,38 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   assert.strictEqual(out.connection, undefined)
   assert.deepStrictEqual(out.newDefs, [])
 
-  const blocks = out.stack!.active
-  assert.ok(blocks.length > 30, `expected the whole prompt list, got ${blocks.length}`)
-  // Markers become bound blocks, in the order the preset puts them.
-  assert.deepStrictEqual(sources(blocks).filter((s) => s !== 'text'), [
+  const template = out.stack!.template
+  assert.deepStrictEqual(templateProblems(template, 'chat'), [])
+  // Markers become slots, in the order the preset puts them.
+  assert.deepStrictEqual(slots(template), [
     'worldInfo',
     'personaDescription',
-    'characterDescription',
-    'characterPersonality',
-    'characterScenario',
+    'charDescription',
+    'charPersonality',
+    'charScenario',
     'worldInfoAfter',
-    'characterExampleDialogue',
-    'chatHistory',
-    'characterPostHistory',
+    'charExampleDialogue',
+    'history',
+    'postHistory',
   ])
-  // Each prompt's on/off became a checkbox its block names in `when`: main on, 1st person POV off.
-  assert.ok(blocks[0].label.includes('Main Prompt'), `unexpected first block: ${blocks[0].label}`)
-  const variables = out.stack!.variables ?? []
-  const switchOf = (b: PromptBlock) => variables.find((v) => v.id === b.when)?.value
-  assert.strictEqual(blocks[0].disabled, undefined)
-  assert.strictEqual(switchOf(blocks[0]), true)
-  const pov = blocks.find((b) => b.label.includes('1st person POV'))!
-  assert.strictEqual(pov.disabled, undefined, 'the maker switch starts on; the checkbox is off')
-  assert.strictEqual(switchOf(pov), false)
+  // Each prompt's on/off became a checkbox wrapping it: main on, 1st person POV off.
+  const variables = stackVariables(out.stack!)
+  assert.ok(variables.length > 20, `expected a switch per prompt, got ${variables.length}`)
+  const main = variables.find((v) => v.label.includes('Main Prompt'))!
+  assert.strictEqual(main.value, true)
+  assert.ok(template.includes(`{% if ${main.id} %}`), 'the main prompt has no switch')
+  assert.strictEqual(variables.find((v) => v.label.includes('1st person POV'))!.value, false)
   // Roles survive: the Ice Breaker prompt is an assistant turn.
-  assert.ok(
-    blocks.some((b) => b.role === 'assistant'),
-    'the assistant-role prompt lost its role',
+  assert.ok(template.includes('{% message assistant %}'), 'the assistant-role prompt lost its role')
+  // The depth-injected BOLT prompt keeps its depth and its user role.
+  assert.match(
+    template,
+    /\{# [^\n]*BOLT[^\n]*#\}\n\{% if \w+ %\}\n\{% depth \d+ %\}\n\{% message user %\}\n[\s\S]{100}/,
+    'the depth prompt lost its depth',
   )
-  // The depth-injected prompt keeps its depth.
-  const bolt = blocks.find((b) => b.label.includes('BOLT'))!
-  assert.strictEqual(bolt.role, 'user')
-  assert.ok(bolt.content.length > 100)
-  assert.strictEqual(typeof bolt.depth, 'number', 'the depth prompt lost its depth')
-  // The card's post-history block keeps the preset's jailbreak wording as its fallback text.
-  const post = blocks.find((b) => b.source === 'characterPostHistory')!
-  assert.ok(post.content.trim().length > 0, 'the jailbreak text was dropped')
+  // The card's post-history slot keeps the preset's jailbreak wording as its fallback text.
+  const post = /\{% postHistory %\}([\s\S]*?)\{% endpostHistory %\}/.exec(template)
+  assert.ok(post && post[1].trim().length > 0, 'the jailbreak text was dropped')
   assert.strictEqual(out.stack!.miscPrompts?.continue, '[Continue your last message without repeating its original content.]')
 }
 
@@ -153,7 +156,7 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
   const out = parseSillyTavern('{"name":"Mine","story_string":"{{system}}\\n{{description}}"}')
   assert.strictEqual(out.shape, 'context')
   assert.strictEqual(out.connection, undefined)
-  assert.deepStrictEqual(sources(out.stack!.active), ['characterDescription', 'chatHistory'])
+  assert.deepStrictEqual(slots(out.stack!.template), ['charDescription', 'history'])
   assert.strictEqual(out.stack!.name, 'Mine')
 }
 
@@ -161,7 +164,7 @@ const valueOf = (params: { key: string; value: unknown }[], key: string) =>
 {
   // A template naming a slot twice: our stack holds one of each, so the second is dropped.
   const twice = blocksFromStoryString('{{description}} and again {{description}}')
-  assert.deepStrictEqual(sources(twice.blocks), ['characterDescription', 'text'])
+  assert.deepStrictEqual(sources(twice.blocks), ['charDescription', 'text'])
   assert.strictEqual(twice.blocks[1].content, 'and again')
   // An unknown token is left in the text and reported.
   const odd = blocksFromStoryString('hi {{mystery}}')

@@ -112,27 +112,29 @@
   width: 88px;
 }
 
-.blockDeleteToggle {
+/* Zones stack in rows and .zones (which carries .screenBody) is the only scroller. The first zone
+   fills the visible height; the Preview sits below it, reached by scrolling. */
+.prompts .zones {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  white-space: nowrap;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden auto;
 }
 
-/* the row stretches its inputs; the checkbox isn't the field that should grow. */
-.blockDeleteToggle input {
+.prompts .zones > .stackZone {
   flex: none;
 }
 
-/* .zones carries .screenBody, but the scrolling happens one level down, inside each zone's list.
-   The row itself is fixed to the height the frame gave it. */
-.prompts .zones {
-  display: flex;
-  gap: 16px;
-  /* stretch, not flex-start: a collapsed panel keeps the height of the open ones. */
-  align-items: stretch;
-  overflow: hidden;
+/* The template zone takes the scroller's height, so CodeMirror ends at the window's bottom edge. */
+.prompts .zones > .promptsTemplateZone {
+  height: 100%;
+}
+
+/* A collapsed panel's rail sits across the column, not beside it. */
+.prompts .zones .collapsedRail,
+.prompts .zones .collapsedInitials {
+  flex-direction: row;
+  gap: 6px;
 }
 
 .stackZone {
@@ -163,77 +165,6 @@
   flex: 1;
 }
 
-.blockList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.blockCard {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 2px);
-  background: var(--surface);
-  cursor: grab;
-}
-
-.blockCard:hover {
-  border-color: var(--borderAccent);
-}
-
-/* A container's children are indented; the left edge marks what it wraps. */
-.blockCard.container {
-  border-left: 2px solid var(--borderAccent);
-}
-
-.blockCard.off {
-  opacity: 0.45;
-}
-
-/* A depth block lands relative to the history, not where it sits. The dashed edge says so. */
-.blockCard.pinned {
-  border-style: dashed;
-}
-
-.blockDepth {
-  font-size: 11px;
-  color: var(--textDim);
-}
-
-.prompts .blockSwitch {
-  flex: none;
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-}
-
-.prompts .blockCard button.addChild {
-  padding: 0 6px;
-  line-height: 18px;
-  font-size: 14px;
-  background: transparent;
-  border-color: var(--borderStrong);
-}
-
-.childSlot {
-  padding: 6px 12px;
-  border: 1px dashed var(--border);
-  border-radius: calc(var(--radius) + 2px);
-  font-size: 12px;
-  color: var(--textDim);
-}
-
-.blockLabel {
-  flex: 1;
-  font-weight: 600;
-}
-
 .blockRole {
   font-size: 11px;
   text-transform: uppercase;
@@ -244,30 +175,6 @@
 .stackZone.preview {
   flex: 1.6;
   cursor: default;
-}
-
-/* The preview opens over the editor. Wider than a block dialog: it holds whole prompts. */
-.promptsPreviewDialog {
-  width: min(1000px, 100%);
-  height: 80vh;
-}
-
-.promptsVariableRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.promptsVariableControl {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .previewExamples {
@@ -334,13 +241,6 @@
   color: var(--textSoft);
 }
 
-.dropLine {
-  height: 2px;
-  margin: 2px 0;
-  background: var(--accent);
-  border-radius: 1px;
-}
-
 /* The modal reuses .dialogBackdrop / .dialog / .dialogActions from chat.css. */
 .dialog label {
   display: flex;
@@ -389,42 +289,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
-}
-
-.rangeConfig {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.rangeConfig label {
-  min-width: 0;
-}
-
-.rangeConfig input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.rangeConfig .hint {
-  grid-column: 1 / -1;
-}
-
-/* The type picker on a block card: quiet until you go for it; the card is the primary target. */
-.prompts .blockType {
-  flex: 0 0 auto;
-  max-width: 170px;
-  padding: 2px 4px;
-  font-size: 11px;
-  color: var(--textMuted);
-  background: transparent;
-  border-color: transparent;
-}
-
-.prompts .blockType:hover,
-.prompts .blockType:focus {
-  color: var(--text);
-  border-color: var(--borderStrong);
 }
 
 /* The two-ended scroll control. Lives here with the block editor; the chat and Story settings
@@ -584,75 +448,77 @@
   color: var(--textSoft);
 }
 
+/* The template editor fills its zone and scrolls inside CodeMirror. */
+.promptsTemplateEditor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--codeBg);
+  color: var(--codeText);
+}
+
+/* CodeMirror's own classes: the library owns the markup, so these are the only handle on it. */
+.promptsTemplateEditor .cm-editor {
+  height: 100%;
+}
+
+/* On --codeBg, which holds steady across palettes: the tints come off --codeText, not the palette. */
+.promptsTemplateEditor .cm-gutters {
+  background: var(--codeBg);
+  color: color-mix(in srgb, var(--codeText) 45%, transparent);
+  border-right: 1px solid var(--border);
+}
+
+.promptsTemplateEditor .cm-activeLine,
+.promptsTemplateEditor .cm-activeLineGutter {
+  background: color-mix(in srgb, var(--codeText) 6%, transparent);
+}
+
+.promptsTemplateEditor .cm-cursor {
+  border-left-color: var(--codeText);
+}
+
+.promptsTplTag {
+  color: var(--accent);
+}
+
+.promptsTplSlot {
+  color: var(--success);
+}
+
+.promptsTplComment {
+  color: color-mix(in srgb, var(--codeText) 50%, transparent);
+  font-style: italic;
+}
+
+.promptsTemplateProblems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 30%;
+  overflow-y: auto;
+}
+
+.promptsTemplateProblem {
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--danger);
+  text-align: left;
+}
+
 @media (max-width: 700px) {
-  /* Active over Preview, and .zones (which carries .screenBody) becomes the only scroller.
-     The panels' inner lists stand down so the page isn't three nested scroll boxes. */
-  .prompts .zones {
-    flex-direction: column;
-    overflow: hidden auto;
-  }
-
-  .stackZone,
-  .stackZone.preview {
-    flex: none;
-  }
-
-  .blockList,
-  .previewList {
-    flex: none;
-    overflow: visible;
-  }
-
-  /* A collapsed panel's rail sits across the column now, not beside it. */
-  .prompts .zones .collapsedRail,
-  .prompts .zones .collapsedInitials {
-    flex-direction: row;
-    gap: 6px;
-  }
-
   .kindSwitch,
   .presetRow,
   .presetRow div {
     flex-wrap: wrap;
   }
 
-  /* Its own line under Name: the nowrap is what ran it off the screen. */
-  .blockDeleteToggle {
-    flex-basis: 100%;
-    white-space: normal;
-  }
-
-  /* Nothing here can pan sideways (.appContent is overflow: hidden), so everything wraps. */
-  .blockCard {
-    flex-wrap: wrap;
-    align-items: center;
-    row-gap: 4px;
-  }
-
-  .blockLabel {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .prompts .blockType {
-    max-width: none;
-    flex: 1 1 100%;
-  }
-
-  .rangeConfig {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .previewExamples {
     flex-direction: column;
   }
-}
-
-/* The Look tab. Its zones hold a form rather than a list, so the zone itself scrolls. */
-.promptsLookZone {
-  overflow-y: auto;
 }
 
 /* Label above its box, as in the block dialog. */
@@ -668,4 +534,18 @@
   resize: vertical;
   /* Same as the palette HTML and CSS boxes (backgrounds.css). */
   font-family: ui-monospace, monospace;
+}
+
+/* Same shape as the palette ask row (appearance.css). A third copy should move to /app. */
+
+
+
+
+/* A list variable's box: one item per line. */
+.variableList {
+  width: 100%;
+  resize: vertical;
+  field-sizing: content;
+  min-height: 2lh;
+  max-height: 30vh;
 }

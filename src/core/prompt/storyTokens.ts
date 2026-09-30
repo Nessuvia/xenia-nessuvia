@@ -100,11 +100,11 @@ export function storyTokens(args: StoryTokenArgs): Record<string, string> {
  * A line whose known tokens ALL resolve to '' is dropped whole, sentence and all. Without that,
  * "Aim for about {{beatTargetWords}} words." survives as an instruction with a hole in it every
  * time the field is unset, and a block whose every line is one of those drops out of the prompt
- * entirely, which is what makes a Beat block safe to leave in a stack while writing a beat that has
- * no instructions on it yet.
+ * entirely, which is what makes a beat section safe to leave in a stack while writing a beat that
+ * has no instructions on it yet.
  * A line mixing an empty token with a filled one is kept: something on it still has content.
  *
- * Only ever applied to a prompt block's own text, never to Story prose. A {{token}} the Author
+ * Only ever applied to a stack template's own text, never to Story prose. A {{token}} the Author
  * typed into their manuscript is manuscript.
  */
 export function swapStoryTokens(text: string, values: Record<string, string>): string {
@@ -115,7 +115,7 @@ export function swapStoryTokens(text: string, values: Record<string, string>): s
   for (const line of text.split('\n')) {
     let known = 0
     let filled = 0
-    const swapped = line.replace(/\{\{(\w+)\}\}/g, (whole, key: string) => {
+    const swapped = line.replace(/\{\{\s*(\w+)\s*\}\}/g, (whole, key: string) => {
       const value = folded.get(key.toLowerCase())
       if (value === undefined) return whole
       known++

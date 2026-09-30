@@ -4,8 +4,7 @@ import { stripComments } from './stripComments.ts'
 
 /**
  * Every `{{token}}` the prompt layer understands, and what each one stands for. The card fields
- * mirror the bound `BlockSource`s one for one: anything a block can bind to, a token can paste
- * inline. Keys are lowercase: tokens match case-insensitively and are looked up folded.
+ * are how a stack template pastes the card: `{{ charDescription }}`. Keys are lowercase: tokens match case-insensitively and are looked up folded.
  */
 export interface TokenValues {
   char: string
@@ -36,7 +35,7 @@ export interface TokenValues {
 export const castSlots = 4
 
 const tokenPattern =
-  /\{\{(char|user|charDescription|charPersonality|charScenario|charExampleDialogue|personaDescription|personas|game|char[1-4]|char[1-4]Desc)\}\}/gi
+  /\{\{\s*(char|user|charDescription|charPersonality|charScenario|charExampleDialogue|personaDescription|personas|game|char[1-4]|char[1-4]Desc)\s*\}\}/gi
 
 /**
  * Substitutes the known tokens. Unknown {{tokens}} are left exactly as they are, except for ST's

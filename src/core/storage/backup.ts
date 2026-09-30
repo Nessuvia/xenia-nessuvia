@@ -3,14 +3,14 @@ import { stripApiKeys } from './stripApiKeys'
 import { isPartialRestore, mergeConnections, renameConnections } from './shareable'
 import { tableNames, type TableName } from './storageInterface'
 import { withDirtySuppressed } from '../sync/dirtyTables'
-import { askKey, settingsKey } from '../sync/settingsObject'
+import { settingsKey } from '../sync/settingsObject'
 import { hashPayload, tablePayload } from './tablePayload'
 import { withSeedFlags } from './seedFlags'
 import { packBackup, unpackBackup, type Backup } from './backupZip'
 import { extractImages } from './imageRefs'
 
-// settingsKey is the persisted settings store; askKey is the Ask scratchpad's transcript. Both live
-// in localStorage rather than a Dexie table, and both ride in a backup and in a sync.
+// settingsKey is the persisted settings store. It lives in localStorage rather than a Dexie table,
+// and rides in a backup and in a sync. The Ask transcript is a preference of this browser and stays out.
 
 export type { Backup }
 
@@ -45,9 +45,6 @@ export async function buildBackup({ keys, shareable }: BackupOptions = {}): Prom
   const scrubbed = shareable ? renameConnections(settings) : settings
   const blobs: Record<string, string> = {}
   if (scrubbed !== null) blobs[settingsKey] = scrubbed
-  // The Ask transcript is personal. It goes in a full backup and never in a shareable one.
-  const ask = shareable ? null : localStorage.getItem(askKey)
-  if (ask !== null) blobs[askKey] = ask
   return {
     format: 'nessuTavern.backup',
     version: 2,
@@ -132,8 +129,4 @@ export async function restoreBackup(backup: Backup) {
     settingsKey,
     withSeedFlags(partial ? mergeConnections(localStorage.getItem(settingsKey), text) : text),
   )
-  // Only when the file carries one: a backup written before the Ask transcript was exported would
-  // otherwise wipe the scratchpad it never had a copy of.
-  const ask = backup.localStorage?.[askKey]
-  if (typeof ask === 'string') localStorage.setItem(askKey, ask)
 }

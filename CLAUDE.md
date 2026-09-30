@@ -2,7 +2,7 @@
 
 ## What this is
 
-A local-first character app that runs in the browser: chat with character cards, a Write mode for longer-form stories, an Ask scratchpad, and a multiplayer mode where guests join a host's chat from a link. All data lives in the user's browser. There are no accounts.
+A local-first character app that runs in the browser: chat with character cards, a Write mode for longer-form stories, an Ask side conversation in the sidebar, and a multiplayer mode where guests join a host's chat from a link. All data lives in the user's browser. There are no accounts.
 
 Four paths leave the tab:
 
@@ -68,7 +68,7 @@ Modules self-register by calling `registerModule` from their `index.ts`. The sid
 
 `component` is `lazy()` for route views. `chatPanels` stay eager and render inside the chat rather than behind a route.
 
-Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
+Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
 
 - `learn` is registered in every build. The sidebar shows its button on dev only
   (`import.meta.env.DEV` in `Sidebar.tsx`), and `/learn` resolves on live with no way in.
@@ -84,7 +84,9 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   `budget` (token counting and history trimming; `loadTokenizer` is async, `countTokens` is sync,
   and both have to stay that way; `tokenizers`/`autoTokenizer`/`tokenizerCache` pick and fetch which
   one counts), `flattenPrompt` (text-completion connections), `swapTokens`, `worldInfo`,
-  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`, `PromptStack.variables`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
+  `stackTemplate` (a stack is one template, `PromptStack.template`: `{% var %}` declarations,
+  `{% message %}` and `{% depth %}` tags, `{{ history }}`, `templateProblems` for the editor),
+  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
   one of these.
 - **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`).
   `flattenPrompt` is the only reader: role sequences, first/last turn overrides, newline wrapping,
@@ -110,9 +112,9 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
   `chatStore.retry` branches on it before the round-robin maths and never moves
   `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack's
-  blocks first, the stack's `narrator` misc prompt second. A stack with an `{% if narrator %}` branch
+  template first, the stack's `narrator` misc prompt second. A stack with an `{% if narrator %}` branch
   owns the Narrator outright; only a stack without one gets `miscPrompt('narrator', stack.miscPrompts)`,
-  passed to `narratorCharacter()` as the card's `systemPrompt`. `blocksMentionCondition` in `prompt/template.ts` decides which.
+  passed to `narratorCharacter()` as the card's `systemPrompt`. `mentionsCondition` in `prompt/template.ts` decides which.
   The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
   (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
 - **Trackers** live in `core/trackers`. Defs ride on the card (`Character.trackers`,
@@ -120,10 +122,10 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   in `Message.trackerUpdates`. `trackerValues` folds them down the history with player overrides,
   so swiping rolls back. `buildPrompt` injects visible values and hands every value to
   `template.ts` for `{% if affection > 50 %}`. `stripState` hides the tag at render only.
-- **Block switches** are conditions. `PromptBlock.when` is an `{% if %}` expression on the stack's
-  variables, applied by `applyConditions` before either prompt builder reads the stack: a failing
-  block is switched off like a `disabled` one. `disabled` is the maker's switch and players never see
-  it. Players only see variables (`PromptToggles`).
+- **Stack variables** are declared in the template (`{% var length slider 10 400 10 = 110 %}`).
+  `stackVariables` parses them and lays the player's `PromptStack.values` over the defaults;
+  `withValue` writes one back. Players only see variables (`PromptToggles`). The editor is
+  `modules/prompts/TemplateEditor.tsx` (CodeMirror) beside the live preview.
 - **Stack looks**: `PromptStack.look` is maker HTML and CSS laying out those variables in the chat and
   Story panels. `modules/prompts/stackLook.ts` holds the rules: `lookPolicy` in the palette
   sanitizer, `@scope` CSS, `data-var` slots filled by portals (`StackLookView`), values mirrored as
@@ -131,8 +133,9 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
   (`core/palette/remoteRefs.ts`, checked on parsed CSS and the sanitized DOM) need
   `PromptStack.allowRemote`, which `stackFile.ts` never exports or imports.
 - **SillyTavern import** lives in `core/sillytavern`. `stMacros.ts` rewrites ST's runtime macros into
-  stack features: leading comments become a block's `info`, setvar/getvar pairs become checkbox
-  variables and `{% if %}` branches. `{{roll}}` needs no rewrite.
+  stack features: leading comments become a prompt's `info`, setvar/getvar pairs become checkbox
+  variables and `{% if %}` branches. `{{roll}}` needs no rewrite. The passes work on a list of
+  pieces (`stBlock.ts`) and `stTemplate` writes it out as one template.
 - **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
   decides what needs pushing.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for
@@ -172,9 +175,9 @@ Registered today: `chat`, `write`, `multiplayer`, `ask`, `characters`, `personas
 
 ## Data
 
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(18)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
+Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(19)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
 
-- One `db.version(N).stores({...})` block, currently 18, holding the **complete** schema. The old
+- One `db.version(N).stores({...})` block, currently 19, holding the **complete** schema. The old
   chain was deleted. No block ever carried an `upgrade()` callback, and an older local DB upgrades
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:
@@ -187,12 +190,12 @@ Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(18)
 
 Three Zustand stores persist to localStorage rather than Dexie, via `zustand/middleware` `persist`: `settingsStore` (`nessuTavern.settings`, holding connections and the API keys with them), `askStore` (`nessuTavern.ask`), `blipStore` (`nessuTavern.blips`).
 
-`core/storage/backup.ts` is the only code that reads or writes those keys for export/import. It carries `nessuTavern.settings` and `nessuTavern.ask`. Blips are unseen-reply markers and stay out. `stripApiKeys.ts` blanks `apiKey`, `accessKeyId` and `secretAccessKey` by name before a backup file leaves the browser. A backup gets emailed around, and a missed secret is the failure that matters.
+`core/storage/backup.ts` is the only code that reads or writes those keys for export/import. It carries `nessuTavern.settings` only. The Ask thread (the sidebar's side conversation) is a preference of this browser, and blips are unseen-reply markers. Both stay out. `stripApiKeys.ts` blanks `apiKey`, `accessKeyId` and `secretAccessKey` by name before a backup file leaves the browser. A backup gets emailed around, and a missed secret is the failure that matters.
 
 **Non-portable preferences.** Small view state belonging to this browser rather than to the user's
 data: whether a panel is collapsed, which rail is open, an example section dismissed. Write it
 straight to `localStorage` under a `nessuTavern.*` key, with no store and no Dexie table, and leave
-it out of the export. `backup.ts` reads only the three keys it names, and a new key stays out of a
+it out of the export. `backup.ts` reads only the key it names, and a new key stays out of a
 backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`) and
 `nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) are the pattern. The test is
 whether restoring a backup on another machine should carry it. If it shouldn't, it's a preference.

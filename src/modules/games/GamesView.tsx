@@ -13,6 +13,7 @@ import type { Game } from '../../core/storage/types'
 import { boardState, useGames, type AnyGameState } from './gamesStore'
 import GameBoard from './GameBoard'
 import GameLog from './GameLog'
+import { secretRanks } from '../../core/games/cardSpoilers'
 
 const tabs = [['play', 'Play'], ['history', 'History']] as const
 type TabId = (typeof tabs)[number][0]
@@ -210,6 +211,7 @@ function Replay({ game }: { game: Game }) {
           kind={game.kind}
           events={events}
           characterName={game.characterName}
+          secret={secretRanks(state)}
           open={logOpen}
           width={logWidth}
           onToggle={() => setLogOpen(!logOpen)}
@@ -286,6 +288,7 @@ function LiveGame() {
           events={game.events}
           characterName={game.characterName}
           streamingText={streaming ? streamingText : ''}
+          secret={secretRanks(state)}
           open={logOpen}
           width={logWidth}
           onToggle={() => setLogOpen(!logOpen)}

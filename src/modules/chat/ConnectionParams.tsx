@@ -2,6 +2,12 @@ import type { Connection } from '../../core/stores/settingsStore'
 import { useSettings } from '../../core/stores/settingsStore'
 import { useParamDefs } from '../../core/stores/paramDefsStore'
 import ParamInput from '../settings/ParamInput'
+import {
+  promptProcessingOptions,
+  singleLabelOptions,
+  type PromptProcessing,
+  type SingleLabels,
+} from '../../core/connectors/promptProcessing'
 
 /**
  * The active connection's own parameters, edited from the chat sidebar. This writes the global
@@ -24,6 +30,37 @@ export default function ConnectionParams({ connection }: { connection: Connectio
 
   return (
     <div className="paramEditor">
+      {connection.type === 'chat' && (
+        <label className="paramField">
+          <span className="paramLabel">Prompt processing</span>
+          <span className="paramInput">
+            <select
+              value={connection.promptProcessing ?? 'none'}
+              onChange={(e) => updateConnection({ ...connection, promptProcessing: e.target.value as PromptProcessing })}
+            >
+              {promptProcessingOptions.map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </span>
+        </label>
+      )}
+      {connection.type === 'chat' && connection.promptProcessing === 'single' && (
+        <label className="paramField">
+          <span className="paramLabel">Labels</span>
+          <span className="paramInput">
+            <select
+              value={connection.singleLabels ?? 'name'}
+              onChange={(e) => updateConnection({ ...connection, singleLabels: e.target.value as SingleLabels })}
+            >
+              {singleLabelOptions.map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </span>
+        </label>
+      )}
+
       {connection.params.map((param) => {
         const def = byKey.get(param.key)
         if (!def) return null

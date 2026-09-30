@@ -26,7 +26,7 @@ export type Manifest = Partial<Record<TableName, TableManifestEntry>>
 
 /** A table, plus the two localStorage blobs that ride alongside without being tables. Neither
  *  appears in the manifest: they're moved by the settings step, not by a comparison. */
-export type ObjectName = TableName | 'settings' | 'ask'
+export type ObjectName = TableName | 'settings'
 
 export interface PulledTable {
   json: string

@@ -56,6 +56,10 @@ let live: AbortController | null = null
  *  and a move landing in the middle of it'd write two batches into the same log. */
 let driving = false
 
+/** A move being played. `driving` isn't set until the move's own events have landed, and a second
+ *  click in that gap read the same turn and played the move twice. */
+let moving = false
+
 /** A drive asked for while one was already running: the board changed under it. */
 let wanted = false
 
@@ -281,6 +285,10 @@ interface GamesState {
   next(): void
   remove(id: number): Promise<void>
   clearNotice(): void
+  /** Covered sentences the player clicked open, as `${start}:${line}`. Shared by the board's line
+   *  and the log, so opening one opens both. Cleared when a game opens. */
+  revealed: string[]
+  reveal(key: string): void
 }
 
 /** The stack a game runs on: its own, else one named Game, else a fresh one saved as an ordinary
@@ -344,6 +352,8 @@ export const useGames = create<GamesState>()((set, get) => ({
   },
 
   clearNotice: () => set({ notice: '' }),
+  revealed: [],
+  reveal: (key) => set((s) => ({ revealed: [...s.revealed, key] })),
 
   load: async () => {
     set({ loading: true })
@@ -380,7 +390,7 @@ export const useGames = create<GamesState>()((set, get) => ({
   open: async (id) => {
     const row = (await storage.get('games', id)) as unknown as Game | undefined
     if (!row) return
-    set({ game: row, state: boardState(row), error: '', notice: '', streamingText: '' })
+    set({ game: row, state: boardState(row), error: '', notice: '', streamingText: '', revealed: [] })
     // Reopening picks up a table that was left mid-runout, by a closed tab or by an older build.
     void drive(get, set)
   },
@@ -398,7 +408,7 @@ export const useGames = create<GamesState>()((set, get) => ({
 
   submit: async (text) => {
     const game = get().game
-    if (!game || get().streaming || driving || get().state.over) return
+    if (!game || get().streaming || driving || moving || get().state.over) return
 
     const myTurn = get().state.turn === playerSide
     const move =
@@ -429,7 +439,12 @@ export const useGames = create<GamesState>()((set, get) => ({
     set({ notice: '' })
     // Stored as typed. Trimmed of surrounding whitespace and nothing else: what the player wrote
     // is what the log shows and what the model reads.
-    await playMove(get, set, move as Rank | blackjack.Action, text.trim())
+    moving = true
+    try {
+      await playMove(get, set, move as Rank | blackjack.Action, text.trim())
+    } finally {
+      moving = false
+    }
   },
 
   setDifficulty: async (difficulty) => {
@@ -653,7 +668,9 @@ async function react(get: Get, set: Set) {
     for await (const chunk of sendMessage(built.messages, connection, controller.signal)) {
       if (chunk.content) {
         text += chunk.content
-        set({ streamingText: text })
+        // Leading whitespace goes now rather than at save: the stored line is trimmed, and a
+        // line that loses its first newline on landing jumps.
+        set({ streamingText: text.trimStart() })
       }
     }
   } catch (err) {
@@ -665,9 +682,11 @@ async function react(get: Get, set: Set) {
     if (live === controller) live = null
   }
 
-  set({ streaming: false, streamingText: '' })
-  if (!text.trim()) return
+  // The say event is written before the stream is cleared. The other order shows the previous
+  // line for as long as the write takes, then swaps the new one back in.
   const current = get().game
-  if (!current || current.id !== game.id) return
-  await persist(get, set, { ...current, events: [...current.events, { kind: 'say', by: 'char', text: text.trim() }] })
+  if (text.trim() && current && current.id === game.id) {
+    await persist(get, set, { ...current, events: [...current.events, { kind: 'say', by: 'char', text: text.trim() }] })
+  }
+  set({ streaming: false, streamingText: '' })
 }

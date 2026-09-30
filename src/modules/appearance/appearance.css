@@ -553,46 +553,12 @@
   gap: 6px;
 }
 
-.paletteAsk {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.paletteAsk input {
-  flex: 1;
-  min-width: 0;
-}
 
-.paletteAsk button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
 
 /* The failed reply, verbatim. Scrolls rather than wraps the panel open: a reasoning trace can run
    for pages, and the point is to skim the start of it. */
-.paletteReply summary {
-  cursor: pointer;
-  color: var(--textMuted);
-  font-size: 12px;
-}
 
-.paletteReply pre {
-  max-height: 240px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  margin: 0 0 8px;
-  padding: 8px;
-  background: var(--surfaceSunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--textSoft);
-  font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
 
 /* Sits at the end of an editor row, and inside a <label> in several of them, hence the
    preventDefault at the call site. Only rendered for a field the model overwrote. */
@@ -650,9 +616,6 @@
   .palettesHead,
   .palettesHeadActions,
   .paletteTransfer,
-  .paletteAsk {
-    flex-wrap: wrap;
-  }
 
   .paletteList .paletteName {
     flex-wrap: wrap;

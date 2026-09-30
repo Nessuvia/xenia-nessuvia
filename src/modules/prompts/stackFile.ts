@@ -1,26 +1,25 @@
 // Prompt stack files: the stack's own fields, without the row id or ownerId. Those belong to the
 // browser that stores it, not to the file.
-import type { PromptBlock, PromptStack, StackLook, StackVariable, TextRules } from '../../core/storage/types'
+import type { PromptStack, StackLook, StackValue, TextRules } from '../../core/storage/types'
 import { currentOwnerId } from '../../core/storage/storageInterface'
 import { stackKind } from './stackKinds'
 import { coerceMiscPrompts } from '../../core/prompt/miscPrompts'
 
 interface StackFile {
   format: 'nessu-prompt-stack'
-  version: 2
+  /** 3 is the template format. Block-shaped files (1 and 2) are refused. */
+  version: 3
   name: string
   kind: 'chat' | 'story'
-  active: PromptBlock[]
-  /** Values included: a stack's settings travel with it. Absent in version 1 files. */
-  variables?: StackVariable[]
+  template: string
+  /** A stack's settings travel with it. */
+  values?: Record<string, StackValue>
   /** Overrides for the utility prompts. Part of how the stack prompts, so it travels with it. */
   miscPrompts?: Record<string, string>
   /** The custom layout. `allowRemote` never travels: a downloaded file can't switch it on. */
   look?: StackLook
   /** The stack's own tag and find/replace rules. */
   textRules?: TextRules
-  /** Written by older builds, when blocks could be parked out of the stack. Read, never written. */
-  inactive?: PromptBlock[]
 }
 
 const fileName = (name: string) =>
@@ -29,11 +28,11 @@ const fileName = (name: string) =>
 export function exportStack(stack: PromptStack) {
   const file: StackFile = {
     format: 'nessu-prompt-stack',
-    version: 2,
+    version: 3,
     name: stack.name,
     kind: stackKind(stack),
-    active: stack.active,
-    variables: stack.variables ?? [],
+    template: stack.template,
+    ...(stack.values ? { values: stack.values } : {}),
     ...(stack.miscPrompts ? { miscPrompts: stack.miscPrompts } : {}),
     ...(stack.look ? { look: stack.look } : {}),
     ...(stack.textRules ? { textRules: stack.textRules } : {}),
@@ -48,15 +47,6 @@ export function exportStack(stack: PromptStack) {
   URL.revokeObjectURL(url)
 }
 
-// Fresh ids all the way down: two stacks must never share a block identity while dragging, and a
-// file can be imported twice.
-const reid = (list: PromptBlock[]): PromptBlock[] =>
-  list.map((b) => ({
-    ...b,
-    id: crypto.randomUUID(),
-    ...(b.children ? { children: reid(b.children) } : {}),
-  }))
-
 /** Parse a stack file into a savable stack. Throws with a message meant for the user. */
 export function parseStack(text: string): PromptStack {
   let data: unknown
@@ -67,19 +57,17 @@ export function parseStack(text: string): PromptStack {
   }
   const file = data as Partial<StackFile>
   if (file?.format !== 'nessu-prompt-stack') throw new Error("That file isn't a prompt stack.")
-  if (!Array.isArray(file.active)) throw new Error('The stack file is missing its blocks.')
-  // An older file's parked blocks import as disabled ones rather than being dropped.
-  const parked = Array.isArray(file.inactive) ? file.inactive.map((b) => ({ ...b, disabled: true })) : []
+  if (typeof file.template !== 'string') throw new Error('That stack file is from an older version and has no template.')
   const misc = coerceMiscPrompts(file.miscPrompts)
   return {
     ownerId: currentOwnerId(),
     name: typeof file.name === 'string' && file.name ? file.name : 'Imported stack',
     kind: file.kind === 'story' ? 'story' : 'chat',
-    active: reid([...file.active, ...parked]),
-    variables: Array.isArray(file.variables) ? file.variables : [],
+    template: file.template,
+    ...(file.values && typeof file.values === 'object' ? { values: file.values } : {}),
     ...(misc ? { miscPrompts: misc } : {}),
     ...(typeof file.look?.html === 'string' && typeof file.look.css === 'string'
-      ? { look: { html: file.look.html, css: file.look.css } }
+      ? { look: { html: file.look.html, css: file.look.css, ...(file.look.hideUnplaced === true ? { hideUnplaced: true } : {}) } }
       : {}),
     ...(Array.isArray(file.textRules?.tagRules) && Array.isArray(file.textRules.replaceRules)
       ? { textRules: { tagRules: file.textRules.tagRules, replaceRules: file.textRules.replaceRules } }

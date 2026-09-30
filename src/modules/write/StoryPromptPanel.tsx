@@ -4,6 +4,7 @@ import { buildStoryPrompt, castText, storyFit, storyScanText } from '../../core/
 import { storyTokens } from '../../core/prompt/storyTokens'
 import { loadTokenizer } from '../../core/prompt/budget'
 import { tokenizerFor, defaultTokenizer } from '../../core/prompt/tokenizers'
+import { withPlaceholder } from '../../core/prompt/miscPrompts'
 import { useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
 import { useSettings, useActiveConnection } from '../../core/stores/settingsStore'
@@ -118,7 +119,7 @@ export default function StoryPromptPanel() {
   let bodyError = ''
   if (connection) {
     try {
-      body = JSON.stringify(redact(buildRequestBody(built.messages, connection, paramDefList()), connection))
+      body = JSON.stringify(redact(buildRequestBody(built.messages, withPlaceholder(connection, stack.miscPrompts), paramDefList()), connection))
     } catch (err) {
       bodyError = (err as Error).message
     }
@@ -141,7 +142,7 @@ export default function StoryPromptPanel() {
           {connection && (
             <p className="hint">
               {built.fixedTokens + built.storyTokens} of {connection.contextLimit} tokens. Fixed
-              blocks {built.fixedTokens}, Story prose {built.storyTokens}, reply reserve{' '}
+              text {built.fixedTokens}, Story prose {built.storyTokens}, reply reserve{' '}
               {maxTokensOf(connection)}, safety margin {connection.safetyMarginPct}% ({margin}).
             </p>
           )}

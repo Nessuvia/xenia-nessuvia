@@ -7,7 +7,8 @@ import { describeEvent as describeBlackjack } from '../../core/games/blackjackSt
 import type { GoFishEvent } from '../../core/games/goFish'
 import type { BlackjackEvent } from '../../core/games/blackjack'
 import type { GameEvent, GameKind } from '../../core/games/gameEvent'
-import { rankPlural } from '../../core/games/deck'
+import { rankPlural, type Rank } from '../../core/games/deck'
+import SpoilerText from './SpoilerText'
 
 type Row = { key: number; side: 'char' | 'player' | 'system'; text: string }
 
@@ -53,6 +54,7 @@ export default function GameLog({
   events,
   characterName,
   streamingText,
+  secret,
   open,
   width,
   onToggle,
@@ -65,6 +67,8 @@ export default function GameLog({
   characterName: string
   /** The line arriving right now, shown as the character's last bubble until it lands. */
   streamingText?: string
+  /** Ranks the player can't see, covered in the character's bubbles. */
+  secret: Rank[]
   open: boolean
   width: number
   onToggle: () => void
@@ -115,12 +119,12 @@ export default function GameLog({
         <div className="gameLogScroll" ref={scroller}>
           {items.map((row) => (
             <div key={row.key} className={`gameLogRow gameLogRow${row.side}`}>
-              <span className={`gameLogBubble gameLogBubble${row.side}`}>{row.text}</span>
+              <span className={`gameLogBubble gameLogBubble${row.side}`}>{row.side === 'char' ? <SpoilerText text={row.text} secret={secret} /> : row.text}</span>
             </div>
           ))}
           {streamingText ? (
             <div className="gameLogRow gameLogRowchar">
-              <span className="gameLogBubble gameLogBubblechar">{streamingText}</span>
+              <span className="gameLogBubble gameLogBubblechar"><SpoilerText text={streamingText} secret={secret} streaming /></span>
             </div>
           ) : null}
         </div>

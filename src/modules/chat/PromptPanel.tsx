@@ -6,6 +6,7 @@ import { buildPrompt } from '../../core/prompt/buildPrompt'
 import { emptyWorldInfo, type ResolvedWorldInfo } from '../../core/prompt/worldInfo'
 import { loadTokenizer } from '../../core/prompt/budget'
 import { tokenizerFor, defaultTokenizer } from '../../core/prompt/tokenizers'
+import { withPlaceholder } from '../../core/prompt/miscPrompts'
 import { useCharacters } from '../../core/stores/charactersStore'
 import { useChats, resolvedConnection, worldInfoFor } from '../../core/stores/chatStore'
 import { nextSpeakerId } from '../../core/stores/roster'
@@ -111,7 +112,7 @@ export default function PromptPanel() {
   let bodyError = ''
   if (connection) {
     try {
-      body = JSON.stringify(redact(buildRequestBody(built.messages, connection, paramDefList()), connection))
+      body = JSON.stringify(redact(buildRequestBody(built.messages, withPlaceholder(connection, stack.miscPrompts), paramDefList()), connection))
     } catch (err) {
       bodyError = (err as Error).message
     }
@@ -134,7 +135,7 @@ export default function PromptPanel() {
 
           {connection && (
             <p className="hint">
-              {built.tokensUsed} of {connection.contextLimit} tokens. Fixed blocks{' '}
+              {built.tokensUsed} of {connection.contextLimit} tokens. Fixed text{' '}
               {built.fixedTokens}, reply reserve {maxTokensOf(connection)}, safety margin{' '}
               {connection.safetyMarginPct}% ({margin}). History allowance {built.available}.
             </p>
@@ -142,7 +143,7 @@ export default function PromptPanel() {
 
           {built.overflow && (
             <p className="hint">
-              The context limit can't fit the fixed blocks plus the reply reserve. No history is
+              The context limit can't fit the fixed text plus the reply reserve. No history is
               being sent.
             </p>
           )}
@@ -154,17 +155,6 @@ export default function PromptPanel() {
             </p>
           )}
         </>
-      }
-      footer={
-        built.skipped.length > 0 && (
-          <p className="hint">
-            Skipped blocks:{' '}
-            {built.skipped
-              .map((s) => `${s.label} (${s.reason === 'disabled' ? 'disabled' : 'no text'})`)
-              .join(', ')}
-            .
-          </p>
-        )
       }
     />
   )

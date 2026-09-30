@@ -1,17 +1,16 @@
-// SillyTavern's context template is one Handlebars string; ours is a list of blocks. Flattening it
-// loses the conditionals, which costs nothing: every `{{#if description}}` in a real template is
-// "include this field when the card has one", and a bound block already renders nothing when its
-// source is empty.
-import type { BlockSource, PromptBlock } from '../storage/types.ts'
-import { stBlock } from './stBlock.ts'
+// SillyTavern's context template is one Handlebars string; the importer works on a list of pieces.
+// Flattening it loses the conditionals, which costs nothing: every `{{#if description}}` in a real
+// template is "include this field when the card has one", and a slot already renders nothing when
+// its source is empty.
+import { stBlock, type StPiece, type StSource } from './stBlock.ts'
 
 /** ST's context placeholders that we've a bound source for. */
-const tokenSources: Record<string, BlockSource> = {
-  description: 'characterDescription',
-  personality: 'characterPersonality',
-  scenario: 'characterScenario',
-  mesexamples: 'characterExampleDialogue',
-  mesexamplesraw: 'characterExampleDialogue',
+const tokenSources: Record<string, StSource> = {
+  description: 'charDescription',
+  personality: 'charPersonality',
+  scenario: 'charScenario',
+  mesexamples: 'charExampleDialogue',
+  mesexamplesraw: 'charExampleDialogue',
   persona: 'personaDescription',
   wibefore: 'worldInfo',
   lorebefore: 'worldInfo',
@@ -33,16 +32,16 @@ const labelFor = (text: string) => {
 }
 
 export interface StoryStringImport {
-  blocks: PromptBlock[]
+  blocks: StPiece[]
   /** Placeholders left in the text as-is: nothing here maps them. */
   unknownTokens: string[]
 }
 
 /** A context template as ordered blocks. */
 export function blocksFromStoryString(story: string): StoryStringImport {
-  const blocks: PromptBlock[] = []
+  const blocks: StPiece[] = []
   const unknownTokens: string[] = []
-  const used = new Set<BlockSource>()
+  const used = new Set<StSource>()
   let buffer = ''
 
   const flush = () => {

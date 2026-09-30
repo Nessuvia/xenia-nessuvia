@@ -58,8 +58,13 @@ export function buildStateBlock(state: GoFishState, ctx: StateBlockContext = {})
     if (gone.length) lines.push(`You held ${gone.join(', ')} a moment ago and no longer do.`)
     if (got.length) lines.push(`You just picked up ${got.join(', ')}.`)
   }
-  lines.push(`Your books: ${state.books.char.length ? state.books.char.join(', ') : 'none'}`)
-  lines.push(`${far.Theirs} books: ${state.books.player.length ? state.books.player.join(', ') : 'none'}`)
+  // The count is spelled out: handed only the ranks, the model counted them itself and got it wrong.
+  // Both sides by name where there is one: two possessives side by side read cleaner than "Your"
+  // against "Their".
+  const books = (list: Rank[]) => (list.length ? `${list.length} total (${list.join(', ')})` : 'none')
+  const own = ctx.names?.char?.trim()
+  lines.push(`${own ? `${own}'s` : 'Your'} books: ${books(state.books.char)}`)
+  lines.push(`${far.Theirs} books: ${books(state.books.player)}`)
   lines.push(`Cards left in the deck: ${state.deck.length}`)
   lines.push(state.over ? 'The game is over.' : state.turn === 'char' ? 'Your turn.' : `${far.Theirs} turn.`)
 

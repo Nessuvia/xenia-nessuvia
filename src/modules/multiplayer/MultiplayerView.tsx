@@ -376,7 +376,6 @@ function StackPreview({
     // appended to this same block as they join. `pushSessionPersonas` rebuilds it per turn.
     personas: castBlock([{ name: persona.name, description: persona.description }]),
     nameSpeakers: true,
-    indent: true,
   })
 
   return (

@@ -4,14 +4,12 @@ import type { Character } from '../storage/types'
 import { emptyColors } from '../storage/types.ts'
 import { narratorCharacter, narratorId } from '../multiplayer/narrator.ts'
 import {
-  blocksMentionCondition,
   mentionsCondition,
   promptConditions,
   resolveTemplate,
   variableValues,
   type PromptConditions,
 } from './template.ts'
-import type { PromptBlock } from '../storage/types'
 
 function character(name: string, id: number): Character {
   return {
@@ -219,50 +217,6 @@ const speaking: PromptConditions = { narrator: false, char1: true, char2: false 
   // {% else %} and {% endif %} carry no name, so neither counts as branching on one.
   assert.strictEqual(mentionsCondition('{% else %}\n{% endif %}', 'narrator'), false)
   assert.strictEqual(mentionsCondition('{% if game %}\nx\n{% endif %}', 'narrator'), false)
-}
-
-// --- blocksMentionCondition ----------------------------------------------
-{
-  const block = (patch: Partial<PromptBlock>): PromptBlock => ({
-    id: 'b',
-    label: 'Block',
-    source: 'text',
-    role: 'system',
-    content: '',
-    ...patch,
-  })
-
-  assert.strictEqual(blocksMentionCondition([], 'narrator'), false)
-  assert.strictEqual(blocksMentionCondition([block({ content: '{% if narrator %}' })], 'narrator'), true)
-  assert.strictEqual(blocksMentionCondition([block({ content: 'nothing' })], 'narrator'), false)
-  assert.strictEqual(
-    blocksMentionCondition([block({ closeContent: '{% if narrator %}' })], 'narrator'),
-    true,
-    'the closing half counts',
-  )
-
-  // A disabled block contributes nothing to the prompt, so it is not the stack having an opinion.
-  assert.strictEqual(
-    blocksMentionCondition([block({ content: '{% if narrator %}', disabled: true })], 'narrator'),
-    false,
-  )
-
-  // Nested, and past a sibling that says nothing.
-  assert.strictEqual(
-    blocksMentionCondition(
-      [block({ content: 'a' }), block({ children: [block({ content: '{% if narrator %}' })] })],
-      'narrator',
-    ),
-    true,
-  )
-  // A disabled container takes its children with it.
-  assert.strictEqual(
-    blocksMentionCondition(
-      [block({ disabled: true, children: [block({ content: '{% if narrator %}' })] })],
-      'narrator',
-    ),
-    false,
-  )
 }
 
 // --- tracker comparisons ---------------------------------------------------

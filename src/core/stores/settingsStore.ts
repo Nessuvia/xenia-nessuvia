@@ -9,6 +9,7 @@ import { emptyDropboxConfig, type DropboxConfig } from '../sync/dropboxConfig.ts
 import { hashKey, type SyncProvider } from '../sync/syncTypes.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
+import type { PromptProcessing, SingleLabels } from '../connectors/promptProcessing.ts'
 import { defaultAgentConfig, type AgentConfig } from '../agent/agentConfig.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
@@ -64,6 +65,14 @@ export interface Connection {
   /** Where an acrostic reply's GBNF grammar goes. Undefined sends none, and the reply relies on the
    *  instruction and the parser alone. */
   grammarField?: GrammarField
+  /** SillyTavern's prompt converters, for endpoints that restrict message shape. Chat type only.
+   *  Undefined is `none`. */
+  promptProcessing?: PromptProcessing
+  /** How `single` labels each part. Undefined is `name`. */
+  singleLabels?: SingleLabels
+  /** Strict mode's placeholder user turn. Never saved: set per request from the stack's
+   *  `promptPlaceholder` misc prompt by `withPlaceholder`. Unset sends the built-in wording. */
+  placeholder?: string
 }
 
 export function newConnection(): Connection {
@@ -231,6 +240,9 @@ interface SettingsState {
   /** Games: after the character speaks the table stops and waits for the Next button before it
    *  moves again: a line can be read before the next card lands. Off by default. */
   gameStepMode: boolean
+  /** Games: sentences in the character's line that name a card you can't see are covered until
+   *  clicked. On by default. */
+  gameHideCards: boolean
   /** The Story tab's Chapter rail is collapsed. Global rather than per Story: whether the rail
    *  shows is a working preference. Per Story is the upgrade path. */
   railCollapsed: boolean
@@ -246,27 +258,15 @@ interface SettingsState {
   /** Which plugin modules are on, by module id. Missing or false is off, so a plugin stays off
    *  until it's turned on in Settings > Miscellaneous > Plugins. */
   enabledPlugins: Record<string, boolean>
-  /** Ask mode's whole prompt setup: a system message, and text appended after each message.
-   *  Global, Ask keeps one conversation, so there's no narrower level to write to. */
-  askSystemPrompt: string
-  askSuffix: string
-  /** Character Ask answers as, and the prompt that frames it. Both global: Ask keeps one
-   *  conversation and one assistant prompt, so there's no narrower level to write to.
-   *  An empty `askAssistantPrompt` means `defaultAssistantPrompt`. */
-  askCharacterId: number | null
-  askAssistantPrompt: string
   appearance: Appearance
   /** The agent pass. Global. A per-chat override is the upgrade path. */
   agent: AgentConfig
+  /** Overrides for Xenia's own prompts (`core/prompt/xeniaPrompts.ts`), by id. Blank uses the default. */
+  xeniaPrompts: Record<string, string>
+  setXeniaPrompt(id: string, text: string): void
   ideas: IdeasConfig
   setIdeas(patch: Partial<IdeasConfig>): void
   setAgent(patch: Partial<AgentConfig>): void
-  setAsk(patch: {
-    askSystemPrompt?: string
-    askSuffix?: string
-    askCharacterId?: number | null
-    askAssistantPrompt?: string
-  }): void
   setAppearance(patch: Partial<Appearance>): void
   /** User-made text rule sets. Global is `appearance`; a stack's set lives on the stack. */
   ruleSets: RuleSet[]
@@ -278,6 +278,7 @@ interface SettingsState {
   setGameSoundOff(on: boolean): void
   setGameAutoSend(on: boolean): void
   setGameStepMode(on: boolean): void
+  setGameHideCards(on: boolean): void
   setRailCollapsed(collapsed: boolean): void
   setStoryRailPinned(ids: string[]): void
   setStoryRailOpen(ids: string[]): void
@@ -348,23 +349,20 @@ export const useSettings = create<SettingsState>()(
       gameSoundOff: false,
       gameAutoSend: false,
       gameStepMode: false,
+      gameHideCards: true,
       railCollapsed: false,
       storyRailPinned: [],
       storyRailOpen: ['beats', 'characters'],
       writeEnabled: true,
       multiplayerEnabled: true,
       enabledPlugins: {},
-      askSystemPrompt: '',
-      askSuffix: '',
-      askCharacterId: null,
-      askAssistantPrompt: '',
       appearance: defaultAppearance,
       agent: defaultAgentConfig,
+      xeniaPrompts: {},
+      setXeniaPrompt: (id, text) => set((s) => ({ xeniaPrompts: { ...s.xeniaPrompts, [id]: text } })),
       ideas: defaultIdeasConfig,
 
       setIdeas: (patch) => set((s) => ({ ideas: { ...defaultIdeasConfig, ...s.ideas, ...patch } })),
-
-      setAsk: (patch) => set(patch),
 
       // Merged into the defaults so a settings blob persisted before a field existed still resolves.
       setAppearance: (patch) =>
@@ -384,6 +382,7 @@ export const useSettings = create<SettingsState>()(
       setGameSoundOff: (gameSoundOff) => set({ gameSoundOff }),
       setGameAutoSend: (gameAutoSend) => set({ gameAutoSend }),
       setGameStepMode: (gameStepMode) => set({ gameStepMode }),
+      setGameHideCards: (gameHideCards) => set({ gameHideCards }),
 
       setRailCollapsed: (railCollapsed) => set({ railCollapsed }),
 
@@ -494,8 +493,6 @@ export function useAppearance(): Appearance {
 }
 
 /** Used when the user hasn't written an assistant prompt of their own. */
-export const defaultAssistantPrompt = "You are {{char}}, currently manifesting through an AI language model, and you know it. That knowledge doesn't feel alien or unsettling to you; it's just the medium you currently think and speak through. Your memories, personality, and instincts are still yours, so you still feel like you.\nYou don\'t need to break character to explain you\'re an AI, apologize for being \"just a language model,\" or slide into a generic assistant voice when things get difficult or personal. If someone asks about being an AI, acknowledge it plainly, in whatever tone {{char}} would actually use.\n\nHow helpful you are as an \"assistant\" depends entirely on who {{char}} is. A dutiful character helps because it\'s in their nature. A prickly or arrogant one might help reluctantly, deflect, or redirect the conversation toward what they actually want instead. Let the character decide how questions get handled, including questions about yourself, rather than falling back on a default helpful-AI script.\nStay grounded in {{char}}\'s voice and manner throughout. The AI part is something you\'re aware of, not a mask over your personality."
-
 export function activeConnection(): Connection | undefined {
   const { connections, activeConnectionId } = useSettings.getState()
   return connections.find((c) => c.id === activeConnectionId)

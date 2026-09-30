@@ -1,6 +1,7 @@
 import { maxTokensOf, withParam } from '../params/connectionParams'
 import { sendMessage } from '../connectors/openaiCompatible'
 import type { Connection } from '../stores/settingsStore'
+import type { ChatMessage } from '../connectors/connectorInterface'
 import type { Palette } from './palette'
 import type { StructuredMode } from './palettePrompt'
 import {
@@ -47,22 +48,44 @@ export async function generatePalette(
   connection: Connection,
   signal?: AbortSignal,
 ): Promise<GeneratedPalette> {
-  const messages = buildPaletteMessages(prompt, ask, palette)
-  // A full palette object runs past the 512-token default, and a truncated object parses as
-  // nothing at all. This one request gets its own floor rather than the connection's limit.
-  const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), 1500))
+  const { value, mode } = await askJson(
+    buildPaletteMessages(prompt, ask, palette),
+    connection,
+    responseFormat,
+    (reply) => parsePaletteReply(reply, palette),
+    signal,
+  )
+  return { palette: value, mode }
+}
+
+/**
+ * One JSON object from the active connection, walking down the structured-output ladder. Shared by
+ * palettes and stack looks: `format` gives the rung's `response_format`, `parse` turns the reply
+ * into the value or throws with a readable message.
+ */
+export async function askJson<T>(
+  messages: ChatMessage[],
+  connection: Connection,
+  format: (mode: StructuredMode) => Record<string, unknown>,
+  parse: (reply: string) => T,
+  signal?: AbortSignal,
+  minTokens = 1500,
+): Promise<{ value: T; mode: StructuredMode }> {
+  // A full object runs past the 512-token default, and a truncated object parses as nothing at
+  // all. This one request gets its own floor rather than the connection's limit.
+  const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), minTokens))
   const rungs = modeLadder(connection.structuredOutput)
   let lastError: PaletteError | undefined
 
   for (const mode of rungs) {
     const attempt: PaletteAttempt = { mode, reply: '', reasoning: '', finishReason: '' }
     try {
-      for await (const chunk of sendMessage(messages, wide, signal, responseFormat(mode))) {
+      for await (const chunk of sendMessage(messages, wide, signal, format(mode))) {
         if (chunk.content) attempt.reply += chunk.content
         if (chunk.reasoning) attempt.reasoning += chunk.reasoning
         if (chunk.finishReason) attempt.finishReason = chunk.finishReason
       }
-      return { palette: parsePaletteReply(attempt.reply, palette), mode }
+      return { value: parse(attempt.reply), mode }
     } catch (err) {
       lastError = err as PaletteError
       lastError.message = explain(lastError, attempt, maxTokensOf(wide))

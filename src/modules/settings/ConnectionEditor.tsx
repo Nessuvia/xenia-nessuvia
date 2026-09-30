@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+import {
+  promptProcessingOptions,
+  singleLabelOptions,
+  type PromptProcessing,
+  type SingleLabels,
+} from '../../core/connectors/promptProcessing'
 import { RiEyeLine } from '@remixicon/react'
 import type { Connection, GrammarField } from '../../core/stores/settingsStore'
 import type { ConnectionType } from '../../core/params/paramDef'
@@ -317,6 +323,34 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
             </select>
             <small>Sends a GBNF grammar with acrostic replies.</small>
           </label>
+
+          {draft.type === 'chat' && (
+            <label>
+              Prompt processing
+              <select
+                value={draft.promptProcessing ?? 'none'}
+                onChange={(e) => set('promptProcessing', e.target.value as PromptProcessing)}
+              >
+                {promptProcessingOptions.map(([id, label]) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
+              </select>
+              <small>Reshapes messages for endpoints that restrict roles. Strict sends the stack's placeholder prompt when no user message comes first.</small>
+            </label>
+          )}
+          {draft.type === 'chat' && draft.promptProcessing === 'single' && (
+            <label>
+              Labels
+              <select
+                value={draft.singleLabels ?? 'name'}
+                onChange={(e) => set('singleLabels', e.target.value as SingleLabels)}
+              >
+                {singleLabelOptions.map(([id, label]) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="checkboxRow">
             <input

@@ -41,7 +41,7 @@ const backgroundPolicy: HtmlPolicy = { tags: allowedTags, attrs: allowedAttrs }
  */
 export const lookPolicy: HtmlPolicy = {
   tags: new Set([...allowedTags, 'h1', 'h2', 'h3', 'h4', 'section', 'ul', 'ol', 'li', 'b', 'i', 'strong', 'em', 'small', 'details', 'summary']),
-  attrs: new Set([...allowedAttrs, 'data-var']),
+  attrs: new Set([...allowedAttrs, 'data-var', 'data-group', 'data-none', 'open']),
 }
 
 /** Elements whose content is raw text, not markup. Unwrapping one would dump its stylesheet or

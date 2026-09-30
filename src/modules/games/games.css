@@ -799,3 +799,29 @@
     max-height: none;
   }
 }
+
+/* A sentence naming a card the player can't see. The text keeps its size so the bar is as long as
+   the sentence; the colour hides it. */
+.cardTableSpoiler {
+  position: relative;
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
+  font: inherit;
+  color: transparent;
+  background: var(--textSoft);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cardTableSpoiler:hover::after {
+  content: '(click to show)';
+  position: absolute;
+  top: 0;
+  left: 4px;
+  color: var(--surface);
+  white-space: nowrap;
+}

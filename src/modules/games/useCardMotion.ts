@@ -39,6 +39,12 @@ const dealStaggerMs = 110
 /** Slow out of the throw and into the landing, rather than braking the whole way. */
 const travelEase = 'cubic-bezier(0.33, 0.9, 0.25, 1)'
 
+/** Where an element sits inside the table. */
+function relative(element: HTMLElement, base: DOMRect): { left: number; top: number } {
+  const rect = element.getBoundingClientRect()
+  return { left: rect.left - base.left, top: rect.top - base.top }
+}
+
 export function useCardMotion(
   root: RefObject<HTMLElement | null>,
   /** The zone a new card came from, filled in by `useDiffOrigin` before this effect runs. */
@@ -49,13 +55,30 @@ export function useCardMotion(
    *  finished game and nothing is listening. */
   report = true,
 ) {
-  const previous = useRef(new Map<string, DOMRect>())
+  const previous = useRef(new Map<string, { left: number; top: number }>())
   /** Which cards were face down last time: tells a reveal from an arrival. */
   const wasDown = useRef(new Set<string>())
   const dealt = useRef(false)
 
   // A board that goes away takes its outstanding motion with it.
   useEffect(() => () => forgetMotion(), [])
+
+  // The table resizing (the log opening or being dragged wider, the window) moves every card
+  // without the game doing anything. The stored positions are taken again, silently, so the next
+  // real move doesn't play that shift as every card sliding in from the side.
+  useEffect(() => {
+    const node = root.current
+    if (!node) return
+    const observer = new ResizeObserver(() => {
+      const base = node.getBoundingClientRect()
+      for (const card of node.querySelectorAll<HTMLElement>('[data-cardid]')) {
+        const id = card.dataset.cardid
+        if (id && !isFlying(card.getAnimations())) previous.current.set(id, relative(card, base))
+      }
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [root])
 
   useLayoutEffect(() => {
     const node = root.current
@@ -70,11 +93,14 @@ export function useCardMotion(
     ) => {
       started.push(card.animate(frames, options))
     }
-    const next = new Map<string, DOMRect>()
+    const next = new Map<string, { left: number; top: number }>()
     const down = new Set<string>()
     const zone = origin.current
     const from = zone ? node.querySelector<HTMLElement>(`[data-zone='${zone}']`) : null
-    const fromRect = from?.getBoundingClientRect()
+    // Everything is measured against the table, not the window: a table that moved as a whole
+    // (the page scrolled, the log pushed it over) hasn't moved any card on it.
+    const base = node.getBoundingClientRect()
+    const fromRect = from ? relative(from, base) : undefined
 
     cards.forEach((card, i) => {
       const id = card.dataset.cardid
@@ -93,7 +119,7 @@ export function useCardMotion(
         return
       }
 
-      const rect = card.getBoundingClientRect()
+      const rect = relative(card, base)
       next.set(id, rect)
       if (reduced) return
 

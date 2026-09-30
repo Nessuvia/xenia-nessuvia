@@ -4,6 +4,7 @@
 //
 // Extension-ful imports on purpose: the check scripts run this under
 // `node --experimental-strip-types`.
+import type { Connection } from '../stores/settingsStore'
 
 /** Which builder a prompt belongs to. Story stacks never send the chat-only ones. */
 export type MiscPromptKind = 'chat' | 'story' | 'both'
@@ -162,6 +163,14 @@ Reply with three lines and nothing else:
     kind: 'chat',
   },
   {
+    id: 'promptPlaceholder',
+    label: 'Strict mode placeholder',
+    hint: "Sent as the first user message when a connection's prompt processing is Strict and the prompt has no user message before the first assistant one.",
+    text: '[Start a new chat]',
+    slots: [],
+    kind: 'both',
+  },
+  {
     id: 'narrator',
     label: 'Narrator',
     hint: "Used when this stack has no {% if Narrator %} block. It goes where a character's system prompt goes, so a stack with no system prompt block sends nothing.",
@@ -241,3 +250,9 @@ export function coerceMiscPrompts(raw: unknown): Record<string, string> | undefi
 /** Only the prompts a stack of this kind can send. `both` shows in either builder. */
 export const defsForKind = (kind: 'chat' | 'story'): MiscPromptDef[] =>
   miscPromptDefs.filter((d) => d.kind === kind || d.kind === 'both')
+
+/** The connection with this stack's strict-mode placeholder in place, for one request. Never saved. */
+export const withPlaceholder = (connection: Connection, prompts: MiscPrompts): Connection => ({
+  ...connection,
+  placeholder: miscPrompt('promptPlaceholder', prompts),
+})

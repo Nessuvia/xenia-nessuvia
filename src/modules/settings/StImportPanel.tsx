@@ -109,7 +109,7 @@ export default function StImportPanel() {
                 checked={parts.stack}
                 onChange={(e) => setParts({ ...parts, stack: e.target.checked })}
               />
-              Prompt stack: {found.stack.active.length} blocks
+              Prompt stack
             </label>
           )}
           {found.tagRule && (

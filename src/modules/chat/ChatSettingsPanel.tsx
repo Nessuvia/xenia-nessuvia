@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Chat } from '../../core/storage/types'
 import PromptToggles from '../prompts/PromptToggles'
 import { stackKind } from '../prompts/stackKinds'
+import { stackAuthorNoteDepth } from '../../core/prompt/buildPrompt'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters } from '../../core/stores/charactersStore'
 import { useSettings, useAppearance, useActiveConnection } from '../../core/stores/settingsStore'
@@ -42,7 +43,7 @@ export default function ChatSettingsPanel({
   const setActiveConnection = useSettings((s) => s.setActiveConnection)
   const activeStackId = useSettings((s) => s.activeStackId)
   const stacks = useStacks((s) => s.stacks)
-  // Story stacks build a different prompt and have no Chat History block: they can't run a chat.
+  // Story stacks build a different prompt and have no {{ history }}: they can't run a chat.
   const chatStacks = stacks.filter((s) => stackKind(s) === 'chat')
   // A chat with its own stack shows and edits that one. Only a chat without an override reaches
   // the global: a multiplayer session's stack can't be repointed from here by accident.
@@ -74,7 +75,7 @@ export default function ChatSettingsPanel({
   const value = { ...chat, ...draft }
   const set = (patch: Partial<Chat>) => setDraft({ ...draft, ...patch })
   // What the note's depth falls back to when this chat hasn't set one.
-  const stackDepth = stack?.active.find((b) => b.source === 'authorNote')?.depth
+  const stackDepth = stack ? stackAuthorNoteDepth(stack) : undefined
   const roster = participants(value).length
 
   return (

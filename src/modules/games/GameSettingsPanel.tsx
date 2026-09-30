@@ -25,6 +25,8 @@ export default function GameSettingsPanel() {
   const setAutoSend = useSettings((s) => s.setGameAutoSend)
   const stepMode = useSettings((s) => s.gameStepMode)
   const setStepMode = useSettings((s) => s.setGameStepMode)
+  const hideCards = useSettings((s) => s.gameHideCards)
+  const setHideCards = useSettings((s) => s.setGameHideCards)
   // Difficulty is per game: a property of this match. Changing it halfway through a game you are
   // losing shouldn't rewrite the ones you already played.
   const setDifficulty = useGames((s) => s.setDifficulty)
@@ -128,6 +130,15 @@ export default function GameSettingsPanel() {
       </label>
       <p className="gamesRailRow">
         After {game.characterName} speaks, the table stops until you click Next on their line.
+      </p>
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={hideCards} onChange={(e) => setHideCards(e.target.checked)} />
+        <span className="gamesRailRow">Hide lines that name hidden cards</span>
+      </label>
+      <p className="gamesRailRow">
+        A sentence from {game.characterName} that names a card you can't see is covered. Click it to
+        show it.
       </p>
 
       <label className="gamesRailField">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { Link, NavLink, useMatch } from 'react-router-dom'
-import { RiArrowDownSLine, RiArrowLeftLine, RiArrowRightSLine, RiArrowUpSLine, RiCloseLine, RiGithubFill, RiMenuFoldLine, RiMenuLine, RiRedditFill } from '@remixicon/react'
+import { RiArrowDownSLine, RiArrowLeftLine, RiArrowRightSLine, RiArrowUpSLine, RiCloseLine, RiGithubFill, RiMenuFoldLine, RiMenuLine, RiQuestionAnswerLine, RiRedditFill } from '@remixicon/react'
 import { useSettings } from '../core/stores/settingsStore'
 import { lockedHint, usePaletteEditor } from '../core/stores/palettesStore'
 import { usePersonas } from '../core/stores/personasStore'
@@ -16,6 +16,8 @@ import GameSettingsPanel from '../modules/games/GameSettingsPanel'
 import BookmarkList from '../modules/chat/BookmarkList'
 import BackupButtons from './BackupButtons'
 import TourButton from './TourButton'
+import AskPanel from '../modules/ask/AskPanel'
+import { useAsk } from '../core/stores/askStore'
 import './sideDrawer.css'
 import './Sidebar.css'
 
@@ -74,6 +76,13 @@ export default function Sidebar() {
   // A phone has no icon rail: the drawer is either the full rail or off screen. The stored
   // preference is left alone so a wider screen still opens the way it was left.
   const collapsed = phone ? false : collapsedPref
+  const askOpen = useAsk((s) => s.open)
+  // Ask needs the full rail. Opening it from the collapsed rail expands it.
+  const openAsk = () => {
+    setCollapsed(false)
+    localStorage.setItem('nessuTavern.sidebarCollapsed', '0')
+    useAsk.getState().setOpen(true)
+  }
 
   // Phone-only: the rail becomes a full-screen drawer that swipes in from the left (sideDrawer.css).
   const [open, setOpen] = useState(false)
@@ -102,8 +111,8 @@ export default function Sidebar() {
   // Module tabs open in a panel beside the rail. Fixed-positioned off the nav item's rect: the rail
   // is overflow:hidden. Anything laid out inside it at left:100% would be clipped.
   //
-  // Two timings, both on leaving: the panel fades over 500ms, and stays mounted and hoverable for
-  // 500ms. Coming back inside that window cancels the close. A mouse that slips off the panel
+  // Two timings, both on leaving: the panel fades over 250ms, and stays mounted and hoverable for
+  // 250ms. Coming back inside that window cancels the close. A mouse that slips off the panel
   // and returns keeps it open without going back to the nav item.
   const [flyout, setFlyout] = useState<{ id: string; top: number; left: number } | null>(null)
   const [closing, setClosing] = useState(false)
@@ -126,7 +135,7 @@ export default function Sidebar() {
     closeTimer.current = window.setTimeout(() => {
       setFlyout(null)
       setClosing(false)
-    }, 500)
+    }, 250)
   }
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
@@ -235,7 +244,7 @@ export default function Sidebar() {
             </Link>
           ) : (
             modules
-              .filter((mod) => !['personas', 'sync', 'ask', 'learn'].includes(mod.id))
+              .filter((mod) => !['personas', 'sync', 'learn'].includes(mod.id))
               .filter((mod) => mod.id !== 'write' || writeEnabled)
               .filter((mod) => mod.id !== 'multiplayer' || multiplayerEnabled)
               .filter((mod) => isEnabled(mod, enabledPlugins))
@@ -244,8 +253,11 @@ export default function Sidebar() {
                   key={mod.id}
                   to={mod.route}
                   className="sidebar-item sidebarIconOnly"
-                  title={mod.label}
+                  // The flyout names the tabs; a title tooltip would sit on top of it.
+                  title={mod.tabs ? undefined : mod.label}
                   aria-label={mod.label}
+                  onPointerEnter={(e) => { if (mod.tabs) openFlyout(mod.id, e.currentTarget) }}
+                  onPointerLeave={() => { if (mod.tabs) closeFlyout() }}
                 >
                   <mod.icon size={18} />
                 </NavLink>
@@ -266,7 +278,10 @@ export default function Sidebar() {
               </NavLink>
             )}
             <div className="sidebarIconRow">
-              {['ask', ...(import.meta.env.DEV ? ['learn'] : [])]
+              <button type="button" className="sidebar-item sidebarIconButton" title="Ask" aria-label="Ask" onClick={openAsk}>
+                <RiQuestionAnswerLine size={18} />
+              </button>
+              {(import.meta.env.DEV ? ['learn'] : [])
                 .map((id) => modules.find((mod) => mod.id === id))
                 .filter((mod) => mod !== undefined)
                 .map((mod) => (
@@ -286,6 +301,8 @@ export default function Sidebar() {
         </>
       ) : (
         <>
+          {/* Ask brings its own top row with the way back. */}
+          {!askOpen && (
           <div className="sidebar-title">
             {/* The title doubles as the collapse target, same action as the button beside it. */}
             <button
@@ -323,6 +340,7 @@ export default function Sidebar() {
               </button>
             )}
           </div>
+          )}
 
           {!phone && (
             <div
@@ -333,6 +351,10 @@ export default function Sidebar() {
             />
           )}
 
+          {askOpen ? (
+            <AskPanel />
+          ) : (
+          <>
           {/* An open chat takes the rail over: its settings replace the module links until you leave. */}
           {chatId ? (
             <>
@@ -361,7 +383,7 @@ export default function Sidebar() {
           ) : (
             modules
               // Personas and Sync sit at the foot of the rail; Ask and Learn are icon buttons.
-              .filter((mod) => !['personas', 'sync', 'ask', 'learn'].includes(mod.id))
+              .filter((mod) => !['personas', 'sync', 'learn'].includes(mod.id))
               .filter((mod) => mod.id !== 'write' || writeEnabled)
               .filter((mod) => mod.id !== 'multiplayer' || multiplayerEnabled)
               .filter((mod) => isEnabled(mod, enabledPlugins))
@@ -410,7 +432,10 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebarIconRow">
-              {['ask', ...(import.meta.env.DEV ? ['learn'] : [])]
+              <button type="button" className="sidebar-item sidebarIconButton" title="Ask" aria-label="Ask" onClick={openAsk}>
+                <RiQuestionAnswerLine size={18} />
+              </button>
+              {(import.meta.env.DEV ? ['learn'] : [])
                 .map((id) => modules.find((mod) => mod.id === id))
                 .filter((mod) => mod !== undefined)
                 .map((mod) => (
@@ -460,6 +485,8 @@ export default function Sidebar() {
               </a>{' '} • v{__APP_VERSION__}
             </div>
           </div>
+          </>
+          )}
         </>
       )}
     </nav>

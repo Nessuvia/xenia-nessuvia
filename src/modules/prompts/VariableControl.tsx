@@ -38,6 +38,19 @@ export default function VariableControl({
           <input value={v.value} onChange={(e) => onChange({ ...v, value: e.target.value })} />
         </label>
       )
+    case 'list':
+      return (
+        <label className="optionPick" title={v.info || undefined}>
+          {v.label}
+          <textarea
+            className="variableList"
+            rows={2}
+            value={v.value}
+            placeholder="One per line"
+            onChange={(e) => onChange({ ...v, value: e.target.value })}
+          />
+        </label>
+      )
     case 'dice':
       return (
         <label className="optionPick" title={v.info || undefined}>

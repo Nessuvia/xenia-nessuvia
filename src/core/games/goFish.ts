@@ -46,6 +46,9 @@ export interface GoFishState {
   known: Record<Side, Rank[]>
   turn: Side
   over: boolean
+  /** The rank the character last drew from the deck, until their next ask. The player never sees
+   *  a draw, even of a rank they know the character holds. Only the spoiler cover reads it. */
+  drawn?: Rank
 }
 
 /** Deal 5 and 5, book anything dealt as four of a kind. The player asks first. */
@@ -89,7 +92,12 @@ export function reduce(state: GoFishState, event: GoFishEvent): GoFishState {
       // You must hold what you ask for: the ask tells the other side one card. It also puts
       // your own read on trial: until a `give` arrives, assume it came back empty.
       const known = forget(learn(state.known, other(event.by), event.rank), event.by, event.rank)
-      return { ...state, known, asked: { ...state.asked, [event.by]: [...state.asked[event.by], event.rank] } }
+      return {
+        ...state,
+        known,
+        asked: { ...state.asked, [event.by]: [...state.asked[event.by], event.rank] },
+        drawn: event.by === 'char' ? undefined : state.drawn,
+      }
     }
     case 'give': {
       const moving = state.hands[event.from].filter((c) => c.rank === event.rank)
@@ -112,6 +120,7 @@ export function reduce(state: GoFishState, event: GoFishEvent): GoFishState {
         ...state,
         deck: state.deck.slice(1),
         hands: { ...state.hands, [event.by]: [...state.hands[event.by], card] },
+        drawn: event.by === 'char' ? card.rank : state.drawn,
       }
     }
     case 'book':

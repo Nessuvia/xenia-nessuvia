@@ -11,7 +11,6 @@ import { useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
 import { useSettings, useActiveConnection, type Connection } from '../../core/stores/settingsStore'
 import { budgetOf, maxTokensOf } from '../../core/params/connectionParams'
-import { hasSource } from './stackKinds'
 
 const defaultUserLine = 'Hello there.'
 
@@ -58,13 +57,7 @@ const exampleTokens = storyTokens({
   blockId: 'b',
 })
 
-export default function PromptPreview({
-  stack,
-  onClose,
-}: {
-  stack: PromptStack
-  onClose: () => void
-}) {
+export default function PromptPreview({ stack }: { stack: PromptStack }) {
   const [ready, setReady] = useState(false)
   const activeConnection = useActiveConnection()
   const tokenizerId = activeConnection ? tokenizerFor(activeConnection) : defaultTokenizer
@@ -77,9 +70,6 @@ export default function PromptPreview({
   const header = (
     <div className="zoneHeader">
       <h3>Preview</h3>
-      <button type="button" className="secondary" onClick={onClose}>
-        Close
-      </button>
     </div>
   )
 
@@ -215,14 +205,8 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
   }
 
   // The same call the send path makes: the preview can't drift from what gets sent. Counts and
-  // warnings read from this one. Indentation never touches the numbers.
+  // warnings read from this one.
   const built = buildPrompt({ stack, character, persona, messages: history, worldInfo }, budgetOf(connection))
-  // A second, display-only pass with nested content indented. Same inputs: its messages line up
-  // 1:1 with `built` (indentation doesn't change role boundaries), and the <pre> shows this text.
-  const display = buildPrompt(
-    { stack, character, persona, messages: history, worldInfo, indent: true },
-    budgetOf(connection),
-  )
 
   return (
     <section className="panel stackZone preview">
@@ -281,13 +265,6 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
         </p>
       )}
 
-      {worldInfo.atDepth.length > 0 && !hasSource(stack, 'worldInfoDepth') && (
-        <p className="hint">
-          Entries positioned at a depth are going in as system turns. Add a World info, at depth
-          block to set their role.
-        </p>
-      )}
-
       <div className="previewList">
         {built.messages.map((m, i) => (
           <div className="previewMessage" key={i}>
@@ -295,7 +272,7 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
               <span className="blockRole">{m.role}</span>
               <span className="hint">{countTokens(m.content) + perMessageOverhead} tokens</span>
             </div>
-            <pre>{display.messages[i]?.content ?? m.content}</pre>
+            <pre>{m.content}</pre>
           </div>
         ))}
         {built.messages.length === 0 && <p className="placeholder">Nothing to send.</p>}

@@ -826,3 +826,14 @@
   gap: 6px;
   flex-basis: 100%;
 }
+
+.settingsXeniaPrompts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settingsXeniaPromptText {
+  width: 100%;
+  margin: 8px 0;
+}

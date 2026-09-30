@@ -13,13 +13,12 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate'
 import { extractImages, imageNamePattern, inlineImages } from './imageRefs.ts'
 import { tableNames, type StoredRecord } from './storageInterface.ts'
-import { askKey, settingsKey } from '../sync/settingsObject.ts'
+import { settingsKey } from '../sync/settingsObject.ts'
 import { tablePayload, type TablePayload } from './tablePayload.ts'
 
-/** The two localStorage blobs a backup carries, and the file each one travels as. */
+/** The localStorage blob a backup carries, and the file each one travels as. */
 const blobFiles: Record<string, string> = {
   [settingsKey]: 'settings.json',
-  [askKey]: 'ask.json',
 }
 
 export interface Backup {

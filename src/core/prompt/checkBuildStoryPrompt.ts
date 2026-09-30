@@ -1,6 +1,6 @@
 ﻿// Run: node --experimental-strip-types src/core/prompt/checkBuildStoryPrompt.ts
 import assert from 'node:assert'
-import type { PromptBlock, PromptStack } from '../storage/types'
+import type { PromptStack } from '../storage/types'
 import type { Budget } from './budget.ts'
 import {
   buildStoryPrompt,
@@ -11,22 +11,22 @@ import {
   storyScanText,
 } from './buildStoryPrompt.ts'
 
-let n = 0
-function block(b: Partial<PromptBlock>): PromptBlock {
-  return { id: `b${++n}`, label: 'b', source: 'text', role: 'system', content: '', ...b }
-}
-function stack(active: PromptBlock[]): PromptStack {
-  return { ownerId: 'local', name: 's', kind: 'story', active }
-}
+// A template is lines of text, so a stack reads as its lines.
+const stack = (...lines: string[]): PromptStack => ({
+  ownerId: 'local',
+  name: 's',
+  kind: 'story',
+  template: lines.join('\n'),
+})
 
 // A default-shaped Story stack: system, cast, story context, beat.
 const defaultish = () =>
-  stack([
-    block({ label: 'sys', content: 'You are a co-writer.' }),
-    block({ label: 'cast', source: 'cast' }),
-    block({ label: 'story', source: 'storyContext' }),
-    block({ label: 'beat', role: 'user', content: 'Write this next: {{beat}}' }),
-  ])
+  stack(
+    'You are a co-writer.',
+    '{{ cast }}',
+    '{{ storyContext }}',
+    '{% message user %}Write this next: {{beat}}{% endmessage %}',
+  )
 
 // --- castText flattens enabled members --------------------------------------
 {
@@ -74,7 +74,7 @@ const defaultish = () =>
 // --- Direction is never merged into the prose, even with no cast ------------
 {
   const out = buildStoryPrompt({
-    stack: stack([block({ source: 'storyContext' })]),
+    stack: stack('{{ storyContext }}'),
     castText: '',
     tokens: {},
     storyText: 'once upon a time',
@@ -92,7 +92,7 @@ const defaultish = () =>
   const budget: Budget = { contextLimit: 200, maxTokens: 50, safetyMarginPct: 0 }
   const built = buildStoryPrompt(
     {
-      stack: stack([block({ content: 'sys' }), block({ source: 'storyContext' })]),
+      stack: stack('sys', '{{ storyContext }}'),
       castText: '',
       tokens: {},
       storyText: lines,
@@ -112,7 +112,7 @@ const defaultish = () =>
 {
   const built = buildStoryPrompt(
     {
-      stack: stack([block({ source: 'storyContext' })]),
+      stack: stack('{{ storyContext }}'),
       castText: '',
       tokens: {},
       storyText: 'short story',
@@ -128,34 +128,10 @@ const defaultish = () =>
 assert.strictEqual(fitEndBackward('a '.repeat(1000), 5), '')
 assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 
-// --- disabled blocks contribute nothing -------------------------------------
-{
-  const out = buildStoryPrompt({
-    stack: stack([
-      block({ content: 'kept' }),
-      block({ content: 'silenced', disabled: true }),
-      block({ source: 'storyContext' }),
-    ]),
-    castText: '',
-    tokens: {},
-    storyText: 'prose',
-    direction: 'go',
-  }).messages
-  assert.ok(!out.some((m) => m.content.includes('silenced')))
-  assert.ok(out.some((m) => m.content.includes('kept')))
-}
-
-// --- bound blocks resolve when nested inside a wrapper ----------------------
+// --- cast resolves inside wrapper text ----------------------
 {
   const built = buildStoryPrompt({
-    stack: stack([
-      block({
-        content: '<character>',
-        closeContent: '</character>',
-        children: [block({ source: 'cast' })],
-      }),
-      block({ source: 'storyContext' }),
-    ]),
+    stack: stack('<character>', '{{ cast }}', '</character>', '{{ storyContext }}'),
     castText: 'Name: Mark',
     tokens: {},
     storyText: 'prose',
@@ -168,18 +144,12 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
   assert.ok(built.fixedTokens > 0)
 }
 
-// --- a nested Story context still trims against the budget ------------------
+// --- a wrapped Story context still trims against the budget ------------------
 {
   const lines = Array.from({ length: 200 }, (_, i) => `line ${i}`).join('\n')
   const built = buildStoryPrompt(
     {
-      stack: stack([
-        block({
-          content: '<story>',
-          closeContent: '</story>',
-          children: [block({ source: 'storyContext' })],
-        }),
-      ]),
+      stack: stack('<story>', '{{ storyContext }}', '</story>'),
       castText: '',
       tokens: {},
       storyText: lines,
@@ -193,25 +163,6 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
   assert.ok(built.messages[0].content.includes('line 199'))
 }
 
-// --- a disabled nested Cast block contributes nothing -----------------------
-{
-  const out = buildStoryPrompt({
-    stack: stack([
-      block({
-        content: '<character>',
-        closeContent: '</character>',
-        children: [block({ source: 'cast', disabled: true })],
-      }),
-      block({ source: 'storyContext' }),
-    ]),
-    castText: 'Name: Mark',
-    tokens: {},
-    storyText: 'prose',
-    direction: 'go',
-  }).messages
-  assert.ok(!out.some((m) => m.content.includes('Name: Mark')))
-}
-
 // --- fitStoryText replaces the line chop, and only when a budget exists -------
 {
   const long = Array.from({ length: 200 }, (_, i) => `line ${i} of the prose`).join('\n')
@@ -220,7 +171,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 
   const built = buildStoryPrompt(
     {
-      stack: stack([block({ source: 'storyContext' })]),
+      stack: stack('{{ storyContext }}'),
       castText: '',
       tokens: {},
       storyText: long,
@@ -240,7 +191,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 
   // No budget, no fit: the whole prose goes, closure or not.
   const whole = buildStoryPrompt({
-    stack: stack([block({ source: 'storyContext' })]),
+    stack: stack('{{ storyContext }}'),
     castText: '',
     tokens: {},
     storyText: long,
@@ -253,10 +204,10 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 // --- the trailing "What follows" block ---------------------------------------
 {
   const withTrailing = () =>
-    stack([
-      block({ label: 'story', source: 'storyContext' }),
-      block({ label: 'follows', source: 'storyTrailing', content: 'Lead into this:' }),
-    ])
+    stack(
+      '{{ storyContext }}',
+      '{% if storyTrailing %}', 'Lead into this:', '{{ storyTrailing }}', '{% endif %}',
+    )
 
   // With a caret, the trailing prose lands, carrying the block's own instruction text.
   const out = buildStoryPrompt({
@@ -271,7 +222,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
   assert.ok(text.includes('Lead into this:'))
   assert.ok(text.includes('She was already gone.'))
 
-  // No caret is the common case: the block drops out whole rather than sending its instruction
+  // No caret is the common case: the {% if %} drops the instruction rather than sending it
   // pointing at nothing.
   const none = buildStoryPrompt({
     stack: withTrailing(),
@@ -315,7 +266,7 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 {
   const huge = Array.from({ length: 4000 }, (_, i) => `tail line ${i}`).join('\n')
   const built = buildStoryPrompt({
-    stack: stack([block({ source: 'storyContext' }), block({ source: 'storyTrailing' })]),
+    stack: stack('{{ storyContext }}', '{{ storyTrailing }}'),
     castText: '',
     tokens: {},
     storyText: 'the prose so far',
@@ -328,20 +279,17 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
   assert.ok(built.fixedTokens < maxTrailingTokens + 200, 'the tail is capped, not sent whole')
 }
 
-// --- Story tokens reach a block's own text, and only that -------------------
+// --- Story tokens reach the template's own text, and only that -------------------
 {
   const built = buildStoryPrompt({
-    stack: stack([
-      block({ label: 'sys', content: 'Chapter {{chapterNumber}} of {{storyTitle}}.' }),
-      block({
-        label: 'wrap',
-        content: '<about {{storyTitle}}>',
-        closeContent: '</about {{storyTitle}}>',
-        children: [block({ label: 'cast', source: 'cast' })],
-      }),
-      block({ label: 'story', source: 'storyContext' }),
-      block({ label: 'beat', role: 'user', content: 'Write this next: {{beat}}' }),
-    ]),
+    stack: stack(
+      'Chapter {{chapterNumber}} of {{storyTitle}}.',
+      '<about {{storyTitle}}>',
+      '{{ cast }}',
+      '</about {{storyTitle}}>',
+      '{{ storyContext }}',
+      '{% message user %}Write this next: {{beat}}{% endmessage %}',
+    ),
     castText: 'Name: Mark',
     tokens: { storyTitle: 'Last Call', chapterNumber: '2', beat: 'She asks him to leave' },
     // The manuscript writes a token of its own. It is prose, and comes through untouched.
@@ -350,25 +298,21 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
   })
   const text = built.messages.map((m) => m.content).join('\n')
   assert.ok(text.includes('Chapter 2 of Last Call.'))
-  // Both halves of a wrapper get swapped, and the child renders between them unchanged.
+  // Both wrapper lines get swapped, and the cast renders between them unchanged.
   assert.ok(text.includes('<about Last Call>'))
   assert.ok(text.includes('</about Last Call>'))
   assert.ok(text.includes('Write this next: She asks him to leave'))
   assert.ok(text.includes('He said "{{storyTitle}}" and meant it.'), 'prose is never token-swapped')
 }
 
-// --- a beat block with no beat behind it drops out entirely -----------------
+// --- a beat message with no beat behind it drops out entirely -----------------
 {
   const built = buildStoryPrompt({
-    stack: stack([
-      block({ label: 'sys', content: 'You are a co-writer.' }),
-      block({ label: 'story', source: 'storyContext' }),
-      block({
-        label: 'beat',
-        role: 'user',
-        content: 'Write this next: {{beat}}\nAim for about {{beatTargetWords}} words.',
-      }),
-    ]),
+    stack: stack(
+      'You are a co-writer.',
+      '{{ storyContext }}',
+      '{% message user %}Write this next: {{beat}}\nAim for about {{beatTargetWords}} words.{% endmessage %}',
+    ),
     castText: '',
     tokens: { beat: '', beatTargetWords: '' },
     storyText: 'the prose so far',
@@ -382,16 +326,11 @@ assert.strictEqual(fitEndBackward('tiny', 100), 'tiny')
 // --- world info renders in its block, and drops out when nothing matched ----
 {
   const withWorld = () =>
-    stack([
-      block({ label: 'sys', content: 'You are a co-writer.' }),
-      block({
-        label: 'world',
-        source: 'worldInfo',
-        content: '<world>',
-        closeContent: '</world>',
-      }),
-      block({ label: 'story', source: 'storyContext' }),
-    ])
+    stack(
+      'You are a co-writer.',
+      '{% if worldInfo %}', '<world>', '{{ worldInfo }}', '</world>', '{% endif %}',
+      '{{ storyContext }}',
+    )
   const args = { castText: '', tokens: {}, storyText: 'the prose', direction: '' }
 
   const on = buildStoryPrompt({

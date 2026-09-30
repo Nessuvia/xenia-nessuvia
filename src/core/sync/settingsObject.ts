@@ -8,11 +8,6 @@
 /** The one localStorage key the settings store persists to. */
 export const settingsKey = 'nessuTavern.settings'
 
-/** The Ask scratchpad. Its own key and its own bucket object: it's a whole store's worth of the
- *  user's text, and nothing in it belongs inside the settings blob. Moved by the same step, so
- *  "Download settings" carries everything a backup's localStorage half carries. */
-export const askKey = 'nessuTavern.ask'
-
 /**
  * Fields that describe this device's relationship to the bucket, not the user's preferences. A
  * pulled blob must not bring another device's dirty set, hashes or bucket config with it: that

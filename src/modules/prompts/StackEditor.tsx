@@ -1,36 +1,24 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import type { PromptBlock, PromptStack } from '../../core/storage/types'
-import { bundledStacks, newBlock, useStacks } from '../../core/stores/stacksStore'
+import type { PromptStack } from '../../core/storage/types'
+import { bundledStacks, useStacks } from '../../core/stores/stacksStore'
 import { useSettings } from '../../core/stores/settingsStore'
-import {
-  addChild,
-  allBlocks,
-  contains,
-  findBlock,
-  insertBlock,
-  moveByKey,
-  removeBlock,
-  replaceBlock as replaceInTree,
-} from './blockTree'
-import type { MoveDir } from './blockTree'
-import BlockCard from './BlockCard'
-import { applyType, kindTypes } from './blockTypes'
-import type { BlockType } from './blockTypes'
-import { boundSources, kindSources, stackKind, validateStack } from './stackKinds'
+import { stackKind, validateStack } from './stackKinds'
 import type { StackKind } from './stackKinds'
-import { CollapseButton, CollapseRail } from '../../app/CollapseButton'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
-import BlockModal from './BlockModal'
 import MiscPromptsPanel from './MiscPromptsPanel'
 import { useHashTab } from '../../app/useHashTab'
 import { exportStack, parseStack } from './stackFile'
 import { parseSillyTavern } from '../../core/sillytavern/importSillyTavern'
 import PromptPreview from './PromptPreview'
-import VariablesPanel from './VariablesPanel'
+import TemplateEditor from './TemplateEditor'
 import LookPanel from './LookPanel'
+import { sendMessage } from '../../core/connectors/openaiCompatible'
+import { useAskContext, type AskContext } from '../../core/stores/askStore'
+import { xeniaPrompt } from '../../core/prompt/xeniaPrompts'
+import { buildTemplateMessages, parseTemplateReply } from './templatePrompt'
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
 
@@ -50,28 +38,13 @@ function stackFromSt(text: string) {
   return found.stack
 }
 
-interface Drop {
-  parentId: string | null
-  /** The block the dragged one lands in front of; null appends to that list. */
-  beforeId: string | null
-}
-
-const indent = (depth: number, step: number) => ({ marginLeft: depth * step })
-
-function nextBlockLabel(stack: PromptStack) {
-  const used = stack.active
-    .map((b) => Number(/^Block (\d+)$/.exec(b.label)?.[1] ?? 0))
-    .reduce((a, b) => Math.max(a, b), 0)
-  return `Block ${used + 1}`
-}
-
 export default function StackEditor() {
   const { stacks, load, save, create, duplicate, addBundled, remove, ensureActive } = useStacks()
   // The Chat | Story switch. Not persisted, which builder you're looking at is a glance-level
   // choice; the active stack of each kind lives in settings. `?kind=story` is how the Story
   // sidebar's edit link lands on the right builder.
   const [params] = useSearchParams()
-  // Blocks or the utility prompts. Both edit the same open stack: the picker row above stays put
+  // The template or the utility prompts. Both edit the same open stack: the picker row above stays put
   // and only the body swaps.
   const [tab] = useHashTab(['stacks', 'look', 'misc'] as const)
   const writeEnabled = useSettings((s) => s.writeEnabled)
@@ -83,42 +56,16 @@ export default function StackEditor() {
   const activeStoryStackId = useSettings((s) => s.activeStoryStackId)
   const activeId = kind === 'story' ? activeStoryStackId : activeStackId
   const [draft, setDraft] = useState<PromptStack | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  // sessionStorage, not a stored setting: survives navigation, clears on tab close.
-  // global for the tab, not per stack, key by stack id if that matters.
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
-    JSON.parse(sessionStorage.getItem('promptsCollapsed') ?? '{}'),
-  )
-  const toggleZone = (key: string) =>
-    setCollapsed((c) => {
-      const next = { ...c, [key]: !c[key] }
-      sessionStorage.setItem('promptsCollapsed', JSON.stringify(next))
-      return next
-    })
-  // Phone width folds the action buttons into one Options menu and shortens the nesting indent
-  // both change the shape of the row, which is more than a stylesheet can say.
+  // Phone width folds the action buttons into one Options menu: that changes the shape of the row,
+  // which is more than a stylesheet can say.
   const mobile = useMediaQuery('(max-width: 700px)')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useCloseOnOutside(menuOpen, () => setMenuOpen(false))
   const [bundledOpen, setBundledOpen] = useState(false)
   const bundledRef = useCloseOnOutside(bundledOpen, () => setBundledOpen(false))
   const [saved, setSaved] = useState(false)
-  // Not persisted, matching the chat list's copy of this: skipping the confirm is a decision for
-  // this sitting, not a setting that follows you into the next one.
-  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false)
-
-  const [nestError, setNestError] = useState('')
-  // After a keyboard move the card lands in a new spot; refocus it so arrows keep working.
-  const [focusId, setFocusId] = useState<string | null>(null)
-
   const fileInput = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState('')
-
-  const drag = useRef<string | null>(null)
-  // Drop targets are addressed by parent and next-sibling id, not an index: after the dragged
-  // block is pulled out of the tree every index would have shifted.
-  const [drop, setDrop] = useState<Drop | null>(null)
 
   useEffect(() => {
     load()
@@ -135,12 +82,6 @@ export default function StackEditor() {
   useEffect(() => {
     if (!writeEnabled && kind === 'story') setKind('chat')
   }, [writeEnabled, kind])
-
-  useEffect(() => {
-    if (!focusId) return
-    const el = document.querySelector<HTMLElement>(`[data-block-id="${focusId}"]`)
-    el?.focus()
-  }, [focusId, draft])
 
   const reason = draft ? validateStack(draft) : ''
 
@@ -159,22 +100,6 @@ export default function StackEditor() {
   }, [saved, reason, draft, save])
 
   if (!draft) return <p className="placeholder">Loading…</p>
-
-  // The bound sources and allowed sources for this stack's kind (chat vs story).
-  const bound = boundSources[stackKind(draft)]
-  const sources = kindSources(stackKind(draft))
-  const blocks = allBlocks(draft.active)
-  const editing = blocks.find((b) => b.id === editingId)
-  const parentOf = (id: string) =>
-    blocks.find((b) => (b.children ?? []).some((c) => c.id === id))
-  // What the picker on each card offers. One description block, not three, a bound source already
-  // used elsewhere in the stack is offered but disabled.
-  const types = kindTypes(sources)
-  const takenTypes = (block: PromptBlock, nested: boolean): BlockType[] => [
-    ...blocks.filter((b) => b.id !== block.id).map((b) => b.source).filter((s) => bound.includes(s)),
-    // Chat History's turns carry their own roles. It can't sit inside another block.
-    ...(nested ? (['chatHistory'] as BlockType[]) : []),
-  ]
 
   // An imported file lands as a new stack of its own kind, and becomes the active one. It never
   // overwrites the stack you were looking at.
@@ -203,159 +128,6 @@ export default function StackEditor() {
   function change(next: PromptStack) {
     setDraft(next)
     setSaved(false)
-    setNestError('')
-  }
-
-  function move(target: Drop) {
-    const fromId = drag.current
-    if (!fromId || !draft) return
-    const block = findBlock(draft.active, fromId)
-    if (!block || target.beforeId === fromId) return
-    if (block.source === 'chatHistory' && target.parentId !== null) {
-      setNestError("Chat History can't go inside another block, its turns carry their own roles.")
-      return
-    }
-    // Dropping a container into its own subtree would detach both from the tree.
-    if (target.parentId && contains(block, target.parentId)) return
-
-    const pruned = removeBlock(draft.active, fromId)
-    change({ ...draft, active: insertBlock(pruned, block, target.parentId, target.beforeId) })
-  }
-
-  function moveBlock(id: string, dir: MoveDir) {
-    if (!draft) return
-    const next = moveByKey(draft.active, id, dir)
-    if (!next) return // edge of the list, already top level, or a nest Chat History can't take
-    change({ ...draft, active: next })
-    setFocusId(id) // the card moved in the tree; put focus back on it
-  }
-
-  function replaceBlock(block: PromptBlock, closeModal = true) {
-    if (!draft) return
-    change({ ...draft, active: replaceInTree(draft.active, block) })
-    if (closeModal) setEditingId(null)
-  }
-
-  function deleteBlock(id: string) {
-    if (!draft) return
-    // The only delete path for a block. The confirm belongs here rather than in the modal.
-    const block = findBlock(draft.active, id)
-    if (!skipDeleteConfirm && block) {
-      const nested = block.children?.length ? ' and the blocks inside it' : ''
-      if (!confirm(`Delete "${block.label}"${nested}?`)) return
-    }
-    // Children go with the parent: a wrapper's contents don't outlive their tags.
-    change({ ...draft, active: removeBlock(draft.active, id) })
-    setEditingId(null)
-  }
-
-  function append(block: PromptBlock, edit: boolean) {
-    if (!draft) return
-    change({ ...draft, active: [...draft.active, block] })
-    if (edit) setEditingId(block.id)
-  }
-
-  // Every block starts as freeform text at the bottom of the stack; the picker on the card is
-  // where it becomes something else.
-  const addBlock = () => append(newBlock({ label: nextBlockLabel(draft) }), false)
-
-  const setType = (block: PromptBlock, type: BlockType) =>
-    replaceBlock(applyType(block, type), false)
-
-  function addChildBlock(parentId: string) {
-    if (!draft) return
-    const child = newBlock({ label: nextBlockLabel(draft), role: findBlock(draft.active, parentId)!.role })
-    change({ ...draft, active: addChild(draft.active, parentId, child) })
-    setEditingId(child.id)
-  }
-
-  function isDropHere(parentId: string | null, beforeId: string | null) {
-    return drop?.parentId === parentId && drop.beforeId === beforeId
-  }
-
-  function renderList(list: PromptBlock[], parentId: string | null, depth: number) {
-    const step = mobile ? 8 : 20
-    return (
-      <>
-        {list.map((block, i) => (
-          <div key={block.id}>
-            {isDropHere(parentId, block.id) && (
-              <div className="dropLine" style={indent(depth, step)} />
-            )}
-            <div style={indent(depth, step)}>
-              <BlockCard
-                block={block}
-                types={types}
-                takenTypes={takenTypes(block, parentId !== null)}
-                onClick={() => setEditingId(block.id)}
-                onType={(type) => setType(block, type)}
-                onAddChild={() => addChildBlock(block.id)}
-                onToggle={() => replaceBlock({ ...block, disabled: !block.disabled }, false)}
-                onMove={(dir) => moveBlock(block.id, dir)}
-                onDragStart={() => (drag.current = block.id)}
-                onDragOver={(before) =>
-                  // Below the midpoint means "in front of my next sibling". A container's
-                  // whole subtree stays together.
-                  setDrop({ parentId, beforeId: before ? block.id : (list[i + 1]?.id ?? null) })
-                }
-              />
-            </div>
-            {block.children && renderList(block.children, block.id, depth + 1)}
-          </div>
-        ))}
-
-        {isDropHere(parentId, null) && <div className="dropLine" style={indent(depth, step)} />}
-
-        {parentId !== null && list.length === 0 && (
-          <div
-            className="childSlot"
-            style={indent(depth, step)}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setDrop({ parentId, beforeId: null })
-            }}
-          />
-        )}
-      </>
-    )
-  }
-
-  function renderZone(title: string, hint: ReactNode) {
-    const list = draft!.active
-    if (collapsed.active) return <CollapseRail label={title} onToggle={() => toggleZone('active')} />
-    return (
-      <section
-        className="panel stackZone"
-        onDragOver={(e) => {
-          e.preventDefault()
-          // Bare zone background: land at the end of the top level, not inside anything.
-          if (e.target === e.currentTarget) setDrop({ parentId: null, beforeId: null })
-        }}
-        onDrop={(e) => {
-          e.preventDefault()
-          move(drop ?? { parentId: null, beforeId: null })
-          drag.current = null
-          setDrop(null)
-        }}
-        onDragEnd={() => {
-          drag.current = null
-          setDrop(null)
-        }}
-      >
-        <div className="zoneHeader">
-          <CollapseButton label={title} collapsed={false} onToggle={() => toggleZone('active')} />
-          <h3>{title}</h3>
-          <button type="button" onClick={addBlock}>
-            Add block
-          </button>
-        </div>
-        <p className="hint">{hint}</p>
-        <div className="blockList">
-          {renderList(list, null, 0)}
-          {list.length === 0 && <p className="placeholder">Drop blocks here.</p>}
-        </div>
-      </section>
-    )
   }
 
   // One list feeding both shapes: buttons on the row at desktop width, the Options menu below it on
@@ -366,7 +138,6 @@ export default function StackEditor() {
     ...(kind === 'chat' && multiplayerEnabled
       ? [{ label: 'New multiplayer', run: () => create('chat', 'multiplayer') }]
       : []),
-    { label: 'Preview', run: () => setPreviewOpen(true) },
     { label: 'Duplicate', run: () => duplicate(draft.id!) },
     { label: 'Import', run: () => fileInput.current?.click(), icon: <RiUploadLine size={14} /> },
     { label: 'Export', run: () => exportStack(draft), icon: <RiDownloadLine size={14} /> },
@@ -548,17 +319,7 @@ export default function StackEditor() {
             tokens
           </label>
         )}
-        <label className="blockDeleteToggle">
-          <input
-            type="checkbox"
-            checked={skipDeleteConfirm}
-            onChange={(e) => setSkipDeleteConfirm(e.target.checked)}
-          />
-          Delete blocks without confirming
-        </label>
       </div>
-
-      {nestError && <p className="error">{nestError}</p>}
 
       {tab === 'misc' ? (
         <div className="screenBody">
@@ -570,35 +331,51 @@ export default function StackEditor() {
         </div>
       ) : (
         <div className="screenBody zones">
-          {renderZone(
-            'Active stack',
-            'Assembled top to bottom. “+” on a block nests another inside it.',
-          )}
-          <VariablesPanel stack={draft} onChange={change} />
+          <section className="panel stackZone promptsTemplateZone">
+            <div className="zoneHeader">
+              <h3>Template</h3>
+            </div>
+            <TemplateEditor value={draft.template} kind={kind} onChange={(template) => change({ ...draft, template })} />
+          </section>
+          <PromptPreview stack={draft} />
+          {kind === 'chat' && <TemplateAsk stack={draft} onChange={change} />}
         </div>
       )}
 
-      {previewOpen && (
-        <div className="dialogBackdrop" onClick={() => setPreviewOpen(false)}>
-          <div className="panel dialog promptsPreviewDialog" onClick={(e) => e.stopPropagation()}>
-            <PromptPreview stack={draft} onClose={() => setPreviewOpen(false)} />
-          </div>
-        </div>
-      )}
-
-      {editing && (
-        <BlockModal
-          block={editing}
-          kind={kind}
-          nested={!!parentOf(editing.id)}
-          variables={draft.variables ?? []}
-          onChange={(b) => replaceBlock(b, false)}
-          onDelete={() => deleteBlock(editing.id)}
-          onClose={() => setEditingId(null)}
-        />
-      )}
     </div>
   )
 }
 
-// native HTML5 DnD, no touch support, no keyboard reorder. dnd-kit if that bites.
+/** Registers Ask on the template tab: talk about the template, and a reply carrying a new one applies it. */
+function TemplateAsk({ stack, onChange }: { stack: PromptStack; onChange: (stack: PromptStack) => void }) {
+  const latest = useRef({ stack, onChange })
+  latest.current = { stack, onChange }
+  const askContext = useMemo<AskContext>(
+    () => ({
+      id: 'template',
+      label: 'Prompt stacks → Template',
+      info: 'Sends the whole template. A reply with a new template applies it.',
+      run: async (text, signal, connection, history) => {
+        const { stack: current } = latest.current
+        const system = xeniaPrompt('stackAsk', useSettings.getState().xeniaPrompts)
+        const messages = buildTemplateMessages(system, history, text, current.template)
+        let reply = ''
+        for await (const chunk of sendMessage(messages, connection, signal)) reply += chunk.content ?? ''
+        const parsed = parseTemplateReply(reply)
+        if (parsed.template === undefined) return { reply: parsed.text }
+        const before = current.template
+        // ponytail: writes over the draft as it was at send time, like the Look ask.
+        latest.current.onChange({ ...current, template: parsed.template })
+        return {
+          reply: `${parsed.text}
+
+Template updated.`.trim(),
+          undo: () => latest.current.onChange({ ...latest.current.stack, template: before }),
+        }
+      },
+    }),
+    [],
+  )
+  useAskContext(askContext)
+  return null
+}

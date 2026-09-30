@@ -2,7 +2,7 @@
 // Nothing here writes to a store or to Dexie. The panel decides which parts get applied.
 import type { Connection, TagRule } from '../stores/settingsStore.ts'
 import type { InstructTemplate, NamesBehavior, ParamDef, ParamValue } from '../params/paramDef.ts'
-import type { PromptBlock, PromptStack, StackVariable } from '../storage/types.ts'
+import type { PromptStack, StackVariable } from '../storage/types.ts'
 import { currentOwnerId } from '../storage/storageInterface.ts'
 import { validateStack } from '../../modules/prompts/stackKinds.ts'
 import { sectionsOf, sniffShape } from './stShapes.ts'
@@ -10,7 +10,7 @@ import type { StBundle, StInstruct, StShape } from './stShapes.ts'
 import { paramsFromPreset } from './stSamplers.ts'
 import { blocksFromStoryString } from './stStoryString.ts'
 import { blocksFromPrompts } from './stPrompts.ts'
-import { stBlock } from './stBlock.ts'
+import { stBlock, stTemplate, type StPiece } from './stBlock.ts'
 import { rulesFromScripts } from './stRegex.ts'
 
 /** The connection fields an import can fill. The panel merges these over `newConnection()`, which
@@ -157,7 +157,7 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
   }
 
   // --- stack ------------------------------------------------------------
-  const blocks: PromptBlock[] = []
+  const blocks: StPiece[] = []
   let variables: StackVariable[] = []
   const systemPrompt = text(sections.sysprompt?.content).trim()
   if (systemPrompt) {
@@ -184,14 +184,14 @@ export function parseSillyTavern(source: string, fileName = ''): StImport {
 
   let stack: PromptStack | undefined
   if (blocks.length) {
-    if (!blocks.some((b) => b.source === 'chatHistory')) {
-      blocks.push(stBlock({ source: 'chatHistory' }))
+    if (!blocks.some((b) => b.source === 'history')) {
+      blocks.push(stBlock({ source: 'history' }))
     }
     const postHistory = text(sections.sysprompt?.post_history).trim()
     if (postHistory) {
       blocks.push(stBlock({ label: 'Post-history instructions', content: postHistory }))
     }
-    stack = { ownerId: currentOwnerId(), name: label, kind: 'chat', active: blocks, ...(variables.length ? { variables } : {}) }
+    stack = { ownerId: currentOwnerId(), name: label, kind: 'chat', template: stTemplate(blocks, variables) }
     const nudge = text(sections.chat?.continue_nudge_prompt).trim()
     if (nudge) stack.miscPrompts = { continue: nudge }
     // Regex scripts become the stack's own text rule set, picked per chat.

@@ -27,6 +27,7 @@ import { rewritePrompt } from '../prompt/rewrite'
 import { deletedSwipes, instructionChain, regenerated, selectSwipe, swipeIndex } from './swipes'
 import { countTokens, loadTokenizer, perMessageOverhead } from '../prompt/budget'
 import { tokenizerFor } from '../prompt/tokenizers'
+import { withPlaceholder } from '../prompt/miscPrompts'
 import { activeConnection } from './settingsStore'
 import { resolveParams } from '../settings/resolveParams'
 import { useStacks } from './stacksStore'
@@ -809,7 +810,7 @@ export const useWrite = create<WriteState>()((set, get) => ({
         },
         budget,
       )
-      for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
+      for await (const chunk of sendMessage(prompt.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal)) {
         if (chunk.content) {
           text += chunk.content
           set({ streamingText: text })

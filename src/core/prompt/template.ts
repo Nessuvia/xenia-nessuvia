@@ -1,6 +1,6 @@
 // Extension-ful imports on purpose: checkTemplate.ts runs this under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.
-import type { Character, PromptBlock, StackVariable } from '../storage/types'
+import type { Character, StackVariable } from '../storage/types'
 import { isNarrator } from '../multiplayer/narrator.ts'
 import { castSlots } from './swapTokens.ts'
 import { rollDice, rollInline } from './dice.ts'
@@ -39,8 +39,11 @@ export function promptConditions(speaker: Character, cast?: Character[], game?: 
   return flags
 }
 
+/** A list variable's items: its non-blank lines, trimmed. */
+export const listItems = (value: string) => value.split('\n').map((s) => s.trim()).filter(Boolean)
+
 /**
- * A stack's variables by lowercased id. A range reads as `{{id_start}}` and `{{id_end}}`. A dice
+ * A stack's variables by lowercased id. A list reads as its items joined by its `sep`. A range reads as `{{id_start}}` and `{{id_end}}`. A dice
  * variable is rolled here, once per call: call this once per send and every block sees one number.
  * A malformed expression leaves `{{id}}` unresolved, where it shows in the preview.
  */
@@ -51,6 +54,8 @@ export function variableValues(variables: StackVariable[] | undefined, random: (
     if (v.kind === 'dice') {
       const total = rollDice(v.value, random)
       if (total !== undefined) out[id] = total
+    } else if (v.kind === 'list') {
+      out[id] = listItems(v.value).join(v.sep)
     } else if (Array.isArray(v.value)) {
       out[`${id}_start`] = v.value[0]
       out[`${id}_end`] = v.value[1]
@@ -109,19 +114,6 @@ export function mentionsCondition(text: string, name: string): boolean {
   return text.split(tagPattern).some((piece) => {
     const found = directive(piece)
     return found?.name === wanted && (found.keyword === 'if' || found.keyword === 'elif')
-  })
-}
-
-/**
- * The same question asked of a whole prompt stack. Walks children and skips a disabled block,
- * which contributes nothing to a prompt and so shouldn't count as the stack having an opinion.
- */
-export function blocksMentionCondition(blocks: PromptBlock[], name: string): boolean {
-  return blocks.some((block) => {
-    if (block.disabled) return false
-    if (mentionsCondition(block.content, name)) return true
-    if (mentionsCondition(block.closeContent ?? '', name)) return true
-    return blocksMentionCondition(block.children ?? [], name)
   })
 }
 
@@ -236,7 +228,8 @@ function resolveInline(line: string, flags: PromptConditions): string {
   return out.join('')
 }
 
-const varPattern = /\{\{([A-Za-z0-9_]+)\}\}/g
+// Spaces inside the braces are allowed, as in Jinja: `{{ length }}`.
+const varPattern = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g
 
 /**
  * Resolves Django-style tags, then a stack's `{{variable}}`s, then inline `{{roll::1d20}}`s. Runs before token substitution: a
@@ -265,45 +258,4 @@ export function resolveTemplate(text: string, conditions: PromptConditions, vars
       return value === undefined ? whole : String(value)
     }),
   )
-}
-
-/** A block's `when`: one `{% if %}` expression without the braces. Undefined when it isn't one. */
-export function parseCondition(expr: string): Directive | undefined {
-  const found = directive(`{% if ${expr.trim()} %}`)
-  return found?.keyword === 'if' && found.name ? found : undefined
-}
-
-/** Whether a block's `when` holds. Blank holds. Malformed is false, the same as an unknown name. */
-export function conditionHolds(expr: string | undefined, flags: PromptConditions): boolean {
-  if (!expr?.trim()) return true
-  const found = parseCondition(expr)
-  if (!found) return false
-  return holds(flags[found.name], found.op, found.value) !== found.negated
-}
-
-/**
- * The stack as this send sees it: a block whose `when` fails is switched off, its children with it.
- * Everything downstream already skips a disabled block, so a condition needs no other handling.
- */
-export function applyConditions(blocks: PromptBlock[], flags: PromptConditions): PromptBlock[] {
-  return blocks.map((b) => {
-    if (b.disabled) return b
-    if (!conditionHolds(b.when, flags)) return { ...b, disabled: true }
-    return b.children ? { ...b, children: applyConditions(b.children, flags) } : b
-  })
-}
-
-// Flags every send carries, whatever the stack declares. Trackers and game kinds also exist but come
-// from the card and the game, which the stack editor can't see.
-const builtInFlags = new Set(['narrator', 'game', 'char1', 'char2', 'char3', 'char4'])
-
-/** Why a `when` won't work, for the editor. Empty when it's fine or blank. */
-export function conditionProblem(expr: string | undefined, variables: StackVariable[] | undefined): string {
-  if (!expr?.trim()) return ''
-  const found = parseCondition(expr)
-  if (!found) return 'Not a condition. Write it the way it goes inside {% if %}.'
-  const names = new Set(Object.keys(variableValues(variables)))
-  for (const v of variables ?? []) names.add(v.id.toLowerCase())
-  if (builtInFlags.has(found.name) || names.has(found.name)) return ''
-  return `No variable named ${found.name}. A tracker key also works here.`
 }

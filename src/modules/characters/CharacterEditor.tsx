@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { newCharacter, useCharacters } from '../../core/stores/charactersStore'
 import { useSettings, useActiveConnection } from '../../core/stores/settingsStore'
 import { ColorInput } from '../../app/ColorInput'
-import type { BlockSource, Character } from '../../core/storage/types'
-import { sourceLabels } from '../prompts/blockTypes'
+import type { Character } from '../../core/storage/types'
 import ParamEditor from './ParamEditor'
 import AvatarCropDialog from './AvatarCropDialog'
 import GalleryLightbox from './GalleryLightbox'
@@ -19,7 +18,7 @@ import LorebookTab from './LorebookTab'
 import TrackersSection from './TrackersSection'
 import TagChips from './TagChips'
 import { useStacks } from '../../core/stores/stacksStore'
-import { hasSource } from '../prompts/stackKinds'
+import { usesSlot } from '../../core/prompt/stackTemplate'
 
 // Identity and Metadata were Main and About: neither said what it held, and the labels are the
 // first thing anyone reads when working out what a card is made of.
@@ -142,12 +141,12 @@ export default function CharacterEditor({
     setSaved(false)
   }
 
-  // The default stacks carry neither block, so text typed above goes nowhere until someone adds
+  // The default stacks use neither slot, so text typed above goes nowhere until someone adds
   // one. Say so rather than let it fail quietly. Silent only when the field is empty, a blank
   // field has nothing to drop.
-  const missingBlock = (source: BlockSource, value: string | undefined) =>
-    value?.trim() && activeStack && !hasSource(activeStack, source) ? (
-      <p className="hint">The active prompt stack has no {sourceLabels[source]} block. This text isn't sent.</p>
+  const missingSlot = (slot: string, value: string | undefined) =>
+    value?.trim() && activeStack && !usesSlot(activeStack.template, slot) ? (
+      <p className="hint">The active prompt stack has no {`{{ ${slot} }}`}. This text isn't sent.</p>
     ) : null
 
   const set = <K extends keyof Character>(key: K, value: Character[K]) =>
@@ -700,7 +699,7 @@ export default function CharacterEditor({
                 Used by a Character system prompt block. Empty uses the block's own text.{' '}
                 {'{{original}}'} inserts that text.
               </p>
-              {missingBlock('characterSystemPrompt', draft.systemPrompt)}
+              {missingSlot('systemPrompt', draft.systemPrompt)}
 
               <label title="Replaces the text of a Character post-history instructions block. Sent after the chat history.">
                 Post-history instructions
@@ -710,7 +709,7 @@ export default function CharacterEditor({
                   onChange={(e) => set('postHistoryInstructions', e.target.value)}
                 />
               </label>
-              {missingBlock('characterPostHistory', draft.postHistoryInstructions)}
+              {missingSlot('postHistory', draft.postHistoryInstructions)}
 
               {connection ? (
                 <>

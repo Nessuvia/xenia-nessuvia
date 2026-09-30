@@ -1,10 +1,11 @@
 // Extension-ful imports on purpose: checkBuildStoryPrompt.ts runs this under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports.
 import type { ChatMessage } from '../connectors/connectorInterface'
-import type { BlockContext, PromptBlock, PromptStack } from '../storage/types'
+import type { BlockContext, PromptStack } from '../storage/types'
 import type { GuideChapter } from './chapterGuide.ts'
 import { fitStoryProse, storyProseSplit } from './chapterGuide.ts'
-import { applyConditions, resolveTemplate, variableValues, type VariableValues } from './template.ts'
+import { resolveTemplate, variableValues } from './template.ts'
+import { stackParts, stackVariables, templateBody, usesSlot } from './stackTemplate.ts'
 import { swapStoryTokens } from './storyTokens.ts'
 import type { Budget } from './budget.ts'
 import { countTokens, perMessageOverhead } from './budget.ts'
@@ -31,18 +32,9 @@ export function castText(members: CastMember[]): string {
     .join('\n\n')
 }
 
-/** The text a bound source stands for. `story` varies between the two render passes. `tokens` is
- *  the Story token table, see storyTokens.ts. */
-interface Bound {
-  cast: string
-  story: string
-  storyTrailing: string
-  worldInfo: string
-  worldInfoAfter: string
-  tokens: Record<string, string>
-  /** The stack's variables. A Story has no speaker or cast flags, so these are all `{% if %}` sees. */
-  vars: VariableValues
-}
+// The text a Story template pulls in. Filled after the Story tokens are swapped: a {{token}} the
+// Author typed into their manuscript is manuscript.
+const slotPattern = /\{\{\s*(cast|storyContext|storyTrailing|worldInfo|worldInfoAfter)\s*\}\}/gi
 
 /**
  * The Story prose as the text a lorebook key is scanned against, newest last. An entry's scan depth
@@ -55,61 +47,6 @@ export function storyScanText(story: string, extra: string[] = []): { content: s
     .map((content) => content.trim())
     .filter((content) => content)
     .map((content) => ({ content }))
-}
-
-/**
- * A block's own text, token-swapped. Story tokens reach a block's `content` and `closeContent` and
- * nothing else: the prose a bound source pastes in is the manuscript, and a {{token}} the Author
- * typed into their manuscript is manuscript.
- */
-const ownText = (text: string | undefined, bound: Bound) =>
-  swapStoryTokens(resolveTemplate(text ?? '', {}, bound.vars), bound.tokens)
-
-/** A bound block wrapped in its own open/close text (e.g. `<cast>...</cast>`). */
-function wrap(block: PromptBlock, inner: string, bound: Bound): string {
-  return [ownText(block.content, bound), inner, ownText(block.closeContent, bound)]
-    .filter((t) => t && t.trim())
-    .join('\n')
-}
-
-/**
- * A block's text: own content, children, then its closing text. Bound sources resolve to their
- * content wherever they sit: a Cast block nested inside a `<character>` wrapper contributes the
- * same text it'd at the top level, just indented into the parent's join.
- */
-function blockText(block: PromptBlock, bound: Bound): string {
-  if (block.disabled) return ''
-  switch (block.source) {
-    case 'cast':
-      return wrap(block, bound.cast, bound)
-    case 'storyContext':
-      return wrap(block, bound.story, bound)
-    case 'storyTrailing':
-      // Guarded rather than left to `wrap`: this block carries instruction text of its own ("must
-      // lead into the text below"), and with no caret there's no text below for it to point at.
-      return bound.storyTrailing.trim() ? wrap(block, bound.storyTrailing, bound) : ''
-    // Guarded for the same reason: a `<world_info>` wrapper around nothing is worse than no block.
-    case 'worldInfo':
-      return bound.worldInfo.trim() ? wrap(block, bound.worldInfo, bound) : ''
-    case 'worldInfoAfter':
-      return bound.worldInfoAfter.trim() ? wrap(block, bound.worldInfoAfter, bound) : ''
-    default: {
-      const own = block.source === 'text' ? ownText(block.content, bound) : ''
-      const parts = [
-        own,
-        ...(block.children ?? []).map((c) => blockText(c, bound)),
-        ownText(block.closeContent, bound),
-      ]
-      return parts.filter((t) => t.trim()).join('\n')
-    }
-  }
-}
-
-/** Is there an enabled Story-context block anywhere in the tree? */
-function hasStory(blocks: PromptBlock[]): boolean {
-  return blocks.some(
-    (b) => !b.disabled && (b.source === 'storyContext' || hasStory(b.children ?? [])),
-  )
 }
 
 /**
@@ -202,7 +139,7 @@ export function storyFit(
 export interface BuildStoryArgs {
   stack: PromptStack
   castText: string
-  /** The Story token table (`storyTokens`), substituted into every block's own text. */
+  /** The Story token table (`storyTokens`), substituted into the template text, never the prose. */
   tokens: Record<string, string>
   storyText: string
   /**
@@ -215,10 +152,10 @@ export interface BuildStoryArgs {
    */
   fitStoryText?: (available: number) => string
   /** Prose after the caret, to the end of the active Chapter. '' when generating at the end, which
-   *  is the common case. The block then renders empty and drops out. */
+   *  is the common case. The slot renders empty. */
   storyTrailing?: string
   /** What the Story's lorebooks matched, already budgeted. `atDepth` entries have nowhere to go in
-   *  Write mode (there's no history to splice into). Only the two block-shaped slots arrive
+   *  Write mode (there's no history to splice into). Only the two slots arrive
    *  here. Absent = no books, or nothing matched. */
   worldInfo?: { before: string; after: string }
   direction: string
@@ -235,8 +172,8 @@ export interface BuiltStoryPrompt {
 }
 
 /**
- * Assembles a Write-mode request. The active Story stack places the fixed prefix (Cast, freeform
- * blocks); Story context expands to as much prose as the budget holds, cut by `fitStoryText`;
+ * Assembles a Write-mode request. The active Story stack's template places the fixed prefix;
+ * `{{ storyContext }}` expands to as much prose as the budget holds, cut by `fitStoryText`;
  * the Direction rides last as a separate user turn, never merged into the prose. See the master's
  * Context assembly. Budget = the active connection's contextLimit.
  *
@@ -252,25 +189,36 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
 
   // Rendered twice with the same walk: once with no prose to price the fixed cost, once with the
   // prose the budget allowed. Anything but the Story text is identical between the passes: the
-  // two runs line up 1:1 and the trim can't shift a block into or out of the prompt.
+  // two runs line up 1:1 and the trim can't shift text into or out of the prompt.
   const worldInfo = args.worldInfo?.before ?? ''
   const worldInfoAfter = args.worldInfo?.after ?? ''
-  const vars = variableValues(stack.variables)
-  const active = applyConditions(stack.active, vars)
+  const vars = variableValues(stackVariables(stack))
+  // A Story has no speaker or cast flags. What it has is whether each slot holds anything, so a
+  // wrapper like `<world_info>` can sit in `{% if worldInfo %}` and drop out with nothing inside.
+  const flags = {
+    cast: Boolean(cast.trim()),
+    storytrailing: Boolean(storyTrailing.trim()),
+    worldinfo: Boolean(worldInfo.trim()),
+    worldinfoafter: Boolean(worldInfoAfter.trim()),
+  }
+  const parts = stackParts(resolveTemplate(templateBody(stack.template), flags, vars))
 
   const render = (story: string) => {
+    const slots: Record<string, string> = {
+      cast,
+      storycontext: story,
+      storytrailing: storyTrailing,
+      worldinfo: worldInfo,
+      worldinfoafter: worldInfoAfter,
+    }
     const turns: ChatMessage[] = []
-    for (const block of active) {
-      const content = blockText(block, {
-        cast,
-        story,
-        storyTrailing,
-        worldInfo,
-        worldInfoAfter,
-        tokens,
-        vars,
-      })
-      if (content.trim()) turns.push({ role: block.role, content })
+    for (const part of parts) {
+      if (part.kind !== 'text') continue
+      const content = swapStoryTokens(part.text, tokens)
+        .replace(slotPattern, (_whole, name: string) => slots[name.toLowerCase()] ?? '')
+        .replace(/\n(?:[ \t]*\n){2,}/g, '\n\n')
+        .trim()
+      if (content) turns.push({ role: part.role, content })
     }
     return turns
   }
@@ -284,7 +232,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
 
   let storyIncluded = ''
   let droppedChars = 0
-  if (hasStory(active) && storyText.trim()) {
+  if (usesSlot(stack.template, 'storyContext') && storyText.trim()) {
     if (budget) {
       const margin = (budget.contextLimit * budget.safetyMarginPct) / 100
       const available = Math.floor(budget.contextLimit - fixedTokens - budget.maxTokens - margin)
@@ -298,7 +246,7 @@ export function buildStoryPrompt(args: BuildStoryArgs, budget?: Budget): BuiltSt
   }
 
   const out: ChatMessage[] = []
-  // Neighbouring same-role turns merge: a run of system blocks is one system message.
+  // Neighbouring same-role turns merge: a run of system parts is one system message.
   const push = (role: ChatMessage['role'], content: string) => {
     const last = out.at(-1)
     if (last && last.role === role) last.content += `\n\n${content}`

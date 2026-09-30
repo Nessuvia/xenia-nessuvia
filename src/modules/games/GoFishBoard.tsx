@@ -6,6 +6,7 @@ import { winner } from '../../core/games/goFish'
 import { cardTokens, rankPlural, sortHand } from '../../core/games/deck'
 import { Card } from './Card'
 import CharacterLine from './CharacterLine'
+import { secretRanks } from '../../core/games/cardSpoilers'
 import { useCardMotion } from './useCardMotion'
 import type { HandFit } from './gamesStore'
 import { useDiffOrigin } from './useDiffOrigin'
@@ -140,7 +141,13 @@ export default function GoFishBoard({
           className={`avatar cardTableAvatar${state.turn === 'char' && !state.over ? ' cardTableAvatarActive' : ''}`}
           title={characterName}
         />
-        <CharacterLine line={line} streaming={streaming} awaitingNext={awaitingNext} onNext={onNext} />
+        <CharacterLine
+          line={line}
+          secret={secretRanks(state)}
+          streaming={streaming}
+          awaitingNext={awaitingNext}
+          onNext={onNext}
+        />
       </div>
 
       <div className="cardTableField">
@@ -199,7 +206,7 @@ export default function GoFishBoard({
                 locked || !myTurn
                   ? undefined
                   : () => {
-                      setText(`got any ${rankPlural(card.rank)}`)
+                      setText(`Got any ${rankPlural(card.rank)}?`)
                       if (autoSend) setArmed((n) => n + 1)
                     }
               }

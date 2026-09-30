@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { storage } from '../storage/db'
 import { buildTablePayload } from '../storage/backup'
 import { hashPayload } from '../storage/tablePayload'
-import { askKey, keepDeviceFields, settingsKey } from './settingsObject'
+import { keepDeviceFields, settingsKey } from './settingsObject'
 import { tableNames, type TableName } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { TablePayload } from '../storage/tablePayload'
@@ -228,21 +228,12 @@ export const useSync = create<SyncState>()((set, get) => ({
         step('Uploading settings...', queue.length, total)
         const json = localStorage.getItem(settingsKey) ?? '{}'
         await client.pushTable('settings', json, await hashPayload(json))
-        const ask = localStorage.getItem(askKey)
-        // Nothing written in Ask yet on this device. Uploading '{}' over the other device's
-        // scratchpad would be a silent delete.
-        if (ask !== null) await client.pushTable('ask', ask, await hashPayload(ask))
         step(`Uploaded settings, ${size(new Blob([json]).size)}.`, queue.length + 1, total)
       } else if (settingsDirection === 'pull') {
         step('Downloading settings...', queue.length, total)
         const object = await client.pullTable('settings')
         if (!object) throw new Error('The bucket has no settings to download.')
-        // Absent in a bucket last written before Ask was synced. Leaving this device's scratchpad
-        // alone is the right answer either way. Both reads happen before either write: a failed
-        // request must not leave localStorage half replaced.
-        const ask = await client.pullTable('ask')
         localStorage.setItem(settingsKey, keepDeviceFields(object.json, localStorage.getItem(settingsKey)))
-        if (ask) localStorage.setItem(askKey, ask.json)
         settingsPulled = true
         step('Downloaded settings.', queue.length + 1, total)
       }

@@ -7,7 +7,7 @@ import type { Character, Chat, Message, PromptStack, SpeakerAs } from '../storag
 import { sendMessage } from '../connectors/openaiCompatible'
 import { snapshotOf } from '../connectors/snapshot'
 import { buildPrompt } from '../prompt/buildPrompt'
-import { blocksMentionCondition } from '../prompt/template'
+import { mentionsCondition } from '../prompt/template'
 import { loadTokenizer } from '../prompt/budget'
 import { reasoningSpan } from '../prompt/reasoning'
 import { expandedPrefill } from '../prompt/flattenPrompt'
@@ -50,7 +50,7 @@ import { parseAcrostic, parsedEnough, type AcrosticRecord } from '../agent/acros
 import { acrosticWindow } from '../agent/acrostic/window'
 import { acrosticGrammar, acrosticMessages, slotTag } from '../prompt/acrosticPrompt'
 import { ideaInstruction } from '../prompt/ideasPrompt'
-import { miscPrompt } from '../prompt/miscPrompts'
+import { miscPrompt, withPlaceholder } from '../prompt/miscPrompts'
 import { useIdeas } from './ideasStore'
 import { defaultTemplate } from '../params/paramDef'
 import type { ChatMessage } from '../connectors/connectorInterface'
@@ -936,11 +936,11 @@ export const useChats = create<ChatState>()((set, get) => ({
       let passReads: Reading[] | undefined
       try {
         const stack = await stackFor(chat)
-        // Blocks first, the stack's Narrator misc prompt second. A stack with an `{% if Narrator %}`
+        // The template first, the stack's Narrator misc prompt second. A stack with an `{% if Narrator %}`
         // branch has already said what the Narrator is, and handing it the misc prompt as well would
         // be two voices arguing. Only a stack that never mentions the Narrator gets the fallback,
         // which rides in on the card's systemPrompt so it lands where a character's own would.
-        const told = blocksMentionCondition(stack.active, 'narrator')
+        const told = mentionsCondition(stack.template, 'narrator')
           ? speaker
           : narratorCharacter(miscPrompt('narrator', stack.miscPrompts))
         const persona = await usePersonas.getState().ensureActive()
@@ -963,7 +963,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           budgetOf(connection),
         )
         set({ trimmedCount: promptMessages.droppedCount })
-        await generateReply(chat, promptMessages.messages, connection, get().messages, controller.signal, reply)
+        await generateReply(chat, promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, reply)
         text = reply.text
         reasoning = reply.reasoning
         finishReason = reply.finishReason
@@ -977,7 +977,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           const again = buildPrompt({ ...promptArgs, appendSystem: nudge }, budgetOf(connection))
           const retried = newReply()
           set({ streamingText: '' })
-          await generateReply(chat, again.messages, connection, get().messages, controller.signal, retried)
+          await generateReply(chat, again.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, retried)
           return retried.text
         }
         // The system block the prompt already built: the card, the persona and the system prompt,
@@ -1107,7 +1107,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         budgetOf(connection),
       )
       set({ trimmedCount: promptMessages.droppedCount })
-      await generateReply(chat, promptMessages.messages, connection, get().messages, controller.signal, reply)
+      await generateReply(chat, promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, reply)
       text = reply.text
       reasoning = reply.reasoning
       finishReason = reply.finishReason
@@ -1270,7 +1270,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         budgetOf(connection),
       )
       set({ trimmedCount: prompt.droppedCount })
-      await generateReply(chat, prompt.messages, connection, get().messages.slice(0, at), controller.signal, reply, options?.acrostic)
+      await generateReply(chat, prompt.messages, withPlaceholder(connection, stack.miscPrompts), get().messages.slice(0, at), controller.signal, reply, options?.acrostic)
       text = reply.text
       reasoning = reply.reasoning
       finishReason = reply.finishReason
@@ -1405,7 +1405,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         budgetOf(connection),
       )
       set({ trimmedCount: prompt.droppedCount })
-      snapshot = snapshotOf(prompt.messages, connection)
+      snapshot = snapshotOf(prompt.messages, withPlaceholder(connection, stack.miscPrompts))
       // Deliberately not passed. A continuation's reply is the accepted prefix plus
       // what the model just added, and `continued` writes the whole thing back over the swipe. A
       // second pass would edit text the user already kept. Wiring it needs the pass to be told which
@@ -1414,7 +1414,7 @@ export const useChats = create<ChatState>()((set, get) => ({
       // The pass is skipped here for the same reason, and more strongly: a rewrite stage remakes a whole
       // passage rather than a flagged span. It'd restate the prefix the user accepted. The
       // manual action on the message is how a continued reply gets rewritten.
-      for await (const chunk of sendMessage(prompt.messages, connection, controller.signal)) {
+      for await (const chunk of sendMessage(prompt.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal)) {
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
           set({ streamingReasoning: reasoning })

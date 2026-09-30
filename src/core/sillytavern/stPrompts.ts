@@ -1,30 +1,30 @@
 // A chat-completion preset's prompt list as a stack. This is the closer of the two mappings: ST's
 // `prompts` + `prompt_order` is already an ordered list of text and placeholders, which is what a
 // stack is.
-import type { BlockSource, PromptBlock, StackVariable } from '../storage/types.ts'
+import type { StackVariable } from '../storage/types.ts'
 import type { StChatPreset, StPrompt } from './stShapes.ts'
-import { stBlock } from './stBlock.ts'
+import { stBlock, type StPiece, type StSource } from './stBlock.ts'
 import { convertComments, convertVariables, unmappedMacros } from './stMacros.ts'
 
 /** ST's marker identifiers, and the one non-marker identifier with a bound source of its own. */
-const identifierSources: Record<string, BlockSource> = {
+const identifierSources: Record<string, StSource> = {
   worldInfoBefore: 'worldInfo',
   worldInfoAfter: 'worldInfoAfter',
-  charDescription: 'characterDescription',
-  charPersonality: 'characterPersonality',
-  scenario: 'characterScenario',
+  charDescription: 'charDescription',
+  charPersonality: 'charPersonality',
+  scenario: 'charScenario',
   personaDescription: 'personaDescription',
-  dialogueExamples: 'characterExampleDialogue',
-  chatHistory: 'chatHistory',
+  dialogueExamples: 'charExampleDialogue',
+  chatHistory: 'history',
   // ST's name for the card's post-history instructions.
-  jailbreak: 'characterPostHistory',
+  jailbreak: 'postHistory',
 }
 
-const roleOf = (prompt: StPrompt): PromptBlock['role'] =>
+const roleOf = (prompt: StPrompt): StPiece['role'] =>
   prompt.role === 'user' || prompt.role === 'assistant' ? prompt.role : 'system'
 
 export interface PromptsImport {
-  blocks: PromptBlock[]
+  blocks: StPiece[]
   variables: StackVariable[]
   notes: string[]
 }
@@ -46,9 +46,9 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
     ? order
     : (preset.prompts ?? []).map((p) => ({ identifier: p.identifier, enabled: p.enabled !== false }))
 
-  const blocks: PromptBlock[] = []
+  const blocks: StPiece[] = []
   const notes: string[] = []
-  const used = new Set<BlockSource>()
+  const used = new Set<StSource>()
   let skippedEmpty = 0
 
   for (const entry of entries) {
@@ -66,9 +66,9 @@ export function blocksFromPrompts(preset: StChatPreset): PromptsImport {
       blocks.push(
         stBlock({
           source,
-          // characterPostHistory falls back to the block's own text when the card has none.
+          // postHistory falls back to the piece's own text when the card has none.
           // ST's jailbreak wording is worth keeping.
-          content: source === 'characterPostHistory' ? convertComments(prompt.content ?? '').content : '',
+          content: source === 'postHistory' ? convertComments(prompt.content ?? '').content : '',
           ...(disabled ? { disabled: true } : {}),
         }),
       )

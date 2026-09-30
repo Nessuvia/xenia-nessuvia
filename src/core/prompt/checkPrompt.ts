@@ -1,21 +1,17 @@
 // Run: node --experimental-strip-types src/core/prompt/checkPrompt.ts
 import assert from 'node:assert'
-import type { Character, Message, Persona, PromptBlock, PromptStack } from '../storage/types'
+import type { Character, Message, Persona, PromptStack } from '../storage/types'
 import type { Connection } from '../stores/settingsStore'
 import { resolveParams } from '../settings/resolveParams.ts'
 import { budgetOf } from '../params/connectionParams.ts'
 import { buildPrompt } from './buildPrompt.ts'
 import { characterTokens, chatTokens, swapTokens } from './swapTokens.ts'
 import { oldMessageInstruction, rewritePrompt } from './rewrite.ts'
+import { templateProblems } from './stackTemplate.ts'
 import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
 
-let n = 0
-function block(b: Partial<PromptBlock>): PromptBlock {
-  return { id: `b${++n}`, label: 'b', source: 'text', role: 'system', content: '', ...b }
-}
-
-function stack(active: PromptBlock[]): PromptStack {
-  return { ownerId: 'local', name: 's', active }
+function stack(template: string, extra?: Partial<PromptStack>): PromptStack {
+  return { ownerId: 'local', name: 's', template, ...extra }
 }
 
 /** A ResolvedWorldInfo with only the slots a case cares about filled in. */
@@ -76,9 +72,10 @@ const build = (s: PromptStack, character = damien, persona = dom) =>
 
 // --- swapTokens ---------------------------------------------------------
 assert.strictEqual(swapTokens('{{char}} and {{USER}}', { char: 'D', user: 'Dom' }), 'D and Dom')
+// Spaces inside the braces are fine; an unknown token stays literal.
 assert.strictEqual(
   swapTokens('{{persona}} {{ char }}', { char: 'D', user: 'Dom' }),
-  '{{persona}} {{ char }}',
+  '{{persona}} D',
 )
 
 // --- {{charDescription}} is the active variant, itself token-swapped ------
@@ -140,11 +137,11 @@ assert.strictEqual(
   // Outside a session there is no cast: a stray slot token stays visible.
   assert.strictEqual(swapTokens('{{char3}}', chatTokens(damien, dom)), '{{char3}}')
 
-  // The full four, and a block that is nothing but empty slots is dropped rather than sent blank.
+  // The full four, and a template that is nothing but empty slots sends nothing.
   const four = chatTokens(damien, dom, [damien, mary, damien, mary])
   assert.strictEqual(swapTokens('{{char4}}', four), 'Mary')
   const built = buildPrompt({
-    stack: stack([block({ content: '{{char3}}{{char4}}' })]),
+    stack: stack('{{char3}}{{char4}}'),
     character: damien,
     persona: dom,
     messages: [],
@@ -171,7 +168,7 @@ assert.strictEqual(
   // Reaches the built prompt through buildPrompt's own argument.
   assert.strictEqual(
     buildPrompt({
-      stack: stack([block({ content: 'In the room:\n{{personas}}' })]),
+      stack: stack('In the room:\n{{personas}}'),
       character: damien,
       persona: dom,
       messages: [],
@@ -189,7 +186,7 @@ assert.strictEqual(
   assert.strictEqual(swapTokens('{{game}}', chatTokens(damien, dom)), '{{game}}')
   assert.strictEqual(
     buildPrompt({
-      stack: stack([block({ content: 'You are playing {{game}} against {{user}}.' })]),
+      stack: stack('You are playing {{game}} against {{user}}.'),
       character: damien,
       persona: dom,
       messages: [],
@@ -203,19 +200,17 @@ assert.strictEqual(
 {
   const mary: Character = { ...damien, name: 'Mary', description: 'keeps the bar' }
   const cast = [damien, mary]
-  const conditional = stack([
-    block({
-      content: [
-        '{% if Narrator %}',
-        'Write as the Narrator.',
-        '{{char1}} & {{char2}}',
-        '{% else %}',
-        'Write as {{char}}.',
-        '{{charDescription}}',
-        '{% endif %}',
-      ].join('\n'),
-    }),
-  ])
+  const conditional = stack(
+    [
+      '{% if Narrator %}',
+      'Write as the Narrator.',
+      '{{char1}} & {{char2}}',
+      '{% else %}',
+      'Write as {{char}}.',
+      '{{charDescription}}',
+      '{% endif %}',
+    ].join('\n'),
+  )
   const asWho = (speaker: Character) =>
     buildPrompt({ stack: conditional, character: damien, persona: dom, messages: [], speaker, cast })
       .messages[0].content
@@ -228,85 +223,75 @@ assert.strictEqual(
   assert.strictEqual(asWho(narrator), 'Write as the Narrator.\nDamien & Mary')
 
   // Slot conditions follow the cast: char3 is empty here and its branch drops.
-  const slots = stack([
-    block({ content: '{% if char2 %}\ntwo\n{% endif %}\n{% if char3 %}\nthree\n{% endif %}\ntail' }),
-  ])
+  const slots = stack('{% if char2 %}\ntwo\n{% endif %}\n{% if char3 %}\nthree\n{% endif %}\ntail')
   assert.strictEqual(
     buildPrompt({ stack: slots, character: damien, persona: dom, messages: [], cast }).messages[0]
       .content,
     'two\ntail',
   )
 
-  // Outside a session no slot is filled: a cast branch drops and the block goes empty.
+  // Outside a session no slot is filled: a cast branch drops and the template goes empty.
   const built = buildPrompt({
-    stack: stack([block({ content: '{% if char1 %}\n{{char1}}\n{% endif %}' })]),
+    stack: stack('{% if char1 %}\n{{char1}}\n{% endif %}'),
     character: damien,
     persona: dom,
     messages: [],
   })
   assert.strictEqual(built.messages.length, 0)
-  assert.deepStrictEqual(built.skipped, [{ label: 'b', reason: 'empty' }])
-
-  // A conditional cannot span two blocks: both halves stay literal text.
-  const split = buildPrompt({
-    stack: stack([block({ content: '{% if Narrator %}\na' }), block({ content: 'b\n{% endif %}' })]),
-    character: damien,
-    persona: dom,
-    messages: [],
-  }).messages
-  assert.strictEqual(split.length, 1, 'both blocks are system turns, merged into one')
-  // The blank line is the same-role merge's separator, not the parser's.
-  assert.strictEqual(split[0].content, '{% if Narrator %}\na\n\nb\n{% endif %}')
 }
 
-// --- tokens resolve in a freeform block, from card and persona alike -----
+// --- tokens resolve in a freeform template, from card and persona alike ---
 {
   const out = build(
-    stack([block({ content: '{{char}} is {{charPersonality}}; {{user}} is {{personaDescription}}' })]),
+    stack('{{char}} is {{charPersonality}}; {{user}} is {{personaDescription}}'),
     { ...damien, personality: 'terse' },
   )
   assert.strictEqual(out[0].content, 'Damien is terse; Dom is a travelling bard')
 }
 
-// --- stack variables resolve in block text --------------------------------
+// Spaced slot names and spaced tokens both fill.
 {
-  const out = build({
-    ...stack([block({ content: 'Write about {{words_start}} to {{words_end}} words.\n{% if gore %}\nBlood.\n{% endif %}' })]),
-    variables: [
-      { id: 'words', label: 'Words', kind: 'sliderRange', min: 0, max: 500, step: 10, value: [150, 300] },
-      { id: 'gore', label: 'Gore', kind: 'checkbox', value: false },
-    ],
+  const out = build(stack('{{ char }} / {{ charPersonality }} / {{user}}'), {
+    ...damien,
+    personality: 'terse',
   })
-  assert.strictEqual(out[0].content, 'Write about 150 to 300 words.')
+  assert.strictEqual(out[0].content, 'Damien / terse / Dom')
+}
+
+// --- declared variables resolve in the template ---------------------------
+{
+  const template = [
+    '{% var words range 0 500 10 = 150 300 %}',
+    '{% var gore checkbox = false %}',
+    'Write about {{words_start}} to {{words_end}} words.',
+    '{% if gore %}',
+    'Blood.',
+    '{% endif %}',
+  ].join('\n')
+  assert.strictEqual(build(stack(template))[0].content, 'Write about 150 to 300 words.')
+
+  // The stack's stored values win over the declared defaults.
+  const withValues = build(stack(template, { values: { words: [20, 40], gore: true } }))
+  assert.strictEqual(withValues[0].content, 'Write about 20 to 40 words.\nBlood.')
 }
 
 // --- order, merging, history in place -----------------------------------
 {
   const out = build(
-    stack([
-      block({ content: 'main {{char}}' }),
-      block({ source: 'characterDescription' }),
-      block({ source: 'chatHistory' }),
-      block({ content: 'jailbreak' }),
-    ]),
+    stack('main {{char}}\n\n{{ charDescription }}\n\n{{ history }}\n\njailbreak'),
   )
   assert.deepStrictEqual(out, [
     { role: 'system', content: 'main Damien\n\nplain description' },
     { role: 'assistant', content: 'hello {{user}}' }, // history is transcript, never substituted
     { role: 'user', content: 'hi' },
-    { role: 'system', content: 'jailbreak' }, // a block after history lands after history
+    { role: 'system', content: 'jailbreak' }, // text after history lands after history
   ])
 }
 
-// A role change breaks the merge, and order follows the array.
+// A role change breaks the merge, and order follows the template.
 {
   const out = build(
-    stack([
-      block({ content: 'one' }),
-      block({ role: 'user', content: 'two' }),
-      block({ content: 'three' }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack('one\n{% message user %}two{% endmessage %}\nthree\n{{ history }}'),
   )
   assert.deepStrictEqual(out.slice(0, 3), [
     { role: 'system', content: 'one' },
@@ -315,16 +300,10 @@ assert.strictEqual(
   ])
 }
 
-// --- empty bound blocks are dropped -------------------------------------
+// --- empty bound slots are dropped -------------------------------------
 {
   const out = build(
-    stack([
-      block({ source: 'characterPersonality' }),
-      block({ source: 'characterScenario' }),
-      block({ source: 'characterExampleDialogue' }),
-      block({ content: '   ' }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack('{{ charPersonality }}\n{{ charScenario }}\n{{ charExampleDialogue }}\n   \n{{ history }}'),
   )
   assert.deepStrictEqual(out, [
     { role: 'assistant', content: 'hello {{user}}' },
@@ -332,10 +311,10 @@ assert.strictEqual(
   ])
 }
 
-// --- a World info block takes the text the caller resolved --------------
+// --- a worldInfo slot takes the text the caller resolved ----------------
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'worldInfo' }), block({ source: 'chatHistory' })]),
+    stack: stack('{{ worldInfo }}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -344,28 +323,23 @@ assert.strictEqual(
   assert.strictEqual(out[0].content, 'CBT is a talking therapy.')
 }
 
-// --- the two slots are separate blocks ----------------------------------
+// --- the two slots are separate ----------------------------------------
 {
   const out = buildPrompt({
-    stack: stack([
-      block({ source: 'worldInfo' }),
-      block({ source: 'characterDescription' }),
-      block({ source: 'worldInfoAfter' }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack: stack('{{ worldInfo }}\n\n{{ charDescription }}\n\n{{ worldInfoAfter }}\n\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
     worldInfo: wi({ before: 'Before lore.', after: 'After lore.' }),
   }).messages
-  // All three are system blocks: they merge into one turn, in stack order.
+  // All system text: it merges into one turn, in template order.
   assert.strictEqual(out[0].content, 'Before lore.\n\nplain description\n\nAfter lore.')
 }
 
-// --- with no after block, after-char entries fold into the before one ---
+// --- with no after slot, after-char entries fold into the before one ---
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'worldInfo' }), block({ source: 'chatHistory' })]),
+    stack: stack('{{ worldInfo }}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -374,88 +348,45 @@ assert.strictEqual(
   assert.strictEqual(
     out[0].content,
     'Before lore.\nAfter lore.',
-    'a stack written before the slots split still sends everything it matched',
+    'a template without the after slot still sends everything it matched',
   )
 }
 
-// --- an entry positioned at a depth goes into history, not the block ----
+// --- an entry positioned at a depth goes into history, not the slot ----
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'worldInfo' }), block({ source: 'chatHistory' })]),
+    stack: stack('{{ worldInfo }}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
     worldInfo: wi({ atDepth: [{ depth: 1, text: 'Depth lore.' }] }),
   }).messages
-  // The block itself contributed nothing: the depth entry is the only system turn, and it sits
+  // The slot contributed nothing: the depth entry is the only system turn, and it sits
   // one message from the end rather than ahead of the whole history.
   assert.strictEqual(out.at(-1)?.content, 'hi')
   assert.ok(
     out.some((m) => m.role === 'system' && m.content === 'Depth lore.'),
     'the entry is spliced in as a system turn',
   )
-  assert.notStrictEqual(out[0].content, 'Depth lore.', 'it is not the World info block')
+  assert.notStrictEqual(out[0].content, 'Depth lore.', 'it is not the worldInfo slot')
 }
 
-// --- the at-depth block sets the role those entries go in with ----------
+// --- at-depth entries are always system turns, whatever the template says -
 {
-  const built = buildPrompt({
-    stack: stack([
-      block({ label: 'depth', source: 'worldInfoDepth', role: 'user' }),
-      block({ source: 'chatHistory' }),
-    ]),
+  const out = buildPrompt({
+    stack: stack('{% message user %}{{ worldInfo }}{% endmessage %}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
     worldInfo: wi({ atDepth: [{ depth: 1, text: 'Depth lore.' }] }),
-  })
-  // As a user turn it merges with the user message it was spliced ahead of, which is exactly what
-  // any two neighbouring same-role turns do.
-  assert.ok(
-    built.messages.some((m) => m.role === 'user' && m.content.startsWith('Depth lore.')),
-    'the block carries the role, not a hardcoded system',
-  )
-  assert.ok(
-    !built.messages.some((m) => m.role === 'system' && m.content.includes('Depth lore.')),
-  )
-  // It holds no text of its own: it is never reported as an empty block while entries match.
-  assert.deepStrictEqual(built.skipped, [])
-}
-
-// --- disabling the at-depth block drops those entries entirely ----------
-{
-  const built = buildPrompt({
-    stack: stack([
-      block({ label: 'depth', source: 'worldInfoDepth', disabled: true }),
-      block({ source: 'chatHistory' }),
-    ]),
-    character: damien,
-    persona: dom,
-    messages,
-    worldInfo: wi({ atDepth: [{ depth: 1, text: 'Depth lore.' }] }),
-  })
-  assert.ok(!built.messages.some((m) => m.content === 'Depth lore.'))
-  assert.deepStrictEqual(built.skipped, [{ label: 'depth', reason: 'disabled' }])
-}
-
-// --- an at-depth block with nothing to place reports as empty -----------
-{
-  const built = buildPrompt({
-    stack: stack([
-      block({ label: 'depth', source: 'worldInfoDepth' }),
-      block({ source: 'chatHistory' }),
-    ]),
-    character: damien,
-    persona: dom,
-    messages,
-  })
-  assert.deepStrictEqual(built.skipped, [{ label: 'depth', reason: 'empty' }])
+  }).messages
+  assert.ok(out.some((m) => m.role === 'system' && m.content === 'Depth lore.'))
 }
 
 // --- nothing matched leaves no empty turn behind ------------------------
 {
   const built = buildPrompt({
-    stack: stack([block({ label: 'wi', source: 'worldInfo' }), block({ source: 'chatHistory' })]),
+    stack: stack('{{ worldInfo }}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -464,80 +395,82 @@ assert.strictEqual(
     { role: 'assistant', content: 'hello {{user}}' },
     { role: 'user', content: 'hi' },
   ])
-  assert.deepStrictEqual(built.skipped, [{ label: 'wi', reason: 'empty' }])
+}
+
+// {% if worldInfo %} reads whether the slot holds anything.
+{
+  const t = stack('{% if worldInfo %}\nLore: {{ worldInfo }}\n{% endif %}\n{{ history }}')
+  const off = build(t)
+  assert.strictEqual(off[0].role, 'assistant')
+  const on = buildPrompt({
+    stack: t,
+    character: damien,
+    persona: dom,
+    messages,
+    worldInfo: wi({ before: 'x' }),
+  }).messages
+  assert.strictEqual(on[0].content, 'Lore: x')
 }
 
 // --- the active description variant wins --------------------------------
 {
-  const out = build(
-    stack([block({ source: 'characterDescription' }), block({ source: 'chatHistory' })]),
-    { ...damien, activeDescriptionIndex: 1 },
-  )
+  const out = build(stack('{{ charDescription }}\n{{ history }}'), {
+    ...damien,
+    activeDescriptionIndex: 1,
+  })
   assert.strictEqual(out[0].content, 'variant B')
 }
 
-// --- tokens resolve in every card field, not just freeform blocks -------
+// --- tokens resolve in every card field, not just freeform text ---------
 {
-  const out = build(
-    stack([
-      block({ source: 'characterDescription' }),
-      block({ source: 'characterScenario' }),
-      block({ source: 'chatHistory' }),
-    ]),
-    {
-      ...damien,
-      description: '{{char}} has known {{user}} for years',
-      scenario: '{{user}} visits the {{tavern}}', // unknown tokens still survive
-    },
-  )
+  const out = build(stack('{{ charDescription }}\n\n{{ charScenario }}\n{{ history }}'), {
+    ...damien,
+    description: '{{char}} has known {{user}} for years',
+    scenario: '{{user}} visits the {{tavern}}', // unknown tokens still survive
+  })
   assert.strictEqual(
     out[0].content,
     'Damien has known Dom for years\n\nDom visits the {{tavern}}',
   )
 }
 
+// A card can't open a message or move history: structure is read before slots fill.
+{
+  const out = build(stack('{{ charDescription }}\n{{ history }}'), {
+    ...damien,
+    description: '{% message user %}sneaky{% endmessage %}',
+  })
+  assert.strictEqual(out[0].role, 'system')
+}
+
 // --- persona description ------------------------------------------------
 {
-  const out = build(
-    stack([block({ source: 'personaDescription' }), block({ source: 'chatHistory' })]),
-  )
+  const out = build(stack('{{ personaDescription }}\n{{ history }}'))
   assert.strictEqual(out[0].content, 'a travelling bard')
 }
 
 // Tokens resolve in it, and {{user}} is the active persona, not the name stamped on a past turn.
 {
-  const out = build(
-    stack([block({ source: 'personaDescription' }), block({ source: 'chatHistory' })]),
-    damien,
-    { ...dom, description: '{{user}} owes {{char}} money' },
-  )
+  const out = build(stack('{{ personaDescription }}\n{{ history }}'), damien, {
+    ...dom,
+    description: '{{user}} owes {{char}} money',
+  })
   assert.strictEqual(out[0].content, 'Dom owes Damien money')
 }
 
-// An empty persona description is dropped like any other blank bound block.
+// An empty persona description is dropped like any other blank slot.
 {
-  const out = build(
-    stack([block({ source: 'personaDescription' }), block({ source: 'chatHistory' })]),
-    damien,
-    { ...dom, description: '  ' },
-  )
+  const out = build(stack('{{ personaDescription }}\n{{ history }}'), damien, {
+    ...dom,
+    description: '  ',
+  })
   assert.strictEqual(out[0].role, 'assistant')
 }
 
-// --- nesting: a wrapper block wraps its children -------------------------
+// --- wrapping text: tags and slots inside one part stay one message -------
 {
   const out = build(
-    stack([
-      block({
-        content: '<characters>',
-        closeContent: '</characters>',
-        children: [
-          block({ content: 'Damien is {{char}}.' }),
-          block({ source: 'characterDescription' }),
-        ],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack('<characters>\nDamien is {{char}}.\n{{ charDescription }}\n</characters>\n{{ history }}'),
   )
   assert.strictEqual(
     out[0].content,
@@ -545,142 +478,44 @@ assert.strictEqual(
   )
 }
 
-// Children inherit the parent's role, whatever their own says.
+// Text inside a message tag takes that role.
 {
   const out = build(
-    stack([
-      block({
-        role: 'user',
-        content: 'open',
-        closeContent: 'close',
-        children: [block({ role: 'assistant', content: 'inner' })],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack('{% message user %}\nopen\ninner\nclose\n{% endmessage %}\n{{ history }}'),
   )
   assert.deepStrictEqual(out[0], { role: 'user', content: 'open\ninner\nclose' })
 }
 
-// Arbitrary depth, and blank children just vanish.
+// A blank slot inside a wrapper vanishes; the wrapper's own lines stay.
 {
   const out = build(
-    stack([
-      block({
-        content: 'a',
-        closeContent: '/a',
-        children: [
-          block({ content: 'b', closeContent: '/b', children: [block({ content: 'deep' })] }),
-          block({ source: 'characterPersonality' }), // empty on this card
-          block({ content: '   ' }),
-        ],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack('a\n{{ charPersonality }}\nb\n{{ history }}'),
   )
-  assert.strictEqual(out[0].content, 'a\nb\ndeep\n/b\n/a')
-
-  // Display-only indent: two spaces per level, top level flush, blank lines untouched. Same tree.
-  const indented = buildPrompt({
-    stack: stack([
-      block({
-        content: 'a',
-        closeContent: '/a',
-        children: [
-          block({ content: 'b', closeContent: '/b', children: [block({ content: 'deep' })] }),
-          block({ source: 'characterPersonality' }),
-          block({ content: '   ' }),
-        ],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
-    character: damien,
-    persona: dom,
-    messages,
-    indent: true,
-  }).messages
-  assert.strictEqual(indented[0].content, 'a\n  b\n    deep\n  /b\n/a')
+  assert.strictEqual(out[0].content, 'a\n\nb')
 }
 
-// An empty container still emits its tags; a bare group emits only its children.
+// A template with nothing to say produces no message.
 {
-  const out = build(
-    stack([
-      block({ content: '<empty>', closeContent: '</empty>', children: [] }),
-      block({ content: '', closeContent: '', children: [block({ content: 'just me' })] }),
-      block({ source: 'chatHistory' }),
-    ]),
-  )
-  assert.strictEqual(out[0].content, '<empty>\n</empty>\n\njust me')
-}
-
-// A container with nothing to say at all produces no message.
-{
-  const out = build(
-    stack([
-      block({ content: '', closeContent: '', children: [block({ content: ' ' })] }),
-      block({ source: 'chatHistory' }),
-    ]),
-  )
+  const out = build(stack('   \n{{ charPersonality }}\n{{ history }}'))
   assert.strictEqual(out[0].role, 'assistant')
 }
 
-// Nested chat history contributes nothing: the editor refuses it, the builder ignores it.
+// --- template checks -----------------------------------------------------
 {
-  const out = build(
-    stack([
-      block({ content: 'open', closeContent: 'close', children: [block({ source: 'chatHistory' })] }),
-      block({ source: 'chatHistory' }),
-    ]),
+  // History inside a message tag is reported, and a chat template needs exactly one.
+  assert.ok(
+    templateProblems('{% message user %}{{ history }}{% endmessage %}', 'chat').some((p) =>
+      p.message.includes('History'),
+    ),
   )
-  assert.strictEqual(out[0].content, 'open\nclose')
-  assert.strictEqual(out.length, 3) // the top-level history block still produced its two turns
+  assert.ok(templateProblems('just text', 'chat').some((p) => p.message.includes('{{ history }}')))
+  assert.ok(templateProblems('{{ history }}{{ history }}', 'chat').some((p) => p.message.includes('Only one')))
+  assert.deepStrictEqual(templateProblems('hi\n{{ history }}', 'chat'), [])
 }
 
-// --- switched off contributes nothing, at any depth ----------------------
+// A template with no history slot sends no history at all.
 {
-  const out = build(
-    stack([
-      block({ content: 'kept' }),
-      block({ content: 'silenced', disabled: true }),
-      block({
-        content: '<wrap>',
-        closeContent: '</wrap>',
-        children: [block({ content: 'in' }), block({ content: 'out', disabled: true })],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
-  )
-  assert.strictEqual(out[0].content, 'kept\n\n<wrap>\nin\n</wrap>')
-}
-
-// A disabled container takes its children with it, however lively they are.
-{
-  const out = build(
-    stack([
-      block({
-        content: '<wrap>',
-        closeContent: '</wrap>',
-        disabled: true,
-        children: [block({ content: 'in' })],
-      }),
-      block({ source: 'chatHistory' }),
-    ]),
-  )
-  assert.strictEqual(out[0].role, 'assistant') // straight to history
-}
-
-// A disabled history block sends no history at all.
-{
-  const out = build(
-    stack([block({ content: 'only me' }), block({ source: 'chatHistory', disabled: true })]),
-  )
-  assert.deepStrictEqual(out, [{ role: 'system', content: 'only me' }])
-}
-
-// --- a parked history block produces no history -------------------------
-{
-  const history = block({ source: 'chatHistory' })
-  const out = build(stack([block({ content: 'only me' })], [history]))
+  const out = build(stack('only me'))
   assert.deepStrictEqual(out, [{ role: 'system', content: 'only me' }])
 }
 
@@ -703,13 +538,12 @@ const longHistory: Message[] = ['a', 'b', 'c', 'd'].map((content, i) => ({
   createdAt: i,
 }))
 
+const noteAt = (depth: number) => `{{ history }}\n{% depth ${depth} %}{{ authorNote }}{% enddepth %}`
+
 // Depth 2 lands two messages from the end.
 {
   const out = buildPrompt({
-    stack: stack([
-      block({ source: 'chatHistory' }),
-      block({ source: 'authorNote', depth: 2 }),
-    ]),
+    stack: stack(noteAt(2)),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -727,7 +561,7 @@ const longHistory: Message[] = ['a', 'b', 'c', 'd'].map((content, i) => ({
 // Depth past the history length clamps to the top rather than throwing.
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'chatHistory' }), block({ source: 'authorNote', depth: 99 })]),
+    stack: stack(noteAt(99)),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -737,10 +571,10 @@ const longHistory: Message[] = ['a', 'b', 'c', 'd'].map((content, i) => ({
   assert.strictEqual(out.length, 5)
 }
 
-// No depth: the block sits where it sits in the stack.
+// No depth: the slot sits where it sits in the template.
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'authorNote' }), block({ source: 'chatHistory' })]),
+    stack: stack('{{ authorNote }}\n{{ history }}'),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -752,24 +586,20 @@ const longHistory: Message[] = ['a', 'b', 'c', 'd'].map((content, i) => ({
 // An empty note produces no message at all, at any depth, and with no chat passed.
 for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   const out = buildPrompt({
-    stack: stack([
-      block({ content: 'sys' }),
-      block({ source: 'chatHistory' }),
-      block({ source: 'authorNote', depth: 2 }),
-    ]),
+    stack: stack(`sys\n{{ history }}\n{% depth 2 %}{{ authorNote }}{% enddepth %}`),
     character: damien,
     persona: dom,
     messages: longHistory,
     chat,
   }).messages
-  assert.strictEqual(out.length, 5) // one system block + four history turns
+  assert.strictEqual(out.length, 5) // one system message + four history turns
   assert.ok(!out.some((m) => m.content.includes('keep it short')))
 }
 
 // Depth 0 puts the note after the final history message.
 {
   const out = buildPrompt({
-    stack: stack([block({ source: 'chatHistory' }), block({ source: 'authorNote', depth: 0 })]),
+    stack: stack(noteAt(0)),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -780,13 +610,12 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.strictEqual(out[3].content, 'd') // the last real turn still comes before it
 }
 
-// Any block takes a depth, not only the author's note. It lands there wherever it sits.
+// Any text takes a depth, not only the author's note. It lands there wherever it sits.
 {
   const out = buildPrompt({
-    stack: stack([
-      block({ source: 'text', role: 'user', content: 'stay in character', depth: 0 }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack: stack(
+      '{% depth 0 %}{% message user %}stay in character{% endmessage %}{% enddepth %}\n{{ history }}',
+    ),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -795,31 +624,38 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.strictEqual(out[0].content, 'a')
 }
 
-// The chat's own depth beats the stack block's, and clearing it hands control back.
+// The chat's own depth beats the template's, and clearing it hands control back.
 {
-  const withBlock = stack([
-    block({ source: 'chatHistory' }),
-    block({ source: 'authorNote', depth: 2 }),
-  ])
-  const args = { stack: withBlock, character: damien, persona: dom, messages: longHistory }
+  const args = { stack: stack(noteAt(2)), character: damien, persona: dom, messages: longHistory }
   const deep = buildPrompt({ ...args, chat: { ...noteChat, authorNoteDepth: 0 } }).messages
   assert.deepStrictEqual(deep.at(-1), { role: 'system', content: 'keep it short' })
   const stackDepth = buildPrompt({ ...args, chat: noteChat }).messages
-  assert.strictEqual(stackDepth[2].content, 'keep it short') // back to the block's depth 2
+  assert.strictEqual(stackDepth[2].content, 'keep it short') // back to the template's depth 2
 }
 
-// A chat with no note produces exactly what a stack with no authorNote block produces.
+// The chat's depth only applies to a note that sits inside a depth tag.
 {
-  const blocks = [block({ content: 'sys' }), block({ source: 'chatHistory' })]
+  const out = buildPrompt({
+    stack: stack('{{ authorNote }}\n{{ history }}'),
+    character: damien,
+    persona: dom,
+    messages: longHistory,
+    chat: { ...noteChat, authorNoteDepth: 0 },
+  }).messages
+  assert.deepStrictEqual(out[0], { role: 'system', content: 'keep it short' })
+}
+
+// A chat with no note produces exactly what a template with no note produces.
+{
   const withNote = buildPrompt({
-    stack: stack([...blocks, block({ source: 'authorNote', depth: 2 })]),
+    stack: stack('sys\n{{ history }}\n{% depth 2 %}{{ authorNote }}{% enddepth %}'),
     character: damien,
     persona: dom,
     messages: longHistory,
     chat: { ...noteChat, authorNote: '' },
   })
   const without = buildPrompt({
-    stack: stack(blocks),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -843,7 +679,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
     safetyMarginPct: 0,
   }
   const args = {
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages: longHistory,
@@ -874,15 +710,11 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.strictEqual(both.droppedCount, 0)
 }
 
-// --- a speaker resolves character blocks and {{char}} --------------------
+// --- a speaker resolves character slots and {{char}} ---------------------
 {
   const mary: Character = { ...damien, name: 'Mary', description: "Mary's card, {{char}} only" }
   const out = buildPrompt({
-    stack: stack([
-      block({ content: '{{char}} speaks' }),
-      block({ source: 'characterDescription' }),
-      block({ source: 'chatHistory' }),
-    ]),
+    stack: stack('{{char}} speaks\n\n{{ charDescription }}\n\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -894,7 +726,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
 // --- appendSystem lands last and is counted, never exempted ---------------
 {
   const built = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -902,7 +734,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   })
   assert.deepStrictEqual(built.messages.at(-1), { role: 'system', content: 'do it differently' })
   const plain = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -910,7 +742,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.ok(built.tokensUsed > plain.tokensUsed, 'the instruction costs tokens')
   // Blank is no instruction at all, not a blank system turn.
   const blank = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -922,7 +754,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
 // --- appendAssistant is the prefill: last turn, after appendSystem --------
 {
   const built = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -933,7 +765,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.deepStrictEqual(built.messages.at(-1), { role: 'assistant', content: 'half a sen' })
   assert.deepStrictEqual(built.messages.at(-2), { role: 'system', content: 'carry on' })
   const plain = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -942,7 +774,7 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
   assert.ok(built.tokensUsed > plain.tokensUsed, 'the partial costs tokens')
   // Blank is no prefill at all, not a blank assistant turn.
   const blank = buildPrompt({
-    stack: stack([block({ content: 'sys' }), block({ source: 'chatHistory' })]),
+    stack: stack('sys\n{{ history }}'),
     character: damien,
     persona: dom,
     messages,
@@ -977,54 +809,55 @@ for (const chat of [{ ...noteChat, authorNote: '  ' }, undefined]) {
 
 // --- card system_prompt / post_history_instructions ----------------------
 {
-  const sysBlock = block({ source: 'characterSystemPrompt', content: 'STACK DEFAULT' })
+  const sysStack = stack('{% systemPrompt %}STACK DEFAULT{% endsystemPrompt %}')
   const withCard = (systemPrompt: string) => ({ ...damien, systemPrompt })
   const text = (s: PromptStack, c: Character) =>
     build(s, c)
       .map((m) => m.content)
       .join('\n')
 
-  // No card value: the block's own content is used. This is the spec's empty-string fallback.
-  assert.ok(text(stack([sysBlock]), withCard('')).includes('STACK DEFAULT'))
+  // No card value: the tag's own content is used. This is the spec's empty-string fallback.
+  assert.ok(text(sysStack, withCard('')).includes('STACK DEFAULT'))
   // Whitespace is not a value either.
-  assert.ok(text(stack([sysBlock]), withCard('   ')).includes('STACK DEFAULT'))
+  assert.ok(text(sysStack, withCard('   ')).includes('STACK DEFAULT'))
 
-  // A card value replaces the block's content outright.
-  const replaced = text(stack([sysBlock]), withCard('CARD RULES'))
+  // A card value replaces the fallback outright.
+  const replaced = text(sysStack, withCard('CARD RULES'))
   assert.ok(replaced.includes('CARD RULES'))
   assert.ok(!replaced.includes('STACK DEFAULT'))
 
-  // {{original}} brings the block's own content back: a card can extend rather than replace.
-  const extended = text(stack([sysBlock]), withCard('{{original}} Also be terse.'))
+  // {{original}} brings the fallback back: a card can extend rather than replace.
+  const extended = text(sysStack, withCard('{{original}} Also be terse.'))
   assert.ok(extended.includes('STACK DEFAULT Also be terse.'))
 
   // Same casing and inner-space tolerance as every other token.
-  assert.ok(text(stack([sysBlock]), withCard('{{ ORIGINAL }}!')).includes('STACK DEFAULT!'))
+  assert.ok(text(sysStack, withCard('{{ ORIGINAL }}!')).includes('STACK DEFAULT!'))
 
-  // {{original}} in the block's own content is NOT substituted into itself: otherwise a stack
+  // {{original}} in the fallback itself is NOT substituted into itself: otherwise a stack
   // author writing it would get their own text pasted in twice.
-  const selfRef = block({ source: 'characterSystemPrompt', content: 'a {{original}} b' })
-  assert.ok(text(stack([selfRef]), withCard('')).includes('a {{original}} b'))
+  const selfRef = stack('{% systemPrompt %}a {{original}} b{% endsystemPrompt %}')
+  assert.ok(text(selfRef, withCard('')).includes('a {{original}} b'))
+
+  // A bare {{ systemPrompt }} has no fallback: blank card, nothing sent; a card value goes in.
+  const bare = stack('{{ systemPrompt }}')
+  assert.strictEqual(build(bare, withCard('')).length, 0)
+  assert.strictEqual(text(bare, withCard('CARD RULES')), 'CARD RULES')
 
   // A character with the field absent entirely (older record) behaves as empty, not as a crash.
   const legacy = { ...damien } as Character
   delete (legacy as Partial<Character>).systemPrompt
-  assert.ok(text(stack([sysBlock]), legacy).includes('STACK DEFAULT'))
+  assert.ok(text(sysStack, legacy).includes('STACK DEFAULT'))
 
   // Post-history reads its own field, and the two don't cross over.
-  const postBlock = block({ source: 'characterPostHistory', content: 'POST DEFAULT' })
-  const both = text(stack([sysBlock, postBlock]), {
-    ...damien,
-    systemPrompt: 'SYS',
-    postHistoryInstructions: 'POST',
-  })
+  const both = text(
+    stack(
+      '{% systemPrompt %}SYS DEFAULT{% endsystemPrompt %}\n{{ history }}\n{% postHistory %}POST DEFAULT{% endpostHistory %}',
+    ),
+    { ...damien, systemPrompt: 'SYS', postHistoryInstructions: 'POST' },
+  )
   assert.ok(both.includes('SYS'))
   assert.ok(both.includes('POST'))
   assert.ok(!both.includes('DEFAULT'))
-
-  // Disabled means gone, card value or not.
-  const off = block({ source: 'characterSystemPrompt', content: 'x', disabled: true })
-  assert.ok(!text(stack([off]), withCard('CARD RULES')).includes('CARD RULES'))
 }
 
 console.log('ok')

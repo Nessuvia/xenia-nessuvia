@@ -13,10 +13,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
     "@lenml/tokenizers": "^3.7.2",
+    "@lezer/highlight": "^1.2.5",
     "@remixicon/react": "^4.9.0",
     "aws4fetch": "^1.0.20",
     "centrifuge": "^5.7.1",
+    "codemirror": "^6.0.2",
     "compromise": "^14.16.0",
     "dexie": "^4.4.4",
     "fflate": "^0.8.3",

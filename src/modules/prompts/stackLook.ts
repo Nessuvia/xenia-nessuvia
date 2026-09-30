@@ -7,9 +7,11 @@
 // Anything wrong (a disallowed tag, a stray `}`, an outside address without `allowRemote`) makes
 // the panel fall back to the standard list. The stack still saves; the editor shows the problem.
 import type { PromptStack, StackVariable } from '../../core/storage/types'
+import { stackVariables } from '../../core/prompt/stackTemplate'
 import { lookPolicy, sanitizeBackgroundHtml } from '../../core/palette/sanitizeHtml'
 import { scopeBackgroundCss } from '../../core/palette/scopeCss'
 import { cssRemoteRefs, isRemote } from '../../core/palette/remoteRefs'
+import { groupIds } from './lookGroup'
 
 /** The class the CSS is scoped to. One per stack, so two stacks' CSS never meet. */
 export const lookScope = (stack: PromptStack) => `stackLook${stack.id ?? 'Draft'}`
@@ -80,11 +82,17 @@ export function lookProblems(stack: PromptStack): LookReport {
     }
   }
 
-  const ids = new Set((stack.variables ?? []).map((v) => v.id))
+  const ids = new Set(stackVariables(stack).map((v) => v.id))
   const unknown = Array.from(nodes.querySelectorAll('[data-var]'), (el) => el.getAttribute('data-var') ?? '').filter(
     (id) => !ids.has(id),
   )
   if (unknown.length) warnings.push(`No variable for data-var: ${[...new Set(unknown)].join(', ')}.`)
+
+  const checkboxes = new Set(stackVariables(stack).filter((v) => v.kind === 'checkbox').map((v) => v.id))
+  const badGroup = Array.from(nodes.querySelectorAll('[data-group]'), (el) => groupIds(el.getAttribute('data-group') ?? ''))
+    .flat()
+    .filter((id) => !checkboxes.has(id))
+  if (badGroup.length) warnings.push(`No checkbox for data-group: ${[...new Set(badGroup)].join(', ')}.`)
 
   return { errors, warnings }
 }

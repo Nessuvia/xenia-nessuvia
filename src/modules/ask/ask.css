@@ -1,148 +1,126 @@
-.ask {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-}
-
-.askMain {
+/* Ask in the left sidebar. Fills the rail's body between the title and the bottom edge. */
+.askPanel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  padding: 12px;
-  gap: 8px;
-}
-
-.askHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Ask's only way back to the settings panel, so it looks like a button rather than a bare glyph.
-   #root to beat the shared `#root button.collapseChevron` defaults. */
-#root .askHeader button.collapseChevron {
-  margin-left: auto;
-  width: 34px;
-  height: 34px;
-  background: var(--surfaceRaised);
-  border-color: var(--borderStrong);
-  color: var(--text);
-}
-
-#root .askHeader button.collapseChevron svg {
-  width: 24px;
-  height: 24px;
-}
-
-#root .askHeader button.collapseChevron:hover:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--textBright);
-}
-
-.askCharacterSelect {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: 240px;
-}
-
-/* Anchor for the picker, which floats rather than taking space in the layout. */
-.askCharacterField {
-  position: relative;
-}
-
-.askCharacterField .entityPicker {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: var(--layer-2);
-  width: 260px;
-}
-
-.askTranscript {
   min-height: 0;
-}
-
-.askError {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--borderStrong);
-  border-radius: var(--radius);
-  color: var(--danger);
-}
-
-.askComposer {
-  display: flex;
   gap: 8px;
 }
 
-.askComposer textarea {
-  flex: 1;
-  resize: vertical;
-}
-
-.askComposer button {
-  width: var(--composerButton);
-}
-
-.askSidebar {
-  width: 300px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  background: var(--surfaceSunken);
-  padding: 12px;
-  overflow-y: auto;
-}
-
-.askSidebar h3 {
-  margin: 0 0 12px;
-}
-
-.askField {
+.askPanelHeader {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.askPanelTopRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.askPanelBadge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surfaceRaised);
+  border: 1px solid var(--borderAccent);
+  color: var(--textBright);
+}
+
+.askPanelInfo {
+  margin: 0;
+  font-size: 12px;
   color: var(--textMuted);
-  font-size: 13px;
 }
 
-.askField button {
+.askPanelThread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.askPanelBubble {
+  max-width: 85%;
+  padding: 6px 8px;
+  border-radius: calc(var(--radius) + 2px);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.askPanelMine {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--surfaceRaised) 70%, var(--accent));
+  color: var(--textBright);
+}
+
+.askPanelTheirs {
   align-self: flex-start;
-}
-
-.askField textarea {
-  resize: vertical;
+  background: var(--surfaceRaised);
   color: var(--text);
 }
 
-/* Last in the file on purpose: .askSidebar's 300px and sideDrawer.css's 100% carry the same
-   specificity, so these have to come after both to win. */
-@media (max-width: 700px) {
-  /* The panel covers the transcript instead of splitting the width with it. */
-  .askSidebar {
-    width: 100%;
-    border-left: none;
-  }
+.askPanelUndo {
+  display: block;
+  margin-top: 4px;
+}
 
-  /* The header is one row: the character name gives up width before anything wraps. */
-  .askHeader button {
-    white-space: nowrap;
-  }
+.askPanelError {
+  font-size: 12px;
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
 
-  .askCharacterSelect {
-    max-width: none;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.askPanelDetail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
 
-  .askCharacterField {
-    min-width: 0;
-  }
+.askPanelBack {
+  flex: 1;
+}
+
+/* Plain icon buttons: no box, the icon is the target. */
+.askPanelIcon {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--textMuted);
+}
+
+.askPanelConnection {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 60%;
+  font-size: 12px;
+}
+
+/* The send button sits inside the input's right edge. */
+.askPanelFooter {
+  position: relative;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.askPanelInput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  field-sizing: content;
+  max-height: 160px;
+  padding-right: 32px;
+}
+
+.askPanelSend {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
 }

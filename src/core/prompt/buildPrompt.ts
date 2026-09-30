@@ -2,19 +2,12 @@
 // which can't resolve extensionless app imports.
 import type { ChatMessage } from '../connectors/connectorInterface'
 import type { ReplaceRule, TagRule } from '../stores/settingsStore'
-import type {
-  BlockSource,
-  Chat,
-  Character,
-  Message,
-  Persona,
-  PromptBlock,
-  PromptStack,
-} from '../storage/types'
+import type { Chat, Character, Message, Persona, PromptStack } from '../storage/types'
 import { activeDescription } from '../storage/types.ts'
 import { isGroup } from '../stores/roster.ts'
 import { chatTokens, swapTokens } from './swapTokens.ts'
-import { applyConditions, promptConditions, resolveTemplate, variableValues } from './template.ts'
+import { promptConditions, resolveTemplate, variableValues } from './template.ts'
+import { stackParts, stackVariables, templateBody, usesSlot } from './stackTemplate.ts'
 import { trackerPrompt, trackerValues } from '../trackers/trackerState.ts'
 import type { Budget } from './budget.ts'
 import { countMessages, countTokens, perMessageOverhead, trimHistory } from './budget.ts'
@@ -24,100 +17,42 @@ import { emptyWorldInfo, type ResolvedWorldInfo } from './worldInfo.ts'
 import { applyReplace } from './textRules.ts'
 
 /**
- * The card's text, or the block's own content when the card has none. That's the spec's
- * "empty string means use the frontend's own" rule. {{original}} in the card's text resolves to
- * that same content. A card can extend the stack's instruction instead of replacing it.
- *
- * Per-block: it can't live in swapTokens. {{original}} means *this* block's content.
+ * The card's text, or the stack's fallback when the card has none. That's the spec's "empty string
+ * means use the frontend's own" rule. {{original}} in the card's text resolves to the fallback: a
+ * card can extend the stack's instruction instead of replacing it.
  */
-function cardOverride(cardText: string, block: PromptBlock): string {
-  const fallback = block.content
+function cardOverride(cardText: string, fallback: string): string {
   // Not substituted into the fallback itself: {{original}} inside it'd resolve to itself.
   if (!cardText.trim()) return fallback
   return cardText.replace(/\{\{\s*original\s*\}\}/gi, fallback)
 }
 
-function boundText(
-  block: PromptBlock,
-  character: Character,
-  persona: Persona,
-  authorNote: string,
-  worldInfo: ResolvedWorldInfo,
-): string {
-  switch (block.source) {
-    case 'authorNote':
-      return authorNote
-    case 'worldInfo':
-      return worldInfo.before
-    case 'worldInfoAfter':
-      return worldInfo.after
-    // Its entries leave the stack for history, like a depth-limited author's note. The block is
-    // here to carry their role and to be switchable, not to hold text.
-    case 'worldInfoDepth':
-      return ''
-    case 'characterDescription':
-      return activeDescription(character)
-    case 'characterPersonality':
-      return character.personality
-    case 'characterScenario':
-      return character.scenario
-    case 'characterExampleDialogue':
-      return character.exampleDialogue
-    // Both follow the speaker, like every other bound character source: in a group chat
-    // `character` is already whoever is talking.
-    case 'characterSystemPrompt':
-      return cardOverride(character.systemPrompt ?? '', block)
-    case 'characterPostHistory':
-      return cardOverride(character.postHistoryInstructions ?? '', block)
-    case 'personaDescription':
-      return persona.description
-    default:
-      return ''
+// `{% systemPrompt %}fallback{% endsystemPrompt %}`, and the same for postHistory: the card's own
+// field, or the text between the tags when the card leaves it blank. The bare `{{ systemPrompt }}`
+// is the same with no fallback.
+const cardBlock = /\{%\s*(systemPrompt|postHistory)\s*%\}([\s\S]*?)\{%\s*end\1\s*%\}/gi
+
+/** The template with each card block reduced to its slot, and the fallback each one carried. */
+function takeFallbacks(body: string): { body: string; fallbacks: Record<string, string> } {
+  const fallbacks: Record<string, string> = {}
+  const out = body.replace(cardBlock, (_whole, name: string, inner: string) => {
+    fallbacks[name.toLowerCase()] = inner.trim()
+    return `{{ ${name} }}`
+  })
+  return { body: out, fallbacks }
+}
+
+// The text a template pulls in from elsewhere: the card, the persona, the chat, the lorebooks.
+// Filled after the structure is read, so nothing a card says can open a message or move history.
+const slotPattern =
+  /\{\{\s*(authorNote|worldInfo|worldInfoAfter|systemPrompt|postHistory|charDescription|charPersonality|charScenario|charExampleDialogue|personaDescription)\s*\}\}/gi
+
+/** The depth the stack gives the author's note: the `{% depth %}` holding `{{ authorNote }}`. */
+export function stackAuthorNoteDepth(stack: PromptStack): number | undefined {
+  for (const part of stackParts(templateBody(stack.template))) {
+    if (part.kind === 'text' && part.depth !== undefined && usesSlot(part.text, 'authorNote')) return part.depth
   }
-}
-
-/** Two spaces per level, on non-blank lines only. Blank lines stay blank, not trailing spaces. */
-function indentLines(text: string, depth: number): string {
-  if (depth <= 0) return text
-  const pad = '  '.repeat(depth)
-  return text
-    .split('\n')
-    .map((line) => (line ? pad + line : line))
-    .join('\n')
-}
-
-/**
- * A block's whole text, children included: own text, then each child, then the closing text,
- * newline-joined. Blank parts drop out. A bare group is just its children, an empty
- * bound field never leaves a stray blank line, and a wrapper's tags stay even with no children.
- *
- * `indent` is display-only (the preview): each nesting level shifts its children right. The sent
- * prompt never passes it: what goes over the wire has no indentation.
- */
-function blockText(
-  block: PromptBlock,
-  character: Character,
-  persona: Persona,
-  authorNote: string,
-  worldInfo: ResolvedWorldInfo,
-  indent: boolean,
-  depth: number,
-): string {
-  if (block.disabled) return ''
-  let own =
-    block.source === 'text'
-      ? block.content
-      : boundText(block, character, persona, authorNote, worldInfo)
-  const parts = [
-    indentLines(own, depth),
-    // Nested chat history resolves to '': it's many messages with their own roles, it can't
-    // live inside one text span. The editor refuses to nest it in the first place.
-    ...(block.children ?? []).map((child) =>
-      blockText(child, character, persona, authorNote, worldInfo, indent, indent ? depth + 1 : 0),
-    ),
-    indentLines(block.closeContent ?? '', depth),
-  ]
-  return parts.filter((text) => text.trim()).join('\n')
+  return undefined
 }
 
 /**
@@ -159,20 +94,6 @@ export function stripDepthTags(content: string, distance: number, rules?: TagRul
   return out.replace(/\n{3,}/g, '\n\n').trim()
 }
 
-/**
- * The first block of a source anywhere in the stack, nested or not. Disabled blocks are returned
- * too: a block switched off is a decision the user made, and the callers below have to tell that
- * apart from a stack that never had the block at all.
- */
-function findBlock(blocks: PromptBlock[], source: BlockSource): PromptBlock | undefined {
-  for (const block of blocks) {
-    if (block.source === source) return block
-    const found = findBlock(block.children ?? [], source)
-    if (found) return found
-  }
-  return undefined
-}
-
 /** The trailing turn naming who speaks next. Wording lives in `miscPrompts`, and a stack can
  *  override it; this only fills the slot. */
 export function nextSpeakerHint(name: string, prompts?: MiscPrompts): string {
@@ -186,12 +107,12 @@ export interface BuildPromptArgs {
   messages: Message[]
   /** Group chats: whoever is speaking this turn. Absent = `character`, exactly as Phase 1. */
   speaker?: Character
-  /** Source of the author's note text for `authorNote` blocks. */
+  /** Source of the author's note text for `{{ authorNote }}`. */
   chat?: Chat
   /** Matched lorebook content. Resolved by the caller with `resolveWorldInfo`: matching needs
    *  entries out of storage, and this function stays pure, exactly as it does for `authorNote`.
-   *  `.before` and `.after` fill the two block slots; `.atDepth` entries are spliced into history
-   *  instead, with the role of the `worldInfoDepth` block if the stack carries one. */
+   *  `.before` and `.after` fill `{{ worldInfo }}` and `{{ worldInfoAfter }}`; `.atDepth` entries
+   *  are spliced into history as system turns. */
   worldInfo?: ResolvedWorldInfo
   /** A system turn appended after everything else: the rewrite instruction. Counted against
    *  the budget like any other text, never exempted. */
@@ -200,8 +121,6 @@ export interface BuildPromptArgs {
    *  Goes after `appendSystem`: a prefill only works while it's the final turn. Counted
    *  against the budget like any other text. */
   appendAssistant?: string
-  /** Display-only: indent nested block content for the preview. Never set on the send path. */
-  indent?: boolean
   /** Tag rules with a `depth` strip their block from older history turns. Absent = nothing stripped. */
   tagRules?: TagRule[]
   /** Find/replace rules set to apply in the prompt run over history turns. Absent = none. */
@@ -222,28 +141,21 @@ export interface BuildPromptArgs {
   gameKind?: string
 }
 
-/** A block that contributed nothing, and the reason. The preview lists these. */
-export interface SkippedBlock {
-  label: string
-  reason: 'disabled' | 'empty'
-}
-
 export interface BuiltPrompt {
   messages: ChatMessage[]
   tokensUsed: number
-  /** What the fixed blocks cost before any history goes in. */
+  /** What the fixed text costs before any history goes in. */
   fixedTokens: number
   droppedCount: number
   /** The history messages the budget dropped, oldest first. */
   dropped: Message[]
-  skipped: SkippedBlock[]
-  /** History allowance left after the fixed blocks, the reply reserve and the margin. */
+  /** History allowance left after the fixed text, the reply reserve and the margin. */
   available: number
   overflow: boolean
 }
 
 /**
- * Walks the active zone in order and produces the exact request body messages.
+ * Renders the stack's template and produces the exact request body messages.
  * With a budget, history is trimmed from the top first. The preview and the send
  * path call this same function and can't drift apart.
  */
@@ -258,7 +170,6 @@ export function buildPrompt(
     worldInfo,
     appendSystem,
     appendAssistant,
-    indent,
     tagRules,
     replaceRules,
     nameSpeakers,
@@ -276,13 +187,10 @@ export function buildPrompt(
   // labelled history.
   const who = speaker ?? character
   const authorNote = chat?.authorNote ?? ''
-  const afterBlock = findBlock(stack.active, 'worldInfoAfter')
-  const depthBlock = findBlock(stack.active, 'worldInfoDepth')
-  // A stack with no after-char block folds those entries into the before-char one. Every stack
-  // written before the slots were split has exactly that shape. Dropping their after-char
-  // entries on the floor would silently shrink prompts that work today.
+  // A template with no after-char slot folds those entries into the before-char one, rather than
+  // dropping them on the floor.
   const resolvedWorldInfo: ResolvedWorldInfo = worldInfo
-    ? afterBlock
+    ? usesSlot(stack.template, 'worldInfoAfter')
       ? worldInfo
       : { ...worldInfo, before: [worldInfo.before, worldInfo.after].filter(Boolean).join('\n'), after: '' }
     : emptyWorldInfo
@@ -293,77 +201,76 @@ export function buildPrompt(
   // `nameSpeakers` argument stays for callers with no chat record.
   const group = (chat ? isGroup(chat) || chat.nameSpeakers === true : false) || nameSpeakers === true
 
-  // Authored card data only: character fields, persona info, freeform blocks. Chat history is
+  // Authored text only: the template and the card and persona fields it pulls in. Chat history is
   // transcript, not card data: it's never substituted. {{user}} is always the *active* persona,
-  // even where older turns were sent as someone else.
-  // {{charDescription}} follows the speaker too: in a group each character's blocks paste
-  // that character's own description.
+  // even where older turns were sent as someone else. {{charDescription}} follows the speaker: in a
+  // group each character's turn pastes that character's own description.
   // {{char1}}...{{char4}} are the session roster instead, fixed for the whole session. They don't
-  // follow the speaker, and one block can talk about the cast as a group.
+  // follow the speaker, and one template can talk about the cast as a group.
   const tokens = chatTokens(who, persona, cast, personas, game)
   const swap = (text: string) => swapTokens(text, tokens)
 
-  // {% if narrator %} and friends, plus the stack's own {{variables}}. Resolved per block, before substitution: a token inside a dropped
-  // branch never gets swapped, and no token's value can be read back as a condition name. A
-  // conditional can't span two blocks: each block's text is parsed on its own. An if in one
-  // block and its endif in the next are both literal text.
+  // {% if narrator %} and friends, plus the stack's own {{variables}}. Resolved before
+  // substitution: a token inside a dropped branch never gets swapped, and no token's value can be
+  // read back as a condition name.
   // Trackers come off the chat's card, whoever speaks. Built-in names win a clash with a tracker key.
   const trackers = character.trackers ?? []
   const values = trackers.length ? trackerValues(trackers, messages, chat?.trackerOverrides) : {}
   const conditions = {
     ...Object.fromEntries(Object.entries(values).map(([k, v]) => [k.toLowerCase(), v])),
+    // Whether each slot holds anything, so a wrapper can sit in `{% if worldInfo %}`.
+    authornote: Boolean(authorNote.trim()),
+    worldinfo: Boolean(resolvedWorldInfo.before.trim()),
+    worldinfoafter: Boolean(resolvedWorldInfo.after.trim()),
     ...promptConditions(who, cast, gameKind),
   }
-  const vars = variableValues(stack.variables)
-  // Blocks whose `when` fails are switched off for this send, before anything reads them.
-  const active = applyConditions(stack.active, { ...conditions, ...vars })
+  const vars = variableValues(stackVariables(stack))
+  const { body, fallbacks } = takeFallbacks(templateBody(stack.template))
+  const slots: Record<string, string> = {
+    authornote: authorNote,
+    worldinfo: resolvedWorldInfo.before,
+    worldinfoafter: resolvedWorldInfo.after,
+    systemprompt: cardOverride(who.systemPrompt ?? '', fallbacks.systemprompt ?? ''),
+    posthistory: cardOverride(who.postHistoryInstructions ?? '', fallbacks.posthistory ?? ''),
+    chardescription: activeDescription(who),
+    charpersonality: who.personality,
+    charscenario: who.scenario,
+    charexampledialogue: who.exampleDialogue,
+    personadescription: persona.description,
+  }
+  // Slot text runs through the template too: a card's own `{% if %}` is honoured. A blank slot's
+  // line collapses rather than leaving a gap.
+  const fill = (text: string) =>
+    swap(
+      text.replace(slotPattern, (_whole, name: string) =>
+        resolveTemplate(slots[name.toLowerCase()] ?? '', conditions, vars),
+      ),
+    )
+      .replace(/\n(?:[ \t]*\n){2,}/g, '\n\n')
+      .trim()
 
   // Resolve first, assemble second: budgeting needs the fixed cost before history goes in.
   const resolved: (ChatMessage | 'history')[] = []
-  // Blocks with a depth, and lorebook entries positioned at one, leave the stack and get spliced
-  // into history below.
+  // Text in a `{% depth %}`, and lorebook entries positioned at one, get spliced into history below.
   const depthNotes: { message: ChatMessage; depth: number }[] = []
-  const skipped: SkippedBlock[] = []
   let fixedTokens = 0
 
-  for (const block of active) {
-    if (block.disabled) {
-      skipped.push({ label: block.label, reason: 'disabled' })
-      continue
-    }
-    if (block.source === 'chatHistory') {
+  for (const part of stackParts(resolveTemplate(body, conditions, vars))) {
+    if (part.kind === 'history') {
       resolved.push('history')
       continue
     }
-    // Holds no text of its own: its entries are spliced into history below, taking this block's
-    // role. It leaves the loop here: it must not be reported as an empty block every turn.
-    if (block.source === 'worldInfoDepth') {
-      if (!resolvedWorldInfo.atDepth.length) skipped.push({ label: block.label, reason: 'empty' })
-      continue
-    }
-
-    const text = swap(
-      resolveTemplate(
-        blockText(block, who, persona, authorNote, resolvedWorldInfo, !!indent, 0),
-        conditions,
-        vars,
-      ),
-    )
-
-    // A blank bound field must not become a blank system turn, an empty author's note included.
-    if (!text.trim()) {
-      skipped.push({ label: block.label, reason: 'empty' })
-      continue
-    }
-
-    const message: ChatMessage = { role: block.role, content: text }
+    const text = fill(part.text)
+    // A blank slot must not become a blank system turn, an empty author's note included.
+    if (!text) continue
+    const message: ChatMessage = { role: part.role, content: text }
     fixedTokens += countTokens(text) + perMessageOverhead
-
-    // a depth note with no history block in the stack doesn't appear. Depth is
-    // defined relative to history; a stack without history has nothing to be N messages from.
-    // The chat's own depth beats the stack's, same shape as the param overrides: the stack block
-    // carries the default, one chat can move the note without touching the stack.
-    const depth = block.source === 'authorNote' ? chat?.authorNoteDepth ?? block.depth : block.depth
+    // A depth note with no history in the template doesn't appear: depth is counted from history.
+    // The chat's own author's-note depth beats the stack's, same shape as the param overrides.
+    const depth =
+      part.depth !== undefined && usesSlot(part.text, 'authorNote')
+        ? chat?.authorNoteDepth ?? part.depth
+        : part.depth
     if (depth !== undefined) {
       depthNotes.push({ message, depth })
       continue
@@ -371,25 +278,20 @@ export function buildPrompt(
     resolved.push(message)
   }
 
-  // Lorebook entries positioned at a depth. They never sit in the stack's own order: each entry's
-  // `depth` places it, counted from the end of history, same splice as a depth-limited author's
-  // note. The `worldInfoDepth` block gives them a role and a switch: no such block means the role
-  // is `system`, which is what every stack written before the block existed already did, and a
-  // disabled one drops them entirely.
-  if (!findBlock(active, 'worldInfoDepth')?.disabled) {
-    const depthRole = depthBlock?.role ?? 'system'
-    for (const at of resolvedWorldInfo.atDepth) {
-      const content = swap(resolveTemplate(at.text, conditions, vars))
-      if (!content.trim()) continue
-      depthNotes.push({ message: { role: depthRole, content }, depth: at.depth })
-      fixedTokens += countTokens(content) + perMessageOverhead
-    }
+  // Lorebook entries positioned at a depth. Each entry's `depth` places it, counted from the end of
+  // history, same splice as the author's note.
+  // ponytail: always system turns. A `{% worldInfoDepth user %}` tag if a stack needs another role.
+  for (const at of resolvedWorldInfo.atDepth) {
+    const content = swap(resolveTemplate(at.text, conditions, vars))
+    if (!content.trim()) continue
+    depthNotes.push({ message: { role: 'system', content }, depth: at.depth })
+    fixedTokens += countTokens(content) + perMessageOverhead
   }
 
   // Both trailing turns are system turns. The merge below concatenates them: the hint says who
   // is up, then any rewrite instruction narrows what they should write. Neither overwrites the
   // other, and the more specific one has the last word.
-  // ponytail: fixed wording after the stack, a stack block when creators need to place or reword it.
+  // ponytail: fixed wording after the stack, a template slot when creators need to place or reword it.
   const trackerText = trackerPrompt(trackers, values)
   if (trackerText) {
     resolved.push({ role: 'system', content: trackerText })
@@ -423,7 +325,7 @@ export function buildPrompt(
 
   const out: ChatMessage[] = []
 
-  // Neighbouring same-role turns become one: five system blocks are one system message,
+  // Neighbouring same-role turns become one: five system parts are one system message,
   // and every backend sees the same shape.
   function push(role: ChatMessage['role'], content: string) {
     const last = out.at(-1)
@@ -468,7 +370,6 @@ export function buildPrompt(
     fixedTokens,
     droppedCount: trimmed.droppedCount,
     dropped: trimmed.dropped,
-    skipped,
     available: trimmed.available,
     overflow: trimmed.overflow,
   }

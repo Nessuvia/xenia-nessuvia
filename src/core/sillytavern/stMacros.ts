@@ -4,8 +4,8 @@
 // Comments: a block's leading `{{// }}` notes become its tooltip (`info`); later ones become
 // `{# #}`. `{{trim}}` goes.
 //
-// Toggles: every ST prompt can be switched on and off. Here each text block gets a checkbox
-// variable and a `when` naming it, the one switch players see.
+// Toggles: every ST prompt can be switched on and off. Here each text piece gets a checkbox
+// variable and an `{% if %}` on it, the one switch players see.
 //
 // Variables: ST presets wire toggles together with setvar/getvar. A prompt that switches on runs
 // `{{setvar::x::text}}`, and another prompt pastes it with `{{getvar::x}}`, empty when the setter
@@ -13,7 +13,8 @@
 // an empty value is ST resetting the name before the setters run, and just goes.
 // ponytail: order-blind. A getvar above its setter in ST's order reads empty there and the
 // setter's text here. No preset seen relies on that; honour it if one does.
-import type { PromptBlock, StackVariable } from '../storage/types.ts'
+import type { StackVariable } from '../storage/types.ts'
+import type { StPiece } from './stBlock.ts'
 
 interface Macro {
   start: number
@@ -102,13 +103,13 @@ function idFrom(label: string, taken: Set<string>) {
 }
 
 export interface MacrosImport {
-  blocks: PromptBlock[]
+  blocks: StPiece[]
   variables: StackVariable[]
   notes: string[]
 }
 
 /** A checkbox per text block, then the setvar/getvar pass. Bound blocks pass through. */
-export function convertVariables(blocks: PromptBlock[]): MacrosImport {
+export function convertVariables(blocks: StPiece[]): MacrosImport {
   const taken = new Set<string>()
   const variables: StackVariable[] = []
   // name -> setters in stack order, each [variable id, value]
@@ -178,7 +179,7 @@ export function convertVariables(blocks: PromptBlock[]): MacrosImport {
 const known = new Set(['roll', 'setvar', 'getvar', 'trim'])
 
 /** ST function macros (`{{name::...}}`) nothing here maps, for the import summary. */
-export function unmappedMacros(blocks: PromptBlock[]): string[] {
+export function unmappedMacros(blocks: StPiece[]): string[] {
   const names = new Set<string>()
   for (const b of blocks) {
     for (const m of b.content.matchAll(/\{\{\s*([A-Za-z_]+)(?:::|\s)/g)) {

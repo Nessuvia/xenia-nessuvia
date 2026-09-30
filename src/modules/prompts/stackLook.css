@@ -1,0 +1,18 @@
+/* A custom look renders in the chat and Story side panels. The page must never scroll sideways, so
+   a look wider than its panel scrolls inside its own box. min-width: 0 makes that box shrinkable
+   when a flex ancestor would otherwise size it to its content. */
+.stackLook {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-wrap: anywhere;
+}
+
+/* Defaults so a look fits the narrowest panel before it needs to scroll: flex and grid children
+   default to min-width: auto, which lets a long select option or label set a floor wider than the
+   panel. :where() keeps this at zero specificity, so any rule in the maker's CSS overrides it. The
+   universal selector is deliberate: the markup is the maker's and carries no classes of ours. */
+:where(.stackLook) :where(*) {
+  min-width: 0;
+  max-width: 100%;
+}

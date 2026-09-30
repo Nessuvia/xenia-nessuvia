@@ -1,4 +1,6 @@
 import { RiArrowRightLine } from '@remixicon/react'
+import type { Rank } from '../../core/games/deck'
+import SpoilerText from './SpoilerText'
 import { useStickToBottom } from './useStickToBottom'
 
 /**
@@ -12,9 +14,12 @@ export default function CharacterLine({
   line,
   streaming,
   awaitingNext = false,
+  secret = [],
   onNext,
 }: {
   line: string
+  /** Ranks the player can't see. A sentence naming one is covered until clicked. */
+  secret?: Rank[]
   streaming: boolean
   awaitingNext?: boolean
   onNext?: () => void
@@ -23,7 +28,7 @@ export default function CharacterLine({
   return (
     <span className="cardTableLineWrap">
       <p className={`cardTableLine${awaitingNext ? ' cardTableLineGated' : ''}`} ref={ref}>
-        {line || (streaming ? '…' : '')}
+        {line ? <SpoilerText text={line} secret={secret} streaming={streaming} /> : streaming ? '…' : ''}
       </p>
       {awaitingNext && (
         <button type="button" className="cardTableNext" onClick={onNext}>
