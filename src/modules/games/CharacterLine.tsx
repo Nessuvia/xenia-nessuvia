@@ -27,7 +27,7 @@ export default function CharacterLine({
   const ref = useStickToBottom(line)
   return (
     <span className="cardTableLineWrap">
-      <p className={`cardTableLine${awaitingNext ? ' cardTableLineGated' : ''}`} ref={ref}>
+      <p className={`cardTableLine gameText${awaitingNext ? ' cardTableLineGated' : ''}`} ref={ref}>
         {line ? <SpoilerText text={line} secret={secret} streaming={streaming} /> : streaming ? '…' : ''}
       </p>
       {awaitingNext && (

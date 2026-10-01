@@ -32,6 +32,8 @@ export interface BoardProps {
   /** The table is parked on the step gate, waiting for Next. */
   awaitingNext?: boolean
   onSubmit?: (text: string) => void
+  /** Blackjack only: count an ace in your hand as 1 or 11. */
+  onChooseAce?: (index: number, value: 1 | 11) => void
   onNext?: () => void
 }
 

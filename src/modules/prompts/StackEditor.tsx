@@ -23,9 +23,10 @@ import PageHeader from '../../app/PageHeader'
 import PageTabs from '../../app/PageTabs'
 import { tabs } from './tabs'
 
+// Preview first: most visits are to check what the stack sends, and it opens on it.
 const viewTabs = [
-  ['template', 'Template'],
   ['preview', 'Preview'],
+  ['template', 'Template'],
 ] as const
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
@@ -65,7 +66,7 @@ export default function StackEditor() {
   const activeId = kind === 'story' ? activeStoryStackId : activeStackId
   const [draft, setDraft] = useState<PromptStack | null>(null)
   // Template or Preview on the Stacks tab. Page view state, not saved.
-  const [view, setView] = useState<'template' | 'preview'>('template')
+  const [view, setView] = useState<'template' | 'preview'>('preview')
   // Phone width folds the action buttons into one Options menu: that changes the shape of the row,
   // which is more than a stylesheet can say.
   const mobile = useMediaQuery('(max-width: 700px)')

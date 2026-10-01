@@ -280,6 +280,8 @@ interface GamesState {
   open(id: number): Promise<void>
   close(): void
   submit(text: string): Promise<void>
+  /** Blackjack: count the ace at `index` in your hand as 1 or 11. Logged; the character isn't asked. */
+  chooseAce(index: number, value: blackjack.AceValue): Promise<void>
   setDifficulty(quality: MoveQuality): Promise<void>
   setAuthorNote(note: string): Promise<void>
   abandon(): Promise<void>
@@ -406,6 +408,13 @@ export const useGames = create<GamesState>()((set, get) => ({
   },
 
   next: () => releaseStep(),
+
+  chooseAce: async (index, value) => {
+    const game = get().game
+    if (!game || game.kind !== 'blackjack' || get().streaming || driving || moving) return
+    if (!blackjack.canChooseAce(get().state as BlackjackState, index, value)) return
+    await appendEvents(get, set, [{ kind: 'ace', index, value }])
+  },
 
   submit: async (text) => {
     const game = get().game

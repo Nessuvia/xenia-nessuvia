@@ -77,13 +77,15 @@ export default function CharacterSheet() {
 
   const tags = character?.tags ?? []
 
-  // Everything above the sections: who this is, and the two things you came here to do.
+  // Everything above the sections: who this is, and the two things you came here to do. The
+  // profile card is the slot a customizable profile grows into: keep what's here about the
+  // character, and keep editing in the sections below.
   const identity = character && (
     <div className="sheetTop">
-      <div className="profileIdentity">
+      <section className="card profileCard">
         <Avatar of={character} name={character.name} className="avatar profileAvatar" />
-        <div>
-          <h3>{displayName(character) || 'Unnamed'}</h3>
+        <div className="profileBody">
+          <h2 className="profileName">{displayName(character) || 'Unnamed'}</h2>
           {tags.length > 0 && (
             <div className="profileTags">
               {tags.map((t) => (
@@ -93,24 +95,25 @@ export default function CharacterSheet() {
               ))}
             </div>
           )}
+          <div className="profileActions">
+            {lastChat && (
+              <button type="button" onClick={() => navigate(`/chat/${lastChat.id}`)}>
+                Continue last chat
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => navigate(`/chat/${await createChat(character.id!)}`)}
+            >
+              New chat
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="profileActions">
-        {lastChat && (
-          <button type="button" onClick={() => navigate(`/chat/${lastChat.id}`)}>
-            Continue last chat
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={async () => navigate(`/chat/${await createChat(character.id!)}`)}
-        >
-          New chat
-        </button>
-      </div>
-
-      <ChatList character={character} />
+      <section className="card profileChats">
+        <ChatList character={character} />
+      </section>
     </div>
   )
 

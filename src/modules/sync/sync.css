@@ -140,11 +140,6 @@
   font-size: var(--fieldFont);
 }
 
-/* A primed button, waiting for its second click. */
-.sync button.danger {
-  color: var(--danger);
-}
-
 /* The main button sets the width and the menu matches it, so the labels line up and nothing in the
    row moves when the menu opens. The menu is absolute for the same reason. */
 .syncSplit {

@@ -72,10 +72,6 @@
   cursor: default;
 }
 
-.prompts button.danger {
-  color: var(--danger);
-}
-
 .presetRow {
   display: flex;
   justify-content: space-between;
@@ -556,8 +552,10 @@
   gap: 8px;
 }
 
-/* First in the options row. A name, not a sentence: it doesn't take the row's spare width. */
+/* First in the options row. A name, not a sentence: it doesn't take the row's spare width. A width
+   rather than a flex basis, which the content-sized row would ignore (cssConventions.md, 4a). */
 .presetRow .stackNameInput {
-  flex: 0 1 240px;
+  flex: 0 1 auto;
+  width: 338px;
   min-width: 0;
 }

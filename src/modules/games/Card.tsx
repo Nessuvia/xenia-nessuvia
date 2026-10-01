@@ -16,6 +16,7 @@ export function Card({
   faceDown = false,
   rotate = 0,
   shift = 0,
+  badge,
   onClick,
 }: {
   card?: CardData
@@ -25,6 +26,8 @@ export function Card({
   faceDown?: boolean
   rotate?: number
   shift?: number
+  /** A small mark in the corner: what a Blackjack ace counts as. */
+  badge?: string
   onClick?: () => void
 }) {
   const style = { '--cardTableCardRotate': `${rotate}deg`, '--cardTableCardShift': `${shift}px` } as CSSProperties
@@ -54,6 +57,7 @@ export function Card({
     >
       <span className="cardTableCardRank">{card.rank}</span>
       <span className="cardTableCardSuit">{suit}</span>
+      {badge && <span className="cardTableCardBadge">{badge}</span>}
     </span>
   )
 }

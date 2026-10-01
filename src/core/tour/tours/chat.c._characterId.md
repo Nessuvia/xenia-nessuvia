@@ -1,6 +1,6 @@
 # Character page
 
-## .profileIdentity
+## .profileCard
 The name, the avatar and the description. Editing writes straight to the character.
 
 ## .profileTags

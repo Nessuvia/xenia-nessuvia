@@ -2,7 +2,8 @@ import { useRef, useState, type CSSProperties } from 'react'
 import { Avatar } from '../../app/Avatar'
 import type { AvatarSource } from '../../core/storage/types'
 import type { BlackjackState } from '../../core/games/blackjack'
-import { handValue, isBust, legalActions, winner } from '../../core/games/blackjack'
+import { canChooseAce, handValue, isBust, legalActions, winner } from '../../core/games/blackjack'
+import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import { Card } from './Card'
 import CharacterLine from './CharacterLine'
 import { secretRanks } from '../../core/games/cardSpoilers'
@@ -32,6 +33,7 @@ export default function BlackjackBoard({
   readOnly = false,
   awaitingNext = false,
   onSubmit,
+  onChooseAce,
   onNext,
 }: {
   state: BlackjackState
@@ -49,6 +51,7 @@ export default function BlackjackBoard({
   /** The table is parked on the step gate. Shows Next, and holds the controls until it's clicked. */
   awaitingNext?: boolean
   onSubmit?: (text: string) => void
+  onChooseAce?: (index: number, value: 1 | 11) => void
   onNext?: () => void
 }) {
   const [text, setText] = useState('')
@@ -69,7 +72,15 @@ export default function BlackjackBoard({
   }
 
   const dealerCount = state.holeDown ? handValue(state.hands.char.slice(0, 1)).total : handValue(state.hands.char).total
-  const playerHand = handValue(state.hands.player)
+  const playerHand = handValue(state.hands.player, state.aces)
+  // Which ace's picker is open, and where to draw it. Only on your turn in a live game.
+  const canPick = !readOnly && !!onChooseAce && state.turn === 'player' && !state.over
+  const [picking, setPicking] = useState<{ index: number; left: number; top: number } | null>(null)
+  const pickerRef = useCloseOnOutside<HTMLDivElement>(picking !== null, () => setPicking(null))
+  const pickAce = (index: number, id: string) => {
+    const rect = document.querySelector(`[data-cardid="${id}"]`)?.getBoundingClientRect()
+    if (rect) setPicking({ index, left: rect.left + rect.width / 2, top: rect.top })
+  }
 
   return (
     // Blackjack has no fit toggle: a hand here is a few cards, and stacking them to fit is the only
@@ -140,7 +151,7 @@ export default function BlackjackBoard({
         <div className="blackjackHandLine blackjackHandLinePlayer">
           <p className="blackjackCount">
             {state.hands.player.length > 0 &&
-              `You: ${playerHand.soft ? 'soft ' : ''}${playerHand.total}${isBust(state.hands.player) ? ' — bust' : ''}`}
+              `You: ${playerHand.soft ? 'soft ' : ''}${playerHand.total}${isBust(state.hands.player, state.aces) ? ' — bust' : ''}`}
           </p>
           <div
             className="cardTableHandRow"
@@ -148,11 +159,49 @@ export default function BlackjackBoard({
             data-noSwipe
             style={{ '--handCount': state.hands.player.length } as CSSProperties}
           >
-            {state.hands.player.map((card) => (
-              <Card key={`${card.rank}${card.suit}`} id={`${card.rank}${card.suit}`} card={card} />
-            ))}
+            {state.hands.player.map((card, i) => {
+              const id = `${card.rank}${card.suit}`
+              const ace = card.rank === 'A'
+              return (
+                <Card
+                  key={id}
+                  id={id}
+                  card={card}
+                  badge={ace ? String(playerHand.aceAs[i]) : undefined}
+                  onClick={ace && canPick ? () => pickAce(i, id) : undefined}
+                />
+              )
+            })}
           </div>
         </div>
+
+        {/* Fixed, not inside the card: the hand row scrolls sideways when it isn't fitted, and
+            would clip a popover drawn in it. Measured off the card when it opens. */}
+        {canPick && picking && (
+          <div
+            ref={pickerRef}
+            className="panel blackjackAcePicker"
+            style={{ left: picking.left, top: picking.top }}
+            role="dialog"
+            aria-label="Count this ace as"
+          >
+            {([1, 11] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={playerHand.aceAs[picking.index] === value ? 'blackjackAceOn' : undefined}
+                disabled={!canChooseAce(state, picking.index, value)}
+                title={canChooseAce(state, picking.index, value) ? undefined : 'That would bust you.'}
+                onClick={() => {
+                  onChooseAce?.(picking.index, value)
+                  setPicking(null)
+                }}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Always rendered, empty between turns: the row holds its height. The input and your
             avatar underneath don't jump every time it becomes your move. */}

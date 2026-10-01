@@ -119,12 +119,12 @@ export default function GameLog({
         <div className="gameLogScroll" ref={scroller}>
           {items.map((row) => (
             <div key={row.key} className={`gameLogRow gameLogRow${row.side}`}>
-              <span className={`gameLogBubble gameLogBubble${row.side}`}>{row.side === 'char' ? <SpoilerText text={row.text} secret={secret} /> : row.text}</span>
+              <span className={`gameLogBubble gameLogBubble${row.side}${row.side === 'char' ? ' gameText' : ''}`}>{row.side === 'char' ? <SpoilerText text={row.text} secret={secret} /> : row.text}</span>
             </div>
           ))}
           {streamingText ? (
             <div className="gameLogRow gameLogRowchar">
-              <span className="gameLogBubble gameLogBubblechar"><SpoilerText text={streamingText} secret={secret} streaming /></span>
+              <span className="gameLogBubble gameLogBubblechar gameText"><SpoilerText text={streamingText} secret={secret} streaming /></span>
             </div>
           ) : null}
         </div>

@@ -367,6 +367,13 @@ button:disabled {
   cursor: default;
 }
 
+/* A destructive action reads red everywhere. #root to beat each module's generic `.x button`
+   (`.chatPicker button`, `.prompts button`), which sets the text color and ties a bare
+   `button.danger` on specificity, then wins on stylesheet order. Modules don't restate this. */
+#root button.danger {
+  color: var(--danger);
+}
+
 /* Secondary text under a field or heading. Shared by every module; a module rule only adds what
    differs, usually margin. */
 .hint {

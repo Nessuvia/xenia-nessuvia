@@ -3,7 +3,7 @@
 // character's side. The character deals: they see both hands, their own hole card included.
 
 import type { BlackjackEvent, BlackjackState, Side } from './blackjack.ts'
-import { handValue, isBlackjack, isBust } from './blackjack.ts'
+import { choicesFor, handValue, isBlackjack, isBust } from './blackjack.ts'
 import type { SideNames } from './sides.ts'
 import { naming } from './sides.ts'
 
@@ -22,8 +22,9 @@ export interface StateBlockContext {
 function readHand(state: BlackjackState, side: Side): string {
   const cards = state.hands[side]
   if (cards.length === 0) return 'nothing yet'
-  const { total, soft } = handValue(cards)
-  const note = isBust(cards) ? ', bust' : isBlackjack(cards) ? ', blackjack' : ''
+  const chosen = choicesFor(state, side)
+  const { total, soft } = handValue(cards, chosen)
+  const note = isBust(cards, chosen) ? ', bust' : isBlackjack(cards, chosen) ? ', blackjack' : ''
   return `${cards.map((c) => c.rank).join(', ')} (${soft ? 'soft ' : ''}${total}${note})`
 }
 
@@ -31,7 +32,8 @@ function readHand(state: BlackjackState, side: Side): string {
 function readOutcome(state: BlackjackState, they: string): string {
   if (state.outcome === null) return ''
   if (state.outcome === 'push') return 'The last round pushed.'
-  const bust = isBust(state.hands[state.outcome === 'player' ? 'char' : 'player'])
+  const loser: Side = state.outcome === 'player' ? 'char' : 'player'
+  const bust = isBust(state.hands[loser], choicesFor(state, loser))
   const who = state.outcome === 'char' ? 'You took' : `${they} took`
   return `${who} the last round${bust ? ', the other hand went bust' : ''}.`
 }
@@ -108,6 +110,11 @@ export function describeEvent(events: BlackjackEvent[], you: Side = 'char', name
         break
       case 'end':
         sentences.push('The shoe is finished.')
+        break
+      case 'ace':
+        sentences.push(
+          mine('player') ? `You counted an ace as ${event.value}.` : `${they} counted an ace as ${event.value}.`,
+        )
         break
       case 'say':
         break

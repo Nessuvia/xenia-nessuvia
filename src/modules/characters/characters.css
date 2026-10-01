@@ -68,57 +68,15 @@
   cursor: default;
 }
 
-.characters button.danger {
-  color: var(--danger);
-}
-
 .characters button.secondary {
   background: transparent;
 }
 
-/* The editor is one scrolling page of collapsible sections, with a rail of jump links beside it. */
+/* The editor is one scrolling page of collapsible section cards. */
 .editorLayout {
   display: flex;
   flex: 1;
   min-height: 0;
-  gap: 16px;
-}
-
-.editorRail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 0 0 auto;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-}
-
-.characters .editorRail button {
-  background: transparent;
-  border-color: transparent;
-  color: var(--textMuted);
-  text-align: left;
-  align-self: stretch;
-}
-
-.characters .editorRail button:hover {
-  background: var(--surfaceActive);
-  color: var(--text);
-}
-
-/* The rail doubles as a map of what the card holds, so each entry carries its count. */
-.characters .editorRail button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.railCount {
-  margin-left: auto;
-  color: var(--textDim);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
 }
 
 .editorSections {
@@ -129,14 +87,23 @@
   gap: 12px;
 }
 
+/* The sections as cards in at most two columns, one below ~860px of editor width. Columns rather
+   than a grid, so a short card doesn't leave a gap beside a tall one (the palette editor does the
+   same). */
+.editorCards {
+  columns: 420px 2;
+  column-gap: 12px;
+}
+
 .editorSection {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
-  /* scrollIntoView lands the header under the scroller's top edge, not flush against it. */
-  scroll-margin-top: 8px;
+  break-inside: avoid;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
 }
 
 .editorSectionHeader {
@@ -655,11 +622,6 @@
 
   .colorsGroup {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* No room for the rail. The shut section headers are the table of contents here. */
-  .editorRail {
-    display: none;
   }
 
   .galleryGrid img,

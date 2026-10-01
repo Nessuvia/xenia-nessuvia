@@ -4,7 +4,7 @@ import type { Card, Rank, Suit } from './deck.ts'
 import type { BlackjackEvent, BlackjackState } from './blackjack.ts'
 import { buildStateBlock, describeEvent } from './blackjackState.ts'
 import {
-  dealRound, dealerStands, handValue, initialState, isBlackjack, isBust, legalActions, nextEvents,
+  canChooseAce, dealRound, dealerStands, handValue, initialState, isBlackjack, isBust, legalActions, nextEvents,
   reduce, replay, resolveAction, roundOutcome, shoeFloor, visibleHand, winner,
 } from './blackjack.ts'
 
@@ -320,3 +320,32 @@ function state(patch: Partial<BlackjackState>): BlackjackState {
 }
 
 console.log('ok')
+
+// --- the player chooses how their aces count ----------------------------------
+{
+  // A 6: unchosen, the ace is 11 (soft 17). Set to 1, it stays 1 (hard 7).
+  assert.deepStrictEqual(handValue(hand('AS 6H')), { total: 17, soft: true, aceAs: { 0: 11 } })
+  assert.deepStrictEqual(handValue(hand('AS 6H'), { 0: 1 }), { total: 7, soft: false, aceAs: { 0: 1 } })
+  // Chosen 11 is a preference: a card that would bust drops it, rather than busting the hand.
+  assert.deepStrictEqual(handValue(hand('AS 6H 9C'), { 0: 11 }), { total: 16, soft: false, aceAs: { 0: 1 } })
+  // Two aces, one chosen 11: the unchosen one gives way first.
+  assert.deepStrictEqual(handValue(hand('AS AH 9C'), { 1: 11 }).aceAs, { 0: 1, 1: 11 })
+  // A blackjack the player chose to count low isn't one.
+  assert.ok(isBlackjack(hand('AS KH')))
+  assert.ok(!isBlackjack(hand('AS KH'), { 0: 1 }))
+
+  const table: BlackjackState = { ...initialState(1), hands: { player: hand('AS 6H 5C'), char: hand('KS 7H') }, turn: 'player' }
+  // A 6 5 is 12 with the ace low; 22 with it high, so 11 is refused and 1 allowed.
+  assert.ok(canChooseAce(table, 0, 1))
+  assert.ok(!canChooseAce(table, 0, 11))
+  assert.ok(!canChooseAce(table, 1, 1)) // not an ace
+  assert.ok(!canChooseAce({ ...table, turn: 'char' }, 0, 1)) // not your turn
+
+  // The choice is an event: folding it changes what the hand is worth, and a deal clears it.
+  const soft: BlackjackState = { ...table, hands: { ...table.hands, player: hand('AS 6H') } }
+  const chosen = reduce(soft, { kind: 'ace', index: 0, value: 1 })
+  assert.strictEqual(handValue(chosen.hands.player, chosen.aces).total, 7)
+  assert.deepStrictEqual(reduce(chosen, { kind: 'deal' }).aces, {})
+  // The round reads the player's hand with their choices: hard 7 against 17 loses.
+  assert.strictEqual(roundOutcome({ ...chosen, holeDown: false }), 'char')
+}

@@ -7,6 +7,13 @@
   gap: 12px;
 }
 
+/* The scrolling region under the header: .appContent clips, so the page has to scroll itself. */
+.gamesBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .gamesSubheading {
   margin: 0;
   font-size: 14px;
@@ -58,32 +65,59 @@
   font-size: 12px;
 }
 
-.gamesRowRemove {
-  background: none;
-  border: none;
-  color: var(--textMuted);
-  cursor: pointer;
+/* The game picker. A Story cover on the Write shelf is 160px wide at 3/4; a game card is that
+   turned on its side, so its floor is the cover's height (160 / 3 * 4) and it runs 4/3. */
+.gamesShelf {
+  list-style: none;
+  margin: 0;
   padding: 0;
-  font-size: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  gap: 12px;
 }
 
-.gamesKindRow {
+/* Placeholder art until each game has its own: a diagonal wash from the accent into the panel
+   color, with the name in the lower corner where a title sits on a cover. */
+.gamesCard {
+  position: relative;
   display: flex;
-  gap: 8px;
-}
-
-.gamesKindButton {
-  padding: 6px 12px;
-  background: var(--surface);
+  align-items: flex-end;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
+  border-radius: calc(var(--radius) + 2px);
+  --gamesCardArt: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 45%, var(--surface)),
+    var(--surfaceRaised) 70%
+  );
+  background: var(--gamesCardArt);
+  color: var(--textBright);
+  text-align: left;
+  overflow: hidden;
   cursor: pointer;
 }
 
-.gamesKindButtonOn {
-  background: var(--surfaceSelected);
+.gamesCard:hover {
+  border-color: var(--borderStrong);
+}
+
+/* Hover shows on the border alone. The shelf class to outrank the `button:hover:not(:disabled)`
+   baseline in index.css, which repaints every button's background and wiped out the art. */
+.gamesShelf .gamesCard:hover:not(:disabled) {
+  background: var(--gamesCardArt);
   border-color: var(--borderAccent);
+}
+
+.gamesCardOn {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+
+.gamesCardName {
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .gamesReplay {
@@ -210,6 +244,7 @@
    centred, so every chunk of the reply moved the cards half a line up the screen while you were
    watching them. The text scrolls inside the band instead and useStickToBottom keeps the newest
    line in view. */
+/* The character's words, in their text color (see .gameLogBubblechar). */
 .cardTableLine {
   margin: 0;
   flex: 1;
@@ -217,6 +252,7 @@
   overflow-y: auto;
   padding: 8px;
   background: var(--surface);
+  color: var(--textColor, var(--text));
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
 }
@@ -546,9 +582,11 @@
   max-width: 80%;
 }
 
+/* The character's text color: the palette's chat color or the character's own, set on the game's root
+   (GamesView useCharacterText). */
 .gameLogBubblechar {
   background: var(--surfaceRaised);
-  color: var(--text);
+  color: var(--textColor, var(--text));
 }
 
 .gameLogBubbleplayer {
@@ -819,4 +857,161 @@
   left: 4px;
   color: var(--surface);
   white-space: nowrap;
+}
+
+/* ---- History (GamesView.tsx History, HistoryCard) ---------------------------- */
+
+/* Under the tabs: Group by on the left, Delete Abandoned on the right. */
+.gamesHistoryBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gamesHistoryBar > label.gamesHistoryGroupBy {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+.gamesHistoryBar > button.danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* One group: its heading over a rule the container's width, then its cards. */
+.gamesHistoryGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gamesHistoryGroupTitle {
+  margin: 8px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--textSoft);
+}
+
+/* The card and its trash share a cell; the trash sits in the card's bottom corner, clear of the
+   opponent's avatar in the top one. */
+.gamesHistoryItem {
+  position: relative;
+}
+
+/* A result card: the same shell as a Play card, laid out top to bottom and centred. */
+.gamesShelf .gamesResultCard {
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+
+/* You on the left, them on the right, facing each other across the card. */
+.gamesVs {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.gamesVs .gamesVsAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.gamesResultMid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gamesResult {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.gamesResult.win {
+  color: var(--success);
+}
+
+.gamesResult.loss {
+  color: var(--danger);
+}
+
+.gamesResult.draw,
+.gamesResult.none {
+  color: var(--textSoft);
+}
+
+.gamesResultScore {
+  font-size: 13px;
+  color: var(--textSoft);
+}
+
+.gamesCardMeta {
+  font-size: 11px;
+  color: var(--textMuted);
+}
+
+/* Hidden until the card is hovered or something in its cell has focus, so it's still reachable by
+   keyboard. #root to beat .gamesPage's and the base button's padding and paint. */
+#root .gamesCardRemove {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  line-height: 0;
+  opacity: 0;
+}
+
+/* #root as well: the hidden state above carries it, and this has to outrank that. */
+#root .gamesHistoryItem:hover .gamesCardRemove,
+#root .gamesHistoryItem:focus-within .gamesCardRemove {
+  opacity: 1;
+}
+
+/* ---- Blackjack aces (BlackjackBoard.tsx) ------------------------------------- */
+
+/* What an ace in your hand counts as, in the card's corner. */
+.cardTableCardBadge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 1.6em;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--surfaceSelected);
+  color: var(--textBright);
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 1 or 11, above the ace that was clicked. Fixed at the card's measured top centre. */
+.blackjackAcePicker {
+  position: fixed;
+  z-index: var(--layer-3);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--borderStrong);
+  border-radius: calc(var(--radius) + 2px);
+  transform: translate(-50%, calc(-100% - 6px));
+}
+
+.blackjackAcePicker .blackjackAceOn {
+  border-color: var(--accent);
 }

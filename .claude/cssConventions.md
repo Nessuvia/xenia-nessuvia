@@ -165,6 +165,11 @@ box left of the boxes above and below it.
 In a form, every control fills its row (`flex: 1`), so a select, a slider and a text field share a
 right edge. A slider's number box stays `--numberWidth` at the end of the slider's row.
 
+A field in a flex row that sizes to its content takes a `width`, not a `flex-basis`. The row
+measures an input at its built-in width (about 170px) whatever its basis says, then shrinks it to
+fit. `flex: 0 1 auto; width: …; min-width: 0` gives the field its width and still lets it shrink.
+Measure the rendered width before resizing a field: the stylesheet may not be what's on screen.
+
 Two values close together are one value. Before adding a 64px number box beside a 72px one, use the
 var.
 

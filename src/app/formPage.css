@@ -59,10 +59,6 @@
   cursor: default;
 }
 
-.formPage button.danger {
-  color: var(--danger);
-}
-
 .formPage button.secondary {
   background: transparent;
 }

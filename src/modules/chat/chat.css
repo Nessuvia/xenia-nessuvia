@@ -37,11 +37,6 @@
   cursor: default;
 }
 
-.chatPicker button.danger,
-.chatView button.danger {
-  color: var(--danger);
-}
-
 .chatPicker button.secondary,
 .chatView button.secondary {
   background: transparent;
@@ -99,11 +94,6 @@
 .characterSheet .profileActions button:hover,
 .exportMenuList button:hover:not(:disabled) {
   background: var(--borderStrong);
-}
-
-.characterSheet .chatPickerHeader button.danger,
-.characterSheet button.danger {
-  color: var(--danger);
 }
 
 .characterSheet .chatPickerHeader button.secondary,
@@ -165,27 +155,52 @@
 
 /* Everything above the card's sections: who this is, the two chat actions, and the chat list.
    It scrolls with the sections rather than pinning, so a long card gets the full column. */
+/* The character page's top: the profile card, then the chats card. */
 .sheetTop {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-bottom: 4px;
+  gap: 12px;
 }
 
-.profileIdentity {
+/* Who this is: a large avatar beside the name, tags and the chat buttons. The slot a customizable
+   profile grows into later, so it holds layout only. */
+.profileCard {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
 }
 
-.profileIdentity h3 {
-  margin: 0 0 6px;
-}
-
-.profileAvatar {
+/* Two classes to beat the shared .avatar size. */
+.profileCard .profileAvatar {
   width: 96px;
   height: 96px;
   flex: none;
+}
+
+.profileBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.profileName {
+  margin: 0;
+  font-size: 22px;
+}
+
+.profileChats {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+/* A card title, the same size as the section cards below it, rather than a page heading. */
+.profileChats .chatPickerTitle h2 {
+  font-size: 15px;
 }
 
 .profileTags {
@@ -207,23 +222,44 @@
   gap: 6px;
 }
 
+/* The chat list's search, on the right of its header: a magnifier beside the field, then the
+   Titles only box. */
 .chatSearchRow {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.chatSearchRow .chatSearch {
-  flex: 1;
   min-width: 0;
 }
 
-.chatSearchInside {
+.chatSearchGlass {
+  flex: none;
+  color: var(--textMuted);
+}
+
+/* A width, not a flex basis: the row sizes itself from its content, and an input's content size
+   is its built-in ~170px whatever the basis says. Shrinks before anything else in the header. */
+.chatSearchRow .chatSearch {
+  flex: 0 1 auto;
+  width: 256px;
+  min-width: 0;
+}
+
+/* Row plus tag to beat `.characters label` (0-1-1): the character page sits inside the editor's
+   stylesheet scope, which stacks every label's box above its text. */
+.chatSearchRow > label.chatSearchInside {
   display: flex;
+  flex-direction: row;
+  flex: none;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
   font-size: 13px;
+}
+
+/* `.characters input` gives every input a field's padding and well, a checkbox included. */
+.chatSearchRow > label.chatSearchInside > input {
+  margin: 0;
+  padding: 0;
 }
 
 .chatDeleteToggle {
@@ -446,6 +482,15 @@
   padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
+}
+
+/* A chat row's actions: square icon buttons, each named by its tooltip. #root because .chatPicker
+   button and .chatView button paint every button in the module with text padding. */
+#root .chatRowIcon {
+  display: inline-grid;
+  place-items: center;
+  padding: 6px;
+  line-height: 0;
 }
 
 .chatTitle {
@@ -1006,15 +1051,19 @@
   color: var(--textColor, inherit);
 }
 
-.messageBody .spokenText {
+/* Marker colors, for a message and for a character's line in a game (.gameText). */
+.messageBody .spokenText,
+.gameText .spokenText {
   color: var(--quoteColor, inherit);
 }
 
-.messageBody .emphasisText {
+.messageBody .emphasisText,
+.gameText .emphasisText {
   color: var(--emphasisColor, inherit);
 }
 
-.messageBody .boldText {
+.messageBody .boldText,
+.gameText .boldText {
   color: var(--boldColor, inherit);
 }
 

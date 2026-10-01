@@ -49,10 +49,6 @@
   cursor: default;
 }
 
-.personas button.danger {
-  color: var(--danger);
-}
-
 .personas button.secondary {
   background: transparent;
 }

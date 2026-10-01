@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { newCharacter, useCharacters } from '../../core/stores/charactersStore'
 import { useSettings, useActiveConnection } from '../../core/stores/settingsStore'
 import { ColorInput } from '../../app/ColorInput'
@@ -39,9 +39,6 @@ const allShut: Record<SectionId, boolean> = {
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
-
-/** The leading number of a summary, for the rail badge. Empty summary means no badge. */
-const railCount = (summary: string | undefined) => summary?.split(' ')[0] ?? ''
 
 /**
  * `characterId` null means a brand new character, it's written on the first autosave, and
@@ -91,7 +88,6 @@ export default function CharacterEditor({
   // Which URLs failed to load. Keyed by URL, not index, so removing an entry doesn't shift the
   // broken marks onto its neighbours.
   const [brokenUrls, setBrokenUrls] = useState<string[]>([])
-  const sectionRefs = useRef<Partial<Record<SectionId, HTMLElement | null>>>({})
 
   useEffect(() => {
     if (characters.length === 0) load()
@@ -216,13 +212,7 @@ export default function CharacterEditor({
       Object.fromEntries(sectionIds.map((id) => [id, value])) as Record<SectionId, boolean>,
     )
 
-  // A rail click always opens; it never shuts what it scrolls to.
-  const jump = (id: SectionId) => {
-    setOpen((prev) => ({ ...prev, [id]: true }))
-    sectionRefs.current[id]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }
-
-  // Every section says what it holds, open or shut. With all six shut on arrival these summaries
+  // Every section says what it holds, open or shut. With every section shut these summaries
   // are the only thing telling you the card system is there at all, so an empty section says
   // nothing rather than "0 of x", a blank row looks like room, a zero looks like broken.
   const openings = greetings.length + (draft.firstMessage.trim() ? 1 : 0)
@@ -267,10 +257,7 @@ export default function CharacterEditor({
   const section = (id: SectionId, children: ReactNode) => (
     <section
       key={id}
-      className={open[id] ? 'editorSection' : 'editorSection shut'}
-      ref={(el) => {
-        sectionRefs.current[id] = el
-      }}
+      className={open[id] ? 'card editorSection' : 'card editorSection shut'}
     >
       <div className="editorSectionHeader" onClick={() => toggle(id)}>
         <h3>{id}</h3>
@@ -286,25 +273,13 @@ export default function CharacterEditor({
   return (
     <div className="characters characterEditor screenFrame">
       <div className="editorLayout">
-        {/* Hidden below the breakpoint by CSS, the shut section headers are the table of
-            contents on a phone. The counts make the rail a map of what this card holds rather
-            than six identical words. */}
-        <nav className="editorRail">
-          {sectionIds.map((id) => (
-            <button key={id} type="button" onClick={() => jump(id)}>
-              {id}
-              {railCount(summaries[id]) && (
-                <span className="railCount">{railCount(summaries[id])}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-
         <div className="screenBody editorSections">
           {header}
 
           {bulkRow}
 
+          {/* Cards in up to two columns, like the palette editor. */}
+          <div className="editorCards">
           {section(
             'Identity',
             <>
@@ -761,6 +736,8 @@ export default function CharacterEditor({
               <p className="hint">Not sent to the model.</p>
             </>,
           )}
+
+          </div>
 
           {bulkRow}
         </div>

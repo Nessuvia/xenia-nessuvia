@@ -29,6 +29,12 @@ export type BlackjackEvent =
   | { kind: 'settle'; outcome: Outcome }
   | { kind: 'end' }
   | { kind: 'say'; by: Side; text: string }
+  /** The player sets how one ace in their hand counts, by its index in the hand. */
+  | { kind: 'ace'; index: number; value: AceValue }
+
+export type AceValue = 1 | 11
+/** The player's ace choices for the current hand, by card index. The dealer's aces are never chosen. */
+export type AceChoices = Record<number, AceValue>
 
 export interface BlackjackState {
   deck: Card[]
@@ -44,39 +50,73 @@ export interface BlackjackState {
   /** The last round's result, or null before the first is settled. */
   outcome: Outcome | null
   over: boolean
+  /** How the player chose to count their aces this hand. Cleared by each deal. */
+  aces: AceChoices
 }
 
-/** A hand's best total, and whether an ace is still counting as eleven. */
-export function handValue(hand: Card[]): { total: number; soft: boolean } {
+/**
+ * A hand's best total, whether an ace is still counting as eleven, and what each ace counts as.
+ *
+ * `chosen` is the player's say over their aces. An ace set to 1 stays 1. An ace set to 11 is a
+ * preference: it holds until the hand would bust, and only then drops. Aces nobody chose drop
+ * first, so a choice of 11 is the last thing to give way.
+ */
+export function handValue(
+  hand: Card[],
+  chosen: AceChoices = {},
+): { total: number; soft: boolean; aceAs: Record<number, AceValue> } {
   let total = 0
-  let aces = 0
-  for (const card of hand) {
+  const auto: number[] = []
+  const preferred: number[] = []
+  const aceAs: Record<number, AceValue> = {}
+  hand.forEach((card, i) => {
     if (card.rank === 'A') {
-      aces++
+      if (chosen[i] === 1) {
+        total += 1
+        aceAs[i] = 1
+        return
+      }
       total += 11
+      aceAs[i] = 11
+      ;(chosen[i] === 11 ? preferred : auto).push(i)
     } else if (card.rank === 'K' || card.rank === 'Q' || card.rank === 'J' || card.rank === '10') {
       total += 10
     } else {
       total += Number(card.rank)
     }
-  }
-  // Every ace that would bust the hand drops to one, one at a time.
-  let soft = aces > 0
-  while (total > 21 && aces > 0) {
+  })
+  // Every ace that would bust the hand drops to one, one at a time: unchosen ones first.
+  for (const i of [...auto, ...preferred]) {
+    if (total <= 21) break
     total -= 10
-    aces--
-    soft = aces > 0
+    aceAs[i] = 1
   }
-  return { total, soft }
+  const soft = Object.values(aceAs).some((v) => v === 11)
+  return { total, soft, aceAs }
 }
 
 /** Twenty-one on the first two cards, which beats twenty-one on three. */
-export function isBlackjack(hand: Card[]): boolean {
-  return hand.length === openingCards && handValue(hand).total === 21
+export function isBlackjack(hand: Card[], chosen: AceChoices = {}): boolean {
+  return hand.length === openingCards && handValue(hand, chosen).total === 21
 }
 
-export function isBust(hand: Card[]): boolean {
-  return handValue(hand).total > 21
+export function isBust(hand: Card[], chosen: AceChoices = {}): boolean {
+  return handValue(hand, chosen).total > 21
+}
+
+/** The aces the player's choices apply to: theirs, never the dealer's. */
+export const choicesFor = (state: BlackjackState, side: Side): AceChoices => (side === 'player' ? state.aces : {})
+
+/**
+ * Whether the player may count the ace at `index` as `value` right now: on their turn, an ace, and
+ * not a value that busts them on the spot. An 11 that would bust is refused rather than set and
+ * dropped at once.
+ */
+export function canChooseAce(state: BlackjackState, index: number, value: AceValue): boolean {
+  if (state.over || state.turn !== 'player') return false
+  if (state.hands.player[index]?.rank !== 'A') return false
+  const { total, aceAs } = handValue(state.hands.player, { ...state.aces, [index]: value })
+  return total <= 21 && aceAs[index] === value
 }
 
 /** What the player can see of the dealer's hand: the hole card isn't in it. */
@@ -94,6 +134,7 @@ export function initialState(seed: number): BlackjackState {
     round: 0,
     outcome: null,
     over: false,
+    aces: {},
   }
 }
 
@@ -111,6 +152,7 @@ export function reduce(state: BlackjackState, event: BlackjackEvent): BlackjackS
         holeDown: true,
         turn: 'player',
         outcome: null,
+        aces: {},
       }
     }
     case 'hit': {
@@ -144,6 +186,8 @@ export function reduce(state: BlackjackState, event: BlackjackEvent): BlackjackS
       return { ...state, over: true, turn: null }
     case 'say':
       return state
+    case 'ace':
+      return { ...state, aces: { ...state.aces, [event.index]: event.value } }
   }
 }
 
@@ -162,7 +206,7 @@ export type Action = 'hit' | 'stand'
  */
 export function legalActions(state: BlackjackState): Action[] {
   if (state.over || state.turn !== 'player') return []
-  if (isBust(state.hands.player)) return []
+  if (isBust(state.hands.player, state.aces)) return []
   return ['hit', 'stand']
 }
 
@@ -176,7 +220,7 @@ export function dealRound(state: BlackjackState): BlackjackEvent[] {
   }
   emit({ kind: 'deal' })
   // Two blackjacks push, one wins on the spot. Neither side gets a decision either way.
-  if (isBlackjack(current.hands.player) || isBlackjack(current.hands.char)) {
+  if (isBlackjack(current.hands.player, current.aces) || isBlackjack(current.hands.char)) {
     emit({ kind: 'reveal' })
     events.push(...settle(current))
   }
@@ -206,9 +250,9 @@ export function resolveAction(state: BlackjackState, action: Action): BlackjackE
   const card = current.deck[0]
   if (!card) return [{ kind: 'end' }]
   emit({ kind: 'hit', by: 'player', rank: card.rank })
-  if (isBust(current.hands.player)) emit({ kind: 'bust', by: 'player' })
+  if (isBust(current.hands.player, current.aces)) emit({ kind: 'bust', by: 'player' })
   // Twenty-one needs no decision: it's stood for them rather than asked about.
-  else if (handValue(current.hands.player).total === 21) emit({ kind: 'stand', by: 'player' })
+  else if (handValue(current.hands.player, current.aces).total === 21) emit({ kind: 'stand', by: 'player' })
   return events
 }
 
@@ -232,7 +276,7 @@ export function nextEvents(state: BlackjackState): BlackjackEvent[] | null {
 
   if (current.holeDown) emit({ kind: 'reveal' })
   // A busted player leaves nothing to beat. The dealer turns the hole card over and stops.
-  if (isBust(current.hands.player)) {
+  if (isBust(current.hands.player, current.aces)) {
     events.push(...settle(current))
     return events
   }
@@ -256,12 +300,12 @@ function settle(state: BlackjackState): BlackjackEvent[] {
 
 /** Who took the round. Read off the hands: it can be checked against them. */
 export function roundOutcome(state: BlackjackState): Outcome {
-  const player = handValue(state.hands.player).total
+  const player = handValue(state.hands.player, state.aces).total
   const char = handValue(state.hands.char).total
-  if (isBust(state.hands.player)) return 'char'
+  if (isBust(state.hands.player, state.aces)) return 'char'
   if (isBust(state.hands.char)) return 'player'
   // Blackjack beats a three-card twenty-one. Two of them push.
-  const playerNatural = isBlackjack(state.hands.player)
+  const playerNatural = isBlackjack(state.hands.player, state.aces)
   const charNatural = isBlackjack(state.hands.char)
   if (playerNatural !== charNatural) return playerNatural ? 'player' : 'char'
   if (player === char) return 'push'

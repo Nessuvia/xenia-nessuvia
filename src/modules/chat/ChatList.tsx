@@ -1,7 +1,7 @@
 import { textRulesFor } from '../../core/stores/textRules'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { RiStarFill, RiStarLine } from '@remixicon/react'
+import { RiDeleteBinLine, RiDownloadLine, RiPencilLine, RiSearchLine, RiStarFill, RiStarLine } from '@remixicon/react'
 import { useChats } from '../../core/stores/chatStore'
 import { displayName, useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
@@ -51,8 +51,14 @@ function ExportMenu({ chat, character }: { chat: Chat; character: Character }) {
 
   return (
     <div className="chatExport" ref={ref}>
-      <button type="button" onClick={() => setOpen(!open)}>
-        Export
+      <button
+        type="button"
+        className="chatRowIcon"
+        title="Export"
+        aria-label="Export"
+        onClick={() => setOpen(!open)}
+      >
+        <RiDownloadLine size={16} />
       </button>
       {open && (
         <div className="chatExportMenu">
@@ -84,9 +90,9 @@ export default function ChatList({
   const [renaming, setRenaming] = useState<number | null>(null)
   const [title, setTitle] = useState('')
   const [search, setSearch] = useState('')
-  // Not persisted: which way you're searching right now is a glance-level choice, like the
-  // collapsed column next door.
-  const [inside, setInside] = useState(false)
+  // Off by default: a search reads the messages. Not persisted: which way you're searching right
+  // now is a glance-level choice, like the collapsed column next door.
+  const [titlesOnly, setTitlesOnly] = useState(false)
   // Also not persisted, deliberately: skipping the confirm is a decision for this sitting only.
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false)
 
@@ -94,20 +100,21 @@ export default function ChatList({
     loadChats(character.id!)
   }, [character.id, loadChats])
 
-  // Loaded once when the box is checked, then every keystroke filters the array. Reading the table
-  // per keystroke would be the same answer at a much worse price.
+  const query = search.trim().toLowerCase()
+  const inside = !titlesOnly && query !== ''
+
+  // Loaded once, when the first message search is typed, then every keystroke filters the array.
+  // Reading the table per keystroke would be the same answer at a much worse price.
   useEffect(() => {
     if (inside) loadSearchIndex(character.id!)
   }, [inside, character.id, loadSearchIndex])
 
-  // The search row only exists above this many chats; below it, a query left over from before a
-  // delete must not go on hiding rows from a box that isn't on screen.
+  // The delete toggle only earns its row once the list is long enough to need it.
   const showTools = chats.length > 4
-  const query = showTools ? search.trim().toLowerCase() : ''
 
-  /** Matching messages per chat id. Empty unless searching inside. */
+  /** Matching messages per chat id: a literal, case-insensitive match. Empty for titles only. */
   const counts = useMemo(() => {
-    if (!inside || !query) return {} as Record<number, number>
+    if (!inside) return {} as Record<number, number>
     const out: Record<number, number> = {}
     for (const m of searchMessages) {
       if (m.content.toLowerCase().includes(query)) out[m.chatId] = (out[m.chatId] ?? 0) + 1
@@ -115,8 +122,7 @@ export default function ChatList({
     return out
   }, [inside, query, searchMessages])
 
-  // A title hit still counts when searching inside. The extra results are the point of the box:
-  // additions to what it already found.
+  // Searching messages, a title hit still counts: the message matches add to it.
   const shown = chats.filter(
     (c) => c.title.toLowerCase().includes(query) || (c.id !== undefined && counts[c.id] > 0),
   )
@@ -129,30 +135,31 @@ export default function ChatList({
           {chats.length > 0 && <span className="hint">({chats.length})</span>}
           {onCollapse && <CollapseButton label="Chats" collapsed={false} onToggle={onCollapse} />}
         </span>
+        <span className="chatSearchRow">
+          <RiSearchLine size={16} className="chatSearchGlass" aria-hidden />
+          <input
+            type="search"
+            className="chatSearch"
+            placeholder="Search chats..."
+            aria-label="Search chats"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <label className="chatSearchInside">
+            <input
+              type="checkbox"
+              checked={titlesOnly}
+              onChange={(e) => setTitlesOnly(e.target.checked)}
+            />
+            Titles only
+          </label>
+        </span>
       </div>
 
       {/* The sheet sits this list above the card's sections. Its chrome costs the sections
-          screen space. Under a handful of chats you can see them all anyway. The search and the
-          delete toggle only earn their rows once the list is long enough to need them. */}
+          screen space, so the delete toggle only appears once the list is long. */}
       {showTools && (
         <>
-          <div className="chatSearchRow">
-            <input
-              className="chatSearch"
-              placeholder="Search chats..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <label className="chatSearchInside">
-              <input
-                type="checkbox"
-                checked={inside}
-                onChange={(e) => setInside(e.target.checked)}
-              />
-              Search inside chats
-            </label>
-          </div>
-
           <label className="chatDeleteToggle">
             <input
               type="checkbox"
@@ -205,7 +212,7 @@ export default function ChatList({
             )}
             <button
               type="button"
-              className="starButton"
+              className="starButton chatRowIcon"
               title={c.bookmarked ? 'Remove bookmark' : 'Bookmark'}
               aria-label={c.bookmarked ? 'Remove bookmark' : 'Bookmark'}
               onClick={() => toggleBookmark(c.id!)}
@@ -215,22 +222,27 @@ export default function ChatList({
             <ExportMenu chat={c} character={character} />
             <button
               type="button"
+              className="chatRowIcon"
+              title="Rename"
+              aria-label="Rename"
               onClick={() => {
                 setTitle(c.title)
                 setRenaming(c.id!)
               }}
             >
-              Rename
+              <RiPencilLine size={16} />
             </button>
             <button
               type="button"
-              className="danger"
+              className="chatRowIcon danger"
+              title="Delete"
+              aria-label="Delete"
               onClick={() => {
                 if (skipDeleteConfirm || confirm(`Delete "${c.title}" and its messages?`))
                   deleteChat(c.id!)
               }}
             >
-              Delete
+              <RiDeleteBinLine size={16} />
             </button>
           </li>
         ))}
