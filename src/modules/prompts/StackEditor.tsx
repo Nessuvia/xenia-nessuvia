@@ -15,6 +15,7 @@ import { parseSillyTavern } from '../../core/sillytavern/importSillyTavern'
 import PromptPreview from './PromptPreview'
 import TemplateEditor from './TemplateEditor'
 import LookPanel from './LookPanel'
+import DefaultsPanel from './DefaultsPanel'
 import { sendMessage } from '../../core/connectors/openaiCompatible'
 import { useAskContext, type AskContext } from '../../core/stores/askStore'
 import { xeniaPrompt } from '../../core/prompt/xeniaPrompts'
@@ -64,6 +65,13 @@ export default function StackEditor() {
   const activeStackId = useSettings((s) => s.activeStackId)
   const activeStoryStackId = useSettings((s) => s.activeStoryStackId)
   const activeId = kind === 'story' ? activeStoryStackId : activeStackId
+  // The stack open in the editor. Picking one here never changes a default: Prompts > Defaults does
+  // that. null opens the default of the kind on screen.
+  const [editingId, setEditingId] = useState<number | null>(null)
+  function pickKind(next: StackKind) {
+    setKind(next)
+    setEditingId(null)
+  }
   const [draft, setDraft] = useState<PromptStack | null>(null)
   // Template or Preview on the Stacks tab. Page view state, not saved.
   const [view, setView] = useState<'template' | 'preview'>('preview')
@@ -83,11 +91,18 @@ export default function StackEditor() {
   }, [load])
 
   useEffect(() => {
+    const open = useStacks.getState().stacks.find((s) => s.id === editingId && stackKind(s) === kind)
+    // freshly loaded stack is already in sync, don't autosave it back
+    if (open) {
+      setDraft(open)
+      setSaved(true)
+      return
+    }
     ensureActive(kind).then((s) => {
       setDraft(s)
-      setSaved(true) // freshly loaded stack is already in sync, don't autosave it back
+      setSaved(true)
     })
-  }, [kind, activeId, ensureActive])
+  }, [kind, editingId, activeId, ensureActive])
 
   // Turning Write off while the Story builder is showing snaps back to the chat stack.
   useEffect(() => {
@@ -112,7 +127,7 @@ export default function StackEditor() {
 
   if (!draft) return <p className="placeholder">Loading…</p>
 
-  // An imported file lands as a new stack of its own kind, and becomes the active one. It never
+  // An imported file lands as a new stack of its own kind and opens in the editor. It never
   // overwrites the stack you were looking at.
   async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -126,11 +141,8 @@ export default function StackEditor() {
       // Settings › Connections.
       const imported = text.includes('nessu-prompt-stack') ? parseStack(text) : stackFromSt(text)
       const id = await save(imported)
-      const importedKind = stackKind(imported)
-      useSettings.setState(
-        importedKind === 'story' ? { activeStoryStackId: id } : { activeStackId: id },
-      )
-      setKind(importedKind)
+      setKind(stackKind(imported))
+      setEditingId(id)
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Import failed.')
     }
@@ -144,15 +156,15 @@ export default function StackEditor() {
   // One list feeding both shapes: buttons on the row at desktop width, the Options menu below it on
   // a phone. `icon` marks the two that sit in the right-hand group on desktop.
   const actions = [
-    { label: 'New', run: () => create(kind) },
+    { label: 'New', run: () => create(kind).then(setEditingId) },
     // A session-shaped chat stack: cast slots instead of the speaker's own description.
     ...(kind === 'chat' && multiplayerEnabled
-      ? [{ label: 'New multiplayer', run: () => create('chat', 'multiplayer') }]
+      ? [{ label: 'New multiplayer', run: () => create('chat', 'multiplayer').then(setEditingId) }]
       : []),
-    { label: 'Duplicate', run: () => duplicate(draft.id!) },
+    { label: 'Duplicate', run: () => duplicate(draft.id!).then(setEditingId) },
     { label: 'Import', run: () => fileInput.current?.click(), icon: <RiUploadLine size={14} /> },
     { label: 'Export', run: () => exportStack(draft), icon: <RiDownloadLine size={14} /> },
-    { label: 'Delete', run: () => remove(draft.id!), danger: true },
+    { label: 'Delete', run: () => remove(draft.id!).then(() => setEditingId(null)), danger: true },
   ] as { label: string; run: () => void; icon?: ReactNode; danger?: boolean }[]
 
   // The stacks that ship with the build, for the kind on screen. Picking one writes a new row and
@@ -167,19 +179,19 @@ export default function StackEditor() {
       <PageHeader
         title="Prompt stacks"
         actions={
-          writeEnabled && (
+          writeEnabled && tab !== 'defaults' && (
             <div className="kindSwitch">
               <button
                 type="button"
                 className={kind === 'chat' ? 'active' : ''}
-                onClick={() => setKind('chat')}
+                onClick={() => pickKind('chat')}
               >
                 Chat
               </button>
               <button
                 type="button"
                 className={kind === 'story' ? 'active' : ''}
-                onClick={() => setKind('story')}
+                onClick={() => pickKind('story')}
               >
                 Story
               </button>
@@ -190,6 +202,8 @@ export default function StackEditor() {
         <PageTabs tabs={tabs} current={tab} onPick={setTab} />
       </PageHeader>
 
+      {/* Defaults picks across both kinds: no stack is open, so the picker row stays hidden. */}
+      {tab !== 'defaults' && (
       <div className="presetRow">
         <div>
           <input
@@ -199,16 +213,7 @@ export default function StackEditor() {
             aria-label="Stack name"
             title="Stack name"
           />
-          <select
-            value={activeId ?? ''}
-            onChange={(e) =>
-              useSettings.setState(
-                kind === 'story'
-                  ? { activeStoryStackId: Number(e.target.value) }
-                  : { activeStackId: Number(e.target.value) },
-              )
-            }
-          >
+          <select value={draft.id ?? ''} onChange={(e) => setEditingId(Number(e.target.value))}>
             {stacks
               .filter((s) => stackKind(s) === kind)
               .map((s) => (
@@ -235,7 +240,7 @@ export default function StackEditor() {
                             type="button"
                             onClick={() => {
                               setMenuOpen(false)
-                              addBundled(b.key)
+                              addBundled(b.key).then((id) => id !== undefined && setEditingId(id))
                             }}
                           >
                             Bundled: {b.name}
@@ -278,7 +283,7 @@ export default function StackEditor() {
                             type="button"
                             onClick={() => {
                               setBundledOpen(false)
-                              addBundled(b.key)
+                              addBundled(b.key).then((id) => id !== undefined && setEditingId(id))
                             }}
                           >
                             {b.name}
@@ -319,9 +324,14 @@ export default function StackEditor() {
           />
         </div>
       </div>
+      )}
       {importError && <p className="error">{importError}</p>}
 
-      {tab === 'misc' ? (
+      {tab === 'defaults' ? (
+        <div className="screenBody">
+          <DefaultsPanel />
+        </div>
+      ) : tab === 'misc' ? (
         <div className="screenBody">
           <MiscPromptsPanel stack={draft} onChange={change} />
         </div>

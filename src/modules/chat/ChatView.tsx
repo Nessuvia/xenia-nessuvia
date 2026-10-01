@@ -1,3 +1,4 @@
+import { personaById } from '../../core/stores/personaLinks'
 import { useChatTextRules } from '../../core/stores/textRules'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -252,12 +253,12 @@ export default function ChatView() {
             }
             avatar={
               m.role === 'user'
-                ? (personas.find((p) => p.id === m.personaId) ?? null)
+                ? (personaById(personas, m.personaId) ?? null)
                 : (speakerOf(m.speakerId) ?? null)
             }
             colors={
               (m.role === 'user'
-                ? personas.find((p) => p.id === m.personaId)?.colors
+                ? personaById(personas, m.personaId)?.colors
                 : speakerOf(m.speakerId)?.colors) ?? emptyColors()
             }
             canRegenerate={m.role === 'assistant' && !streaming}

@@ -66,7 +66,7 @@ let wanted = false
 
 /**
  * The step gate: the resolve of the promise the driver is parked on, or null when it's running.
- * With `gameStepMode` on the table stops after the character has spoken and only moves again when
+ * With `prefs.stepMode` on the table stops after the character has spoken and only moves again when
  * Next is clicked. A line can be read before the next card lands on top of it.
  */
 let stepGate: (() => void) | null = null
@@ -243,6 +243,48 @@ function readNumber(key: string, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
 
+/** How you like to play, on this browser. Non-portable like the board zoom: one key, out of the
+ *  export. */
+export interface GamePrefs {
+  /** Text that's not a legal move is kept as something you said rather than refused. It changes
+   *  nothing about the board; it lands in the log and in the character's context. */
+  chatBack: boolean
+  /** Answers that line straight away, on the same turn. Needs `chatBack`, and roughly doubles the
+   *  number of requests a game makes. */
+  chatBackReply: boolean
+  soundOff: boolean
+  /** Clicking a card fills the box and sends it on its own a beat later. */
+  autoSend: boolean
+  /** After the character speaks the table waits for the Next button. */
+  stepMode: boolean
+  /** Sentences naming a card you can't see are covered until clicked. */
+  hideCards: boolean
+}
+
+const prefsKey = 'nessuTavern.gamesPrefs'
+const defaultPrefs: GamePrefs = {
+  chatBack: false,
+  chatBackReply: false,
+  soundOff: false,
+  autoSend: false,
+  stepMode: false,
+  hideCards: true,
+}
+
+function readPrefs(): GamePrefs {
+  try {
+    return { ...defaultPrefs, ...JSON.parse(localStorage.getItem(prefsKey) ?? '{}') }
+  } catch {
+    return defaultPrefs
+  }
+}
+
+/** Set when a game starts. Difficulty only matters to Go Fish. */
+export interface GameSetup {
+  difficulty?: MoveQuality
+  authorNote?: string
+}
+
 export type HandFit = 'stack' | 'layout'
 
 interface GamesState {
@@ -274,9 +316,11 @@ interface GamesState {
   setHandFit(fit: HandFit): void
   setLogWidth(width: number): void
   setLogOpen(open: boolean): void
+  prefs: GamePrefs
+  setPref<K extends keyof GamePrefs>(key: K, value: GamePrefs[K]): void
 
   load(): Promise<void>
-  start(kind: GameKind, characterId: number): Promise<number | null>
+  start(kind: GameKind, characterId: number, setup?: GameSetup): Promise<number | null>
   open(id: number): Promise<void>
   close(): void
   submit(text: string): Promise<void>
@@ -294,12 +338,15 @@ interface GamesState {
   reveal(key: string): void
 }
 
-/** The stack a game runs on: its own, else one named Game, else a fresh one saved as an ordinary
+/** The stack a game runs on: its own, else the Games default, else one named Game, else a fresh one saved as an ordinary
  *  row. Never touches the globally active chat stack. */
 async function gameStack(game: Game): Promise<PromptStack> {
   const stacks = useStacks.getState()
   const own = game.stackId !== undefined && stacks.stacks.find((s) => s.id === game.stackId)
   if (own) return own
+  const defaultId = useSettings.getState().activeGameStackId
+  const chosen = defaultId !== null && stacks.stacks.find((s) => s.id === defaultId)
+  if (chosen) return chosen
   const named = stacks.stacks.find((s) => s.name === 'Game')
   if (named) return named
   const id = await stacks.save(defaultGameStack())
@@ -354,6 +401,13 @@ export const useGames = create<GamesState>()((set, get) => ({
     set({ logOpen: open })
   },
 
+  prefs: readPrefs(),
+  setPref: (key, value) => {
+    const prefs = { ...get().prefs, [key]: value }
+    localStorage.setItem(prefsKey, JSON.stringify(prefs))
+    set({ prefs })
+  },
+
   clearNotice: () => set({ notice: '' }),
   revealed: [],
   reveal: (key) => set((s) => ({ revealed: [...s.revealed, key] })),
@@ -364,11 +418,15 @@ export const useGames = create<GamesState>()((set, get) => ({
     set({ games: rows.sort((a, b) => b.updatedAt - a.updatedAt), loading: false })
   },
 
-  start: async (kind, characterId) => {
+  start: async (kind, characterId, setup = {}) => {
     const character = useCharacters.getState().characters.find((c) => c.id === characterId)
     if (!character) return null
     const persona = await usePersonas.getState().ensureActive()
-    const game = newGame(kind, character, persona, undefined)
+    const game = {
+      ...newGame(kind, character, persona, undefined),
+      ...(kind === 'goFish' && setup.difficulty ? { difficulty: setup.difficulty } : {}),
+      ...(setup.authorNote?.trim() ? { authorNote: setup.authorNote } : {}),
+    }
     // Go Fish deals itself in `initialState`. Blackjack has no cards on the table until a round is
     // opened, and opening one is an event like any other.
     const seeded: Game =
@@ -432,7 +490,7 @@ export const useGames = create<GamesState>()((set, get) => ({
     // kept as something you said. Nothing about the board moves and no reply is generated; the
     // character reads it on its next turn: that's when it has something to answer with.
     if (!move) {
-      if (!useSettings.getState().gameChatBack) {
+      if (!get().prefs.chatBack) {
         set({
           notice:
             game.kind === 'goFish'
@@ -443,7 +501,7 @@ export const useGames = create<GamesState>()((set, get) => ({
       }
       set({ notice: '' })
       await appendEvents(get, set, [{ kind: 'say', by: playerSide, text: text.trim() }])
-      if (useSettings.getState().gameChatBackReply) await react(get, set)
+      if (get().prefs.chatBackReply) await react(get, set)
       return
     }
     set({ notice: '' })
@@ -583,7 +641,7 @@ async function drive(get: Get, set: Set) {
  * which is what holds the player's move off until they let the table go.
  */
 async function waitForNext(get: Get, set: Set) {
-  if (!useSettings.getState().gameStepMode) return
+  if (!get().prefs.stepMode) return
   const events = get().game?.events
   const last = events?.[events.length - 1]
   if (last?.kind !== 'say' || last.by !== 'char') return
@@ -612,7 +670,7 @@ async function pace(get: Get, set: Set, events: GameEvent[]) {
 async function appendEvents(get: Get, set: Set, events: GameEvent[]) {
   const game = get().game
   if (!game || events.length === 0) return
-  if (!useSettings.getState().gameSoundOff) {
+  if (!get().prefs.soundOff) {
     if (events.some((e) => e.kind === 'book' || e.kind === 'settle')) bookSound()
     else if (events.some((e) => e.kind === 'give' || e.kind === 'draw' || e.kind === 'hit' || e.kind === 'deal')) {
       cardSound()

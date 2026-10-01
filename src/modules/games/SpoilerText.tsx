@@ -2,7 +2,6 @@ import { Fragment, type ReactNode } from 'react'
 import { spoilerRanges } from '../../core/games/cardSpoilers'
 import { sentences } from '../../core/quality/sentences'
 import type { Rank } from '../../core/games/deck'
-import { useSettings } from '../../core/stores/settingsStore'
 import { useGames } from './gamesStore'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from '../chat/renderText'
@@ -17,7 +16,7 @@ import { renderText } from '../chat/renderText'
  * character's colors (set as vars on the game's root, GamesView characterText).
  */
 export default function SpoilerText({ text, secret, streaming = false }: { text: string; secret: Rank[]; streaming?: boolean }) {
-  const hideCards = useSettings((s) => s.gameHideCards)
+  const hideCards = useGames((s) => s.prefs.hideCards)
   const revealed = useGames((s) => s.revealed)
   const reveal = useGames((s) => s.reveal)
   const order = usePalette().colorOrder

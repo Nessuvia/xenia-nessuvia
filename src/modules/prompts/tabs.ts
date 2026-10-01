@@ -4,4 +4,5 @@ export const tabs = [
   ['stacks', 'Stacks'],
   ['look', 'Look'],
   ['misc', 'Misc Prompts'],
+  ['defaults', 'Defaults'],
 ] as const

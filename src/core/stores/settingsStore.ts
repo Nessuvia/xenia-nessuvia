@@ -195,6 +195,8 @@ interface SettingsState {
   activeConnectionId: string | null
   activeStackId: number | null // the globally active chat stack
   activeStoryStackId: number | null // the globally active Story (Write mode) stack
+  activeGameStackId: number | null // the default stack for games without their own; null falls back to one named Game
+  activeMultiplayerStackId: number | null // preselected on the new-session form
   activePersonaId: number | null
   /** The active Palette row. null = the built-in Default, which is a constant, not a row. */
   activePaletteId: number | null
@@ -225,24 +227,6 @@ interface SettingsState {
   exportKeys: boolean
   /** Write shelf: clicking a Story cover opens the editor instead of the preview panel. */
   openStoryDirectly: boolean
-  /** Games: text that's not a legal move is kept as something you said rather than refused. It
-   *  changes nothing about the board; it lands in the log and in the character's context. They
-   *  can answer it on a later turn. Off by default, which is the strict text-adventure input. */
-  gameChatBack: boolean
-  /** Games: answers that line straight away, on the same turn rather than the character's next
-   *  one. Needs `gameChatBack`, and roughly doubles the number of requests a game makes. */
-  gameChatBackReply: boolean
-  /** Games: the card and book sounds. */
-  gameSoundOff: boolean
-  /** Games: clicking a card fills the box and sends it on its own a beat later: a hand can be
-   *  played without typing. Cancelled by touching the box. */
-  gameAutoSend: boolean
-  /** Games: after the character speaks the table stops and waits for the Next button before it
-   *  moves again: a line can be read before the next card lands. Off by default. */
-  gameStepMode: boolean
-  /** Games: sentences in the character's line that name a card you can't see are covered until
-   *  clicked. On by default. */
-  gameHideCards: boolean
   /** The Story tab's Chapter rail is collapsed. Global rather than per Story: whether the rail
    *  shows is a working preference. Per Story is the upgrade path. */
   railCollapsed: boolean
@@ -273,12 +257,6 @@ interface SettingsState {
   setRuleSets(ruleSets: RuleSet[]): void
   setDebugMode(on: boolean): void
   setOpenStoryDirectly(on: boolean): void
-  setGameChatBack(on: boolean): void
-  setGameChatBackReply(on: boolean): void
-  setGameSoundOff(on: boolean): void
-  setGameAutoSend(on: boolean): void
-  setGameStepMode(on: boolean): void
-  setGameHideCards(on: boolean): void
   setRailCollapsed(collapsed: boolean): void
   setStoryRailPinned(ids: string[]): void
   setStoryRailOpen(ids: string[]): void
@@ -327,6 +305,8 @@ export const useSettings = create<SettingsState>()(
       activeConnectionId: null,
       activeStackId: null,
       activeStoryStackId: null,
+      activeGameStackId: null,
+      activeMultiplayerStackId: null,
       activePersonaId: null,
       activePaletteId: null,
       seededPalettes: false,
@@ -342,12 +322,6 @@ export const useSettings = create<SettingsState>()(
       hotkeysOff: false,
       exportKeys: false,
       openStoryDirectly: false,
-      gameChatBack: false,
-      gameChatBackReply: false,
-      gameSoundOff: false,
-      gameAutoSend: false,
-      gameStepMode: false,
-      gameHideCards: true,
       railCollapsed: false,
       storyRailPinned: [],
       storyRailOpen: ['beats', 'characters'],
@@ -375,12 +349,6 @@ export const useSettings = create<SettingsState>()(
 
       setOpenStoryDirectly: (openStoryDirectly) => set({ openStoryDirectly }),
 
-      setGameChatBack: (gameChatBack) => set({ gameChatBack }),
-      setGameChatBackReply: (gameChatBackReply) => set({ gameChatBackReply }),
-      setGameSoundOff: (gameSoundOff) => set({ gameSoundOff }),
-      setGameAutoSend: (gameAutoSend) => set({ gameAutoSend }),
-      setGameStepMode: (gameStepMode) => set({ gameStepMode }),
-      setGameHideCards: (gameHideCards) => set({ gameHideCards }),
 
       setRailCollapsed: (railCollapsed) => set({ railCollapsed }),
 

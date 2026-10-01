@@ -6,6 +6,7 @@ import type { Persona } from '../storage/types'
 import { emptyColors } from '../storage/types'
 import { useSettings } from './settingsStore'
 import { isNarrator, narratorPersona, realPersonas } from '../multiplayer/narrator'
+import { deletedPersonas, type DeletedPersona } from './personaLinks'
 
 export function newPersona(name = ''): Persona {
   return { ownerId: currentOwnerId(), name, avatar: '', description: '', createdAt: 0, updatedAt: 0, colors: emptyColors() }
@@ -25,6 +26,8 @@ interface PersonasState {
   remove(id: number): Promise<void>
   /** The persona chat should use, creating "User" on first run rather than erroring. */
   ensureActive(): Promise<Persona>
+  /** Persona ids still stamped on messages and games with no persona behind them. */
+  findDeleted(): Promise<DeletedPersona[]>
 }
 
 export const usePersonas = create<PersonasState>()((set, get) => ({
@@ -64,6 +67,13 @@ export const usePersonas = create<PersonasState>()((set, get) => ({
     if (useSettings.getState().activePersonaId === id) {
       setActiveId(get().personas[0]?.id ?? null)
     }
+  },
+
+  // ponytail: reads every message on each call. Fine behind a button; an index on personaId if it
+  // ever needs to run on page load.
+  findDeleted: async () => {
+    const [messages, games] = await Promise.all([storage.getAll('messages'), storage.getAll('games')])
+    return deletedPersonas(get().personas, messages as never, games as never)
   },
 
   ensureActive: async () => {

@@ -132,6 +132,50 @@
   align-items: center;
 }
 
+/* Same row as Crop and Remove, pushed to the right edge. */
+.personaLinkDeleted {
+  margin-left: auto;
+}
+
+.linkDeletedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.linkDeletedRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.linkDeletedRow:has(input:checked) {
+  background: var(--surfaceSelected);
+  border-color: var(--borderAccent);
+}
+
+.linkDeletedName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkDeletedMeta {
+  color: var(--textMuted);
+  font-size: 12px;
+}
+
 .personaActions {
   display: flex;
   gap: 8px;

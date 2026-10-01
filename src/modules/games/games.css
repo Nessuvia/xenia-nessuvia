@@ -14,6 +14,33 @@
   gap: 12px;
 }
 
+/* Play tab: the character picker on the left half, the rules for the picked character on the right.
+   Two fixed columns, so the picker keeps its width before anything is picked. */
+.gamesSetup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.gamesSetupPicker,
+.gamesSetupPanel {
+  min-width: 0;
+}
+
+.gamesSetupPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.gamesSetupStart {
+  align-self: flex-start;
+}
+
 .gamesSubheading {
   margin: 0;
   font-size: 14px;
@@ -721,6 +748,21 @@
   gap: 6px;
 }
 
+/* A fixed box, so the hint under it can line up with the label's text. */
+.gamesRailCheck > input[type='checkbox'] {
+  flex: none;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* The hint under a checkbox starts where the label's text does: box width plus the row's gap. */
+.gamesRailHint {
+  margin-left: calc(16px + 6px);
+  /* Takes back half the column's 8px gap, so the hint sits with its checkbox. */
+  margin-top: -4px;
+}
+
 .gamesRailField {
   display: flex;
   flex-direction: column;
@@ -775,6 +817,10 @@
 }
 
 @media (max-width: 700px) {
+  .gamesSetup {
+    grid-template-columns: 1fr;
+  }
+
   /* A smaller card at phone width. The scale multiplies these the same way. */
   .cardTableBoard {
     --cardTableCardWidth: 28px;

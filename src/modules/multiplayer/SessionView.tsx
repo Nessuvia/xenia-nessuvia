@@ -1,3 +1,4 @@
+import { personaById } from '../../core/stores/personaLinks'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, JSX } from 'react'
 import { useMultiplayer, isMyTurn, currentHolder } from '../../core/stores/multiplayerStore'
@@ -324,12 +325,12 @@ function HostMessages({ look }: { look: RoomLook }): JSX.Element | null {
           }
           avatar={
             m.role === 'user'
-              ? (personas.find((p) => p.id === m.personaId) ?? null)
+              ? (personaById(personas, m.personaId) ?? null)
               : (speakerOf(m.speakerId) ?? null)
           }
           colors={
             (m.role === 'user'
-              ? personas.find((p) => p.id === m.personaId)?.colors
+              ? personaById(personas, m.personaId)?.colors
               : speakerOf(m.speakerId)?.colors) ?? emptyColors()
           }
           canRegenerate={false}

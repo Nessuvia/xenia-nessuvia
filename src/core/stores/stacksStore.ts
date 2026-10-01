@@ -173,7 +173,7 @@ interface StacksState {
   create(kind?: 'chat' | 'story', preset?: 'multiplayer' | 'game'): Promise<number>
   duplicate(id: number): Promise<number>
   /** Add a copy of a bundled stack as a new row. */
-  addBundled(key: string): Promise<void>
+  addBundled(key: string): Promise<number | undefined>
   remove(id: number): Promise<void>
   /** The active stack of a kind, creating its default one on first use rather than erroring. */
   ensureActive(kind?: 'chat' | 'story'): Promise<PromptStack>
@@ -218,9 +218,8 @@ export const useStacks = create<StacksState>()((set, get) => ({
           ? defaultGameStack(taken('Game') ? `Game ${count}` : 'Game')
           : // Blank: the bundled stacks are one click away in the Bundled picker.
             { ownerId: currentOwnerId(), name: `${kind === 'story' ? 'Story' : 'Stack'} ${count}`, kind, template: kind === 'story' ? '{{ storyContext }}' : '{{ history }}' }
-    const id = await get().save(stack)
-    setActiveId(kind, id)
-    return id
+    // Creating never changes a default. Prompts > Defaults is the one place that sets them.
+    return get().save(stack)
   },
 
   duplicate: async (id) => {
@@ -233,9 +232,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
       template: source.template,
       values: source.values,
     }
-    const newId = await get().save(copy)
-    setActiveId(stackKind(source), newId)
-    return newId
+    return get().save(copy)
   },
 
   addBundled: async (key) => {
@@ -245,8 +242,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
     const taken = (name: string) => get().stacks.some((s) => s.name === name)
     let name = entry.name
     for (let n = 2; taken(name); n++) name = `${entry.name} ${n}`
-    const id = await get().save(entry.make(name))
-    setActiveId(entry.kind, id)
+    return get().save(entry.make(name))
   },
 
   remove: async (id) => {
@@ -256,6 +252,10 @@ export const useStacks = create<StacksState>()((set, get) => ({
     if (activeIdFor(kind) === id) {
       setActiveId(kind, get().stacks.find((s) => stackKind(s) === kind)?.id ?? null)
     }
+    // The Games and Multiplayer defaults are optional: deleting one clears it.
+    const settings = useSettings.getState()
+    if (settings.activeGameStackId === id) useSettings.setState({ activeGameStackId: null })
+    if (settings.activeMultiplayerStackId === id) useSettings.setState({ activeMultiplayerStackId: null })
   },
 
   ensureActive: async (kind = 'chat') => {
@@ -268,6 +268,7 @@ export const useStacks = create<StacksState>()((set, get) => ({
       return existing
     }
     const id = await get().create(kind)
+    setActiveId(kind, id)
     return get().stacks.find((s) => s.id === id)!
   },
 }))

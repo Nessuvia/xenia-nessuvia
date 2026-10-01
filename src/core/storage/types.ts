@@ -157,6 +157,9 @@ export interface Persona {
   createdAt: number
   updatedAt: number
   colors: CharacterColors // per-speaker overrides; each '' = fall through to the global appearance color
+  /** Ids of deleted personas this one stands in for. Old messages and games keep the id they were
+   *  stamped with. `personaById` matches it here, so they show this persona's picture. */
+  formerIds?: number[]
 }
 
 export interface Chat {

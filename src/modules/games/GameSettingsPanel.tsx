@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { MoveQuality } from '../../core/games/goFish'
-import { useSettings } from '../../core/stores/settingsStore'
 import { useGames } from './gamesStore'
 
 /**
@@ -13,20 +12,6 @@ import { useGames } from './gamesStore'
  */
 export default function GameSettingsPanel() {
   const { game, state, abandon, boardScale, setBoardScale, logWidth, setLogWidth } = useGames()
-  // A user setting rather than a per-game one: this is how you like to play. Per-game is the
-  // upgrade path, the same one chats have.
-  const chatBack = useSettings((s) => s.gameChatBack)
-  const setChatBack = useSettings((s) => s.setGameChatBack)
-  const chatBackReply = useSettings((s) => s.gameChatBackReply)
-  const setChatBackReply = useSettings((s) => s.setGameChatBackReply)
-  const soundOff = useSettings((s) => s.gameSoundOff)
-  const setSoundOff = useSettings((s) => s.setGameSoundOff)
-  const autoSend = useSettings((s) => s.gameAutoSend)
-  const setAutoSend = useSettings((s) => s.setGameAutoSend)
-  const stepMode = useSettings((s) => s.gameStepMode)
-  const setStepMode = useSettings((s) => s.setGameStepMode)
-  const hideCards = useSettings((s) => s.gameHideCards)
-  const setHideCards = useSettings((s) => s.setGameHideCards)
   // Difficulty is per game: a property of this match. Changing it halfway through a game you are
   // losing shouldn't rewrite the ones you already played.
   const setDifficulty = useGames((s) => s.setDifficulty)
@@ -95,51 +80,7 @@ export default function GameSettingsPanel() {
         Goes where the Author's note block sits in this game's prompt stack. Applies to this game.
       </p>
 
-      <label className="gamesRailCheck">
-        <input type="checkbox" checked={chatBack} onChange={(e) => setChatBack(e.target.checked)} />
-        <span className="gamesRailRow">Respond to the character's turn</span>
-      </label>
-      <p className="gamesRailRow">
-        Text that is not a move is kept as something you said. The board does not change.
-      </p>
-
-      {chatBack && (
-        <label className="gamesRailCheck">
-          <input type="checkbox" checked={chatBackReply} onChange={(e) => setChatBackReply(e.target.checked)} />
-          <span className="gamesRailRow">Answer it straight away</span>
-        </label>
-      )}
-
-      <label className="gamesRailCheck">
-        <input type="checkbox" checked={!soundOff} onChange={(e) => setSoundOff(!e.target.checked)} />
-        <span className="gamesRailRow">Sound</span>
-      </label>
-
-      <label className="gamesRailCheck">
-        <input type="checkbox" checked={autoSend} onChange={(e) => setAutoSend(e.target.checked)} />
-        <span className="gamesRailRow">Send a clicked card on its own</span>
-      </label>
-      <p className="gamesRailRow">
-        Clicking a card fills the box and sends it after a second and a half. Typing in the box
-        stops it.
-      </p>
-
-      <label className="gamesRailCheck">
-        <input type="checkbox" checked={stepMode} onChange={(e) => setStepMode(e.target.checked)} />
-        <span className="gamesRailRow">Wait for Next</span>
-      </label>
-      <p className="gamesRailRow">
-        After {game.characterName} speaks, the table stops until you click Next on their line.
-      </p>
-
-      <label className="gamesRailCheck">
-        <input type="checkbox" checked={hideCards} onChange={(e) => setHideCards(e.target.checked)} />
-        <span className="gamesRailRow">Hide lines that name hidden cards</span>
-      </label>
-      <p className="gamesRailRow">
-        A sentence from {game.characterName} that names a card you can't see is covered. Click it to
-        show it.
-      </p>
+      <GamePrefsFields characterName={game.characterName} />
 
       <label className="gamesRailField">
         <span className="gamesRailRow">Board size {boardScale.toFixed(1)}x</span>
@@ -175,5 +116,66 @@ export default function GameSettingsPanel() {
         </button>
       )}
     </div>
+  )
+}
+
+/** How you like to play: saved on this browser for every game, out of the export. Shared by the
+ *  rail and the setup panel on the Play tab. */
+export function GamePrefsFields({ characterName }: { characterName: string }) {
+  const prefs = useGames((s) => s.prefs)
+  const setPref = useGames((s) => s.setPref)
+
+  return (
+    <>
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={prefs.chatBack} onChange={(e) => setPref('chatBack', e.target.checked)} />
+        <span className="gamesRailRow">Respond to the character's turn</span>
+      </label>
+      <p className="gamesRailRow gamesRailHint">
+        Text that is not a move is kept as something you said. The board does not change.
+      </p>
+
+      {prefs.chatBack && (
+        <label className="gamesRailCheck">
+          <input
+            type="checkbox"
+            checked={prefs.chatBackReply}
+            onChange={(e) => setPref('chatBackReply', e.target.checked)}
+          />
+          <span className="gamesRailRow">Answer it straight away</span>
+        </label>
+      )}
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={!prefs.soundOff} onChange={(e) => setPref('soundOff', !e.target.checked)} />
+        <span className="gamesRailRow">Sound</span>
+      </label>
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={prefs.autoSend} onChange={(e) => setPref('autoSend', e.target.checked)} />
+        <span className="gamesRailRow">Send a clicked card on its own</span>
+      </label>
+      <p className="gamesRailRow gamesRailHint">
+        Clicking a card fills the box and sends it after a second and a half. Typing in the box
+        stops it.
+      </p>
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={prefs.stepMode} onChange={(e) => setPref('stepMode', e.target.checked)} />
+        <span className="gamesRailRow">Wait for Next</span>
+      </label>
+      <p className="gamesRailRow gamesRailHint">
+        After {characterName} speaks, the table stops until you click Next on their line.
+      </p>
+
+      <label className="gamesRailCheck">
+        <input type="checkbox" checked={prefs.hideCards} onChange={(e) => setPref('hideCards', e.target.checked)} />
+        <span className="gamesRailRow">Hide lines that name hidden cards</span>
+      </label>
+      <p className="gamesRailRow gamesRailHint">
+        A sentence from {characterName} that names a card you can't see is covered. Click it to
+        show it.
+      </p>
+    </>
   )
 }

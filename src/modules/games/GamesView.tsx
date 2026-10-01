@@ -1,3 +1,4 @@
+import { personaById } from '../../core/stores/personaLinks'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import EntityPicker from '../../app/EntityPicker'
@@ -8,11 +9,12 @@ import { useMediaQuery } from '../../app/useMediaQuery'
 import { useSideDrawer } from '../../app/useSideDrawer'
 import { displayName, useCharacters } from '../../core/stores/charactersStore'
 import { usePersonas } from '../../core/stores/personasStore'
-import { useSettings } from '../../core/stores/settingsStore'
 import type { GameKind } from '../../core/games/gameEvent'
 import { gameLabels } from '../../core/games/gameEvent'
 import type { AvatarSource, Game } from '../../core/storage/types'
-import { boardState, useGames, type AnyGameState } from './gamesStore'
+import { boardState, useGames, type AnyGameState, type GameSetup } from './gamesStore'
+import { GamePrefsFields } from './GameSettingsPanel'
+import type { MoveQuality } from '../../core/games/goFish'
 import GameBoard from './GameBoard'
 import GameLog from './GameLog'
 import { secretRanks } from '../../core/games/cardSpoilers'
@@ -55,6 +57,8 @@ function Play() {
   const loadCharacters = useCharacters((s) => s.load)
   const { games, load, start } = useGames()
   const [kind, setKind] = useState<GameKind>('goFish')
+  const [characterId, setCharacterId] = useState<number | null>(null)
+  const picked = characters.find((c) => c.id === characterId)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -94,16 +98,29 @@ function Play() {
         ))}
       </ul>
       <p className="gamesHint">Pick a character to play against.</p>
-      <EntityPicker
-        items={items}
-        placeholder="Search characters"
-        emptyText="No characters yet."
-        rows={6}
-        onPick={async (item) => {
-          const id = await start(kind, Number(item.key))
-          if (id) navigate(`/games/${id}`)
-        }}
-      />
+      <div className="gamesSetup">
+        <div className="gamesSetupPicker">
+          <EntityPicker
+            items={items}
+            placeholder="Search characters"
+            emptyText="No characters yet."
+            rows={6}
+            selectedKeys={characterId === null ? [] : [String(characterId)]}
+            onPick={(item) => setCharacterId(Number(item.key))}
+          />
+        </div>
+        {picked && (
+          <GameSetupPanel
+            key={picked.id}
+            kind={kind}
+            characterName={displayName(picked)}
+            onStart={async (setup) => {
+              const id = await start(kind, picked.id!, setup)
+              if (id) navigate(`/games/${id}`)
+            }}
+          />
+        )}
+      </div>
 
       {inProgress.length > 0 && (
         <div className="gamesSection">
@@ -123,6 +140,75 @@ function Play() {
         </div>
       )}
     </>
+  )
+}
+
+/** The rules for the game about to start. Difficulty and the note belong to that one game and are
+ *  saved when it starts. The checkboxes are this browser's preferences, shared with the in-game rail. */
+function GameSetupPanel({
+  kind,
+  characterName,
+  onStart,
+}: {
+  kind: GameKind
+  characterName: string
+  onStart: (setup: GameSetup) => Promise<void>
+}) {
+  const [difficulty, setDifficulty] = useState<MoveQuality>('average')
+  const [authorNote, setAuthorNote] = useState('')
+  const [starting, setStarting] = useState(false)
+
+  return (
+    <div className="gamesSetupPanel panel">
+      <h3 className="gamesSubheading">
+        {gameLabels[kind]} vs {characterName}
+      </h3>
+
+      {/* Blackjack's dealer draws to 17 and has nothing to decide. There's no skill to set. */}
+      {kind === 'goFish' && (
+        <label className="gamesRailField">
+          <span className="gamesRailRow">Difficulty</span>
+          <select
+            className="gamesRailSelect"
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as MoveQuality)}
+          >
+            <option value="worst">Easy</option>
+            <option value="average">Medium</option>
+            <option value="best">Hard</option>
+          </select>
+        </label>
+      )}
+
+      <label className="gamesRailField">
+        <span className="gamesRailRow">Author's note</span>
+        <textarea
+          className="gamesRailNote"
+          rows={3}
+          value={authorNote}
+          placeholder="{{char}} should be snarky and cunning."
+          onChange={(e) => setAuthorNote(e.target.value)}
+        />
+      </label>
+      <p className="gamesRailRow">
+        Goes where the Author's note block sits in this game's prompt stack. Applies to this game.
+      </p>
+
+      <GamePrefsFields characterName={characterName} />
+
+      <button
+        type="button"
+        className="gamesSetupStart"
+        disabled={starting}
+        onClick={async () => {
+          setStarting(true)
+          await onStart({ difficulty, authorNote })
+          setStarting(false)
+        }}
+      >
+        Start game
+      </button>
+    </div>
   )
 }
 
@@ -251,7 +337,7 @@ function History() {
               <li key={game.id} className="gamesHistoryItem">
                 <HistoryCard
                   game={game}
-                  you={personas.find((p) => p.id === game.personaId)}
+                  you={personaById(personas, game.personaId)}
                   them={characters.find((c) => c.id === game.characterId)}
                   open={game.id === openId}
                   onOpen={() => setOpenId(game.id === openId ? null : game.id!)}
@@ -336,7 +422,7 @@ function Replay({ game }: { game: Game }) {
   const palette = usePalette()
   const character = characters.find((c) => c.id === game.characterId)
   const charText = characterText(character, palette)
-  const persona = personas.find((p) => p.id === game.personaId)
+  const persona = personaById(personas, game.personaId)
   const state = boardState(game, upTo)
   const events = game.events.slice(0, upTo)
   const lastSay = [...events].reverse().find((e) => e.kind === 'say' && e.by === 'char')
@@ -397,8 +483,8 @@ function LiveGame() {
     game, state, streaming, streamingText, error, notice, open, close, submit, chooseAce, clearNotice,
     boardScale, handFit, setHandFit, logOpen, logWidth, setLogOpen, awaitingNext, next,
   } = useGames()
-  const chatBack = useSettings((s) => s.gameChatBack)
-  const autoSend = useSettings((s) => s.gameAutoSend)
+  const chatBack = useGames((s) => s.prefs.chatBack)
+  const autoSend = useGames((s) => s.prefs.autoSend)
   const characters = useCharacters((s) => s.characters)
   const loadCharacters = useCharacters((s) => s.load)
   const personas = usePersonas((s) => s.personas)
@@ -424,7 +510,7 @@ function LiveGame() {
 
   const character = characters.find((c) => c.id === game.characterId)
   const charText = characterText(character, palette)
-  const persona = personas.find((p) => p.id === game.personaId)
+  const persona = personaById(personas, game.personaId)
   // The character's last line, not the last line: the Hit and Stand buttons write yours.
   const lastSay = [...game.events].reverse().find((e) => e.kind === 'say' && e.by === 'char')
 

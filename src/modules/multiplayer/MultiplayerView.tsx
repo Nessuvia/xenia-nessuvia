@@ -59,7 +59,9 @@ function Landing(): JSX.Element {
   const stacks = useStacks((s) => s.stacks)
   const loadStacks = useStacks((s) => s.load)
   const [picked, setPicked] = useState<number[]>([])
-  const [stackId, setStackId] = useState<number | undefined>(undefined)
+  const [stackId, setStackId] = useState<number | undefined>(
+    () => useSettings.getState().activeMultiplayerStackId ?? undefined,
+  )
   const [personaLock, setPersonaLock] = useState(false)
   const storedRelay = useSettings((s) => s.relay)
   const [error, setError] = useState('')

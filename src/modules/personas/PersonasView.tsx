@@ -9,6 +9,7 @@ import TwoColumn from '../../app/TwoColumn'
 import PageHeader from '../../app/PageHeader'
 import AvatarCropDialog from '../characters/AvatarCropDialog'
 import GalleryLightbox from '../characters/GalleryLightbox'
+import LinkDeletedDialog from './LinkDeletedDialog'
 
 // one screen, inline editor, a persona is three fields, it doesn't need its own route.
 export default function PersonasView() {
@@ -21,6 +22,7 @@ export default function PersonasView() {
   const [saved, setSaved] = useState(true)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
 
   // ensureActive, not load: a fresh install gets its "User" persona here as well as on send.
   useEffect(() => {
@@ -180,6 +182,9 @@ export default function PersonasView() {
                   </button>
                 </>
               )}
+              <button type="button" className="personaLinkDeleted" onClick={() => setLinking(true)}>
+                Link to deleted
+              </button>
             </span>
           </label>
 
@@ -249,6 +254,19 @@ export default function PersonasView() {
 
       {lightbox && <GalleryLightbox src={lightbox} onClose={() => setLightbox(null)} />}
 
+      {linking && draft && (
+        <LinkDeletedDialog
+          name={draft.name}
+          linked={draft.formerIds ?? []}
+          onClose={() => setLinking(false)}
+          onConfirm={(id) => {
+            // Through the draft, so the autosave writes it: saving behind the draft's back would be
+            // undone by the next debounced save.
+            set('formerIds', [...(draft.formerIds ?? []), id])
+            setLinking(false)
+          }}
+        />
+      )}
       {cropSrc && (
         <AvatarCropDialog
           src={cropSrc}

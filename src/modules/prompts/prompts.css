@@ -559,3 +559,23 @@
   width: 338px;
   min-width: 0;
 }
+
+/* Defaults tab: one row per feature, label above its select, hint under it. */
+.defaultsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.defaultsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.defaultsLabel {
+  font-weight: 600;
+}
