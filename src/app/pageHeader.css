@@ -28,10 +28,49 @@
   min-width: 0;
 }
 
+/* A header button holding an icon and text keeps them on one line. */
+.pageHeaderActions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* An action button's text beside its icon. Dropped from half-width down, where the icon carries
    the button: the button keeps a title so the icon stays named. */
 @media (max-width: 1300px) {
   .pageHeaderActions .btnLabel {
     display: none;
   }
+}
+
+/* The tab bar (PageTabs.tsx). Wraps onto a second line rather than scrolling sideways. */
+.pageTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* `button` in the selector to outrank a module's generic `.x button` rule (0-1-1), which would
+   otherwise paint every tab as a filled button. */
+.pageTabs > button.pageTab {
+  padding: var(--buttonPad);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: var(--textMuted);
+  font: inherit;
+  font-size: var(--fieldFont);
+  cursor: pointer;
+}
+
+/* Matches the specificity of `.formPage button:hover:not(:disabled)` plus one, so it wins there. */
+.pageTabs > button.pageTab:hover:not(:disabled) {
+  background: var(--surfaceActive);
+}
+
+.pageTabs > button.pageTab.current {
+  color: var(--text);
+  border-bottom-color: var(--accent);
 }

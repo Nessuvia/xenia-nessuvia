@@ -106,18 +106,22 @@ function Section({
         </span>
       </summary>
 
-      {provider && (
-        <label className="syncPick">
-          <input
-            type="radio"
-            name="syncProvider"
-            checked={active === provider}
-            onChange={() => setProvider(provider)}
-          />
-          Use this for sync
-        </label>
-      )}
-      {children}
+      {/* One wrapper so the rows get a gap: the card's own gap only reaches the summary and the
+          slot a <details> lays its body out in. */}
+      <div className="syncSectionBody">
+        {provider && (
+          <label className="syncPick">
+            <input
+              type="radio"
+              name="syncProvider"
+              checked={active === provider}
+              onChange={() => setProvider(provider)}
+            />
+            Use this for sync
+          </label>
+        )}
+        {children}
+      </div>
     </details>
   )
 }

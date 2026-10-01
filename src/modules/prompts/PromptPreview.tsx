@@ -67,16 +67,10 @@ export default function PromptPreview({ stack }: { stack: PromptStack }) {
     loadTokenizer(tokenizerId).then(() => setReady(true))
   }, [tokenizerId])
 
-  const header = (
-    <div className="zoneHeader">
-      <h3>Preview</h3>
-    </div>
-  )
-
   return (stack.kind ?? 'chat') === 'story' ? (
-    <StoryPreview stack={stack} header={header} ready={ready} />
+    <StoryPreview stack={stack} ready={ready} />
   ) : (
-    <ChatPreview stack={stack} header={header} ready={ready} />
+    <ChatPreview stack={stack} ready={ready} />
   )
 }
 
@@ -92,7 +86,7 @@ function budgetFor(connection?: Connection) {
 
 // A Story stack has no character and no chat history: the Co-Writer takes a Story-context blob and
 // a Direction. The preview mirrors that: example prose plus an example Direction, nothing else.
-function StoryPreview({ stack, header, ready }: { stack: PromptStack; header: React.ReactNode; ready: boolean }) {
+function StoryPreview({ stack, ready }: { stack: PromptStack; ready: boolean }) {
   const connection = useActiveConnection()
   const [storyText, setStoryText] = useState(exampleStory)
   const [direction, setDirection] = useState(exampleDirection)
@@ -109,8 +103,7 @@ function StoryPreview({ stack, header, ready }: { stack: PromptStack; header: Re
   )
 
   return (
-    <section className="panel stackZone preview">
-      {header}
+    <div className="promptsPreviewBody">
 
       <div className="previewExamples">
         <label>
@@ -144,11 +137,11 @@ function StoryPreview({ stack, header, ready }: { stack: PromptStack; header: Re
         ))}
         {built.messages.length === 0 && <p className="placeholder">Nothing to send.</p>}
       </div>
-    </section>
+    </div>
   )
 }
 
-function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: React.ReactNode; ready: boolean }) {
+function ChatPreview({ stack, ready }: { stack: PromptStack; ready: boolean }) {
   const { characters, load } = useCharacters()
   const connection = useActiveConnection()
   const personas = usePersonas((s) => s.personas)
@@ -197,10 +190,9 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
 
   if (!character || !persona) {
     return (
-      <section className="panel stackZone">
-        {header}
+      <div className="promptsPreviewBody">
         <p className="hint">Add a character to preview the assembled prompt.</p>
-      </section>
+      </div>
     )
   }
 
@@ -209,8 +201,7 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
   const built = buildPrompt({ stack, character, persona, messages: history, worldInfo }, budgetOf(connection))
 
   return (
-    <section className="panel stackZone preview">
-      {header}
+    <div className="promptsPreviewBody">
 
       <select
         value={character.id}
@@ -277,6 +268,6 @@ function ChatPreview({ stack, header, ready }: { stack: PromptStack; header: Rea
         ))}
         {built.messages.length === 0 && <p className="placeholder">Nothing to send.</p>}
       </div>
-    </section>
+    </div>
   )
 }

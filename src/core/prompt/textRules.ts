@@ -27,6 +27,22 @@ export function allSets(global: TextRules, stacks: PromptStack[], ruleSets: Rule
   ]
 }
 
+/**
+ * One rule can name several marker pairs, `||`-separated and paired by position:
+ * `<think>||<thinking>` with `</think>||</thinking>`. Double so a single `|` stays usable inside a
+ * marker. Expanded here into one rule per pair, each keeping the rule's id, mode and label, so
+ * every reader downstream sees plain single pairs. A pair missing either half is dropped.
+ */
+export function splitTagRules(rules: TagRule[]): TagRule[] {
+  return rules.flatMap((rule) => {
+    if (!rule.open.includes('||') && !rule.close.includes('||')) return [rule]
+    const closes = rule.close.split('||')
+    return rule.open.split('||').flatMap((open, i) =>
+      open && closes[i] ? [{ ...rule, open, close: closes[i] }] : [],
+    )
+  })
+}
+
 /** The top set wins a tag both define (same open marker). Find/replace rules all run, top set first. */
 export function mergeSets(ids: string[], sets: NamedSet[]): TextRules {
   const tagRules: TagRule[] = []
@@ -34,7 +50,7 @@ export function mergeSets(ids: string[], sets: NamedSet[]): TextRules {
   for (const id of ids) {
     const set = sets.find((s) => s.id === id)
     if (!set) continue
-    for (const t of set.tagRules) if (!tagRules.some((r) => r.open === t.open)) tagRules.push(t)
+    for (const t of splitTagRules(set.tagRules)) if (!tagRules.some((r) => r.open === t.open)) tagRules.push(t)
     replaceRules.push(...set.replaceRules)
   }
   return { tagRules, replaceRules }

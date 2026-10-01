@@ -1,0 +1,139 @@
+/* The code editing shell (CodeEditor.tsx, TemplateEditor.tsx) and the panel around it: a toolbar
+   row, the Reference popover, and the problem list under the editor. */
+
+.codePanel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--surfaceSunken);
+}
+
+.codePanelToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* The HTML/CSS tabs carry their underline across the toolbar's free width. */
+.codePanelToolbar > .pageTabs {
+  flex: 1 1 auto;
+}
+
+/* A setting in the toolbar: a checkbox and its text, smaller than a form row. Toolbar plus tag in the
+   selector to beat `.formPage label` (0-1-1), which stacks a label column-wise on the Palette page. */
+.codePanelToolbar > label.codePanelToggle {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--textMuted);
+  cursor: pointer;
+}
+
+/* Undoes the field padding `.formPage input` puts on every input. */
+.codePanelToolbar > label.codePanelToggle > input {
+  margin: 0;
+  padding: 0;
+}
+
+.codePanelProblems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 30%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.codeRefWrap {
+  position: relative;
+}
+
+.codeRef {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--layer-2);
+  width: min(520px, 80vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--borderStrong);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+/* Code in the Reference text, as a small chip. */
+.codeRef code {
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--surfaceRaised);
+  color: var(--textSoft);
+}
+
+/* The editor fills its panel and scrolls inside CodeMirror. */
+.codeEditor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--codeBg);
+  color: var(--codeText);
+}
+
+/* CodeMirror's own classes: the library owns the markup, so these are the only handle on it. */
+.codeEditor .cm-editor {
+  height: 100%;
+}
+
+/* On --codeBg, which holds steady across palettes: the tints come off --codeText, not the palette. */
+.codeEditor .cm-gutters {
+  background: var(--codeBg);
+  color: color-mix(in srgb, var(--codeText) 45%, transparent);
+  border-right: 1px solid var(--border);
+}
+
+.codeEditor .cm-activeLine,
+.codeEditor .cm-activeLineGutter {
+  background: color-mix(in srgb, var(--codeText) 6%, transparent);
+}
+
+.codeEditor .cm-cursor {
+  border-left-color: var(--codeText);
+}
+
+.codeEditor .cm-placeholder {
+  color: color-mix(in srgb, var(--codeText) 40%, transparent);
+}
+
+/* Tokens. Tags and keywords, values and strings, names (attributes, properties), comments. */
+.codeTag {
+  color: var(--accent);
+}
+
+.codeValue {
+  color: var(--success);
+}
+
+.codeName {
+  color: color-mix(in srgb, var(--codeText) 75%, var(--accent));
+}
+
+.codeComment {
+  color: color-mix(in srgb, var(--codeText) 50%, transparent);
+  font-style: italic;
+}

@@ -1,8 +1,9 @@
-import PalettesPanel from './PalettesPanel'
+import PalettesPanel, { PaletteActions } from './PalettesPanel'
 import BackgroundsPanel from './BackgroundsPanel'
 import TextRulesView from './TextRulesView'
 import { useHashTab } from '../../app/useHashTab'
 import PageHeader from '../../app/PageHeader'
+import PageTabs from '../../app/PageTabs'
 import '../../app/formPage.css'
 import './appearance.css'
 
@@ -14,30 +15,17 @@ export default function AppearanceView() {
 
   return (
     <div className="appearancePage formPage screenFrame">
-      <PageHeader title="Palette">
-        <nav className="navbar pageTabs">
-          {tabs.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`pageTab${tab === id ? ' current' : ''}`}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+      <PageHeader title="Palette" actions={tab === 'themes' && <PaletteActions />}>
+        <PageTabs tabs={tabs} current={tab} onPick={setTab} />
       </PageHeader>
 
-      {/* Themes brings its own scrolling columns; Backgrounds is one column and takes the frame's. */}
+      {/* Every tab brings its own scrolling: Themes and Backgrounds have two columns that scroll apart. */}
       {tab === 'themes' ? (
         <PalettesPanel />
       ) : tab === 'textRules' ? (
         <TextRulesView />
       ) : (
-        <div className="screenBody">
-          <BackgroundsPanel />
-        </div>
+        <BackgroundsPanel />
       )}
     </div>
   )

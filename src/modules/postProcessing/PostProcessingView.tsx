@@ -15,6 +15,7 @@ import { defaultFlowConfig, defaultFlowStyle, flowRules, type FlowConfig, type F
 import { previewShape } from '../../core/agent/styleDraw'
 import { ruleName } from '../../core/agent/rules'
 import { loadVad } from '../../core/quality/vad'
+import { splitTagRules } from '../../core/prompt/textRules'
 import type { Chat } from '../../core/storage/types'
 import ConnectionPicker from '../../app/ConnectionPicker'
 import RulesPanel from './RulesPanel'
@@ -44,7 +45,8 @@ export default function PostProcessingView() {
   const agent = useSettings((s) => s.agent)
   const setAgent = useSettings((s) => s.setAgent)
   const { stacks, load, create, duplicate, remove, rename, patchConfig, save, usage } = usePostStacks()
-  const tagRules = useAppearance().tagRules
+  const appearanceTags = useAppearance().tagRules
+  const tagRules = useMemo(() => splitTagRules(appearanceTags), [appearanceTags])
   // "Open in Post-processing" from a chat names the stack and the rule to land on.
   const target = useLocation().state as { stackId?: number; ruleId?: string } | null
   const [selectedId, setSelectedId] = useState<number | null>(target?.stackId ?? null)

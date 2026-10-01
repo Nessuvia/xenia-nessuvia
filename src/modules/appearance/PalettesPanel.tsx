@@ -46,10 +46,53 @@ const groups: [string, ColorField[]][] = [
   ['Accents', ['accent', 'danger']],
 ]
 
+/** What a color tile reads as. The var name stays in the tooltip for theme makers writing CSS. */
+const colorLabel: Partial<Record<ColorField, string>> = {
+  bg: 'Background',
+  surfaceSunken: 'Sunken',
+  surface: 'Surface',
+  surfaceRaised: 'Raised',
+  surfaceHover: 'Hover',
+  surfaceActive: 'Active',
+  surfaceSelected: 'Selected',
+  border: 'Border',
+  borderStrong: 'Strong',
+  borderAccent: 'Accent',
+  text: 'Text',
+  textBright: 'Bright',
+  textSoft: 'Soft',
+  textMuted: 'Muted',
+  textDim: 'Dim',
+  accent: 'Accent',
+  danger: 'Danger',
+  overlay: 'Overlay',
+}
+
 const storyColorField: Record<MarkerKind, ColorField> = {
   emphasis: 'storyEmphasisColor',
   bold: 'storyBoldColor',
   quotes: 'storyQuoteColor',
+}
+
+/** The Themes tab's page-header actions. The page header belongs to AppearanceView, so these read
+ *  the stores themselves rather than PalettesPanel's state. A new preset becomes the active one,
+ *  which is the palette the editor shows. */
+export function PaletteActions() {
+  const create = usePalettes((s) => s.create)
+  const setActive = useSettings((s) => s.setActivePalette)
+  const [editingPrompt, setEditingPrompt] = useState(false)
+  return (
+    <>
+      <button type="button" onClick={() => setEditingPrompt(true)}>
+        Edit Palette Prompt
+      </button>
+      <button type="button" onClick={() => create().then(setActive)}>
+        <RiAddLine size={16} />
+        Add preset
+      </button>
+      {editingPrompt && <PalettePromptModal onClose={() => setEditingPrompt(false)} />}
+    </>
+  )
 }
 
 export default function PalettesPanel() {
@@ -101,7 +144,6 @@ ${attempt.reasoning ? `${attempt.reasoning}
   useAskContext(askContext)
   // No row matches the active id, every palette deleted, or a stale id. Nothing to write to.
   const locked = palette.id === undefined
-  const [editingPrompt, setEditingPrompt] = useState(false)
   const [editorOpen, setEditorOpen] = useState(true)
   const [bundledOpen, setBundledOpen] = useState(false)
   const bundledRef = useCloseOnOutside(bundledOpen, () => setBundledOpen(false))
@@ -169,20 +211,6 @@ ${attempt.reasoning ? `${attempt.reasoning}
 
   return (
     <section className="palettes screenFrame">
-      <div className="palettesHead">
-        <h3>Palettes</h3>
-        <span className="palettesHeadActions">
-          <button type="button" onClick={() => setEditingPrompt(true)}>
-            Edit Palette Prompt
-          </button>
-          <button type="button" onClick={() => create().then(pick)}>
-            <RiAddLine size={16} />
-            Add preset
-          </button>
-        </span>
-      </div>
-      {editingPrompt && <PalettePromptModal onClose={() => setEditingPrompt(false)} />}
-
       <TwoColumn
         list={
           <>
@@ -340,7 +368,7 @@ ${attempt.reasoning ? `${attempt.reasoning}
             <>
       {locked && <p className="hint">{lockedHint}</p>}
 
-      <fieldset className="panel paletteEditor" disabled={locked}>
+      <fieldset className="panel paletteEditor appearance" disabled={locked}>
         <div className="appearanceRow nameRow">
           <span>Name</span>
           <input
@@ -349,7 +377,7 @@ ${attempt.reasoning ? `${attempt.reasoning}
             onChange={(e) => patch({ name: e.target.value })}
           />
           {rewindOf('name')}
-          <span className="skinLabel">Panels: </span>
+          <span className="skinLabel">Panels</span>
           <select
             className="skinSelect"
             value={palette.skin}
@@ -362,9 +390,23 @@ ${attempt.reasoning ? `${attempt.reasoning}
             ))}
           </select>
           {rewindOf('skin')}
+          <span title="Auto reads the Background color.">Mode</span>
+          <select
+            className="schemeSelect"
+            value={palette.scheme}
+            title="Auto reads the Background color."
+            onChange={(e) => patch({ scheme: e.target.value as Palette['scheme'] })}
+          >
+            <option value="auto">Auto</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          {rewindOf('scheme')}
         </div>
 
-        {/* The active skin's knobs get their own row. A skin with no knobs leaves it empty. */}
+        {/* The active skin's knobs get their own row. A skin with no knobs has no row: an empty one
+            still took its padding and left a band under the name. */}
+        {(findSkin(palette.skin)?.knobs ?? []).length > 0 && (
         <div className="appearanceRow skinRow">
           <div className="skinKnobs">
             {(findSkin(palette.skin)?.knobs ?? []).map((knob) => {
@@ -422,48 +464,58 @@ ${attempt.reasoning ? `${attempt.reasoning}
             })}
           </div>
         </div>
+        )}
 
         {/* The font, size and chat colors also live in the Typography and Chat colors groups
             below; this is the same palette fields, hoisted to the top and open by default. */}
-        <details className="paletteGroup" open>
-          <summary>Quick Settings</summary>
+        {/* Every section is a card in one grid: two columns on a wide editor, one on a narrow one.
+            The column count follows the editor's own width, not the window's. */}
+        <div className="paletteCards">
+        <details className="paletteGroup card" open>
+          <summary>Quick settings</summary>
           <AppearancePanel heading={false} />
         </details>
 
         {groups.map(([label, fields]) => (
-          <details key={label} className="paletteGroup">
+          <details key={label} className="paletteGroup card" open>
             <summary>{label}</summary>
-            {fields.map((field) => (
-              <div key={field} className="paletteColorRow">
-                <span>{field}</span>
-                <ColorInput
-                  value={palette[field] as string}
-                  title={`--${field}`}
-                  compact
-                  onChange={(color) => patch({ [field]: color })}
-                />
-                {rewindOf(field)}
-              </div>
-            ))}
-            {label === 'Accents' && (
-              <div className="paletteColorRow">
-                <span>overlay</span>
-                {/* The one field that carries an alpha channel: the swatch gets the alpha
-                    slider and stores 8-digit hex. */}
-                <ColorInput
-                  value={palette.overlay}
-                  title="--overlay"
-                  compact
-                  alpha
-                  onChange={(color) => patch({ overlay: color })}
-                />
-                {rewindOf('overlay')}
-              </div>
-            )}
+            <div className="paletteTiles">
+              {fields.map((field) => (
+                <div key={field} className="paletteTile">
+                  <ColorInput
+                    value={palette[field] as string}
+                    title={`--${field}`}
+                    compact
+                    onChange={(color) => patch({ [field]: color })}
+                  />
+                  <span className="paletteTileLabel" title={`--${field}`}>
+                    {colorLabel[field] ?? field}
+                    {rewindOf(field)}
+                  </span>
+                </div>
+              ))}
+              {label === 'Accents' && (
+                <div className="paletteTile">
+                  {/* The one field that carries an alpha channel: the swatch gets the alpha
+                      slider and stores 8-digit hex. */}
+                  <ColorInput
+                    value={palette.overlay}
+                    title="--overlay"
+                    compact
+                    alpha
+                    onChange={(color) => patch({ overlay: color })}
+                  />
+                  <span className="paletteTileLabel" title="--overlay">
+                    {colorLabel.overlay}
+                    {rewindOf('overlay')}
+                  </span>
+                </div>
+              )}
+            </div>
           </details>
         ))}
 
-        <details className="paletteGroup">
+        <details className="paletteGroup card" open>
           <summary>Typography</summary>
           <WebfontPicker
             palette={palette}
@@ -473,7 +525,7 @@ ${attempt.reasoning ? `${attempt.reasoning}
             rewind={rewindGroup(['fontFamily', 'webfont', 'webfontId', 'useWebfont'])}
           />
           <label className="appearanceRow">
-            <span>Size</span>
+            <span>Size (px)</span>
             <input
               type="number"
               min={10}
@@ -481,7 +533,6 @@ ${attempt.reasoning ? `${attempt.reasoning}
               value={palette.fontSize}
               onChange={(e) => patch({ fontSize: Number(e.target.value) })}
             />
-            px
             {rewindOf('fontSize')}
           </label>
           <label className="appearanceRow">
@@ -499,10 +550,10 @@ ${attempt.reasoning ? `${attempt.reasoning}
           <p className="hint">Also sets the space a blank line puts between paragraphs.</p>
         </details>
 
-        <details className="paletteGroup">
+        <details className="paletteGroup card" open>
           <summary>Layout</summary>
           <label className="appearanceRow">
-            <span>Chat width</span>
+            <span>Chat width (%)</span>
             <input
               type="number"
               min={1}
@@ -510,11 +561,10 @@ ${attempt.reasoning ? `${attempt.reasoning}
               value={palette.chatWidth}
               onChange={(e) => patch({ chatWidth: Number(e.target.value) })}
             />
-            %
             {rewindOf('chatWidth')}
           </label>
           <label className="appearanceRow">
-            <span>Story width</span>
+            <span>Story width (%)</span>
             <input
               type="number"
               min={1}
@@ -522,11 +572,10 @@ ${attempt.reasoning ? `${attempt.reasoning}
               value={palette.storyWidth}
               onChange={(e) => patch({ storyWidth: Number(e.target.value) })}
             />
-            %
             {rewindOf('storyWidth')}
           </label>
           <label className="appearanceRow">
-            <span>Sidebar width</span>
+            <span>Sidebar width (px)</span>
             <input
               type="number"
               min={0}
@@ -541,12 +590,11 @@ ${attempt.reasoning ? `${attempt.reasoning}
                 patch({ sidebarWidth: n <= 0 ? 0 : Math.min(560, Math.max(300, n)) })
               }}
             />
-            px
             {rewindOf('sidebarWidth')}
           </label>
           <p className="hint">Sidebar width 0 uses the default of 300px. Minimum is 300px.</p>
           <label className="appearanceRow">
-            <span>Corner radius</span>
+            <span>Corner radius (px)</span>
             <input
               type="number"
               min={0}
@@ -554,12 +602,11 @@ ${attempt.reasoning ? `${attempt.reasoning}
               value={palette.radius}
               onChange={(e) => patch({ radius: Number(e.target.value) })}
             />
-            px
             {rewindOf('radius')}
           </label>
         </details>
 
-        <details className="paletteGroup">
+        <details className="paletteGroup card" open>
           <summary>
             Chat colors
             {rewindGroup([
@@ -589,7 +636,7 @@ ${attempt.reasoning ? `${attempt.reasoning}
           </label>
         </details>
 
-        <details className="paletteGroup">
+        <details className="paletteGroup card" open>
           <summary>
             Story colors
             {rewindGroup([
@@ -609,6 +656,7 @@ ${attempt.reasoning ? `${attempt.reasoning}
             onTextColor={(storyTextColor) => patch({ storyTextColor })}
           />
         </details>
+        </div>
       </fieldset>
             </>
           )

@@ -20,6 +20,13 @@ import { useAskContext, type AskContext } from '../../core/stores/askStore'
 import { xeniaPrompt } from '../../core/prompt/xeniaPrompts'
 import { buildTemplateMessages, parseTemplateReply } from './templatePrompt'
 import PageHeader from '../../app/PageHeader'
+import PageTabs from '../../app/PageTabs'
+import { tabs } from './tabs'
+
+const viewTabs = [
+  ['template', 'Template'],
+  ['preview', 'Preview'],
+] as const
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
 
@@ -47,7 +54,7 @@ export default function StackEditor() {
   const [params] = useSearchParams()
   // The template or the utility prompts. Both edit the same open stack: the picker row above stays put
   // and only the body swaps.
-  const [tab] = useHashTab(['stacks', 'look', 'misc'] as const)
+  const [tab, setTab] = useHashTab(tabs.map(([id]) => id))
   const writeEnabled = useSettings((s) => s.writeEnabled)
   const multiplayerEnabled = useSettings((s) => s.multiplayerEnabled)
   const [kind, setKind] = useState<StackKind>(
@@ -57,6 +64,8 @@ export default function StackEditor() {
   const activeStoryStackId = useSettings((s) => s.activeStoryStackId)
   const activeId = kind === 'story' ? activeStoryStackId : activeStackId
   const [draft, setDraft] = useState<PromptStack | null>(null)
+  // Template or Preview on the Stacks tab. Page view state, not saved.
+  const [view, setView] = useState<'template' | 'preview'>('template')
   // Phone width folds the action buttons into one Options menu: that changes the shape of the row,
   // which is more than a stylesheet can say.
   const mobile = useMediaQuery('(max-width: 700px)')
@@ -153,30 +162,42 @@ export default function StackEditor() {
 
   return (
     <div className="prompts screenFrame">
-      <PageHeader title="Prompt stacks">
-        {/* The Story builder only exists in Write mode; with it off there's just the chat stack. */}
-        {writeEnabled && (
-          <div className="kindSwitch">
-            <button
-              type="button"
-              className={kind === 'chat' ? 'active' : ''}
-              onClick={() => setKind('chat')}
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              className={kind === 'story' ? 'active' : ''}
-              onClick={() => setKind('story')}
-            >
-              Story
-            </button>
-          </div>
-        )}
+      {/* The Story builder only exists in Write mode; with it off there's just the chat stack. */}
+      <PageHeader
+        title="Prompt stacks"
+        actions={
+          writeEnabled && (
+            <div className="kindSwitch">
+              <button
+                type="button"
+                className={kind === 'chat' ? 'active' : ''}
+                onClick={() => setKind('chat')}
+              >
+                Chat
+              </button>
+              <button
+                type="button"
+                className={kind === 'story' ? 'active' : ''}
+                onClick={() => setKind('story')}
+              >
+                Story
+              </button>
+            </div>
+          )
+        }
+      >
+        <PageTabs tabs={tabs} current={tab} onPick={setTab} />
       </PageHeader>
 
       <div className="presetRow">
         <div>
+          <input
+            className="stackNameInput"
+            value={draft.name}
+            onChange={(e) => change({ ...draft, name: e.target.value })}
+            aria-label="Stack name"
+            title="Stack name"
+          />
           <select
             value={activeId ?? ''}
             onChange={(e) =>
@@ -235,46 +256,51 @@ export default function StackEditor() {
               )}
             </div>
           ) : (
-            actions
-              .filter((a) => !a.icon)
-              .map((a) => (
-                <Fragment key={a.label}>
-                  {a.label === 'Delete' && bundled.length > 0 && (
-                    <div className="stackBundled" ref={bundledRef}>
-                      <button type="button" onClick={() => setBundledOpen(!bundledOpen)}>
-                        Bundled
-                      </button>
-                      {bundledOpen && (
-                        <div className="panel stackBundledMenu">
-                          {bundled.map((b) => (
-                            <button
-                              key={b.key}
-                              type="button"
-                              onClick={() => {
-                                setBundledOpen(false)
-                                addBundled(b.key)
-                              }}
-                            >
-                              {b.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    className={a.danger ? 'danger' : undefined}
-                    onClick={a.run}
-                  >
+            <>
+              {actions
+                .filter((a) => !a.icon && !a.danger)
+                .map((a) => (
+                  <button key={a.label} type="button" onClick={a.run}>
                     {a.label}
                   </button>
-                </Fragment>
-              ))
+                ))}
+              {bundled.length > 0 && (
+                  <div className="stackBundled" ref={bundledRef}>
+                    <button type="button" onClick={() => setBundledOpen(!bundledOpen)}>
+                      Bundled
+                    </button>
+                    {bundledOpen && (
+                      <div className="panel stackBundledMenu">
+                        {bundled.map((b) => (
+                          <button
+                            key={b.key}
+                            type="button"
+                            onClick={() => {
+                              setBundledOpen(false)
+                              addBundled(b.key)
+                            }}
+                          >
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+              )}
+            </>
           )}
         </div>
         <div>
           {reason ? <span className="error">{reason}</span> : saved && <span className="hint">Saved</span>}
+          {/* Delete sits with the file actions, away from New and Duplicate. */}
+          {!mobile &&
+            actions
+              .filter((a) => a.danger)
+              .map((a) => (
+                <button key={a.label} type="button" className="danger" onClick={a.run}>
+                  {a.label}
+                </button>
+              ))}
           {!mobile &&
             actions
               .filter((a) => a.icon)
@@ -294,53 +320,44 @@ export default function StackEditor() {
       </div>
       {importError && <p className="error">{importError}</p>}
 
-      <div className="presetRow">
-        Name: 
-        <input
-          value={draft.name}
-          onChange={(e) => change({ ...draft, name: e.target.value })}
-          aria-label="Stack name"
-        />
-        {stackKind(draft) === 'chat' && (
-          <label className="stackBudget">
-            World info budget
-            <input
-              type="number"
-              min={0}
-              step={100}
-              value={draft.worldInfoBudget ?? ''}
-              placeholder="No limit"
-              onChange={(e) =>
-                change({
-                  ...draft,
-                  worldInfoBudget: e.target.value === '' ? undefined : Number(e.target.value),
-                })
-              }
-            />
-            tokens
-          </label>
-        )}
-      </div>
-
       {tab === 'misc' ? (
         <div className="screenBody">
           <MiscPromptsPanel stack={draft} onChange={change} />
         </div>
       ) : tab === 'look' ? (
-        <div className="screenBody zones">
-          <LookPanel stack={draft} onChange={change} />
-        </div>
+        <LookPanel stack={draft} onChange={change} />
       ) : (
-        <div className="screenBody zones">
-          <section className="panel stackZone promptsTemplateZone">
-            <div className="zoneHeader">
-              <h3>Template</h3>
-            </div>
+        <section className="panel codePanel promptsStackPanel">
+          <div className="codePanelToolbar">
+            <PageTabs tabs={viewTabs} current={view} onPick={setView} />
+            {/* The budget is a template setting: it shows with the template. */}
+            {stackKind(draft) === 'chat' && view === 'template' && (
+              <label className="stackBudget">
+                World info budget (tokens)
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={draft.worldInfoBudget ?? ''}
+                  placeholder="None"
+                  title="Empty means no limit."
+                  onChange={(e) =>
+                    change({
+                      ...draft,
+                      worldInfoBudget: e.target.value === '' ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+            )}
+          </div>
+          {view === 'template' ? (
             <TemplateEditor value={draft.template} kind={kind} onChange={(template) => change({ ...draft, template })} />
-          </section>
-          <PromptPreview stack={draft} />
+          ) : (
+            <PromptPreview stack={draft} />
+          )}
           {kind === 'chat' && <TemplateAsk stack={draft} onChange={change} />}
-        </div>
+        </section>
       )}
 
     </div>

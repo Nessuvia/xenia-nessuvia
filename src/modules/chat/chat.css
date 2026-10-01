@@ -707,6 +707,16 @@
   margin-top: 8px;
 }
 
+/* Section contents line up with the summary's chevron rather than the rail's edge, so each open
+   section reads as belonging to its header. */
+.chatSettings details[open] {
+  padding: 0 8px 8px;
+}
+
+.chatSettings details[open] > summary {
+  margin: 0 -8px;
+}
+
 .chatSettingsMeta {
   margin: 0;
   color: var(--textMuted);
@@ -723,14 +733,6 @@
 
 .chatSettingsPick select {
   width: 100%;
-}
-
-/* `.hint` is scoped per module, and this one renders outside every module's root element. */
-.chatSettings .hint {
-  margin: 0;
-  color: var(--textDim);
-  font-size: 11px;
-  line-height: 1.4;
 }
 
 .chatSettings label {
@@ -1357,8 +1359,10 @@
   gap: 6px;
 }
 
+/* The label takes its own line and the slider and box share the next, the same shape as a slider
+   in Parameters. */
 .chatSettings .chatWidth > span {
-  flex: 1 1 70px;
+  flex: 1 1 100%;
 }
 
 .chatSettings .chatWidth input[type='range'] {
@@ -1367,11 +1371,9 @@
   padding: 0;
 }
 
-/* Room for the spin buttons: at 52px the default padding squeezed them out of the box. */
 .chatSettings .chatWidth input[type='number'] {
   width: var(--numberWidth);
   flex: none;
-  padding: 6px 2px 6px 6px;
 }
 
 .chatSettings .speakerColorsTitle {
@@ -2134,4 +2136,46 @@
 
 .textRulesChatRow button {
   flex: none;
+}
+
+/* ---- Folding the roster row (useBarFold.ts) ---------------------------------- */
+
+/* Holds the row's height while the row itself is lifted out and moving. */
+.chatBarSpacer {
+  flex: none;
+}
+
+/* The persona avatar and, when folded, the row's caret beside it. */
+.composerPersonaRow {
+  display: flex;
+  align-items: center;
+}
+
+/* Grows open as the folded row arrives, which is what pushes the avatar left. */
+.chatBarSlot {
+  display: flex;
+  flex: none;
+  overflow: hidden;
+}
+
+/* The same size as the row's other toolbar buttons, wherever it sits. */
+.chatView .chatBarFold {
+  display: flex;
+  align-items: center;
+  flex: none;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.chatBarSlot .chatBarFold {
+  margin-left: 4px;
+}
+
+.chatBarFoldUp svg {
+  transform: rotate(180deg);
+}
+
+/* In place for measuring while the row slides onto it. */
+.chatBarFoldHidden {
+  visibility: hidden;
 }

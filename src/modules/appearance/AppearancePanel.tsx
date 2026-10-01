@@ -66,7 +66,7 @@ export default function AppearancePanel({
       )}
 
       <label className="appearanceRow">
-        <span>Size</span>
+        <span>Size (px)</span>
         <input
           type="number"
           min={10}
@@ -75,7 +75,6 @@ export default function AppearancePanel({
           disabled={locked}
           onChange={(e) => patch({ fontSize: Number(e.target.value) })}
         />
-        px
       </label>
 
       <label className="appearanceRow">

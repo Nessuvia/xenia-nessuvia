@@ -134,6 +134,13 @@ export interface Palette {
   sidebarWidth: number // px, 0 = the stylesheet's default
   radius: number // px
 
+  /**
+   * Whether this palette is light or dark. 'auto' reads the lightness of `bg`. Today it picks
+   * the code editor's look and the browser's `color-scheme`; it's the hook for anything else that
+   * has to differ between light and dark palettes. Read through `paletteScheme`, never directly.
+   */
+  scheme: PaletteScheme
+
   // Structure. A skin id from app/skins/skins.ts: 'default' means no skin, the base stylesheet.
   skin: string
   /**
@@ -217,6 +224,7 @@ export const defaultPalette: Palette = {
   sidebarWidth: 0,
   radius: 6,
 
+  scheme: 'auto',
   skin: 'default',
   skinVars: {},
 
@@ -425,6 +433,15 @@ export function matchAppFontPatch(p: Palette, on: boolean): Partial<Palette> {
   }
 }
 
+export type PaletteScheme = 'auto' | 'light' | 'dark'
+
+/** Light or dark, resolved. 'auto', and any value an imported file got wrong, reads `bg`: the
+ *  page background the whole site sits on. */
+export function paletteScheme(p: Palette): 'light' | 'dark' {
+  if (p.scheme === 'light' || p.scheme === 'dark') return p.scheme
+  return isLight(p.bg) ? 'light' : 'dark'
+}
+
 /** `--name` -> value for every var applied at the root element. A cleared color is left out:
  *  the `:root` block in index.css shows through as the fallback. */
 export function paletteVars(p: Palette): Record<string, string> {
@@ -436,9 +453,9 @@ export function paletteVars(p: Palette): Record<string, string> {
   // chrome is precisely what sits outside those views. Empty means the index.css fallback wins.
   vars['--appFont'] = effectiveAppFont(p)
   vars['--textWeight'] = String(p.textWeight || 400)
-  // Derived, not a knob: the browser paints scrollbars and form controls from `color-scheme`.
-  // A light palette with dark controls looks broken. Any palette with a light background gets it.
-  vars['--colorScheme'] = isLight(p.bg) ? 'light' : 'dark'
+  // The browser paints scrollbars and form controls from `color-scheme`. A light palette with dark
+  // controls looks broken.
+  vars['--colorScheme'] = paletteScheme(p)
   return vars
 }
 

@@ -52,6 +52,9 @@ export const usePostStacks = create<PostStacksState>()((set, get) => ({
   },
 
   save: async (stack) => {
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
+    if (stack.id) set({ stacks: get().stacks.map((s) => (s.id === stack.id ? stack : s)) })
     const id = await storage.put('postStacks', { ...stack, updatedAt: Date.now() } as unknown as StoredRecord)
     await get().load()
     return id

@@ -1,7 +1,7 @@
 import { useChatTextRules } from '../../core/stores/textRules'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { RiDeleteBinLine, RiRobot2Line, RiSparkling2Line } from '@remixicon/react'
+import { RiArrowDownSLine, RiDeleteBinLine, RiRobot2Line, RiSparkling2Line } from '@remixicon/react'
 import { useParams } from 'react-router-dom'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
@@ -27,6 +27,7 @@ import { agentSegments } from './agentSegments'
 import { TrackerFloat } from './TrackerPanel'
 import AgentStream from './AgentStream'
 import IdeaChips from './IdeaChips'
+import { useBarFold } from './useBarFold'
 import { hotkeysOn } from '../../app/hotkeys'
 
 export default function ChatView() {
@@ -86,6 +87,7 @@ export default function ChatView() {
   // Which message has the regen modal open. Lives here: an empty composer submit can open it.
   const [rewritingId, setRewritingId] = useState<number | null>(null)
   const [deletingRange, setDeletingRange] = useState(false)
+  const fold = useBarFold()
   // Which message has its inline edit box open. On a phone the composer hides while it does, the
   // edit box and the composer together leave almost no room for the message.
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -358,7 +360,12 @@ export default function ChatView() {
         </p>
       )}
 
-      <div className={editingId !== null ? 'chatBottomBar editingOpen' : 'chatBottomBar'}>
+      {fold.moving && <div className="chatBarSpacer" ref={fold.spacer} />}
+      {(!fold.folded || fold.moving) && (
+      <div
+        ref={fold.bar}
+        className={editingId !== null ? 'chatBottomBar editingOpen' : 'chatBottomBar'}
+      >
         <RosterBar
           chat={chat}
           characters={characters}
@@ -388,8 +395,19 @@ export default function ChatView() {
           >
             <RiDeleteBinLine size={16} />
           </button>
+          <button
+            type="button"
+            ref={fold.caret}
+            className="chatBarFold"
+            title="Fold this row"
+            aria-label="Fold this row"
+            onClick={fold.toggle}
+          >
+            <RiArrowDownSLine size={16} />
+          </button>
         </div>
       </div>
+      )}
 
       {deletingRange && (
         <DeleteRangeDialog
@@ -413,6 +431,22 @@ export default function ChatView() {
             .map((c) => ({ id: c.id!, name: displayName(c), avatar: c.avatar }))}
           onSend={(text) => send(character, text, chat.respondWith)}
           onStop={stop}
+          personaSlot={
+            (fold.folded || fold.moving) && (
+              <div className="chatBarSlot" ref={fold.slot}>
+                <button
+                  type="button"
+                  ref={fold.slotButton}
+                  className={fold.moving ? 'chatBarFold chatBarFoldUp chatBarFoldHidden' : 'chatBarFold chatBarFoldUp'}
+                  title="Show the roster row"
+                  aria-label="Show the roster row"
+                  onClick={fold.toggle}
+                >
+                  <RiArrowDownSLine size={16} />
+                </button>
+              </div>
+            )
+          }
           onRegenLast={() => {
             const last = messages.at(-1)
             if (last?.role === 'assistant') setRewritingId(last.id!)

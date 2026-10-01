@@ -10,6 +10,7 @@ import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
 import { useHashTab } from '../../app/useHashTab'
 import PageHeader from '../../app/PageHeader'
+import PageTabs from '../../app/PageTabs'
 import '../../app/formPage.css'
 import './settings.css'
 
@@ -32,8 +33,6 @@ export default function SettingsView() {
     setCustomTitle,
     splashOff,
     setSplashOff,
-    footerAutoHideOff,
-    setFooterAutoHideOff,
     hotkeysOff,
     setHotkeysOff,
     writeEnabled,
@@ -68,18 +67,7 @@ export default function SettingsView() {
   return (
     <div className="settings formPage screenFrame">
       <PageHeader title="Settings">
-        <nav className="navbar pageTabs">
-          {tabs.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`pageTab${tab === id ? ' current' : ''}`}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+        <PageTabs tabs={tabs} current={tab} onPick={setTab} />
       </PageHeader>
 
       {/* The one page in the app that scrolls as a whole. A connection editor is a long form and
@@ -224,20 +212,6 @@ export default function SettingsView() {
               />
               Disable the logo animation on page load
             </label>
-          </section>
-          <section className="settingsCard">
-            <h3>Side panel footer</h3>
-            <label className="debugToggle">
-              <input
-                type="checkbox"
-                checked={footerAutoHideOff}
-                onChange={(e) => setFooterAutoHideOff(e.target.checked)}
-              />
-              Don't auto-hide side panel footer
-            </label>
-            <p className="debugHint">
-              The footer hides while you scroll down the side panel and comes back when you scroll up.
-            </p>
           </section>
           <section className="settingsCard">
             <h3>Keyboard shortcuts</h3>

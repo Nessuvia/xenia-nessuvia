@@ -480,7 +480,7 @@ function AppearanceSection() {
           open. The scope is the Story on screen. The palette's Story width is the default
           every Story that has none of its own uses. */}
       <label className="storyWidth">
-        <span>Story width</span>
+        <span>Story width (%)</span>
         <input
           type="range"
           min={20}
@@ -496,7 +496,6 @@ function AppearanceSection() {
           value={story?.storyWidth ?? palette.storyWidth}
           onChange={(e) => setStoryWidth(Number(e.target.value))}
         />
-        %
       </label>
       <p className="hint">Overrides the Story width in the palette.</p>
       {/* The same global switch as the chat's, shown here to stay reachable without opening a

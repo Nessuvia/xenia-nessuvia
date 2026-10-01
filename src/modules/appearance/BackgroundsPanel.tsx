@@ -12,6 +12,9 @@ import { scopeBackgroundCss } from '../../core/palette/scopeCss'
 import { lockedHint, usePaletteEditor } from '../../core/stores/palettesStore'
 import { useBackgroundCss } from '../../core/stores/backgroundCssStore'
 import { useBackgroundImages } from '../../core/stores/backgroundImagesStore'
+import PageTabs from '../../app/PageTabs'
+import { CodeEditor, CodeReference } from '../../app/CodeEditor'
+import { useMediaQuery } from '../../app/useMediaQuery'
 import './backgrounds.css'
 
 const slotLabel: Record<BackgroundSlot, string> = {
@@ -32,6 +35,15 @@ const fitLabel: Record<BackgroundFit, string> = {
 
 /** How long after the last keystroke the layer picks up the drafts. */
 const previewDelay = 250
+
+const langTabs = [
+  ['html', 'HTML'],
+  ['css', 'CSS'],
+] as const
+const paneTabs = [
+  ['image', 'Image'],
+  ['code', 'Code'],
+] as const
 
 type Drafts = Record<BackgroundSlot, { css: string; html: string }>
 
@@ -61,6 +73,10 @@ export default function BackgroundsPanel() {
   const clearPreview = useBackgroundCss((s) => s.clearPreview)
 
   const [slot, setSlot] = useState<BackgroundSlot>('all')
+  const [lang, setLang] = useState<'html' | 'css'>('html')
+  // Half-width and down: one side at a time. A layout shape, so a media query in code.
+  const narrow = useMediaQuery('(max-width: 1300px)')
+  const [pane, setPane] = useState<'image' | 'code'>('image')
   // The CSS and HTML boxes hold their own per-slot drafts, applied to the palette on Apply.
   const [drafts, setDrafts] = useState(() => draftsFor(palette.backgrounds))
   // Which slots keep HTML and CSS of their own, versus editing the "All pages" set.
@@ -135,21 +151,14 @@ export default function BackgroundsPanel() {
   }
 
   return (
-    <section className="backgrounds">
+    <section className="screenBody backgrounds">
       {locked && <p className="backgroundsHint">{lockedHint}</p>}
 
-      <nav className="navbar pageTabs">
-        {backgroundSlots.map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={`pageTab${slot === id ? ' current' : ''}`}
-            onClick={() => setSlot(id)}
-          >
-            {slotLabel[id]}
-          </button>
-        ))}
-      </nav>
+      <PageTabs
+        tabs={backgroundSlots.map((id) => [id, slotLabel[id]] as const)}
+        current={slot}
+        onPick={setSlot}
+      />
 
       <p className="backgroundsHint">
         {slot === 'all'
@@ -157,147 +166,170 @@ export default function BackgroundsPanel() {
           : `Applies to ${slotLabel[slot]}. With no image here, the one from "All pages" is used.`}
       </p>
 
+      {narrow && <PageTabs tabs={paneTabs} current={pane} onPick={setPane} />}
+
       <div className="backgroundsLayout">
-        <div className="backgroundsLeft">
-          <div className="backgroundPreview">
-            {preview ? (
-              <img src={preview} alt="" />
-            ) : (
-              <span className="backgroundEmpty">No image</span>
+        {(!narrow || pane === 'image') && (
+          <div className="backgroundsLeft">
+            <div className="backgroundPreview">
+              {preview ? (
+                <img src={preview} alt="" />
+              ) : (
+                <span className="backgroundEmpty">No image</span>
+              )}
+              {inherits && preview && <span className="backgroundInherited">From All pages</span>}
+            </div>
+
+            <div className="backgroundSource">
+              {/* File inputs can't be styled; the label is the button. */}
+              <label className="backgroundUpload">
+                <RiUploadLine size={16} />
+                Upload
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={locked}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    e.target.value = ''
+                    if (!file) return
+                    const imageId = await addImage(file)
+                    patchSlot({ imageId, url: '' })
+                  }}
+                />
+              </label>
+
+              <label>
+                Image URL
+                <input
+                  type="text"
+                  value={background.url}
+                  disabled={locked}
+                  placeholder="https://"
+                  onChange={(e) => patchSlot({ url: e.target.value, imageId: 0 })}
+                />
+              </label>
+
+              <button
+                type="button"
+                className="secondary"
+                disabled={locked || (!background.imageId && !background.url)}
+                onClick={() => patchSlot({ imageId: 0, url: '' })}
+              >
+                Clear
+              </button>
+            </div>
+
+            <label className="backgroundFit">
+              Fit
+              <select
+                value={background.fit}
+                disabled={locked}
+                onChange={(e) => patchSlot({ fit: e.target.value as BackgroundFit })}
+              >
+                {backgroundFits.map((fit) => (
+                  <option key={fit} value={fit}>
+                    {fitLabel[fit]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {background.fit === 'none' && (
+              <p className="hint">Hides uploaded images; for using with custom HTML/CSS</p>
             )}
-            {inherits && preview && <span className="backgroundInherited">From All pages</span>}
-          </div>
 
-          <div className="backgroundSource">
-            {/* File inputs can't be styled; the label is the button. */}
-            <label className="backgroundUpload">
-              <RiUploadLine size={16} />
-              Upload
+            <label className="backgroundExcludeNav">
               <input
-                type="file"
-                accept="image/*"
+                type="checkbox"
+                checked={background.excludeNav}
                 disabled={locked}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  e.target.value = ''
-                  if (!file) return
-                  const imageId = await addImage(file)
-                  patchSlot({ imageId, url: '' })
-                }}
+                onChange={(e) => patchSlot({ excludeNav: e.target.checked })}
               />
+              Start after the navigation bar
             </label>
 
-            <label>
-              Image URL
-              <input
-                type="text"
-                value={background.url}
-                disabled={locked}
-                placeholder="https://"
-                onChange={(e) => patchSlot({ url: e.target.value, imageId: 0 })}
-              />
-            </label>
-
-            <button
-              type="button"
-              className="secondary"
-              disabled={locked || (!background.imageId && !background.url)}
-              onClick={() => patchSlot({ imageId: 0, url: '' })}
-            >
-              Clear
-            </button>
-          </div>
-
-          <label className="backgroundFit">
-            Fit
-            <select
-              value={background.fit}
-              disabled={locked}
-              onChange={(e) => patchSlot({ fit: e.target.value as BackgroundFit })}
-            >
-              {backgroundFits.map((fit) => (
-                <option key={fit} value={fit}>
-                  {fitLabel[fit]}
-                </option>
+          {images.length > 0 && (
+            <div className="backgroundLibrary">
+            <h3>Uploaded images</h3>
+            <ul>
+              {images.map((img) => (
+                <li key={img.id}>
+                  <button
+                    type="button"
+                    className={`backgroundThumb${background.imageId === img.id ? ' current' : ''}`}
+                    disabled={locked}
+                    title={img.name}
+                    onClick={() => patchSlot({ imageId: img.id!, url: '' })}
+                  >
+                    <img src={img.dataUrl} alt="" />
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    title="Delete"
+                    onClick={() => removeImage(img.id!)}
+                  >
+                    <RiDeleteBinLine size={14} />
+                  </button>
+                </li>
               ))}
-            </select>
-          </label>
-          {background.fit === 'none' && (
-            <p className="hint">Hides uploaded images; for using with custom HTML/CSS</p>
+            </ul>
+            </div>
           )}
+          </div>
+        )}
 
-          <label className="backgroundExcludeNav">
-            <input
-              type="checkbox"
-              checked={background.excludeNav}
-              disabled={locked}
-              onChange={(e) => patchSlot({ excludeNav: e.target.checked })}
-            />
-            Start after the navigation bar
-          </label>
-        </div>
-
-        <div className="backgroundsRight">
-          <div className="backgroundCss">
-            {slot !== 'all' && (
-              <div className="backgroundShared">
-                <span>
-                  {separate[slot]
-                    ? `HTML and CSS for ${slotLabel[slot]} only.`
-                    : 'Editing the HTML and CSS shared by every page.'}
-                </span>
-                <button type="button" className="secondary" disabled={locked} onClick={toggleSeparate}>
-                  {separate[slot] ? 'Use the shared HTML and CSS' : 'Use separate HTML and CSS'}
-                </button>
-              </div>
-            )}
-
-            <label className="grow">
-              HTML
-              <textarea
-                rows={6}
-                spellCheck={false}
-                value={htmlDraft}
-                disabled={locked}
-                placeholder={'<div class="orb"></div>'}
-                onChange={(e) => setHtmlDraft(e.target.value)}
-              />
-            </label>
-            <p className="backgroundsHint">
-              Elements placed inside <code>.pageBackground</code> for your CSS to target. Allowed:{' '}
-              <code>div span hr br p img</code>, with <code>class</code>, <code>id</code>,{' '}
-              <code>style</code>, <code>src</code>, <code>alt</code>. Anything else is rejected until
-              you remove it. CSS belongs in the CSS box. A <code>&lt;style&gt;</code> tag is rejected.
-            </p>
-            <p className="backgroundsHint">
-              <code>&lt;img src="image.jpg"&gt;</code> in the HTML and <code>url(image.jpg)</code> in
-              the CSS load the image of the page being viewed.
-            </p>
-            {invalidHtml.length > 0 && (
-              <p className="backgroundCssInvalid">Not allowed: {invalidHtml.join(', ')}</p>
-            )}
-
-            <label className="grow">
-              CSS
-              <textarea
-                rows={10}
-                spellCheck={false}
-                value={cssDraft}
-                disabled={locked}
-                placeholder=".pageBackground { filter: blur(4px); }"
-                onChange={(e) => setCssDraft(e.target.value)}
-              />
-            </label>
-            <p className="backgroundsHint">
-              The background layer is <code>.pageBackground</code>. The page updates both boxes as you type; changes aren't saved to the preset until you click <code>Apply</code>. Load the page with{' '}
-              <code>?nocss=1</code> to turn saved CSS and HTML off.
-            </p>
-            {cssEscaped && (
-              <p className="backgroundCssInvalid">
-                Unbalanced braces. The CSS ends before its last rule.
-              </p>
-            )}
-            <div className="backgroundCssActions">
+        {(!narrow || pane === 'code') && (
+          <section className="panel codePanel">
+            <div className="codePanelToolbar">
+              <PageTabs tabs={langTabs} current={lang} onPick={setLang} />
+              {slot !== 'all' && (
+                <label
+                  className="codePanelToggle"
+                  title={`On: this page keeps its own HTML and CSS. Off: it uses the pair shared by every page.`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!separate[slot]}
+                    disabled={locked}
+                    onChange={toggleSeparate}
+                  />
+                  Separate for {slotLabel[slot]}
+                </label>
+              )}
+              <CodeReference>
+                <p className="hint">
+                  The background layer is <code>.pageBackground</code>. HTML elements are placed inside it
+                  for the CSS to target.
+                </p>
+                <dl className="tokenGuide">
+                  <div>
+                    <dt>Tags</dt>
+                    <dd>div, span, hr, br, p, img. Anything else is rejected until it's removed.</dd>
+                  </div>
+                  <div>
+                    <dt>Attributes</dt>
+                    <dd>class, id, style, src, alt</dd>
+                  </div>
+                  <div>
+                    <dt>The page's image</dt>
+                    <dd>
+                      <code>&lt;img src="image.jpg"&gt;</code> in the HTML and <code>url(image.jpg)</code> in the
+                      CSS load the image of the page being viewed.
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Turn it off</dt>
+                    <dd>
+                      Load the page with <code>?nocss=1</code> to turn saved CSS and HTML off.
+                    </dd>
+                  </div>
+                </dl>
+                <p className="hint">
+                  CSS belongs in the CSS tab: a <code>&lt;style&gt;</code> tag is rejected. The page updates as you
+                  type; nothing is saved to the preset until Apply.
+                </p>
+              </CodeReference>
               <button type="button" onClick={apply} disabled={!canApply}>
                 Apply
               </button>
@@ -305,38 +337,25 @@ export default function BackgroundsPanel() {
                 Discard
               </button>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {images.length > 0 && (
-        <div className="backgroundLibrary">
-          <h3>Uploaded images</h3>
-          <ul>
-            {images.map((img) => (
-              <li key={img.id}>
-                <button
-                  type="button"
-                  className={`backgroundThumb${background.imageId === img.id ? ' current' : ''}`}
-                  disabled={locked}
-                  title={img.name}
-                  onClick={() => patchSlot({ imageId: img.id!, url: '' })}
-                >
-                  <img src={img.dataUrl} alt="" />
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  title="Delete"
-                  onClick={() => removeImage(img.id!)}
-                >
-                  <RiDeleteBinLine size={14} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+            <CodeEditor
+              key={editSlot}
+              lang={lang}
+              value={lang === 'html' ? htmlDraft : cssDraft}
+              disabled={locked}
+              placeholder={lang === 'html' ? '<div class="orb"></div>' : '.pageBackground { filter: blur(4px); }'}
+              onChange={lang === 'html' ? setHtmlDraft : setCssDraft}
+            />
+
+            {(invalidHtml.length > 0 || cssEscaped) && (
+              <ul className="codePanelProblems">
+                {invalidHtml.length > 0 && <li className="error">Not allowed: {invalidHtml.join(', ')}</li>}
+                {cssEscaped && <li className="error">Unbalanced braces. The CSS ends before its last rule.</li>}
+              </ul>
+            )}
+          </section>
+        )}
+      </div>
     </section>
   )
 }

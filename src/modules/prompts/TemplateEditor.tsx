@@ -8,6 +8,7 @@ import { autocompletion, type CompletionContext } from '@codemirror/autocomplete
 import { tags } from '@lezer/highlight'
 import { templateProblems, templateVariables } from '../../core/prompt/stackTemplate'
 import type { StackKind } from './stackKinds'
+import '../../app/codeEditor.css'
 
 // Slots and tokens a template can paste, per kind. The completion list and nothing else reads these.
 const names: Record<StackKind, string[]> = {
@@ -84,11 +85,11 @@ const templateLanguage = StreamLanguage.define<{ inComment: boolean }>({
   },
 })
 
-// Colours come from the stylesheet: classes here, `var(--...)` there.
+// Colours come from app/codeEditor.css: the shared token classes, `var(--...)` there.
 const highlight = HighlightStyle.define([
-  { tag: tags.keyword, class: 'promptsTplTag' },
-  { tag: tags.variableName, class: 'promptsTplSlot' },
-  { tag: tags.comment, class: 'promptsTplComment' },
+  { tag: tags.keyword, class: 'codeTag' },
+  { tag: tags.variableName, class: 'codeValue' },
+  { tag: tags.comment, class: 'codeComment' },
 ])
 
 function completions(kind: StackKind) {
@@ -165,7 +166,7 @@ export default function TemplateEditor({
 
   return (
     <>
-      <div ref={host} className="promptsTemplateEditor" />
+      <div ref={host} className="codeEditor" />
       {problems.length > 0 && (
         <ul className="promptsTemplateProblems">
           {problems.map((p, i) => (

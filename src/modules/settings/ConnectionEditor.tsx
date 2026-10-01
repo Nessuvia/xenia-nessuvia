@@ -300,7 +300,7 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
             {contextNote && <small>{contextNote}</small>}
           </label>
           <label>
-            Safety margin %
+            Safety margin (%)
             <input
               type="number"
               value={draft.safetyMarginPct}

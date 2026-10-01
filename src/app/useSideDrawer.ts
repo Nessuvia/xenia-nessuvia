@@ -74,10 +74,12 @@ export function useSideDrawer({
 
     const width = () => window.innerWidth
 
-    // Controls that own a sideways drag of their own. A range slider is the one that matters most:
-    // the navbar is full of them (font size, line height, the skin knobs), and without this every
-    // slider drag would pull the drawer instead. `data-noSwipe` is the opt-out for anything else.
-    const ownsDrag = 'input[type="range"], textarea, .ReactCrop, [data-noSwipe]'
+    // A touch that starts on a form control never moves the drawer. Sliders are the ones that
+    // matter most: the navbar and the chat options are full of them, and without this every slider
+    // drag pulls the drawer instead. `[role="slider"]` and `.rangeSlider` cover the two-thumb
+    // RangeSlider, whose thumbs are buttons, and a thumb missed by a few pixels onto its track.
+    // `data-noSwipe` is the opt-out for anything else.
+    const ownsDrag = 'input, select, textarea, [role="slider"], .rangeSlider, .ReactCrop, [data-noSwipe]'
 
     const start = (e: TouchEvent) => {
       live = e.touches.length === 1

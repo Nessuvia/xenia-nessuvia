@@ -143,7 +143,13 @@ assert.ok(!('--accent' in paletteVars(resolvePalette({ accent: '' }))))
 
 // --- color-scheme is derived from the background --------------------------
 assert.strictEqual(vars['--colorScheme'], 'dark')
+// Auto reads the page background, not --surface. Light and Dark override it either way.
 assert.strictEqual(paletteVars(resolvePalette({ bg: '#f2f2f5' }))['--colorScheme'], 'light')
+assert.strictEqual(paletteVars(resolvePalette({ surface: '#f2f2f5' }))['--colorScheme'], 'dark')
+assert.strictEqual(paletteVars(resolvePalette({ bg: '#f2f2f5', scheme: 'dark' }))['--colorScheme'], 'dark')
+assert.strictEqual(paletteVars(resolvePalette({ scheme: 'light' }))['--colorScheme'], 'light')
+// A junk value from a file counts as auto.
+assert.strictEqual(paletteVars(resolvePalette({ bg: '#ffffff', scheme: 'sepia' as never }))['--colorScheme'], 'light')
 assert.ok(isLight('#ffffff'))
 assert.ok(isLight('#fff')) // short form
 assert.ok(!isLight('#101014'))

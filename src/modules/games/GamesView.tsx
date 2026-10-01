@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import EntityPicker from '../../app/EntityPicker'
 import PageHeader from '../../app/PageHeader'
+import PageTabs from '../../app/PageTabs'
 import { useHashTab } from '../../app/useHashTab'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import { useSideDrawer } from '../../app/useSideDrawer'
@@ -16,8 +17,7 @@ import GameBoard from './GameBoard'
 import GameLog from './GameLog'
 import { secretRanks } from '../../core/games/cardSpoilers'
 
-const tabs = [['play', 'Play'], ['history', 'History']] as const
-type TabId = (typeof tabs)[number][0]
+import { tabs } from './tabs'
 
 export default function GamesView() {
   return (
@@ -30,8 +30,15 @@ export default function GamesView() {
 }
 
 function GamesHome() {
-  const [tab] = useHashTab<TabId>(tabs.map((t) => t[0]))
-  return tab === 'history' ? <History /> : <Play />
+  const [tab, setTab] = useHashTab(tabs.map(([id]) => id))
+  return (
+    <div className="gamesPage">
+      <PageHeader title="Games">
+        <PageTabs tabs={tabs} current={tab} onPick={setTab} />
+      </PageHeader>
+      {tab === 'history' ? <History /> : <Play />}
+    </div>
+  )
 }
 
 // Setup: pick a game, then a character. An unfinished game is listed. It can be resumed.
@@ -61,8 +68,7 @@ function Play() {
   )
 
   return (
-    <div className="gamesPage">
-      <PageHeader title="Games" />
+    <>
       <div className="gamesKindRow">
         {(Object.keys(gameLabels) as GameKind[]).map((id) => (
           <button
@@ -104,7 +110,7 @@ function Play() {
           </ul>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -137,8 +143,7 @@ function History() {
   const open = past.find((g) => g.id === openId)
 
   return (
-    <div className="gamesPage">
-      <h2 className="gamesHeading">History</h2>
+    <>
       {past.length === 0 && <p className="gamesHint">No finished games.</p>}
       <ul className="gamesList">
         {past.map((game) => (
@@ -160,7 +165,7 @@ function History() {
         ))}
       </ul>
       {open && <Replay key={open.id} game={open} />}
-    </div>
+    </>
   )
 }
 

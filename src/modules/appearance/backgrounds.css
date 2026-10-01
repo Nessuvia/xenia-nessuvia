@@ -1,24 +1,26 @@
-.backgrounds {
+/* Image settings on the left, the code panel on the right, filling the window. The frame doesn't
+   scroll: each column does on its own. Two classes to beat .screenBody's overflow on the element. */
+.screenBody.backgrounds {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .backgroundsLayout {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  gap: 24px;
+  gap: 16px;
 }
 
 .backgroundsLeft {
   flex: 0 0 320px;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.backgroundsRight {
-  flex: 1;
-  min-width: 0;
 }
 
 .backgroundsHint {
@@ -75,8 +77,15 @@
   gap: 8px;
 }
 
+/* min-width 0 and a full-width box: at its intrinsic width the URL field pushed Clear past the
+   column's edge, and the column scrolled sideways. */
 .backgroundSource label:not(.backgroundUpload) {
   flex: 1;
+  min-width: 0;
+}
+
+.backgroundSource input[type='text'] {
+  width: 100%;
 }
 
 .backgroundUpload {
@@ -102,39 +111,6 @@
   color: var(--text);
   padding: var(--fieldPad);
   max-width: 200px;
-}
-
-.backgroundCss {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.backgroundCss textarea {
-  font-family: ui-monospace, monospace;
-  font-size: 13px;
-  resize: vertical;
-}
-
-.backgroundShared {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: var(--textMuted);
-}
-
-.backgroundCssActions {
-  display: flex;
-  gap: 8px;
-}
-
-.backgroundCssInvalid {
-  margin: 0;
-  font-size: 13px;
-  color: var(--danger);
 }
 
 .backgroundLibrary h3 {
@@ -201,24 +177,19 @@
   accent-color: var(--accent);
 }
 
-/* Phones: one column. The left column is a fixed 320px, which leaves the HTML and CSS boxes in the
-   right column a few pixels wide on a phone. */
-@media (max-width: 700px) {
+/* Half-width and down: one column at a time under the Image / Code tabs. */
+@media (max-width: 1300px) {
   .backgroundsLayout {
     flex-direction: column;
-    gap: 16px;
   }
 
   .backgroundsLeft {
-    flex: 1 1 auto;
+    flex: 1;
   }
+}
 
+@media (max-width: 700px) {
   .backgroundSource {
     flex-wrap: wrap;
-  }
-
-  .backgroundCss textarea {
-    width: 100%;
-    min-width: 0;
   }
 }

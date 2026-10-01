@@ -102,6 +102,13 @@
   transition: background-color 0.5s, color 0.5s, border-color 0.5s, fill 0.5s;
 }
 
+/* A light palette (data-scheme, palette.ts paletteScheme) gets a light code editor. Scoped to the
+   editor: code in messages keeps the fixed dark --codeBg. */
+:root[data-scheme='light'] .codeEditor {
+  --codeBg: #f7f7fa;
+  --codeText: #2a2a33;
+}
+
 /* Nothing in the app scrolls sideways: wide content wraps or clips instead. The phone drawer opens
    on a left-to-right swipe from anywhere on the screen (useDrawerSwipe.ts), and any horizontal
    scroller would eat that swipe wherever it sat. This is the backstop: a new offender degrades to
@@ -306,10 +313,18 @@ input[type='checkbox'] {
   text-align: left;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--borderStrong);
   border-radius: calc(var(--radius) + 2px);
-  background: var(--surface);
+  /* Raised, not --surface: a rail or panel is already --surface, and the card vanished into it. */
+  background: var(--surfaceRaised);
+  color: var(--text);
   cursor: pointer;
+}
+
+/* Stacked cards in block flow touched. ponytail: inside a flex parent with a gap this adds to the
+   gap; scope it to block parents if a list there looks loose. */
+#root label.checkboxRow + label.checkboxRow {
+  margin-top: 6px;
 }
 
 /* Lit border when checked: the whole card looks "on" without a second color for the box. */
@@ -325,7 +340,9 @@ input[type='checkbox'] {
   height: 16px;
 }
 
-/* Button baseline. Mirrors .formPage button. Buttons carrying their own module styling override. */
+/* Button baseline. Mirrors .formPage button. Buttons carrying their own module styling override.
+   The font size is the field's, so a button and a field on one row match: without it a button
+   inherited the page's 16px. */
 button,
 a.button {
   background: var(--surfaceActive);
@@ -334,6 +351,7 @@ a.button {
   padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
+  font-size: var(--fieldFont);
   cursor: pointer;
   text-decoration: none;
   display: inline-block;

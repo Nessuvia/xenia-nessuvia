@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ConnectionType, ParamDef, ParamKind } from '../../core/params/paramDef'
 import { defFromSnippet } from '../../core/params/paramDef'
+import { ListInput } from '../../app/ListInput'
 import { useParamDefs } from '../../core/stores/paramDefsStore'
 
 const kinds: ParamKind[] = ['number', 'slider', 'text', 'bool', 'select', 'stringList', 'json']
@@ -152,14 +153,9 @@ export default function ParamDefModal({
             {draft.kind === 'select' && (
               <label>
                 Options (comma-separated)
-                <input
-                  value={(draft.options ?? []).join(', ')}
-                  onChange={(e) =>
-                    set(
-                      'options',
-                      e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
-                    )
-                  }
+                <ListInput
+                  value={draft.options ?? []}
+                  onChange={(options) => set('options', options)}
                 />
               </label>
             )}

@@ -37,7 +37,14 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
+}
+
+.syncSectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
 /* Chrome lays a <details> body out in this slot, and the slot is the flex item beside the summary.
@@ -60,8 +67,7 @@
 .syncSectionHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   cursor: pointer;
   list-style: none;
@@ -82,17 +88,12 @@
   transform: rotate(90deg);
 }
 
-/* The status is pushed to the far edge; the title keeps the chevron beside it. */
+/* Chevron and title on the left, the status pushed to the far edge. One rule: two used to set
+   the margin and the second cancelled the first, which centred the title. */
 .syncSectionHead h3 {
-  margin-right: auto;
-}
-
-.syncSectionHead h3 {
-  margin: 0;
-  font-size: 12px;
+  margin: 0 auto 0 0;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--text);
 }
 
@@ -102,13 +103,11 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  letter-spacing: 0.04em;
   color: var(--textMuted);
 }
 
 .syncStatus {
   font-size: 12px;
-  letter-spacing: 0.04em;
   color: var(--textMuted);
 }
 
@@ -232,12 +231,24 @@
   margin-top: 10px;
 }
 
+/* A section's buttons split the row evenly, like Import and Export below. A note takes a line of its
+   own: before the buttons it sits above them ("Signed in as"), after them it sits below ("Last
+   synced"). */
 .syncActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
+}
+
+.syncActions > :not(.syncNote) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.syncActions > .syncNote {
+  flex-basis: 100%;
 }
 
 .syncComparison {
@@ -280,19 +291,21 @@
   width: 100%;
 }
 
+/* Painted like every other button. Import is a label, which the `button` baseline doesn't reach,
+   so the baseline's values are restated here from the same vars. */
 #root .syncBackupButton {
   flex: 1 1 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 9px 12px;
-  background: var(--surfaceSunken);
-  border: none;
+  padding: var(--buttonPad);
+  background: var(--surfaceActive);
+  border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  color: var(--textMuted);
+  color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
   cursor: pointer;
 }
 

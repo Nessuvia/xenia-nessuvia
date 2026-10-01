@@ -7,7 +7,7 @@ import ParamInput, { asText } from '../settings/ParamInput'
 
 const fields: Record<OverridableField, { label: string }> = {
   contextLimit: { label: 'Context limit' },
-  safetyMarginPct: { label: 'Safety margin %' },
+  safetyMarginPct: { label: 'Safety margin (%)' },
 }
 
 /**
@@ -77,7 +77,7 @@ export default function ParamEditor({
         const value = overrides.params?.[param.key]
         return (
           <label key={param.key} className="paramField">
-            <span className="paramLabel">
+            <span className="paramLabel" title={def.hint}>
               {def.label}
               <span className="paramSource">from {sourceLabel(source)}</span>
             </span>
@@ -101,7 +101,6 @@ export default function ParamEditor({
                 ×
               </button>
             </span>
-            {def.hint && <small className="paramHint">{def.hint}</small>}
           </label>
         )
       })}

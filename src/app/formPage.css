@@ -71,27 +71,8 @@
   color: var(--danger);
 }
 
-/* Tab bar across the top of the page. */
-.pageTabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
+/* The page's own tab bar (PageTabs in the header) sits closer to the content than the page gap.
+   Header only: a tab bar inside a panel, like Backgrounds' page slots, keeps its parent's gap. */
+.formPage .pageHeader .pageTabs {
   margin-bottom: -12px;
-}
-
-.formPage button.pageTab {
-  background: transparent;
-  border-color: transparent;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--radius) var(--radius) 0 0;
-  color: var(--textMuted);
-}
-
-.formPage button.pageTab:hover {
-  background: var(--surfaceActive);
-}
-
-.formPage button.pageTab.current {
-  color: var(--text);
-  border-bottom-color: var(--accent);
 }

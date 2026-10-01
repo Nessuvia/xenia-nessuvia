@@ -225,6 +225,11 @@ whether restoring a backup on another machine should carry it. If it shouldn't, 
   `PageBackground.tsx`, and `palette/scopeCss.ts` for user CSS, which wraps it in `@scope` and
   refuses it whole if a stray `}` escapes the block.
 - Store what the model said. Formatting is a display concern. Never rewrite stored content.
+- A field shows exactly what the user typed. Two things break that and put the caret at the end:
+  a value that comes back from a store after an `await` (update state first, then write, as
+  `palettesStore.update` does), and a value rebuilt from a different shape on every keystroke. A
+  field that stores a list uses `app/ListInput.tsx`, which holds the raw text. Any other converted
+  value keeps its own raw-text draft the same way.
 - A file that a `check*` script imports uses explicit `.ts` extensions in its own imports. Node
   strips types rather than resolving like Vite. `core/params/paramDef.ts` and
   `core/multiplayer/relayConfig.ts` are the pattern.
@@ -253,7 +258,7 @@ Three layout rules hold on every page. Nothing scrolls sideways. Every top-level
 
 Icons come from `@remixicon/react`. Never stand in an emoji or a unicode glyph for an icon. Typography characters (`...`, `·`, `→`) are fine.
 
-Shared UI patterns live in `/app` with their own `.css`, and modules import them: `PageHeader`, `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
+Shared UI patterns live in `/app` with their own `.css`, and modules import them: `PageHeader`, `PageTabs`, `ListInput`, `CodeEditor` (HTML/CSS in CodeMirror, plus the `codePanel` toolbar and `CodeReference` popover around it), `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
 
 ## UI copy
 

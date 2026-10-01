@@ -78,6 +78,9 @@ export const useLorebooks = create<LorebooksState>()((set, get) => ({
   },
 
   save: async (book) => {
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
+    if (book.id) set({ books: get().books.map((b) => (b.id === book.id ? book : b)) })
     const id = await storage.put('lorebooks', book as unknown as StoredRecord)
     await get().load()
     return id

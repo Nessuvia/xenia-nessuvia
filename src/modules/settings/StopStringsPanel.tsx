@@ -1,5 +1,5 @@
 import type { InstructTemplate } from '../../core/params/paramDef'
-import { formatList, parseList } from '../../core/params/paramDef'
+import { ListInput } from '../../app/ListInput'
 import { sequencesOf } from '../../core/prompt/flattenPrompt'
 
 /**
@@ -24,9 +24,9 @@ export default function StopStringsPanel({
     <div className="stopStrings">
       <label className="templateField">
         Format stop strings
-        <input
-          value={formatList(template.stopSequences)}
-          onChange={(e) => onChange({ ...template, stopSequences: parseList(e.target.value) })}
+        <ListInput
+          value={template.stopSequences}
+          onChange={(stopSequences) => onChange({ ...template, stopSequences })}
         />
         <span className="templateHint">
           Comma-separated. These close the model's turn and the format needs them. Write a newline

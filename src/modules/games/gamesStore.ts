@@ -18,6 +18,7 @@ import { buildStateBlock, describeEvent } from '../../core/games/gameState'
 import * as blackjackState from '../../core/games/blackjackState'
 import { resolvedConnection } from '../../core/stores/chatStore'
 import { buildPrompt } from '../../core/prompt/buildPrompt'
+import { splitTagRules } from '../../core/prompt/textRules'
 import { loadTokenizer } from '../../core/prompt/budget'
 import { tokenizerFor } from '../../core/prompt/tokenizers'
 import { budgetOf } from '../../core/params/connectionParams'
@@ -661,7 +662,7 @@ async function react(get: Get, set: Set) {
         messages: gameMessages(game, 'gameState'),
         game: gameLabels[game.kind],
         gameKind: game.kind,
-        tagRules: useSettings.getState().appearance.tagRules,
+        tagRules: splitTagRules(useSettings.getState().appearance.tagRules),
       },
       budgetOf(connection),
     )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { RiAddLine, RiDeleteBinLine, RiDraggable } from '@remixicon/react'
 import { useDragReorder } from '../../app/useDragReorder'
+import { ListInput } from '../../app/ListInput'
 import '../../app/dragReorder.css'
 import { TrackerWidgets, trackerCssClasses } from '../../app/TrackerWidgets'
 import type { Character } from '../../core/storage/types'
@@ -27,12 +28,6 @@ function unusedKey(defs: TrackerDef[]): string {
     if (!defs.some((d) => d.key.toLowerCase() === key)) return key
   }
 }
-
-const splitList = (text: string) =>
-  text
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean)
 
 /**
  * The card's trackers: a reorderable row list, an inspector for the selected row, the creator's
@@ -313,7 +308,7 @@ export default function TrackersSection({
   )
 }
 
-/** Comma-separated text that commits on blur, so a trailing comma survives typing. */
+/** A labelled list field. */
 function OptionsInput({
   label,
   title,
@@ -325,18 +320,10 @@ function OptionsInput({
   value: string[]
   onChange: (next: string[]) => void
 }) {
-  const [draft, setDraft] = useState<string | null>(null)
   return (
     <label title={title}>
       {label}
-      <input
-        value={draft ?? value.join(', ')}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft !== null) onChange(splitList(draft))
-          setDraft(null)
-        }}
-      />
+      <ListInput value={value} onChange={onChange} />
     </label>
   )
 }

@@ -456,8 +456,13 @@ export const useWrite = create<WriteState>()((set, get) => ({
     const story = get().stories.find((s) => s.id === id) ?? (open?.id === id ? open : undefined)
     if (!story) return
     const next = { ...story, title }
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
+    set((s) => ({
+      stories: s.stories.map((x) => (x.id === id ? next : x)),
+      ...(open?.id === id ? { story: next } : {}),
+    }))
     await save(next)
-    if (open?.id === id) set({ story: next })
     await get().load()
   },
 
@@ -593,8 +598,10 @@ export const useWrite = create<WriteState>()((set, get) => ({
     const chapter = get().chapters.find((c) => c.id === id)
     if (!chapter) return
     const next = { ...chapter, ...patch, updatedAt: Date.now() }
-    await storage.put('chapters', next as unknown as StoredRecord)
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
     set((s) => ({ chapters: s.chapters.map((c) => (c.id === id ? next : c)) }))
+    await storage.put('chapters', next as unknown as StoredRecord)
     await touchStory(get, set)
   },
 

@@ -20,7 +20,9 @@ export default function TagRulesPanel({ rules, onChange }: { rules: TagRule[]; o
       <p className="hint">
         Text between the two markers is hidden or shown in a collapsed block. Markers are matched
         exactly and can be anything, <code>&lt;think&gt;</code>…<code>&lt;/think&gt;</code> or{' '}
-        <code>[</code>…<code>]</code>. Depth stops sending the block to the model once its message is older than that many
+        <code>[</code>…<code>]</code>. Separate several markers with <code>||</code> to cover more
+        than one tag. Opening field <code>&lt;think&gt;||&lt;thinking&gt;</code>, closing field{' '}
+        <code>&lt;/think&gt;||&lt;/thinking&gt;</code>. Markers pair up in order. Depth stops sending the block to the model once its message is older than that many
         turns; the block stays stored and on screen.
       </p>
 

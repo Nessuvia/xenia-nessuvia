@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { paletteVars } from './palette'
+import { paletteScheme, paletteVars } from './palette'
 import { applySystemBars } from './themeColor'
 import { skinVars } from '../../app/skins/skins'
 import { usePalette } from '../stores/palettesStore'
@@ -25,6 +25,8 @@ export function useApplyPalette() {
     // An unknown or missing skin id matches no rules, the same thing 'default' does.
     // There's nothing to validate here.
     root.dataset.skin = palette.skin || 'default'
+    // A flag as well as --colorScheme: CSS can match an attribute, it can't match a var's value.
+    root.dataset.scheme = paletteScheme(palette)
 
     // The OS chrome lives outside the document and can't read a CSS var (themeColor.ts).
     applySystemBars(palette.bg)

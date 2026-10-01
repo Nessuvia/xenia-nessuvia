@@ -1108,9 +1108,12 @@ h3.storyPreviewTitle {
 .storyRail label.storyWidth {
   flex-direction: row;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
-  white-space: nowrap;
+}
+
+.storyRail .storyWidth > span {
+  flex: 1 1 100%;
 }
 
 .storyRail .storyWidth input[type='range'] {
@@ -1119,11 +1122,9 @@ h3.storyPreviewTitle {
   padding: 0;
 }
 
-/* Room for the spin buttons: at 52px the default padding squeezed them out of the box. */
 .storyRail .storyWidth input[type='number'] {
   width: var(--numberWidth);
   flex: none;
-  padding: 6px 2px 6px 6px;
 }
 
 .directionInput {

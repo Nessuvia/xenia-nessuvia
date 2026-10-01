@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useDraft } from '../../core/stores/draftStore'
 import { useSettings } from '../../core/stores/settingsStore'
 import { markdownMarker, wrapSelection } from '../../app/markdownKeys'
@@ -14,6 +15,7 @@ export default function Composer({
   onSend,
   onStop,
   onRegenLast,
+  personaSlot,
 }: {
   streaming: boolean
   disabledReason: string
@@ -23,6 +25,8 @@ export default function Composer({
   onStop: () => void
   /** Submit with nothing typed: re-roll the last reply with an instruction instead. */
   onRegenLast: () => void
+  /** Beside the persona avatar: where the folded roster bar sits. */
+  personaSlot?: ReactNode
 }) {
   const text = useDraft((s) => s.text)
   const setText = useDraft((s) => s.setText)
@@ -105,7 +109,10 @@ export default function Composer({
         }}
       />
       <div className="composerControls">
-        <PersonaSwitcher />
+        <div className="composerPersonaRow">
+          <PersonaSwitcher />
+          {personaSlot}
+        </div>
         {streaming ? (
           <button type="button" aria-keyshortcuts="Escape" title="Stop (Escape)" onClick={onStop}>
             Stop

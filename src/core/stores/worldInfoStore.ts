@@ -55,6 +55,9 @@ export const useWorldInfo = create<WorldInfoState>()((set, get) => ({
   },
 
   save: async (entry) => {
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
+    if (entry.id) set({ entries: get().entries.map((e) => (e.id === entry.id ? entry : e)) })
     await storage.put('worldInfo', entry as unknown as StoredRecord)
     if (get().bookId === entry.bookId) await get().loadFor(entry.bookId)
   },

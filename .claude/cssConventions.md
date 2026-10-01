@@ -70,6 +70,11 @@ a comment saying why:
 - `#000` inside a shadow `color-mix` in `skins/glass.css`.
 - `#000` on the splash screen, which paints before any palette has loaded.
 
+Something that has to differ between light and dark palettes matches `:root[data-scheme='light']` (or
+`'dark'`). The palette's Mode sets it: Light, Dark, or Auto, which reads `--bg`
+(`paletteScheme` in `palette.ts`). Don't test a color's lightness yourself. The code editor's light
+look in `index.css` is the pattern.
+
 `--success` is deliberately not palette-driven and holds steady across themes. `--codeBg` /
 `--codeText` are fixed for the same reason: code has to stay readable against its own background
 whatever the palette's prose colors are.
@@ -139,7 +144,7 @@ Every text field, select, number box and button reads its size from vars in `:ro
 | --- | --- | --- |
 | `--fieldBg` | `var(--surfaceSunken)` | every field: fields read as sunken wells, never raised panels |
 | `--fieldPad` | `7px 10px` | text fields, selects, textareas |
-| `--fieldFont` | `13px` | the same |
+| `--fieldFont` | `13px` | the same, and buttons (the `button` baseline sets it) |
 | `--buttonPad` | `7px 12px` | buttons |
 | `--numberWidth` | `72px` | number boxes |
 
@@ -154,6 +159,12 @@ The baseline sits inside `:where()`, so its specificity is zero and any module c
 field that has to differ (a compact chip editor, the chat composer, an inline title rename) sets
 its own value with a comment saying why.
 
+A unit goes in the label, `Size (px)`, never as bare text after the box. A trailing unit pushes its
+box left of the boxes above and below it.
+
+In a form, every control fills its row (`flex: 1`), so a select, a slider and a text field share a
+right edge. A slider's number box stays `--numberWidth` at the end of the slider's row.
+
 Two values close together are one value. Before adding a 64px number box beside a 72px one, use the
 var.
 
@@ -164,14 +175,19 @@ var.
 Every top-level page starts with `<PageHeader>` from `app/PageHeader.tsx`:
 
 ```tsx
-<PageHeader title="Lorebooks" hint="One line about the page." actions={<>{buttons}</>}>
-  <nav className="navbar pageTabs">{tabs}</nav>
+<PageHeader title="Games" hint="One line about the page." actions={<>{buttons}</>}>
+  <PageTabs tabs={tabs} current={tab} onPick={setTab} />
 </PageHeader>
 ```
 
 Title on the left, actions on the right, an optional one-line hint under them, and the page's tabs
-(or a switch like Prompts' Chat/Story) as children below that. The page root supplies the gap under
-it.
+as children below that. The page root supplies the gap under it.
+
+A page with tabs shows them as `<PageTabs>` (`app/PageTabs.tsx`), fed by the same `tabs` list the
+module registers for its sidebar sub-items. The list lives in the module's own `tabs.ts` so the
+index can import it without pulling in the lazy view. `useHashTab` drives the current tab, and
+picking one writes the hash so the sidebar follows. A mode switch that isn't a tab (Prompts'
+Chat/Story) goes in `actions`.
 
 - An action with an icon puts its text in `<span className="btnLabel">` and carries a `title`.
   From 1300px down the label hides and the icon carries the button.

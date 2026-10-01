@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import type { ParamDef } from '../../core/params/paramDef'
-import { formatList, parseList } from '../../core/params/paramDef'
+import { parseList } from '../../core/params/paramDef'
+import { ListInput } from '../../app/ListInput'
 
 /** A param's value as the input element wants it. */
 export function asText(value: unknown): string {
@@ -91,7 +91,7 @@ export default function ParamInput({
   if (def.kind === 'stringList') {
     const list = Array.isArray(value) ? value.map(String) : parseList(String(value ?? ''))
     return (
-      <ListInput def={def} value={formatList(list)} placeholder={placeholder} onChange={onChange} />
+      <ListInput value={list} placeholder={placeholder} title={def.hint} onChange={onChange} />
     )
   }
 
@@ -115,39 +115,3 @@ export default function ParamInput({
   )
 }
 
-/**
- * Comma-separated text over a string array. The raw text is held here rather than round-tripped
- * through the array: splitting on every keystroke eats the separator, and a second item can't
- * be typed. Re-seeds from the value only when the value changed underneath it.
- */
-function ListInput({
-  def,
-  value,
-  placeholder,
-  onChange,
-}: {
-  def: ParamDef
-  value: string
-  placeholder?: string
-  onChange: (value: unknown) => void
-}) {
-  const [raw, setRaw] = useState(value)
-  const [seed, setSeed] = useState(value)
-  if (value !== seed) {
-    setSeed(value)
-    setRaw(value)
-  }
-  return (
-    <input
-      value={raw}
-      placeholder={placeholder ?? 'Comma-separated'}
-      title={def.hint}
-      onChange={(e) => {
-        setRaw(e.target.value)
-        const list = parseList(e.target.value)
-        setSeed(formatList(list))
-        onChange(list)
-      }}
-    />
-  )
-}

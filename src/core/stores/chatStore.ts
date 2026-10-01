@@ -731,8 +731,10 @@ export const useChats = create<ChatState>()((set, get) => ({
     const chat = get().chat
     if (!chat) return
     const next = { ...chat, ...patch, updatedAt: Date.now() }
-    await storage.put('chats', next as unknown as StoredRecord)
+    // State before storage, as in palettesStore.update: a field bound to this value that waits on
+    // Dexie gets its own keystroke back a tick late, and React puts the caret at the end.
     set({ chat: next })
+    await storage.put('chats', next as unknown as StoredRecord)
   },
 
   loadBookmarks: async () => {

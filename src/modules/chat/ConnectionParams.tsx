@@ -66,7 +66,7 @@ export default function ConnectionParams({ connection }: { connection: Connectio
         if (!def) return null
         return (
           <label key={param.key} className="paramField">
-            <span className="paramLabel">{def.label}</span>
+            <span className="paramLabel" title={def.hint}>{def.label}</span>
             <span className="paramInput">
               <ParamInput
                 def={def}
@@ -74,7 +74,6 @@ export default function ConnectionParams({ connection }: { connection: Connectio
                 onChange={(next) => setParam(param.key, next)}
               />
             </span>
-            {def.hint && <small className="paramHint">{def.hint}</small>}
           </label>
         )
       })}
@@ -91,7 +90,7 @@ export default function ConnectionParams({ connection }: { connection: Connectio
       </label>
 
       <label className="paramField">
-        <span className="paramLabel">Safety margin %</span>
+        <span className="paramLabel">Safety margin (%)</span>
         <span className="paramInput">
           <input
             type="number"

@@ -107,44 +107,6 @@
   width: var(--numberWidth);
 }
 
-/* Zones stack in rows and .zones (which carries .screenBody) is the only scroller. The first zone
-   fills the visible height; the Preview sits below it, reached by scrolling. */
-.prompts .zones {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow: hidden auto;
-}
-
-.prompts .zones > .stackZone {
-  flex: none;
-}
-
-/* The template zone takes the scroller's height, so CodeMirror ends at the window's bottom edge. */
-.prompts .zones > .promptsTemplateZone {
-  height: 100%;
-}
-
-/* A collapsed panel's rail sits across the column, not beside it. */
-.prompts .zones .collapsedRail,
-.prompts .zones .collapsedInitials {
-  flex-direction: row;
-  gap: 6px;
-}
-
-.stackZone {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 2px);
-  background: var(--surfaceSunken);
-  /* Zero, not a floor: the zone takes the row's height and its list scrolls inside. */
-  min-height: 0;
-}
-
 .zoneHeader {
   display: flex;
   align-items: center;
@@ -165,11 +127,6 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--textMuted);
-}
-
-.stackZone.preview {
-  flex: 1.6;
-  cursor: default;
 }
 
 .previewExamples {
@@ -401,7 +358,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 720px;
 }
 
 .miscPrompt {
@@ -443,51 +399,6 @@
   color: var(--textSoft);
 }
 
-/* The template editor fills its zone and scrolls inside CodeMirror. */
-.promptsTemplateEditor {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--codeBg);
-  color: var(--codeText);
-}
-
-/* CodeMirror's own classes: the library owns the markup, so these are the only handle on it. */
-.promptsTemplateEditor .cm-editor {
-  height: 100%;
-}
-
-/* On --codeBg, which holds steady across palettes: the tints come off --codeText, not the palette. */
-.promptsTemplateEditor .cm-gutters {
-  background: var(--codeBg);
-  color: color-mix(in srgb, var(--codeText) 45%, transparent);
-  border-right: 1px solid var(--border);
-}
-
-.promptsTemplateEditor .cm-activeLine,
-.promptsTemplateEditor .cm-activeLineGutter {
-  background: color-mix(in srgb, var(--codeText) 6%, transparent);
-}
-
-.promptsTemplateEditor .cm-cursor {
-  border-left-color: var(--codeText);
-}
-
-.promptsTplTag {
-  color: var(--accent);
-}
-
-.promptsTplSlot {
-  color: var(--success);
-}
-
-.promptsTplComment {
-  color: color-mix(in srgb, var(--codeText) 50%, transparent);
-  font-style: italic;
-}
-
 .promptsTemplateProblems {
   margin: 0;
   padding: 0;
@@ -516,21 +427,6 @@
   }
 }
 
-/* Label above its box, as in the block dialog. */
-.promptsLookField {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--textMuted);
-}
-
-.promptsLookField textarea {
-  width: 100%;
-  resize: vertical;
-  /* Same as the palette HTML and CSS boxes (backgrounds.css). */
-  font-family: ui-monospace, monospace;
-}
-
 /* Same shape as the palette ask row (appearance.css). A third copy should move to /app. */
 
 
@@ -543,4 +439,125 @@
   field-sizing: content;
   min-height: 2lh;
   max-height: 30vh;
+}
+
+/* Two columns of equal cards. Each card is the row's height and its textarea takes what's left,
+   scrolling inside. A textarea dragged taller grows its row, until the page is left or reloaded. */
+.miscPromptsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(320px, auto);
+  gap: 12px;
+}
+
+.miscPromptsGrid > .miscPrompt {
+  min-height: 0;
+}
+
+/* height: 0 plus flex-grow fills the card. A drag sets an inline height, which becomes the basis. */
+.miscPromptsGrid .miscPromptText {
+  flex: 1 1 auto;
+  height: 0;
+  min-height: 4lh;
+}
+
+@media (max-width: 1300px) {
+  .miscPromptsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Look tab (LookPanel.tsx) ------------------------------------------------- */
+
+/* Preview on the left where the rail sits in a chat, code on the right. The frame doesn't scroll:
+   each side does on its own. Two classes to beat .screenBody's overflow on the same element. */
+.screenBody.promptsLook {
+  display: flex;
+  overflow: hidden;
+}
+
+.promptsLookPreview {
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* The chat rail's surface. Its padding is the rail's (8px) plus the settings panel's (10px) plus an
+   open section's (8px), so the look gets the width it gets in a chat. Two classes to beat
+   .chatSettings' own margin, border and padding. */
+.chatSettings.promptsLookRail {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 16px 26px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--surface);
+}
+
+/* A visible strip with a grip in the middle, so the drag reads as a drag before anyone hovers it. */
+.promptsLookDivider {
+  position: relative;
+  flex: none;
+  width: 10px;
+  margin: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--borderStrong);
+  background: var(--surfaceRaised);
+  color: var(--textSoft);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.promptsLookDivider:hover,
+.promptsLookDivider:active {
+  border-color: var(--borderAccent);
+  background: var(--surfaceActive);
+  color: var(--text);
+}
+
+/* Wider than the strip, so placed by its centre rather than laid out inside it. */
+.promptsLookGrip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Half-width and down, one side at a time under the Code / Preview tabs. */
+@media (max-width: 1300px) {
+  .screenBody.promptsLook {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .promptsLookPreview {
+    flex: 1;
+  }
+}
+
+/* The Stacks tab: one panel, Template and Preview as tabs. */
+.promptsStackPanel {
+  min-height: 0;
+}
+
+/* The preview fills the panel under its tab and scrolls on its own. */
+.promptsPreviewBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* First in the options row. A name, not a sentence: it doesn't take the row's spare width. */
+.presetRow .stackNameInput {
+  flex: 0 1 240px;
+  min-width: 0;
 }

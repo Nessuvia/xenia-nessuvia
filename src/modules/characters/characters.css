@@ -500,10 +500,30 @@
   gap: 4px;
 }
 
+/* Every control fills the row, so a select, a slider and a text field line up on the same right
+   edge. The slider's number box stays --numberWidth inside .paramSlider. */
 .paramInput > input,
-.paramInput > textarea {
+.paramInput > textarea,
+.paramInput > select,
+.paramInput > .paramSlider {
   flex: 1;
   min-width: 0;
+}
+
+/* A lone number sits inline: label left, box right. Selects, text and
+   sliders keep the label above. A slider's number box is inside .paramSlider, so it doesn't match. */
+.paramField:has(> .paramInput > input[type='number']) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.paramField:has(> .paramInput > input[type='number']) > .paramLabel {
+  flex: 1;
+}
+
+.paramInput > input[type='number'] {
+  flex: 0 0 var(--numberWidth);
 }
 
 /* #root because the chat module styles every `.chatView button`, and this one is the component's,

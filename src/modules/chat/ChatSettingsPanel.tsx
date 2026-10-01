@@ -159,7 +159,7 @@ export default function ChatSettingsPanel({
       <details>
         <summary>Palette</summary>
         <label className="chatWidth">
-          <span>Chat width</span>
+          <span>Chat width (%)</span>
           <input
             type="range"
             min={20}
@@ -175,7 +175,6 @@ export default function ChatSettingsPanel({
             value={value.chatWidth ?? palette.chatWidth}
             onChange={(e) => set({ chatWidth: clampWidth(Number(e.target.value)) })}
           />
-          %
         </label>
         <p className="hint">Overrides the chat width in the palette.</p>
         <AppearancePanel colors={false} font="compact" />

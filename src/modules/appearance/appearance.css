@@ -46,10 +46,11 @@
   min-width: 0;
 }
 
-/* Shrinkable rather than fixed: at 64px flat this is what pushed the font size and line height rows
-   past the right edge of a phone-width rail. */
+/* Shrinkable rather than fixed: at a flat width this is what pushed the font size and line height
+   rows past the right edge of a phone-width rail. Units go in the label, "Size (px)", so every box
+   ends on the same right edge. */
 .appearance .appearanceRow input[type='number'] {
-  flex: 0 1 64px;
+  flex: 0 1 var(--numberWidth);
   min-width: 0;
 }
 
@@ -73,6 +74,10 @@
 
 .paletteEditor .nameRow .skinLabel {
   margin-left: auto;
+}
+
+.paletteEditor .nameRow .schemeSelect {
+  flex: none;
 }
 
 /* The row is nowrap by design, so on a phone-width rail it has nothing to give and would run past
@@ -436,20 +441,60 @@
   color: var(--textMuted);
 }
 
-.paletteGroup summary {
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--textSoft);
-  padding: 4px 0;
+/* The editor's sections as cards in at most two columns, one when the editor is under ~730px wide.
+   Columns rather than a grid: a grid row is as tall as its tallest card, which left a gap under
+   every short one. Here each card stacks straight under the one above it. */
+.paletteCards {
+  columns: 360px 2;
+  column-gap: 12px;
 }
 
-.paletteColorRow {
+.paletteGroup.card {
+  break-inside: avoid;
+  margin-bottom: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.paletteGroup summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.paletteGroup[open] > summary {
+  margin-bottom: 12px;
+}
+
+/* A color as a tile: the swatch, its readable name under it. */
+.paletteTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 12px 8px;
+}
+
+.paletteTile {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* #root and three classes to outrank ColorInput.css's own #root swatch size, which is for rows. */
+#root .paletteTile .colorInput .swatchButton {
+  width: 64px;
+  height: 40px;
+}
+
+.paletteTileLabel {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 3px 0 3px 12px;
-  font-size: 13px;
+  gap: 4px;
+  font-size: 12px;
   color: var(--textMuted);
 }
 
@@ -461,7 +506,9 @@
   margin-top: 12px;
 }
 
-.paletteImport {
+/* Two classes plus the tag to beat `.formPage label`, which stacks the icon over the text. */
+.paletteTransfer > label.paletteImport {
+  display: flex;
   flex: 0 0 auto;
   flex-direction: row;
   align-items: center;
@@ -530,28 +577,6 @@
   background: var(--surfaceHover);
 }
 
-.palettesHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.palettesHead h3 {
-  margin: 0;
-}
-
-.palettesHeadActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.palettesHeadActions button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
 
 
@@ -613,8 +638,6 @@
 /* Every row here is laid out for a wide column. At phone width the page can't scroll sideways
    (.appContent clips), so anything that doesn't fit is unreachable rather than just cramped. */
 @media (max-width: 700px) {
-  .palettesHead,
-  .palettesHeadActions,
   .paletteTransfer,
 
   .paletteList .paletteName {
@@ -661,4 +684,11 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+/* The font picker in a palette card: its toggle column takes a line of its own, so the preview and
+   the font list share the next one. Three columns side by side at card width wrapped the option's
+   label a word per line. */
+.paletteGroup .webfontLeft {
+  flex-basis: 100%;
 }

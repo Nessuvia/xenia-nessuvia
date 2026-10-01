@@ -19,6 +19,7 @@ import Composer from '../chat/Composer'
 import ChatSettingsPanel from '../chat/ChatSettingsPanel'
 import ResponderPicker from '../chat/ResponderPicker'
 import { renderText } from '../chat/renderText'
+import { splitTagRules } from '../../core/prompt/textRules'
 import { CollapseButton, CollapseRail } from '../../app/CollapseButton'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import { useSideDrawer } from '../../app/useSideDrawer'
@@ -362,13 +363,13 @@ function HostMessages({ look }: { look: RoomLook }): JSX.Element | null {
             <details className="taggedBlock reasoningBlock" open>
               <summary>Reasoning</summary>
               {renderText(streamingReasoning, {
-                tagRules: appearance.tagRules,
+                tagRules: splitTagRules(appearance.tagRules),
                 order: look.colorOrder,
               })}
             </details>
           )}
           <div className="messageBody">
-            {renderText(streamingText, { tagRules: appearance.tagRules, order: look.colorOrder })}
+            {renderText(streamingText, { tagRules: splitTagRules(appearance.tagRules), order: look.colorOrder })}
             <span className="caret">▌</span>
           </div>
         </div>
@@ -479,7 +480,7 @@ function GuestMessages({ look }: { look: RoomLook }): JSX.Element {
             <span className="messageWho">{streaming.speakerName || narratorName}</span>
           </div>
           <div className="messageBody">
-            {renderText(streaming.text, { tagRules: appearance.tagRules, order: look.colorOrder })}
+            {renderText(streaming.text, { tagRules: splitTagRules(appearance.tagRules), order: look.colorOrder })}
             <span className="caret">▌</span>
           </div>
         </div>

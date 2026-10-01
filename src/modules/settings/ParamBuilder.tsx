@@ -102,7 +102,7 @@ export default function ParamBuilder({
               }}
             >
               <RiDraggable size={16} className="dragHandle" aria-hidden />
-              <span className="paramRowLabel">
+              <span className="paramRowLabel" title={def.hint}>
                 {def.label}
                 <code>{def.key}</code>
               </span>
@@ -124,7 +124,6 @@ export default function ParamBuilder({
               >
                 <RiCloseLine size={16} />
               </button>
-              {def.hint && <small className="paramHint">{def.hint}</small>}
             </div>
           )
         })}

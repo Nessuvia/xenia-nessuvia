@@ -8,7 +8,6 @@ import { usePersonas } from '../core/stores/personasStore'
 import { isEnabled, modules } from './moduleRegistry'
 import { useMediaQuery } from './useMediaQuery'
 import { useSideDrawer } from './useSideDrawer'
-import { useAutoHide } from './useAutoHide'
 import PersonaSwitcher from './PersonaSwitcher'
 import ChatSettingsPanel from '../modules/chat/ChatSettingsPanel'
 import StoryRail from '../modules/write/StoryRail'
@@ -59,8 +58,6 @@ export default function Sidebar() {
   const phone = useMediaQuery('(max-width: 700px)')
   const sidebarWidth = phone ? 0 : palette.sidebarWidth
   const rail = useRef<HTMLElement>(null)
-  const footerAutoHideOff = useSettings((s) => s.footerAutoHideOff)
-  const footerAutoHidden = useAutoHide(rail, chatId ?? storyId ?? gameId, !footerAutoHideOff)
   // Folded by hand with the caret. This browser's view state, not the user's data: localStorage.
   const [footerFolded, setFooterFolded] = useState(() => localStorage.getItem('nessuTavern.sidebarFooterFolded') === '1')
   const foldFooter = (folded: boolean) => {
@@ -405,7 +402,7 @@ export default function Sidebar() {
 
           {debugMode && <div className="debugBadge">DEBUG ON</div>}
 
-          <div className={`sidebarBackup${footerFolded || footerAutoHidden ? ' footerHidden' : ''}`}>
+          <div className={`sidebarBackup${footerFolded ? ' footerHidden' : ''}`}>
             <div className="sidebarFooterBody">
             {personasModule && (
               <div className="sidebarPersona">
