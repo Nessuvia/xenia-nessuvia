@@ -249,9 +249,11 @@ Keep styling light until the polishing phase. A screen that works and looks plai
 
 The headline, to carry the shape in before you open it: no hardcoded colors, no invented spacing values, no invented `z-index` numbers, a class on every element you style, and nothing shared between two tabs living in a module stylesheet.
 
+Three layout rules hold on every page. Nothing scrolls sideways. Every top-level page starts with `<PageHeader>`. Every field and button takes its size from the `--field*`, `--buttonPad` and `--numberWidth` vars in `index.css`, so fields read as sunken wells and line up on a row.
+
 Icons come from `@remixicon/react`. Never stand in an emoji or a unicode glyph for an icon. Typography characters (`...`, `·`, `→`) are fine.
 
-Shared UI patterns live in `/app` with their own `.css`, and modules import them: `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
+Shared UI patterns live in `/app` with their own `.css`, and modules import them: `PageHeader`, `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
 
 ## UI copy
 

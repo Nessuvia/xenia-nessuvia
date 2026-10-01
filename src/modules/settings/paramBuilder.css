@@ -91,7 +91,7 @@
 }
 
 .paramSlider input[type='number'] {
-  width: 4.5rem;
+  width: var(--numberWidth);
 }
 
 .paramRemove,

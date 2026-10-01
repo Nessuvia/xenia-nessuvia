@@ -1,0 +1,37 @@
+/* The shared page header (PageHeader.tsx). The page root supplies the gap below it. */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+/* Wraps rather than stacking: on a narrow screen the actions drop under the title as a row. */
+.pageHeaderRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Two classes to beat `.formPage h2` and `.chatPicker h2`, which set their own margins. */
+.pageHeaderRow > .pageHeaderTitle {
+  margin: 0 auto 0 0;
+  font-size: 22px;
+}
+
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* An action button's text beside its icon. Dropped from half-width down, where the icon carries
+   the button: the button keeps a title so the icon stays named. */
+@media (max-width: 1300px) {
+  .pageHeaderActions .btnLabel {
+    display: none;
+  }
+}

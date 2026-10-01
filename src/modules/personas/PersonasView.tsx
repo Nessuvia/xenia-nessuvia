@@ -6,6 +6,7 @@ import { realPersonas } from '../../core/multiplayer/narrator'
 import { useSettings } from '../../core/stores/settingsStore'
 import { ColorInput } from '../../app/ColorInput'
 import TwoColumn from '../../app/TwoColumn'
+import PageHeader from '../../app/PageHeader'
 import AvatarCropDialog from '../characters/AvatarCropDialog'
 import GalleryLightbox from '../characters/GalleryLightbox'
 
@@ -68,20 +69,22 @@ export default function PersonasView() {
 
   return (
     <div className="personas screenFrame">
-      <div className="personasHeader">
-        <h2>Personas</h2>
-        <button
-          type="button"
-          onClick={async () => {
-            await flush()
-            const id = await create()
-            setDraft(usePersonas.getState().personas.find((p) => p.id === id) ?? null)
-            setSaved(true)
-          }}
-        >
-          New persona
-        </button>
-      </div>
+      <PageHeader
+        title="Personas"
+        actions={
+          <button
+            type="button"
+            onClick={async () => {
+              await flush()
+              const id = await create()
+              setDraft(usePersonas.getState().personas.find((p) => p.id === id) ?? null)
+              setSaved(true)
+            }}
+          >
+            New persona
+          </button>
+        }
+      />
 
       {loading && personas.length === 0 && <p className="placeholder">Loading…</p>}
 

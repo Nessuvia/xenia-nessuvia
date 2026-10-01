@@ -96,11 +96,11 @@
 }
 
 .backgroundFit select {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  padding: 8px 10px;
+  padding: var(--fieldPad);
   max-width: 200px;
 }
 

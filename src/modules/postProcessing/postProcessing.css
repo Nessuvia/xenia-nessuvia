@@ -3,8 +3,7 @@
    directly. The builder's classes are below. */
 
 .postProcessing {
-  padding: 16px;
-  gap: 12px;
+  gap: 16px;
 }
 
 .postColumns {
@@ -249,7 +248,7 @@
 }
 
 .postAcrosticNumber {
-  width: 56px;
+  width: var(--numberWidth);
 }
 
 /* The rule builder: one chip per word or mark of the sample. */
@@ -484,7 +483,7 @@
 }
 
 .postSensorNumber input {
-  width: 56px;
+  width: var(--numberWidth);
 }
 
 .postSensorAdd {
@@ -526,7 +525,7 @@
 }
 
 .postGateValue {
-  width: 72px;
+  width: var(--numberWidth);
 }
 
 .postGateStages {

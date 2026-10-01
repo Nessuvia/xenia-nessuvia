@@ -397,13 +397,13 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  background: var(--surfaceSunken);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.375rem 0.5rem;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--fieldFont);
 }
 
 .personaEditorDescription {
@@ -600,7 +600,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   cursor: pointer;
@@ -619,10 +619,10 @@
 .sessionLink input {
   flex: 1;
   min-width: 0;
-  background: var(--surfaceSunken);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
 }

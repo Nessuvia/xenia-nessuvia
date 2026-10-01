@@ -5,24 +5,14 @@
 }
 
 .shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 1.5rem;
   flex: 1;
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
-}
-
-.shelfHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.shelfHeaderRight {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .shelfToggle {
@@ -43,16 +33,16 @@
 }
 
 .storySearch {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
 }
 
-.shelfHeaderRight .storySearch {
+.storySearch {
   width: 220px;
 }
 
@@ -351,7 +341,7 @@ h3.storyPreviewTitle {
 /* Same inline-rename affordance as a chat's title. Styled here rather than shared: the only other
    copy is chat.css, and a third would be the cue to hoist it into /app. */
 .storyBar .titleEdit {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 4px 8px;
@@ -755,7 +745,7 @@ h3.storyPreviewTitle {
 
 /* The length control in the kebab menu: the select carries the value, the words are read-only. */
 .blockMenuPop .blockMenuTarget .weightSelect {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
@@ -908,13 +898,13 @@ h3.storyPreviewTitle {
 
 .storyRail textarea,
 .storyRail input {
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 8px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fieldFont);
 }
 
 .storyRail input[type='checkbox'] {
@@ -1131,7 +1121,7 @@ h3.storyPreviewTitle {
 
 /* Room for the spin buttons: at 52px the default padding squeezed them out of the box. */
 .storyRail .storyWidth input[type='number'] {
-  width: 64px;
+  width: var(--numberWidth);
   flex: none;
   padding: 6px 2px 6px 6px;
 }
@@ -1195,40 +1185,15 @@ h3.storyPreviewTitle {
     display: none;
   }
 
-  /* The header's three controls each take a row: side by side the button falls off the edge.
-     Order is set here rather than in the markup so the desktop row keeps its own order. */
   .shelf {
     padding: 1rem;
   }
 
-  .shelfHeader h2 {
-    margin: 0;
-  }
-
-  .shelfHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-    margin-bottom: 1rem;
-  }
-
-  .shelfHeaderRight {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .shelfHeaderRight .storySearch {
+  /* Its own line under the title, full width. */
+  .storySearch {
+    flex: 1 1 100%;
     width: auto;
-    order: 1;
-  }
-
-  .shelfHeaderRight .shelfToggle {
-    order: 2;
-  }
-
-  .shelfHeaderRight button {
-    order: 3;
+    order: -1;
   }
 
   /* Two covers per row: auto-fill's 160px floor drops to one column on a phone. The cover keeps

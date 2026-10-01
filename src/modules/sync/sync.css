@@ -4,10 +4,6 @@
   gap: 16px;
 }
 
-.sync > h2 {
-  margin: 0;
-}
-
 .syncNote {
   margin: 0;
   font-size: 13px;
@@ -31,24 +27,6 @@
   gap: 12px;
   width: var(--chatWidth, 100%);
   margin: 0 auto;
-}
-
-.syncHead {
-  width: 100%;
-  padding: 0 2px 4px;
-}
-
-.syncFormal h2 {
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
-.syncLede {
-  margin: 10px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--textMuted);
 }
 
 /* Each section is a card in one column. The base paint lives here; skins repaint `.card`, which
@@ -155,12 +133,12 @@
 }
 
 .syncBucket input {
-  background: var(--surfaceSunken);
+  background: var(--fieldBg);
   border-radius: var(--radius);
-  padding: 8px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
 }
 
 /* A primed button, waiting for its second click. */

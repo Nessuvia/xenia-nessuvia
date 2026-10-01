@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { RiAddLine, RiImportLine, RiPlayFill, RiSearchLine } from '@remixicon/react'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
 import { Avatar } from '../../app/Avatar'
+import PageHeader from '../../app/PageHeader'
 import { CollapseButton } from '../../app/CollapseButton'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import { useChats } from '../../core/stores/chatStore'
@@ -149,9 +150,10 @@ export default function CharacterPicker() {
 
   return (
     <div className="chatPicker screenFrame">
-      <div className="chatPickerHeader">
-        <h2>Characters</h2>
-        <span className="headerActions">
+      <PageHeader
+        title="Characters"
+        actions={
+          <>
           <span className="charSearchWrap">
             <RiSearchLine size={16} className="charSearchIcon" />
             <input
@@ -221,8 +223,9 @@ export default function CharacterPicker() {
             <RiAddLine size={16} />
             <span className="btnLabel">New character</span>
           </button>
-        </span>
-      </div>
+          </>
+        }
+      />
 
       {urlModal && (
         <ImportUrlModal

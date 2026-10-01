@@ -4,28 +4,12 @@
   gap: 16px;
 }
 
-.charactersHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.charactersHeader h2 {
-  margin: 0;
-}
-
-.headerActions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 /* File inputs can't be styled; the label is the button. */
 .characters label.importButton {
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
@@ -54,20 +38,20 @@
 
 .characters input,
 .characters textarea {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
 }
 
 .characters button {
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -443,7 +427,7 @@
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   font-size: 13px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -546,14 +530,6 @@
   max-height: 60vh;
 }
 
-/* `.hint` is scoped per module */
-.hint {
-  margin: 0;
-  color: var(--textDim);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
 .galleryTab {
   display: flex;
   flex-direction: column;
@@ -652,8 +628,6 @@
 }
 
 @media (max-width: 700px) {
-  .charactersHeader,
-  .headerActions,
   .avatarRow,
   .editorActions {
     flex-wrap: wrap;

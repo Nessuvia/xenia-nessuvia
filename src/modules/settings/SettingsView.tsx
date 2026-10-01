@@ -9,6 +9,7 @@ import StImportPanel from './StImportPanel'
 import { modules } from '../../app/moduleRegistry'
 import { wipeEverything } from '../../core/storage/wipe'
 import { useHashTab } from '../../app/useHashTab'
+import PageHeader from '../../app/PageHeader'
 import '../../app/formPage.css'
 import './settings.css'
 
@@ -66,20 +67,20 @@ export default function SettingsView() {
 
   return (
     <div className="settings formPage screenFrame">
-      <h2>Settings</h2>
-
-      <nav className="navbar pageTabs">
-        {tabs.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={`pageTab${tab === id ? ' current' : ''}`}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <PageHeader title="Settings">
+        <nav className="navbar pageTabs">
+          {tabs.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`pageTab${tab === id ? ' current' : ''}`}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      </PageHeader>
 
       {/* The one page in the app that scrolls as a whole. A connection editor is a long form and
           a text-completion one is longer still, and squeezing it into a rail meant a column of

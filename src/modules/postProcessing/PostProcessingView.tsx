@@ -22,6 +22,7 @@ import SensorEditor from './SensorEditor'
 import GateEditor from './GateEditor'
 import { usableSensor } from '../../core/sensors/sensor'
 import { exportPostStack, parsePostStack } from './postStackFile'
+import PageHeader from '../../app/PageHeader'
 import './postProcessing.css'
 
 /** The stages, in the order the pass runs them. */
@@ -135,7 +136,7 @@ export default function PostProcessingView() {
 
   return (
     <div className="postProcessing screenFrame">
-      <h2>Post-processing</h2>
+      <PageHeader title="Post-processing" />
 
       <div className="postColumns screenBody">
         <section className="postStacks">

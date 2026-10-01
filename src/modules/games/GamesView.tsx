@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import EntityPicker from '../../app/EntityPicker'
+import PageHeader from '../../app/PageHeader'
 import { useHashTab } from '../../app/useHashTab'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import { useSideDrawer } from '../../app/useSideDrawer'
@@ -61,7 +62,7 @@ function Play() {
 
   return (
     <div className="gamesPage">
-      <h2 className="gamesHeading">Games</h2>
+      <PageHeader title="Games" />
       <div className="gamesKindRow">
         {(Object.keys(gameLabels) as GameKind[]).map((id) => (
           <button

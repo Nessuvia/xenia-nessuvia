@@ -19,8 +19,8 @@ say so.
 
 Check for an existing component or an existing class before opening a stylesheet at all.
 
-Shared components live in `/app` with their own `.css` and are imported by modules: `CollapseButton`,
-`Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`,
+Shared components live in `/app` with their own `.css` and are imported by modules: `PageHeader`,
+`CollapseButton`, `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`,
 `PromptPreviewPanel`. Hooks: `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`,
 `useHashTab`, `useMediaQuery`.
 
@@ -95,7 +95,8 @@ padding: 7px 8px 6px;
 Some off-scale values already exist (28 uses of `7px`, some `3px`, `5px`, `14px`). Leave them; don't
 reformat a file to the scale as a side quest. The rule governs what you *add*.
 
-There are no spacing tokens and none are wanted. Literal px from the scale is the convention.
+Literal px from the scale is the convention. Form controls are the one exception and have their
+own vars (section 4a).
 
 ---
 
@@ -127,6 +128,59 @@ chrome for tidiness.
 `font-weight` follows the same default: leave it alone unless the element is a heading or
 de-emphasised. `:root` sets `font-weight: var(--textWeight, 400)` as a palette knob, and
 anything with a weight of its own opts out of it.
+
+---
+
+## 4a. Form controls
+
+Every text field, select, number box and button reads its size from vars in `:root` (`index.css`):
+
+| Var | Value | For |
+| --- | --- | --- |
+| `--fieldBg` | `var(--surfaceSunken)` | every field: fields read as sunken wells, never raised panels |
+| `--fieldPad` | `7px 10px` | text fields, selects, textareas |
+| `--fieldFont` | `13px` | the same |
+| `--buttonPad` | `7px 12px` | buttons |
+| `--numberWidth` | `72px` | number boxes |
+
+These are why a field, a select and a button on one row come out the same height. Don't restate a
+literal. A module rule that has to style a field points at the var.
+
+- **No:** `.myThing input { background: var(--bg); padding: 6px 8px; font-size: 14px; }`
+- **Yes:** nothing, when the baseline in `index.css` already covers it. Otherwise
+  `padding: var(--fieldPad);`
+
+The baseline sits inside `:where()`, so its specificity is zero and any module class beats it. A
+field that has to differ (a compact chip editor, the chat composer, an inline title rename) sets
+its own value with a comment saying why.
+
+Two values close together are one value. Before adding a 64px number box beside a 72px one, use the
+var.
+
+---
+
+## 4b. Page headers
+
+Every top-level page starts with `<PageHeader>` from `app/PageHeader.tsx`:
+
+```tsx
+<PageHeader title="Lorebooks" hint="One line about the page." actions={<>{buttons}</>}>
+  <nav className="navbar pageTabs">{tabs}</nav>
+</PageHeader>
+```
+
+Title on the left, actions on the right, an optional one-line hint under them, and the page's tabs
+(or a switch like Prompts' Chat/Story) as children below that. The page root supplies the gap under
+it.
+
+- An action with an icon puts its text in `<span className="btnLabel">` and carries a `title`.
+  From 1300px down the label hides and the icon carries the button.
+- On a narrow screen the actions wrap under the title as a row. Don't stack them into a column.
+- Don't build a page title from a bare `<h2>` and a flex div. That's how every page ended up with
+  a different header.
+
+Secondary text under a field or heading is `.hint`, defined once in `index.css` (12px,
+`--textDim`). A module rule only adds what differs, usually margin.
 
 ---
 
@@ -254,6 +308,12 @@ to the library. Don't add to the first group.
 
 ## 9. Responsive
 
+**No horizontal scrolling, anywhere.** Wide content wraps, shrinks or clips. `html, body` carry
+`overflow-x: hidden` as the backstop (`index.css`), and the phone drawer opens on a sideways swipe
+from anywhere on the screen, which a horizontal scroller would eat. Give flex children
+`min-width: 0` and let rows `flex-wrap: wrap`. The one allowed exception is the Games hand of
+cards, which has its own switch between scrolling and fitting on screen.
+
 `max-width: 700px` is the breakpoint. Desktop-first: write the desktop rule, then override inside the
 query.
 
@@ -366,6 +426,9 @@ Run through this on any diff that touches CSS:
 - [ ] No `!important`, no `&` nesting, no unrequested motion.
 - [ ] Media queries are `max-width: 700px` or `max-width: 1300px`, or commented.
 - [ ] Anything two tabs now share moved to `/app` rather than being copied.
+- [ ] Fields and buttons use the `--field*`, `--buttonPad` and `--numberWidth` vars, or nothing.
+- [ ] A new page starts with `<PageHeader>`.
+- [ ] Nothing scrolls sideways at 360px wide.
 
 Then `npx pnpm build` and the `check*` scripts, and **stop**. The user drives Chrome and tests in the
 browser personally. Report that the build is clean and say what's ready to look at.

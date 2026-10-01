@@ -4,17 +4,6 @@
   gap: 16px;
 }
 
-.lorebooksHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.lorebooksTitle {
-  margin: 0;
-  margin-right: auto;
-}
-
 /* The file picker is opened by the Import button; the input itself is never shown. */
 .lorebooksFileInput {
   display: none;
@@ -124,8 +113,8 @@
 .lorebooksEntryName,
 .lorebooksEntryKeys,
 .lorebooksEntryNumber {
-  padding: 7px 12px;
-  background: var(--surface);
+  padding: var(--fieldPad);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);

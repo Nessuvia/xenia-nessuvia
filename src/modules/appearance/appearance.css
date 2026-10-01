@@ -469,7 +469,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;

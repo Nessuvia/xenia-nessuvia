@@ -19,7 +19,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -88,7 +88,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -238,13 +238,13 @@
 }
 
 .chatSearch {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
 }
 
 .charSearchWrap {
@@ -272,7 +272,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
@@ -319,10 +319,10 @@
 }
 
 .importUrlDialog input[type='url'] {
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
 }
@@ -440,10 +440,10 @@
 
 .chatRow input {
   flex: 1;
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 8px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
 }
@@ -636,7 +636,7 @@
 }
 
 .titleEdit {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 4px 8px;
@@ -750,18 +750,18 @@
 
 .chatSettings textarea,
 .chatSettings input {
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 8px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fieldFont);
 }
 
 .chatSettings .noteDepth input,
 .chatSettings .replyCount input {
-  width: 80px;
+  width: var(--numberWidth);
 }
 
 /* Grammar Hammer's rule list: cards, not nested under the enable toggle. */
@@ -896,11 +896,11 @@
 }
 
 .rangeInputs input {
-  width: 80px;
-  background: var(--surface);
+  width: var(--numberWidth);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 5px 8px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
 }
@@ -966,7 +966,7 @@
 }
 
 .rosterAdd {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 5px 8px;
@@ -1062,7 +1062,7 @@
 
 .messageEdit {
   width: 100%;
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 8px 10px;
@@ -1326,7 +1326,7 @@
 
 .composer textarea {
   flex: 1;
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
   padding: 10px 12px;
@@ -1369,7 +1369,7 @@
 
 /* Room for the spin buttons: at 52px the default padding squeezed them out of the box. */
 .chatSettings .chatWidth input[type='number'] {
-  width: 64px;
+  width: var(--numberWidth);
   flex: none;
   padding: 6px 2px 6px 6px;
 }
@@ -1523,7 +1523,7 @@
 
 /* ---- Tags ---------------------------------------------------------------- */
 
-.chatPicker .headerActions button.active {
+.chatPicker .pageHeaderActions button.active {
   border-color: var(--borderAccent);
   color: var(--textBright);
 }
@@ -1597,13 +1597,13 @@
 
 .tagListSearch,
 .tagListNew {
-  background: var(--bg);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 6px 8px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fieldFont);
 }
 
 .tagListRows {
@@ -1799,7 +1799,7 @@
 }
 
 /* Header buttons carry an icon plus a label; on mobile only the icon survives. */
-.chatPicker .headerActions button {
+.chatPicker .pageHeaderActions button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1811,10 +1811,6 @@
   .chatPickerHeader {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .chatPicker .headerActions {
-    flex-wrap: wrap;
   }
 
   /* The 100% basis is what forces the break, putting every button on the row below. */
@@ -1830,11 +1826,7 @@
 
 /* Icon-only header buttons from half-width down. */
 @media (max-width: 1300px) {
-  .chatPicker .headerActions .btnLabel {
-    display: none;
-  }
-
-  .chatPicker .headerActions button {
+  .chatPicker .pageHeaderActions button {
     gap: 0;
     padding: 7px 10px;
   }

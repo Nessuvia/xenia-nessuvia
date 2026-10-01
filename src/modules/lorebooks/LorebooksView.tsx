@@ -5,6 +5,7 @@ import { newBook, useLorebooks } from '../../core/stores/lorebooksStore'
 import { useWorldInfo } from '../../core/stores/worldInfoStore'
 import { exportBookJson } from '../characters/exportCard'
 import TwoColumn from '../../app/TwoColumn'
+import PageHeader from '../../app/PageHeader'
 import BookEditor from './BookEditor'
 
 /** The file's own name, minus the extension, as the fallback book label. */
@@ -86,33 +87,36 @@ export default function LorebooksView() {
 
   return (
     <div className="lorebooks screenFrame">
-      <div className="lorebooksHeader">
-        <h2 className="lorebooksTitle">Lorebooks</h2>
-        <button
-          type="button"
-          onClick={async () => setOpenId(await create({ book: newBook('New book'), entries: [] }))}
-        >
-          New book
-        </button>
-        <button type="button" onClick={() => fileRef.current?.click()}>
-          Import
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          className="lorebooksFileInput"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) readFile(file)
-            e.target.value = '' // let the same file be picked again
-          }}
-        />
-      </div>
-      <p className="hint">
-        A world info or character book JSON file. Attach a book to a character or a chat, or set it
-        to apply everywhere.
-      </p>
+      <PageHeader
+        title="Lorebooks"
+        hint="A world info or character book JSON file. Attach a book to a character or a chat, or set it to apply everywhere."
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={async () =>
+                setOpenId(await create({ book: newBook('New book'), entries: [] }))
+              }
+            >
+              New book
+            </button>
+            <button type="button" onClick={() => fileRef.current?.click()}>
+              Import
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="lorebooksFileInput"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) readFile(file)
+                e.target.value = '' // let the same file be picked again
+              }}
+            />
+          </>
+        }
+      />
 
       {error && <p className="hint lorebooksError">{error}</p>}
       {loading && books.length === 0 && <p className="placeholder">Loading…</p>}

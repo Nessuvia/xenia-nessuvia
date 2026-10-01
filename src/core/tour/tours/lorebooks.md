@@ -7,7 +7,7 @@ conversation. It's how a large world stays inside a context limit.
 ## .lorebooksList
 Your books. Click one to open its entries.
 
-## .lorebooksHeader
+## .pageHeaderActions
 Create a book, or import one from a JSON file.
 
 ## .lorebooksCount

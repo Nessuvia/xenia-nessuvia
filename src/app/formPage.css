@@ -30,20 +30,20 @@
 
 .formPage input,
 .formPage textarea {
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 10px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fieldFont);
 }
 
 .formPage button {
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -69,14 +69,6 @@
 
 .formPage .error {
   color: var(--danger);
-}
-
-/* A button's text label beside its icon. Dropped at phone width, where the icon carries the
-   button on its own: the callers pair it with a title/aria-label so the icon stays named. */
-@media (max-width: 700px) {
-  .btnText {
-    display: none;
-  }
 }
 
 /* Tab bar across the top of the page. */

@@ -282,10 +282,10 @@
   min-width: 0;
   font: inherit;
   line-height: 1.6;
-  background: var(--surface);
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.5rem 0.6rem;
+  padding: var(--fieldPad);
   field-sizing: content;
   min-height: 3.5rem;
   resize: none;

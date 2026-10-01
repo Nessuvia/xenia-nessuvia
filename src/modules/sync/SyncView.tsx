@@ -1,6 +1,7 @@
 import { RiArrowRightSLine } from '@remixicon/react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import BackupButtons from '../../app/BackupButtons'
+import PageHeader from '../../app/PageHeader'
 import { usePalette } from '../../core/stores/palettesStore'
 import { tableNames, type TableName } from '../../core/storage/storageInterface'
 import { useSettings } from '../../core/stores/settingsStore'
@@ -49,12 +50,10 @@ export default function SyncView() {
           className="syncColumn"
           style={{ '--chatWidth': `${palette.chatWidth}%` } as CSSProperties}
         >
-          <header className="syncHead">
-            <h2>Online Sync</h2>
-            <p className="syncLede">
-              Copies your library to your own storage. Settings upload separately.
-            </p>
-          </header>
+          <PageHeader
+            title="Online Sync"
+            hint="Copies your library to your own storage. Settings upload separately."
+          />
 
           <R2Section />
           <DropboxSection />

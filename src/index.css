@@ -14,6 +14,16 @@
   /* The general panel/button corner. Larger surfaces use calc(var(--radius) + 2px|4px). */
   --radius: 6px;
 
+  /* Form controls. Every text field, select and number box reads these, so a field on one page is
+     the same height and well as a field on any other. A field, a select and a button with
+     --buttonPad share a height at --fieldFont. */
+  --fieldBg: var(--surfaceSunken);
+  --fieldPad: 7px 10px;
+  --fieldFont: 13px;
+  --buttonPad: 7px 12px;
+  /* Number boxes: room for four digits and the spin buttons. */
+  --numberWidth: 72px;
+
   /* The layering ladder. Every z-index in the app comes from here: a literal number in a module
      stylesheet is a mistake unless it's ordering siblings inside one container.
      One tier per rung, no gaps, higher number draws over lower. A new tier goes in at its place and
@@ -229,29 +239,35 @@ body {
 
 
 
-/* Baseline dropdown style. Mirrors the per-module select styling (e.g. .prompts select) so an
-   unstyled select anywhere looks like part of the app; module rules still override where needed. */
-select {
-  background: var(--surface);
+/* Field baseline: a sunken well. Module rules that still restate these values point at the same
+   --field* vars, so changing a var here changes every field in the app. `input:not([type])`
+   because an <input> with no type attribute doesn't match `[type='text']`. `:where` drops the
+   specificity to zero, so any module class beats the baseline. */
+:where(
+    select,
+    textarea,
+    input:not([type]),
+    input[type='text'],
+    input[type='search'],
+    input[type='number'],
+    input[type='url'],
+    input[type='password']
+  ) {
+  background: var(--fieldBg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--fieldPad);
   color: var(--text);
   font: inherit;
+  font-size: var(--fieldFont);
+}
+
+:where(select) {
   cursor: pointer;
 }
 
-/* Text entry baseline. Mirrors module rules (e.g. .formPage textarea, .prompts textarea) so an
-   unstyled field looks like part of the app; module rules still override where needed. */
-textarea,
-input[type='text'],
-input[type='search'] {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 7px 12px;
-  color: var(--text);
-  font: inherit;
+:where(input[type='number']) {
+  width: var(--numberWidth);
 }
 
 textarea:focus,
@@ -315,7 +331,7 @@ a.button {
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   cursor: pointer;
@@ -331,6 +347,15 @@ a.button:hover {
 button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Secondary text under a field or heading. Shared by every module; a module rule only adds what
+   differs, usually margin. */
+.hint {
+  margin: 0;
+  color: var(--textDim);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .placeholder {

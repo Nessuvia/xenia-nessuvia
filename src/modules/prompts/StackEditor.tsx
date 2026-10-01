@@ -19,6 +19,7 @@ import { sendMessage } from '../../core/connectors/openaiCompatible'
 import { useAskContext, type AskContext } from '../../core/stores/askStore'
 import { xeniaPrompt } from '../../core/prompt/xeniaPrompts'
 import { buildTemplateMessages, parseTemplateReply } from './templatePrompt'
+import PageHeader from '../../app/PageHeader'
 import './prompts.css'
 import { RiDownloadLine, RiUploadLine } from '@remixicon/react'
 
@@ -152,27 +153,27 @@ export default function StackEditor() {
 
   return (
     <div className="prompts screenFrame">
-      <h2>Prompt stacks</h2>
-
-      {/* The Story builder only exists in Write mode; with it off there's just the chat stack. */}
-      {writeEnabled && (
-        <div className="kindSwitch">
-          <button
-            type="button"
-            className={kind === 'chat' ? 'active' : ''}
-            onClick={() => setKind('chat')}
-          >
-            Chat
-          </button>
-          <button
-            type="button"
-            className={kind === 'story' ? 'active' : ''}
-            onClick={() => setKind('story')}
-          >
-            Story
-          </button>
-        </div>
-      )}
+      <PageHeader title="Prompt stacks">
+        {/* The Story builder only exists in Write mode; with it off there's just the chat stack. */}
+        {writeEnabled && (
+          <div className="kindSwitch">
+            <button
+              type="button"
+              className={kind === 'chat' ? 'active' : ''}
+              onClick={() => setKind('chat')}
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              className={kind === 'story' ? 'active' : ''}
+              onClick={() => setKind('story')}
+            >
+              Story
+            </button>
+          </div>
+        )}
+      </PageHeader>
 
       <div className="presetRow">
         <div>

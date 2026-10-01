@@ -46,6 +46,7 @@ import { useMediaQuery } from '../../app/useMediaQuery'
 import { useSideDrawer } from '../../app/useSideDrawer'
 import { CollapseButton } from '../../app/CollapseButton'
 import { Avatar } from '../../app/Avatar'
+import PageHeader from '../../app/PageHeader'
 import '../../app/sideDrawer.css'
 import { hotkeysOn } from '../../app/hotkeys'
 
@@ -87,31 +88,33 @@ function Shelf() {
   return (
     <div className="shelfLayout">
     <div className="shelf">
-      <div className="shelfHeader">
-        <h2>Write</h2>
-        <div className="shelfHeaderRight">
-          <label className="shelfToggle">
+      <PageHeader
+        title="Write"
+        actions={
+          <>
+            <label className="shelfToggle">
+              <input
+                type="checkbox"
+                checked={openStoryDirectly}
+                onChange={(e) => {
+                  setOpenStoryDirectly(e.target.checked)
+                  if (e.target.checked) setPreviewId(null)
+                }}
+              />
+              Open Story Directly
+            </label>
             <input
-              type="checkbox"
-              checked={openStoryDirectly}
-              onChange={(e) => {
-                setOpenStoryDirectly(e.target.checked)
-                if (e.target.checked) setPreviewId(null)
-              }}
+              className="storySearch"
+              placeholder="Search stories..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-            Open Story Directly
-          </label>
-          <input
-            className="storySearch"
-            placeholder="Search stories..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button type="button" onClick={onCreate}>
-            New Story
-          </button>
-        </div>
-      </div>
+            <button type="button" onClick={onCreate}>
+              New Story
+            </button>
+          </>
+        }
+      />
 
       {loading && stories.length === 0 && <p className="placeholder">Loading…</p>}
       {!loading && stories.length === 0 && (

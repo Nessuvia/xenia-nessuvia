@@ -33,12 +33,6 @@
   color: #fff;
 }
 
-.prompts .hint {
-  margin: 0;
-  font-size: 12px;
-  color: var(--textDim);
-}
-
 .prompts .error {
   color: var(--danger);
   font-size: 13px;
@@ -51,7 +45,7 @@
   background: var(--surfaceActive);
   border: 1px solid var(--borderStrong);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: var(--buttonPad);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -60,8 +54,9 @@
 .prompts input,
 .prompts textarea,
 .prompts select {
-  background: var(--surface);
+  background: var(--fieldBg);
   border-color: var(--border);
+  padding: var(--fieldPad);
 }
 
 .prompts button {
@@ -109,7 +104,7 @@
 /* A token count, not a name: it doesn't need the width the row's flex: 1 would give it. */
 .stackBudget input {
   flex: none;
-  width: 88px;
+  width: var(--numberWidth);
 }
 
 /* Zones stack in rows and .zones (which carries .screenBody) is the only scroller. The first zone
@@ -199,8 +194,8 @@
   resize: vertical;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
-  background: var(--surface);
-  padding: 8px 10px;
+  background: var(--fieldBg);
+  padding: var(--fieldPad);
   font: inherit;
   font-size: 12px;
   color: var(--textSoft);
