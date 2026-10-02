@@ -9,6 +9,7 @@ import { useSettings } from './settingsStore'
 import { parseStack } from '../../modules/prompts/stackFile'
 import storyStackFile from '../../modules/prompts/defaultStoryStack.json'
 import xeniaChatFile from '../../modules/prompts/xeniaChatStack.json'
+import ffXeniaTemplate from '../../modules/prompts/ffXeniaStory.txt?raw'
 
 /** Short on purpose: on real cards personality/scenario/examples are usually blank. */
 export function defaultStack(name = 'Default'): PromptStack {
@@ -125,6 +126,12 @@ export function defaultStoryStack(name = 'Xenia - Story'): PromptStack {
   return { ...parseStack(JSON.stringify(storyStackFile)), name }
 }
 
+/** Freaky Frankenstein 5.4 by dpgreg, adapted for Write. A plain template file rather than a stack
+ *  file: it's long, and a reviewer reads it as text. What was left out is listed at its top. */
+export function ffXeniaStoryStack(name = 'FF Xenia Edition'): PromptStack {
+  return { ownerId: currentOwnerId(), name, kind: 'story', template: ffXeniaTemplate }
+}
+
 export function xeniaChatStack(name = 'Xenia'): PromptStack {
   return { ...parseStack(JSON.stringify(xeniaChatFile)), name }
 }
@@ -151,6 +158,7 @@ export const bundledStacks: BundledStack[] = [
   },
   { key: 'game', name: 'Game', kind: 'chat', make: defaultGameStack },
   { key: 'story', name: 'Xenia - Story', kind: 'story', make: defaultStoryStack },
+  { key: 'ffXenia', name: 'FF Xenia Edition', kind: 'story', make: ffXeniaStoryStack },
   { key: 'xenia', name: 'Xenia', kind: 'chat', make: xeniaChatStack },
 ]
 

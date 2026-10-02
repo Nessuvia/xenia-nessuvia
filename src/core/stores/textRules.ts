@@ -1,9 +1,9 @@
 // A chat's text rules, resolved from the three places sets live: Global in `appearance`, a stack's
 // own on the stack, the user's in `settings.ruleSets`.
 import { useMemo } from 'react'
-import type { Chat, PromptStack, TextRules } from '../storage/types'
-import { allSets, chatSetIds, globalSetId, mergeSets, stackSetId, type NamedSet } from '../prompt/textRules'
-import { useAppearance, useSettings } from './settingsStore'
+import type { Chat, PromptStack, Story, TextRules } from '../storage/types'
+import { allSets, chatSetIds, globalSetId, mergeSets, stackSetId, storySetIds, type NamedSet } from '../prompt/textRules'
+import { useAppearance, useSettings, type ReplaceRule } from './settingsStore'
 import { useStacks } from './stacksStore'
 import { useChats } from './chatStore'
 
@@ -18,6 +18,25 @@ export function textRulesFor(chat: Chat | null | undefined): TextRules {
   const stacks = useStacks.getState().stacks
   const sets = allSets(settings.appearance, stacks, settings.ruleSets ?? [])
   return mergeSets(chatSetIds(chat, chatStack(chat, stacks, settings.activeStackId)), sets)
+}
+
+/** A Story's Find & Replace rules, sync, for the send path. Tag rules don't reach a document. */
+export function storyReplaceRules(story: Story | null | undefined): ReplaceRule[] {
+  const settings = useSettings.getState()
+  const stacks = useStacks.getState().stacks
+  const stack = stacks.find((s) => s.id === settings.activeStoryStackId)
+  return mergeSets(storySetIds(story, stack), allSets(settings.appearance, stacks, settings.ruleSets ?? [])).replaceRules
+}
+
+/** The open Story's set ids, defaults included, and its merged Find & Replace rules. */
+export function useStoryRules(story: Story | null | undefined): { ids: string[]; replaceRules: ReplaceRule[] } {
+  const sets = useAllSets()
+  const activeId = useSettings((s) => s.activeStoryStackId)
+  const stack = useStacks((s) => s.stacks.find((x) => x.id === activeId))
+  const ids = storySetIds(story, stack)
+  const key = ids.join('\n')
+  const replaceRules = useMemo(() => mergeSets(ids, sets).replaceRules, [key, sets])
+  return { ids, replaceRules }
 }
 
 /** Every pickable set, for the chat panel and the editor. */

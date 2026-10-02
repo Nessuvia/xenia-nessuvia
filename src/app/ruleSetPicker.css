@@ -1,0 +1,29 @@
+/* Text rule sets: one row per set, in priority order. */
+.ruleSetPickerList {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.ruleSetPickerRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-bottom: 4px;
+}
+
+/* Fills the panel and never scrolls it sideways: a long set name truncates. */
+.ruleSetPickerSelect {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruleSetPickerButton {
+  flex: none;
+}

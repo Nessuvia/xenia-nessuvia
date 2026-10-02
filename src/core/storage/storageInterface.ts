@@ -27,7 +27,6 @@ export type TableName =
   | 'promptStacks'
   | 'postStacks'
   | 'stories'
-  | 'chapters'
   | 'palettes'
   | 'backgroundImages'
   | 'paramDefs'
@@ -66,7 +65,6 @@ export const tableNames: TableName[] = [
   // every chat falling back to the built-in config.
   'postStacks',
   'stories',
-  'chapters',
   // Backup reads this list. Background images ride along with everything else. Full-size
   // wallpapers as base64 make that file large; nothing trims them.
   'backgroundImages',

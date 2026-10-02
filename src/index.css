@@ -401,7 +401,7 @@ button:disabled {
   /* "Use max width on mobile": ignore the palette's chat and story widths at phone width. The
      selector carries the extra specificity needed to beat each module's own width rule. */
   :root[data-mobile-full-width] .chatView,
-  :root[data-mobile-full-width] .chapterEditor {
+  :root[data-mobile-full-width] .storyPage {
     width: 100%;
   }
 }
@@ -409,7 +409,7 @@ button:disabled {
 /* "Use max width at half-width": the same override for a desktop window snapped to half a screen. */
 @media (min-width: 701px) and (max-width: 1300px) {
   :root[data-half-full-width] .chatView,
-  :root[data-half-full-width] .chapterEditor {
+  :root[data-half-full-width] .storyPage {
     width: 100%;
   }
 }

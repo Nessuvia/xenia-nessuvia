@@ -260,8 +260,8 @@ export interface Message {
   createdAt: number
 }
 
-/** A Story is the top-level Write work: title + cover, plus its attached cast. It holds no stack
- *  id; the Story stack is globally active. Its prose lives in Chapters. */
+/** A Story is the top-level Write work: one plain-text document plus the plan beside it. It holds
+ *  no stack id; the Story stack is globally active. */
 export interface Story {
   id?: number
   ownerId: string
@@ -269,29 +269,22 @@ export interface Story {
   cover: string // cropped 3:4 data URL, '' when unset (placeholder shown)
   /** Attached characters/personas with their per-entry on/off state. */
   cast: CastEntry[]
-  /** The Author's standing instruction for this Story: read on every generation, never cleared,
-   *  sent as the final user turn. */
-  direction: string
+  /** The whole document as typed markdown. A line starting `# ` is a chapter heading. Stored exactly
+   *  as the model sees it. */
+  text: string
+  /** Where the story starts. Reaches the prompt as {{premise}}. */
+  premise: string
+  /** Where it's meant to land. Reaches the prompt as {{ending}}. */
+  ending: string
+  /** The path between them: a checklist the Author ticks. Guidance only, tied to no prose. */
+  beats: Beat[]
+  /** The Author's Note: a standing instruction sent on every generation as {{note}}. */
+  note: string
   /** Percent of the editor column the prose is displayed at. Absent = 100. */
   storyWidth?: number
-  /** Sampling overrides for this Story, over the connection's own values. */
-  paramOverrides?: ParamOverrides
-  /** The opening situation, edited on the Plot Layout tab before Chapter 1. Reaches the model only
-   *  through {{premise}}, if the Story stack places it. */
-  premise?: string
-  /** The intended ending, edited on the Plot Layout tab after the last Chapter. Reaches the model
-   *  only through {{ending}}, if the Story stack places it. */
-  ending?: string
-  /** What the work is meant to be about, one line or a list. Reaches the model through {{themes}}. */
-  themes?: string
-  genre?: string
-  tone?: string
-  setting?: string
-  /** The whole work's word target, set by the length preset on the Story generation screen.
-   *  0 or absent = unset. */
-  targetWords?: number
-  /** Premise and Ending render as thin markers on the Plot Layout strip when true. */
-  capsCollapsed?: boolean
+  /** Text rule sets in priority order, as on a Chat. Only their Find & Replace rules reach the
+   *  document. Absent = Global plus the Story stack's own set, if it has one. */
+  ruleSetIds?: string[]
   /** Standalone lorebooks the Author attached to this Story. Books a cast character carries are
    *  derived from the cast, not listed here. Absent = none. Never exported with the Story. */
   lorebookIds?: number[]
@@ -305,65 +298,17 @@ export interface Story {
   updatedAt: number
 }
 
+/** One thing that should happen. The first one not done is the current beat. */
+export interface Beat {
+  id: string // crypto.randomUUID(); beats have no table
+  text: string
+  done: boolean
+}
+
 export interface CastEntry {
   kind: 'character' | 'persona'
   id: number
   enabled: boolean
-}
-
-/** How long a beat runs relative to the others in its Chapter. Five named sizes rather than a
- *  word count. Multipliers live in `core/prompt/beatWeights.ts`. */
-export type BeatWeight = 'sketch' | 'brief' | 'normal' | 'long' | 'major'
-
-/** How much of the surrounding prose a Block's generation sees. `both` is the default. */
-export type BlockContext = 'before' | 'after' | 'both' | 'none'
-
-/**
- * One beat of a Chapter, and the unit prose is stored in. A Chapter is an ordered list of these.
- */
-export interface Block {
-  id: string // crypto.randomUUID(); Blocks have no table
-  /** The instructions: what's meant to happen here, one line or many. '' is an unplanned beat. */
-  beat: string
-  /** How long this beat runs relative to its neighbours. The Chapter's word target is divided by
-   *  these. See `core/prompt/beatWeights.ts`. */
-  weight: BeatWeight
-  /** The prose. Named `content`: `core/stores/swipes.ts` accepts a Block unchanged. Mirrors
-   *  `swipes[swipeIndex]`. */
-  content: string
-  /** Alternate versions, in the order they were generated. Absent = the one thing it says. */
-  swipes?: string[]
-  swipeIndex?: number
-  /** The model's reasoning for each swipe, parallel to `swipes` (holes where none/absent). */
-  reasonings?: (string | undefined)[]
-  /** What the Author asked for when producing each swipe, parallel to `swipes`. A plain re-roll
-   *  leaves a hole. */
-  instructions?: (string | undefined)[]
-  context: BlockContext
-}
-
-/** What a Chapter contributes once its prose has been degraded to beat instructions. 'both' gives
- *  the title-and-summary header over the beat lines. 'summary' keeps the header alone, 'beats'
- *  the beat lines under a bare title, 'off' nothing. */
-export type GuideSend = 'off' | 'beats' | 'summary' | 'both'
-
-/** An ordered unit of a Story: a title, a recap, and its prose as an ordered list of Blocks. */
-export interface Chapter {
-  id?: number
-  ownerId: string
-  storyId: number
-  order: number // position within the Story
-  title: string
-  /** Recap only: what the Chapter turned out to contain. Intent lives in the beats. */
-  summary: string
-  /** The Chapter's prose and its plan, in one ordered list. Every Block is a beat. */
-  blocks: Block[]
-  /** Words this Chapter is meant to run to, divided across its beats by their weights. 0 = unset. */
-  targetWords: number
-  /** What this Chapter contributes once the budget has degraded its prose to beat instructions. */
-  guideSend: GuideSend
-  createdAt: number
-  updatedAt: number
 }
 
 /**
@@ -382,6 +327,9 @@ export type StackVariable =
   | { id: string; label: string; info?: string; kind: 'dice'; value: string }
   /** One item per line in `value`. The prompt reads the non-blank lines joined by `sep`. */
   | { id: string; label: string; info?: string; kind: 'list'; sep: string; value: string }
+  /** A number with three presets (short, medium, long) and a unit. Write's toolbar shows one named
+   *  `length` as S/M/L buttons plus a box. The prompt reads `{{id}}` and `{{id_unit}}`. */
+  | { id: string; label: string; info?: string; kind: 'length'; presets: [number, number, number]; unit: string; value: number }
 
 export type StackValue = StackVariable['value']
 

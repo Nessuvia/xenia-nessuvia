@@ -1,6 +1,6 @@
 // Text rule sets: tag rules and find/replace, picked per chat. Pure: callers hand in the sets.
 import type { ReplaceRule, RuleSet, TagRule } from '../stores/settingsStore.ts'
-import type { Chat, PromptStack, TextRules } from '../storage/types.ts'
+import type { Chat, PromptStack, Story, TextRules } from '../storage/types.ts'
 
 export const globalSetId = 'global'
 export const stackSetId = (stackId: number) => `stack:${stackId}`
@@ -10,6 +10,10 @@ export function chatSetIds(chat: Chat | null | undefined, stack: PromptStack | u
   if (chat?.ruleSetIds) return chat.ruleSetIds
   return stack?.id !== undefined && stack.textRules ? [globalSetId, stackSetId(stack.id)] : [globalSetId]
 }
+
+/** A Story's sets, with the same default a chat gets. */
+export const storySetIds = (story: Story | null | undefined, stack: PromptStack | undefined): string[] =>
+  story?.ruleSetIds ?? chatSetIds(null, stack)
 
 export interface NamedSet extends TextRules {
   id: string

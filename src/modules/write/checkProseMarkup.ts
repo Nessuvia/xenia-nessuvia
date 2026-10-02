@@ -1,7 +1,7 @@
 // node --experimental-strip-types src/modules/write/checkProseMarkup.ts
-// Parser only: decorateProse/saveCaret/restoreCaret need a DOM and are exercised in the browser.
+// Parser and range builder only. The editor decorations that use them run in the browser.
 import assert from 'node:assert'
-import { parseProse, pieceText } from './proseMarkup.ts'
+import { chapterHeadings, parseProse, pieceText, proseMarks, wrapEdit } from './proseMarkup.ts'
 import type { ProsePiece } from './proseMarkup.ts'
 
 // Shorthand: describe a tree as marks + flat text for readable assertions.
@@ -76,6 +76,41 @@ const samples = [
 ]
 for (const s of samples) {
   assert.equal(pieceText(parseProse(s)), s, `round-trip failed for ${JSON.stringify(s)}`)
+}
+
+// Ranges: the span, then its markers, at the right offsets; the winner color goes outermost.
+{
+  const marks = proseMarks('a **b _c_** d', ['emphasis', 'bold'])
+  assert.deepEqual(marks, [
+    { from: 2, to: 11, className: 'proseBold', win: 'bold' },
+    { from: 2, to: 4, className: 'proseMark' },
+    { from: 6, to: 9, className: 'proseEm', win: 'emphasis' },
+    { from: 6, to: 7, className: 'proseMark' },
+    { from: 8, to: 9, className: 'proseMark' },
+    { from: 9, to: 11, className: 'proseMark' },
+  ])
+  // A quote keeps its marks visible; a lower-ranked nested span claims no color.
+  const quoted = proseMarks('"hi *there*"', ['quotes', 'emphasis'])
+  assert.equal(quoted[1].className, 'proseQuoteMark')
+  assert.equal(quoted[2].win, undefined)
+}
+
+assert.deepEqual(chapterHeadings('# One\ntext\n## not\n#nope\n# Two '), [
+  { title: 'One', offset: 0 },
+  { title: 'Two', offset: 24 },
+])
+
+// Wrapping: wrap, unwrap from inside, unwrap from outside, nothing for an empty selection.
+{
+  const apply = (doc: string, e: NonNullable<ReturnType<typeof wrapEdit>>) => {
+    let out = doc
+    for (const c of [...e.changes].reverse()) out = out.slice(0, c.from) + c.insert + out.slice(c.to)
+    return [out, out.slice(e.anchor, e.head)]
+  }
+  assert.deepEqual(apply('a word b', wrapEdit('a word b', 2, 6, '**')!), ['a **word** b', 'word'])
+  assert.deepEqual(apply('a **word** b', wrapEdit('a **word** b', 2, 10, '**')!), ['a word b', 'word'])
+  assert.deepEqual(apply('a *word* b', wrapEdit('a *word* b', 3, 7, '*')!), ['a word b', 'word'])
+  assert.equal(wrapEdit('abc', 1, 1, '*'), null)
 }
 
 console.log('checkProseMarkup: ok')

@@ -1,11 +1,6 @@
 // Inline markers for Story prose. Chat has its own pass (chat/renderText.ts) that builds React
-// elements; this one can't reuse it. The Story editor is an uncontrolled contenteditable. The
-// decoration has to be real DOM that React never owns, and the markers themselves have to survive
-// in the DOM text. The editor reads its value back with textContent, and a marker dropped for
-// display would be a marker deleted from the Chapter.
-//
-// Every marker stays a text node. It's only hidden with CSS. Invariant the whole thing rests
-// on: decorate(el, text) leaves el.textContent === text, character for character.
+// elements. This one feeds the document editor's decorations and the HTML export. Neither changes
+// the text: the editor styles ranges in place and the markers stay in the document.
 import type { MarkerKind } from '../../core/stores/settingsStore'
 
 export type ProsePiece =
@@ -58,7 +53,7 @@ function rankOf(kind: MarkerKind, order: MarkerKind[]): number {
 /**
  * Split raw prose into a tree of text runs and marked spans. An unmatched or empty marker
  * (`*` with no partner, `**` immediately closed) stays literal text rather than swallowing the
- * rest of the Chapter. Half-typed markup is the normal state of a document being written.
+ * rest of the document. Half-typed markup is the normal state of a document being written.
  */
 export function parseProse(text: string): ProsePiece[] {
   const out: ProsePiece[] = []
@@ -93,8 +88,7 @@ export function parseProse(text: string): ProsePiece[] {
   return out
 }
 
-/** Concatenate a parsed tree back to its source, markers included. The check script asserts this
- *  round-trips for every input; it's the property the editor's read-back depends on. */
+/** Concatenate a parsed tree back to its source, markers included. */
 export function pieceText(pieces: ProsePiece[]): string {
   return pieces
     .map((p) => ('text' in p ? p.text : p.mark + pieceText(p.children) + p.mark))
@@ -102,161 +96,96 @@ export function pieceText(pieces: ProsePiece[]): string {
 }
 
 /**
- * Replace el's children with the decorated form of `text`. Built with createElement/createTextNode
- * (never innerHTML) because Chapter prose can come from the model and this origin holds API keys.
- * Markers become their own spans so CSS alone can show or hide them.
+ * Wrap a selection in a marker, or unwrap it when the marker already sits on both sides of it
+ * (inside the selection or just outside it). Returns the edit and the selection to keep on the
+ * text, or null for an empty selection.
  */
-export function decorateProse(el: HTMLElement, text: string, order: MarkerKind[] = []): void {
-  el.textContent = ''
-  el.appendChild(buildPieces(parseProse(text), el.ownerDocument, order, -1))
-}
-
-/**
- * `bestRank` is the strongest color rank an ancestor already claims. A span stamps `data-win` with
- * the kind it colors for only when it outranks that; a loser stamps nothing and inherits the
- * winner's color through the cascade. The color values themselves are CSS vars. Changing one is
- * a repaint; only reordering needs the DOM rebuilt.
- */
-function buildPieces(
-  pieces: ProsePiece[],
-  doc: Document,
-  order: MarkerKind[],
-  bestRank: number,
-): DocumentFragment {
-  const frag = doc.createDocumentFragment()
-  for (const piece of pieces) {
-    if ('text' in piece) {
-      frag.appendChild(doc.createTextNode(piece.text))
-      continue
+export function wrapEdit(
+  doc: string,
+  from: number,
+  to: number,
+  mark: string,
+): { changes: { from: number; to: number; insert: string }[]; anchor: number; head: number } | null {
+  if (from === to) return null
+  const n = mark.length
+  const inner = doc.slice(from, to)
+  if (inner.length >= 2 * n && inner.startsWith(mark) && inner.endsWith(mark))
+    return {
+      changes: [
+        { from, to: from + n, insert: '' },
+        { from: to - n, to, insert: '' },
+      ],
+      anchor: from,
+      head: to - 2 * n,
     }
-    const span = doc.createElement('span')
-    span.className = classOf[piece.kind]
-    const claims = kindColors[piece.kind]
-    const winner = claims.length
-      ? claims.reduce((a, b) => (rankOf(b, order) > rankOf(a, order) ? b : a))
-      : null
-    const rank = winner ? rankOf(winner, order) : -1
-    if (winner && rank > bestRank) span.dataset.win = winner
-    // The quote's own marks are part of the dialogue. They stay visible. The others are hidden
-    // by CSS: they exist to keep the Chapter from losing a character.
-    const markClass = piece.kind === 'quote' ? 'proseQuoteMark' : 'proseMark'
-    span.appendChild(markSpan(piece.mark, doc, markClass))
-    span.appendChild(buildPieces(piece.children, doc, order, Math.max(bestRank, rank)))
-    span.appendChild(markSpan(piece.mark, doc, markClass))
-    frag.appendChild(span)
+  if (doc.slice(from - n, from) === mark && doc.slice(to, to + n) === mark)
+    return {
+      changes: [
+        { from: from - n, to: from, insert: '' },
+        { from: to, to: to + n, insert: '' },
+      ],
+      anchor: from - n,
+      head: to - n,
+    }
+  return {
+    changes: [
+      { from, to: from, insert: mark },
+      { from: to, to, insert: mark },
+    ],
+    anchor: from + n,
+    head: to + n,
   }
-  return frag
 }
 
-function markSpan(mark: string, doc: Document, className: string): HTMLElement {
-  const span = doc.createElement('span')
-  span.className = className
-  span.textContent = mark
-  return span
+/** A line starting `# ` is a chapter heading. Only one `#`: `##` is left as typed. */
+export const isHeading = (line: string) => /^# \S/.test(line)
+
+/** The document's chapter headings, with where each line starts. */
+export function chapterHeadings(text: string): { title: string; offset: number }[] {
+  const out: { title: string; offset: number }[] = []
+  let offset = 0
+  for (const line of text.split('\n')) {
+    if (isHeading(line)) out.push({ title: line.slice(2).trim(), offset })
+    offset += line.length + 1
+  }
+  return out
 }
 
-const blockTags = new Set(['DIV', 'P', 'LI', 'BLOCKQUOTE', 'PRE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'])
+/** One styled range in a line, as offsets into it. `win` is the color kind the range paints in. */
+export interface ProseMark {
+  from: number
+  to: number
+  className: string
+  win?: MarkerKind
+}
 
 /**
- * One walk serving both the text read-back and the caret offset. They've to agree character for
- * character: a caret counted against a slightly different string drifts. They share a walker
- * rather than two implementations of the same newline rules.
- *
- * The rules exist for one reason: a contenteditable isn't a textarea. Pressing Enter makes the
- * browser insert a <br> or wrap lines in <div>s, and textContent renders both as nothing. The
- * newline would vanish the next time the DOM was rebuilt from this string.
- *
- * Passing a `caret` range stops the count at that point; `at` is null if the range was never
- * reached.
+ * The ranges to style in one line, outermost first: each marked span, plus its two markers. A
+ * span stamps `win` only when it outranks every ancestor; a loser inherits the winner's color
+ * through the cascade.
  */
-function walkProse(
-  el: HTMLElement,
-  caret?: Range,
-): { text: string; at: number | null } {
-  let text = ''
-  let at: number | null = null
-
-  const walk = (node: Node) => {
-    const children = Array.from(node.childNodes)
-    for (let i = 0; i < children.length; i++) {
-      if (at !== null) return
-      // Caret expressed as (element, childIndex): everything before that index is counted.
-      if (caret && node === caret.endContainer && i === caret.endOffset) {
-        at = text.length
-        return
-      }
-      const child = children[i]
-      if (child.nodeType === 3) {
-        const data = (child as Text).data
-        if (caret && child === caret.endContainer) {
-          at = text.length + Math.min(caret.endOffset, data.length)
-          return
-        }
-        text += data
+export function proseMarks(line: string, order: MarkerKind[] = []): ProseMark[] {
+  const out: ProseMark[] = []
+  const walk = (pieces: ProsePiece[], at: number, bestRank: number) => {
+    for (const piece of pieces) {
+      if ('text' in piece) {
+        at += piece.text.length
         continue
       }
-      if (child.nodeType !== 1) continue
-      const tag = (child as HTMLElement).tagName
-      if (tag === 'BR') {
-        text += '\n'
-        continue
-      }
-      // A block opens a new line unless we're already at the start of one.
-      if (blockTags.has(tag) && text && !text.endsWith('\n')) text += '\n'
-      walk(child)
-    }
-    // Caret sitting past the last child of this element.
-    if (at === null && caret && node === caret.endContainer && caret.endOffset >= children.length) {
-      at = text.length
+      const claims = kindColors[piece.kind]
+      const winner = claims.length ? claims.reduce((a, b) => (rankOf(b, order) > rankOf(a, order) ? b : a)) : null
+      const rank = winner ? rankOf(winner, order) : -1
+      const length = pieceText([piece]).length
+      out.push({ from: at, to: at + length, className: classOf[piece.kind], ...(winner && rank > bestRank ? { win: winner } : {}) })
+      // A quote's own marks are part of the dialogue and stay visible. The others are dimmed.
+      const markClass = piece.kind === 'quote' ? 'proseQuoteMark' : 'proseMark'
+      const m = piece.mark.length
+      out.push({ from: at, to: at + m, className: markClass })
+      walk(piece.children, at + m, Math.max(bestRank, rank))
+      out.push({ from: at + length - m, to: at + length, className: markClass })
+      at += length
     }
   }
-
-  walk(el)
-  return { text, at }
-}
-
-/** Read the editor's prose back out, with contenteditable's line breaks turned back into "\n". */
-export function readProse(el: HTMLElement): string {
-  return walkProse(el).text
-}
-
-/**
- * Caret position as a character offset into readProse(el). It survives the DOM being rebuilt.
- * Returns null when the caret isn't in this element (the Author clicked away mid-debounce).
- */
-export function saveCaret(el: HTMLElement): number | null {
-  const sel = el.ownerDocument.getSelection()
-  if (!sel || sel.rangeCount === 0) return null
-  const range = sel.getRangeAt(0)
-  if (!el.contains(range.endContainer)) return null
-  return walkProse(el, range).at
-}
-
-/** Put the caret back at a character offset, walking text nodes until the offset is consumed. */
-export function restoreCaret(el: HTMLElement, offset: number): void {
-  const doc = el.ownerDocument
-  const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-  let seen = 0
-  let node = walker.nextNode() as Text | null
-  while (node) {
-    const len = node.data.length
-    if (seen + len >= offset) {
-      const range = doc.createRange()
-      range.setStart(node, offset - seen)
-      range.collapse(true)
-      const sel = doc.getSelection()
-      sel?.removeAllRanges()
-      sel?.addRange(range)
-      return
-    }
-    seen += len
-    node = walker.nextNode() as Text | null
-  }
-  // Offset past the end (text shrank under us): park at the end.
-  const range = doc.createRange()
-  range.selectNodeContents(el)
-  range.collapse(false)
-  const sel = doc.getSelection()
-  sel?.removeAllRanges()
-  sel?.addRange(range)
+  walk(parseProse(line), 0, -1)
+  return out
 }

@@ -45,7 +45,7 @@ assert.notStrictEqual(hash, await hashPayload(JSON.stringify(tablePayload('perso
 
 // The empty table still produces a valid payload, that is what a table with every row deleted
 // pushes, and the delete is carried by the absence.
-const empty = tablePayload('chapters', [])
+const empty = tablePayload('stories', [])
 assert.deepStrictEqual(empty.rows, [])
 assert.match(await hashPayload(JSON.stringify(empty)), /^[0-9a-f]{64}$/)
 

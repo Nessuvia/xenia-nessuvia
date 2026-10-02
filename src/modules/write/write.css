@@ -309,6 +309,15 @@ h3.storyPreviewTitle {
   text-transform: uppercase;
 }
 
+.storyExportRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.storyExportRow button {
+  flex: 1;
+}
+
 /* The editor: the document column, with the Story rail in the app sidebar beside it. */
 .storyEditor {
   display: flex;
@@ -338,6 +347,36 @@ h3.storyPreviewTitle {
   cursor: text;
 }
 
+/* The Saved indicator and the raw view switch, hard right of the title. */
+.storyBarEnd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  align-self: center;
+}
+
+.storyRawToggle {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--textMuted);
+}
+
+.storyRawToggle:hover {
+  background: var(--surfaceHover);
+  color: var(--text);
+}
+
+.storyRawToggle[aria-pressed='true'] {
+  background: var(--surfaceActive);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 /* Same inline-rename affordance as a chat's title. Styled here rather than shared: the only other
    copy is chat.css, and a third would be the cue to hoist it into /app. */
 .storyBar .titleEdit {
@@ -351,445 +390,258 @@ h3.storyPreviewTitle {
   font-weight: bold;
 }
 
-/* Story / Plot Layout, in the title bar. */
-.storyTabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.storyBar button.storyTab {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  padding: 0.3rem 0.7rem;
-  color: var(--textMuted);
-  cursor: pointer;
-}
-
-.storyBar button.storyTab.current {
-  border-color: var(--border);
-  background: var(--surface);
-  color: var(--text);
-}
-
-.storyBar button.storyTab:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.storyBar .stylingToggle {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--textMuted);
-}
-
-.storyBar .stylingToggle.on {
-  color: var(--text);
-}
-
-/* The Chapter rail above the prose: position in the Story, and a way to jump. */
-.progressRail {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  color: var(--textMuted);
-  font-size: 0.9em;
-}
-
-.progressRailCount {
-  font-variant-numeric: tabular-nums;
-}
-
-.progressRailBlocks {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.progressRail button.progressBlock {
-  min-width: 1.75rem;
-  padding: 0.15rem 0.4rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--textMuted);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.progressRail button.progressBlock.current {
-  border-color: var(--accent, var(--border));
-  color: var(--text);
-}
-
-.chapterEditor {
+/* The toolbar and the document as one page. Reading width is set per Story in the rail, and the
+   column stays centred. The palette's max-width switches override it in index.css. */
+.storyPage {
   flex: 1;
-  min-height: 60vh;
-  /* Reading width: set per Story in the rail panel; stays centred as it shrinks. */
+  display: flex;
+  flex-direction: column;
   width: var(--storyWidth, 100%);
   margin: 0 auto;
 }
 
-/* Inline markers. The marker spans are always in the DOM: hiding them is presentation only, and
-   the prose read back out of the editor still carries every asterisk. .showMarkers is Toggle
-   Styling in its off state: markers visible, no weight or slant applied. */
-.chapterEditor .proseBold {
-  font-weight: 700;
+/* Attached to the top of the page, like an editor's toolbar. Sticky within .storyMain's scroll, so
+   the buttons stay in reach down a long document. */
+.storyToolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--layer-1);
+  background: var(--surfaceRaised);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--borderStrong);
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
-.chapterEditor .proseEm {
-  font-style: italic;
-}
-
-/* Color goes on the span that won its kind, which decorateProse decides from the Story color order.
-   A span that lost stamps no data-win and inherits the winner's color. */
-.chapterEditor [data-win='emphasis'] {
-  color: var(--storyEmphasisColor, inherit);
-}
-
-.chapterEditor [data-win='bold'] {
-  color: var(--storyBoldColor, inherit);
-}
-
-.chapterEditor [data-win='quotes'] {
-  color: var(--storyQuoteColor, inherit);
-}
-
-.chapterEditor .proseCode {
-  font-family: ui-monospace, monospace;
-  font-size: 0.9em;
-  color: var(--codeText);
-}
-
-.chapterEditor .proseMark {
-  display: none;
-}
-
-.chapterEditor.showMarkers .proseMark {
-  display: inline;
-  color: var(--textMuted);
-}
-
-.chapterEditor.showMarkers .proseBold {
-  font-weight: inherit;
-}
-
-.chapterEditor.showMarkers .proseEm {
-  font-style: inherit;
-}
-
-.chapterEditor.showMarkers .proseCode {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-}
-
-/* Styling off means the raw text: no weight, no slant, no color. Quotes keep theirs, since the
-   quote marks are prose either way, so the run never looked decorated. */
-.chapterEditor.showMarkers [data-win='emphasis'],
-.chapterEditor.showMarkers [data-win='bold'] {
-  color: inherit;
-}
-
-/* One region per Chapter, stacked. The last one carries the tail of the document, so it keeps the
-   room to write into; the ones above are as tall as their prose. */
-.chapterRegion {
+.storyToolGroups {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
 }
 
-.chapterRegion:last-child .storyProse {
-  min-height: 50vh;
-}
-
-/* Structure, not text: a rule across the editor with the Chapter title on it. Deliberately unlike
-   prose, because it's not a line that can be backspaced away. */
-.chapterDivider {
+.storyToolGroup {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 2.5rem 0 1.5rem;
-  color: var(--textMuted);
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  user-select: none;
+  gap: 2px;
 }
 
-.chapterDivider::before,
-.chapterDivider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
+.storyToolDivider {
+  align-self: stretch;
+  width: 1px;
+  margin: 2px 4px;
   background: var(--border);
 }
 
-.storyProse {
-  white-space: pre-wrap;
-  word-break: break-word;
-  min-height: 4rem;
-  outline: none;
-  line-height: var(--storyLineHeight, 1.6);
-  /* The Story's own text color; unset falls straight to the theme's, never to the chat's. */
-  color: var(--storyTextColor, var(--text));
-  /* Prose sits on its own surface so it stays readable over a page background image. */
-  background: var(--storyProseBg, var(--surface));
-  padding: 8px 12px;
-  border-radius: var(--radius);
-}
-
-.storyProse:empty::before {
-  content: attr(data-placeholder);
-  color: var(--textMuted);
-}
-
-.streamingTail {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: var(--storyLineHeight, 1.6);
-  color: var(--textSoft);
-}
-
-.streamingTail .caret {
-  color: var(--accent, var(--text));
-}
-
-/* One Block: a beat with its head, or a free stretch whose tools only show on hover. */
-.blockRegion {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.blockRegion.beat {
-  margin: 0.5rem 0;
-  /* Dashed outline so the extent of a beat is visible while writing in it. */
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 0.25rem;
-}
-
-/* The beat's control row. looks like chrome, not prose: solid ground, so it never sits translucent
-   over the text it labels. */
-.blockHead {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--surfaceSunken);
-  border: 1px solid var(--border);
+/* Flat until hovered or pressed, the way an editor's toolbar buttons look. Tighter than
+   --buttonPad: a row of these is chrome, not a form. */
+.storyToolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   color: var(--textSoft);
-  font-size: 0.8rem;
-  user-select: none;
 }
 
-/* The beat's name plate: nothing in it changes size, so it's a plain centered row. */
-.blockPlan {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.storyToolButton:hover:not(:disabled) {
+  background: var(--surfaceHover);
+  color: var(--text);
 }
 
-.blockCrumb {
-  flex: 1;
-  min-width: 0;
-  color: var(--textMuted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.75rem;
+.storyToolButton[aria-pressed='true'] {
+  background: var(--surfaceActive);
+  border-color: var(--border);
+  color: var(--text);
 }
 
-/* Controls sit on their own row, right-aligned, in the order they were before. */
-.blockTools {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
-/* A collapsed beat keeps its head and hides everything below it. The prose element stays in the
-   DOM, since it's the source of truth for typing and must not unmount. */
-.blockRegion.collapsed .storyProse,
-.blockRegion.collapsed .blockPreview,
-.blockRegion.collapsed .streamingTail,
-.blockRegion.collapsed .taggedBlock {
-  display: none;
-}
-
-/* Where the beat is written. It looks like the Story's own type on a raised field, not as another
-   row of chrome: this is composition, not a checklist entry.
-
-   `min-height` next to `field-sizing: content` is what stops the card from resizing under the
-   cursor: the field opens three lines tall and only ever grows from there. */
-.blockBeat {
-  width: 100%;
-  box-sizing: border-box;
-  /* Inherited, not restated: .blockHead only shrinks the size, so this picks the Story column's
-     own face back up. */
-  font-family: inherit;
-  font-size: 0.95rem;
-  line-height: var(--storyLineHeight, 1.6);
-  color: var(--storyTextColor, var(--text));
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.6rem;
-  field-sizing: content;
-  min-height: 5.5rem;
-  max-height: 20rem;
-  overflow-y: auto;
-  resize: vertical;
-  user-select: text;
-}
-
-.blockBeat::placeholder {
-  color: var(--textMuted);
-}
-
-.blockTarget {
-  flex: none;
-  color: var(--textMuted);
-}
-
-
-.blockSwipes {
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  flex: none;
-  color: var(--textMuted);
-}
-
-.blockHead button {
-  display: flex;
-  align-items: center;
-  padding: 0.15rem;
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.blockHead button:disabled {
-  opacity: 0.55;
+.storyToolButton:disabled {
+  color: var(--textDim);
   cursor: default;
 }
 
-.blockHead button:not(:disabled):hover {
-  color: var(--text);
+.storyToolCaption {
+  font-size: 12px;
+  color: var(--textMuted);
 }
 
-.blockWrite {
+/* Ctrl+Enter's direction line, drawn between the document's lines. It reads as chrome, not prose:
+   a sunken field the width of the page. */
+.storyAsk {
+  padding: 6px 0;
+}
+
+.storyAskInput {
+  width: 100%;
+  font: inherit;
+  font-size: var(--fieldFont);
+}
+
+/* Reuses .dialogBackdrop / .dialog / .dialogActions from chat.css. */
+.storyContinueDialog {
+  width: min(520px, 100%);
+}
+
+.storyContinueInput {
+  width: 100%;
+  resize: vertical;
+}
+
+/* While a request runs: what it's doing, beside Stop. */
+.storyToolStatus {
+  padding: 0 4px;
   color: var(--accent);
 }
 
-.blockMenu {
-  position: relative;
+/* The document is read-only while a request runs. The cursor says so before a keystroke does. */
+.storyDoc[aria-busy='true'] .cm-content {
+  cursor: progress;
 }
 
-.blockMenuPop {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: var(--layer-2);
+.storyToolCount {
+  font-variant-numeric: tabular-nums;
+}
+
+.storyToolLength {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  width: 20rem;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  /* Overrides whatever the skin paints .panel with: this pops over live prose, and a translucent
-     sheet on top of text is unreadable. */
-  background: var(--surfaceRaised);
-  border: 1px solid var(--borderStrong);
-  border-radius: var(--radius);
-  box-shadow: 0 6px 16px var(--overlay);
-  backdrop-filter: none;
-  color: var(--text);
-}
-
-/* Every row in the pop shares one grid: label text in the left column, control in the right, so the
-   text starts on one axis and the controls start on another. */
-.blockMenuPop label {
-  display: grid;
-  grid-template-columns: 1fr 6.5rem;
   align-items: center;
-  gap: 0.5rem;
-  /* Matches the buttons' 8px padding plus their 1px border, so all row text starts on one axis. */
-  padding-left: 9px;
+  gap: 2px;
+  margin-left: auto;
 }
 
-.blockMenuPop select,
-.blockMenuPop input {
-  min-width: 0;
-  width: 100%;
-  padding: 4px 8px;
+.storyToolLength .storyToolCaption {
+  margin-right: 4px;
 }
 
-/* The checkbox can't fill its column, so it just starts at the same left edge as the other controls. */
-.blockMenuPop .blockMenuPreview input {
-  width: auto;
-  justify-self: start;
-  margin: 0;
-}
-
-/* The length control in the kebab menu: the select carries the value, the words are read-only. */
-.blockMenuPop .blockMenuTarget .weightSelect {
-  background: var(--fieldBg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font: inherit;
-}
-
-.blockMenuPop > button {
-  padding: 4px 8px;
-  text-align: left;
-}
-
-/* The add strip between Blocks sits in the middle of a document being read, so it doesn't show
-   until the pointer is near it. */
-
-.blockGap {
-  display: flex;
+.storyToolPreset {
+  min-width: 28px;
   justify-content: center;
-  gap: 0.4rem;
-  height: 1.4rem;
-  opacity: 0;
-  transition: opacity 0.15s;
 }
 
-.blockGap:hover,
-.blockGap:focus-within {
-  opacity: 1;
+.storyToolNumber {
+  width: var(--numberWidth);
+  margin-left: 4px;
 }
 
-.blockGap button {
+/* A second row under the buttons: the rewrite instruction, or find and replace. */
+.storyToolRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.15rem;
-  padding: 0 0.4rem;
-  background: var(--surfaceSunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--textSoft);
-  font-size: 0.75rem;
-  cursor: pointer;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
 }
 
-.blockGap button:hover {
-  color: var(--text);
-  border-color: var(--borderStrong);
+.storyToolField {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.storyToolWide {
+  flex-basis: 100%;
+}
+
+.storyToolCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+/* At phone width the labels go and the icons carry the buttons, as in PageHeader. */
+@media (max-width: 700px) {
+  .storyToolLabel {
+    display: none;
+  }
+
+  .storyToolLength {
+    margin-left: 0;
+  }
+}
+
+.storyDoc {
+  flex: 1;
+}
+
+/* CodeMirror's own classes: the library owns the markup, so these are the only handle on it. It
+   should read as a page: no focus ring, inherited type, the Story's text color. */
+.storyDoc .cm-editor {
+  min-height: 60vh;
+  /* Prose sits on its own surface so it stays readable over a page background image. */
+  background: var(--storyProseBg, var(--surface));
+  /* The toolbar is the page's top edge. */
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.storyDoc .cm-editor.cm-focused {
+  outline: none;
+}
+
+.storyDoc .cm-scroller {
+  font-family: inherit;
+  line-height: var(--storyLineHeight, 1.6);
+}
+
+.storyDoc .cm-content {
+  min-height: 60vh;
+  padding: 12px 16px;
+  color: var(--storyTextColor, var(--text));
+  caret-color: var(--text);
+}
+
+.storyDoc .cm-placeholder {
+  color: var(--textMuted);
+}
+
+/* A `# ` line. em, not px: it scales with the Story's own font size. */
+.storyDocHeading {
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+/* Inline markers. The markers stay in the text, only dimmed. */
+.storyDoc .proseBold {
+  font-weight: 700;
+}
+
+.storyDoc .proseEm {
+  font-style: italic;
+}
+
+.storyDoc .proseMark {
+  color: var(--textDim);
+}
+
+/* Color goes on the span that won its kind, which proseMarks decides from the Story color order.
+   A span that lost stamps no data-win and inherits the winner's color. */
+.storyDoc [data-win='emphasis'] {
+  color: var(--storyEmphasisColor, inherit);
+}
+
+.storyDoc [data-win='bold'] {
+  color: var(--storyBoldColor, inherit);
+}
+
+.storyDoc [data-win='quotes'] {
+  color: var(--storyQuoteColor, inherit);
+}
+
+/* A Find & Replace rule's replacement, shown in place of what's stored. Underlined dotted, so the
+   text reads normally but doesn't pass for typed text when editing around it. */
+.storyReplaced {
+  text-decoration: underline dotted var(--textDim);
+}
+
+.storyDoc .proseCode {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  color: var(--codeText);
 }
 
 /* The open Story's rail, in the app sidebar under the Go back link. Fill/scroll behavior comes
@@ -806,9 +658,7 @@ h3.storyPreviewTitle {
 /* Section headers are the rail's main control, and they were a bare line of text: an 18px target
    on a desktop pointer and on a thumb. 44px is the touch floor, and the row spans the rail so
    there's nowhere near the label that misses. */
-.storyRail summary,
-.storyRail .beatChapter,
-.phoneBeats > summary {
+.storyRail summary {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -821,14 +671,12 @@ h3.storyPreviewTitle {
   list-style: none;
 }
 
-.storyRail summary::-webkit-details-marker,
-.phoneBeats > summary::-webkit-details-marker {
+.storyRail summary::-webkit-details-marker {
   display: none;
 }
 
 /* The chevron the removed marker used to provide. Rotates open. */
-.storyRail summary::before,
-.phoneBeats > summary::before {
+.storyRail summary::before {
   content: '';
   flex: none;
   width: 0.5em;
@@ -839,18 +687,15 @@ h3.storyPreviewTitle {
   transition: transform 0.12s;
 }
 
-.storyRail details[open] > summary::before,
-.phoneBeats[open] > summary::before {
+.storyRail details[open] > summary::before {
   transform: rotate(45deg);
 }
 
-.storyRail summary:hover,
-.phoneBeats > summary:hover {
+.storyRail summary:hover {
   background: var(--surfaceSunken);
 }
 
-.storyRail summary:focus-visible,
-.phoneBeats > summary:focus-visible {
+.storyRail summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
@@ -934,43 +779,6 @@ h3.storyPreviewTitle {
   color: var(--textMuted);
 }
 
-/* The row that moves between the two tiers: full width, so it looks like a destination rather than
-   one control in a row of them. */
-.storyRail .storyRailTier {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 8px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--textSoft);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.storyRail .storyRailTier:hover {
-  color: var(--text);
-  border-color: var(--borderStrong);
-}
-
-/* Chapters as collapsible groups over the whole Story. */
-.beatSpine {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* What the Chapter is doing, in the same three values the Plot tab reads. */
-.beatChapter.writingNow {
-  color: var(--textBright);
-}
-
-.beatChapter.notYetWritten {
-  color: var(--textMuted);
-}
-
 .editStackLink {
   display: inline-block;
   margin-top: 0.5rem;
@@ -978,38 +786,96 @@ h3.storyPreviewTitle {
   font-size: 0.85rem;
 }
 
-/* The Chapter's beats as a jump list. Same row shape as the cast rows above it. */
-.beatChecklist {
+.storyRailField {
+  width: 100%;
+  resize: vertical;
+}
+
+/* Same look as the rail's label text, for the one heading that labels a list rather than a field. */
+.storyRailLabel {
+  font-size: 12px;
+  color: var(--textMuted);
+}
+
+/* Premise, beats, ending. */
+.storyPlot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storyBeatList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
-.beatChecklist li {
+.storyBeatRow {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 4px;
+  border-radius: var(--radius);
 }
 
-.beatChecklistRow {
+.storyBeatHandle {
+  display: flex;
+  flex: none;
+  color: var(--textMuted);
+  cursor: grab;
+}
+
+.storyBeatText {
   flex: 1;
   min-width: 0;
-  padding: 0.3rem;
+}
+
+/* The beat the model writes toward next. */
+.storyBeatRow.current .storyBeatText {
+  border-color: var(--accent);
+}
+
+.storyBeatRow.done .storyBeatText {
+  color: var(--textMuted);
+  text-decoration: line-through;
+}
+
+.storyBeatAdd {
+  display: flex;
+  gap: 4px;
+}
+
+.storyBeatAddInput {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The document's headings as a jump list. */
+.storyChapterList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.storyChapterRow {
+  width: 100%;
+  padding: 4px 6px;
   background: none;
   border: none;
   text-align: left;
   color: var(--textSoft);
-  font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
 
-.beatChecklistRow:hover {
+.storyChapterRow:hover {
   color: var(--text);
 }
 
@@ -1096,13 +962,6 @@ h3.storyPreviewTitle {
   padding-left: 0.5rem;
 }
 
-.storyColorRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
 /* The Story width row in the rail. Same shape as the chat's width row, which lives in chat.css
    next to the chat-only rules it belongs with. */
 .storyRail label.storyWidth {
@@ -1127,65 +986,52 @@ h3.storyPreviewTitle {
   flex: none;
 }
 
-.directionInput {
-  width: 100%;
-  font: inherit;
-  resize: vertical;
-}
-
-/* Wide screens have the rail; the document column doesn't need a second copy of the beats. */
-.phoneBeats {
-  display: none;
-}
-
-.phoneBeats > summary {
-  cursor: pointer;
-  color: var(--textMuted);
-  font-size: 0.9em;
-  margin-bottom: 0.5rem;
-}
-
+/* Sized to its message up to a reading width, never wider than the editor. */
 .writeToast {
   position: absolute;
-  bottom: 1rem;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: var(--layer-2);
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  max-width: 40rem;
-  padding: 0.6rem 0.9rem;
-  background: var(--surface);
-  border: 1px solid var(--danger, var(--border));
-  border-radius: var(--radius);
+  align-items: flex-start;
+  gap: 8px;
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 8px 8px 8px 12px;
+  background: var(--surfaceRaised);
+  border: 1px solid var(--danger);
+  border-radius: calc(var(--radius) + 2px);
   color: var(--text);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px var(--overlay);
+}
+
+/* A raw API error is one long unbroken line of JSON. It wraps anywhere rather than overflowing. */
+.writeToastText {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.writeToastClose {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--textMuted);
+}
+
+.writeToastClose:hover {
+  background: var(--surfaceHover);
+  color: var(--text);
 }
 
 @media (max-width: 700px) {
-  /* Icon only, fixed in the top strip beside the navbar button (.sidebarOpenButton, top-left),
-     so it stops eating a row of the title bar. 27 is the phone drawer band's floor, which is what
-     this strip sits at. */
-  .storyBar .stylingToggle {
-    position: fixed;
-    top: 8px;
-    right: 8px;
-    z-index: var(--layer-4);
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    margin-left: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-  }
-
-  .stylingToggleLabel {
-    display: none;
-  }
-
   .shelf {
     padding: 1rem;
   }
@@ -1217,119 +1063,8 @@ h3.storyPreviewTitle {
     position: fixed;
   }
 
-  /* The rail is a drawer at this width, so the beats get a second home in the document column. */
-  .phoneBeats {
-    display: block;
+  /* Same phone padding as the shelf. */
+  .storyMain {
+    padding: 1rem;
   }
-}
-
-/* Preview Word Count: placeholder prose standing in for an empty beat's target. Muted and italic
-   so it never looks like text the Author wrote. */
-.blockPreview {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: var(--storyLineHeight, 1.6);
-  color: var(--textMuted);
-  font-style: italic;
-  user-select: none;
-}
-
-/* The empty prose box would otherwise hold its 4rem open above the preview. It keeps one line so
-   there's still somewhere to click and type. */
-.blockRegion.previewing .storyProse {
-  min-height: 0;
-}
-
-/* A regen: the old version is out of sight while its replacement streams into the tail below. It
-   stays in the DOM so the region keeps its editor and its pending edits. */
-.storyProse.replaced {
-  display: none;
-}
-
-.blockMenuPreview {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* Same collapsible as chat's reasoning block. Copied rather than hoisted: two rules, and chat.css
-   isn't loaded on this route. */
-.blockRegion .taggedBlock {
-  margin: 6px 0;
-  padding: 6px 10px;
-  border-left: 2px solid var(--border);
-  color: var(--textMuted);
-  font-size: 0.92em;
-  white-space: pre-wrap;
-}
-
-.blockRegion .taggedBlock > summary {
-  cursor: pointer;
-  font-size: 0.9em;
-  letter-spacing: 0.04em;
-}
-
-.storyExportRow {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.storyExportRow button {
-  flex: 1;
-}
-
-/* Regen with instructions. Reuses .dialogBackdrop / .dialog / .dialogActions from chat.css. */
-.regenDialog {
-  width: min(620px, 100%);
-}
-
-.regenDialog textarea {
-  width: 100%;
-  box-sizing: border-box;
-  resize: vertical;
-}
-
-.regenTarget {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.regenTarget label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-right: 0.4rem;
-}
-
-.regenTarget .weightSelect {
-  font: inherit;
-}
-
-/* The instructions already applied to the version being rewritten. Read-only: they're sent again
-   whatever is typed below, so the box says what the request will carry. */
-.regenChain {
-  padding: 8px 12px;
-  background: var(--surfaceSunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.regenChainList {
-  margin: 4px 0 0;
-  padding-left: 24px;
-  color: var(--textSoft);
-}
-
-/* What the selected version was asked to be, next to its n/total. One line: the full text is on
-   the title attribute. */
-.blockSwipeNote {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--textMuted);
-  font-size: 12px;
 }

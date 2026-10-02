@@ -63,6 +63,18 @@ export default function VariableControl({
           />
         </label>
       )
+    case 'length':
+      return (
+        <label className="optionPick" title={v.info || undefined}>
+          {v.label} ({v.unit})
+          <input
+            type="number"
+            min={1}
+            value={v.value}
+            onChange={(e) => onChange({ ...v, value: Number(e.target.value) || 0 })}
+          />
+        </label>
+      )
     case 'sliderSingle':
       return (
         <div className="scrollPick" title={v.info || undefined}>

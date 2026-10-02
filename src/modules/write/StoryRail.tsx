@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   RiCloseLine,
+  RiDraggable,
   RiPushpin2Fill,
   RiPushpinLine,
   RiSettings3Line,
-  RiSparkling2Line,
-  RiStopCircleLine,
 } from '@remixicon/react'
 import { Avatar } from '../../app/Avatar'
 import ColorStack from '../../app/ColorStack'
 import EntityPicker, { type PickerItem } from '../../app/EntityPicker'
-import type { CastEntry } from '../../core/storage/types'
-import { chapterState } from '../../core/prompt/chapterGuide'
+import { useDragReorder } from '../../app/useDragReorder'
+import RuleSetPicker from '../../app/RuleSetPicker'
+import { useStoryRules } from '../../core/stores/textRules'
+import type { Beat, CastEntry } from '../../core/storage/types'
 import { attachBook, removeBook, storyBooks, toggleBook } from '../../core/prompt/storyBooks'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
 import { useLorebooks } from '../../core/stores/lorebooksStore'
@@ -22,15 +23,17 @@ import { useSettings, type MarkerKind } from '../../core/stores/settingsStore'
 import { useStacks } from '../../core/stores/stacksStore'
 import { useWrite } from '../../core/stores/writeStore'
 import AppearancePanel from '../appearance/AppearancePanel'
-import ParamEditor from '../characters/ParamEditor'
 import PromptToggles from '../prompts/PromptToggles'
 import { railOrder, togglePin } from './railOrder'
 import StoryPromptPanel from './StoryPromptPanel'
+import { chapterHeadings } from './proseMarkup'
+import { jumpTo } from './StoryDocument'
 
 // Attach any character/persona; each attached entry has an on/off toggle. Only enabled cast is sent.
 function CastSection() {
   const story = useWrite((s) => s.story)
-  const setCast = useWrite((s) => s.setCast)
+  const update = useWrite((s) => s.update)
+  const setCast = (next: CastEntry[]) => update({ cast: next })
   const characters = useCharacters((s) => s.characters)
   const personas = usePersonas((s) => s.personas)
   const [picking, setPicking] = useState(false)
@@ -132,7 +135,7 @@ function CastSection() {
  */
 function BooksSection() {
   const story = useWrite((s) => s.story)
-  const setStoryFields = useWrite((s) => s.setStoryFields)
+  const setStoryFields = useWrite((s) => s.update)
   const characters = useCharacters((s) => s.characters)
   const { books, counts, load } = useLorebooks()
   const [picking, setPicking] = useState(false)
@@ -205,172 +208,153 @@ function BooksSection() {
 }
 
 /**
- * The whole Story's beats, one `<details>` per Chapter. The active Chapter opens; the rest stay
- * closed. The open/closed state is view-only. Nothing is persisted for it.
- *
- * Every row can be written, not just the active Chapter's, a beat two Chapters out is reachable
- * without moving the cursor there first. Ticking a beat here is the same write the box in the
- * document makes: one `blocks` patch, one meaning.
- *
- * Exported because the phone layout mounts it under the storyBar as well as in the rail.
+ * A Story text field that writes on blur rather than per keystroke: each write puts the whole
+ * Story, document included. Keyed by Story id by the caller, so opening another one resets it.
  */
-export function StoryBeats() {
-  const chapters = useWrite((s) => s.chapters)
-  const activeChapterId = useWrite((s) => s.activeChapterId)
+function StoryField({ field, rows, placeholder }: { field: 'premise' | 'ending' | 'note'; rows: number; placeholder: string }) {
   const story = useWrite((s) => s.story)
-  const streaming = useWrite((s) => s.streaming)
-  const streamingStoryId = useWrite((s) => s.streamingStoryId)
-  const streamingBlockId = useWrite((s) => s.streamingBlockId)
-  const writeBlock = useWrite((s) => s.writeBlock)
-  const stop = useWrite((s) => s.stop)
+  const update = useWrite((s) => s.update)
+  if (!story) return null
+  return (
+    <textarea
+      key={story.id}
+      className="storyRailField"
+      rows={rows}
+      defaultValue={story[field]}
+      placeholder={placeholder}
+      onBlur={(e) => e.target.value !== story[field] && update({ [field]: e.target.value })}
+    />
+  )
+}
 
-  // Folding a Chapter row here is navigation, not a document edit: the rail keeps its own open set
-  // and the beats in the document keep theirs. Only the Collapse/Open all button crosses over.
-  const setCollapsedBeats = useWrite((s) => s.setCollapsedBeats)
-  const [mode, setMode] = useState(0)
-  const [shutChapters, setShutChapters] = useState<string[]>([])
+/**
+ * Premise, beats, ending. A beat is a to-do for the model: the first one not ticked is the one it
+ * writes toward. Ticking is the Author's call. Nothing ticks a beat on its own.
+ */
+function PlotSection() {
+  const story = useWrite((s) => s.story)
+  const update = useWrite((s) => s.update)
+  const [adding, setAdding] = useState('')
+  const beats = story?.beats ?? []
+  const drag = useDragReorder((from, to) => {
+    const next = [...beats]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    update({ beats: next })
+  })
+  if (!story) return null
 
-  // Streaming only gates rows while it's THIS Story being written.
-  const busy = streaming && streamingStoryId === (story?.id ?? null)
-
-  // Scrolling to the Block and focusing it's one action: the list is a way around the document,
-  // not a second place to read it.
-  function jump(blockId: string) {
-    const el = document.querySelector<HTMLElement>(`.storyProse[data-block="${blockId}"]`)
-    if (!el) return
-    el.scrollIntoView({ block: 'center' })
-    el.focus()
-  }
-
-  if (chapters.length === 0) return <p className="placeholder">No chapters yet.</p>
-
-  const modes = ['Collapse all', 'Open all']
-  const allBeats = chapters.flatMap((c) => c.blocks)
-  function cycle() {
-    if (mode === 0) setCollapsedBeats(allBeats.map((b) => b.id))
-    else setCollapsedBeats([])
-    setMode((mode + 1) % modes.length)
-  }
-
-  function setChapterOpen(chapterId: string, open: boolean) {
-    setShutChapters((shut) =>
-      open ? shut.filter((c) => c !== chapterId) : [...new Set([...shut, chapterId])],
-    )
-  }
+  const setBeat = (id: string, patch: Partial<Beat>) =>
+    update({ beats: beats.map((b) => (b.id === id ? { ...b, ...patch } : b)) })
+  const current = beats.find((b) => !b.done && b.text.trim())?.id
 
   return (
-    <div className="beatSpine">
-      <button type="button" className="storyRailTier" onClick={cycle}>
-        {modes[mode]}
-      </button>
-      {chapters.map((chapter, ci) => {
-        const beats = chapter.blocks
-        const state = chapterState(chapter, activeChapterId)
-        return (
-          <details
-            key={chapter.id}
-            open={
-              shutChapters.includes(String(chapter.id))
-                ? false
-                : beats.length > 0 || chapter.id === activeChapterId
-            }
-            // currentTarget is already detached by the time this fires; read the element itself.
-            // React 19 bubbles onToggle. Without stopping it the enclosing RailSection reads
-            // this chapter's open state as its own and folds the whole panel.
-            onToggle={(e) => {
-              e.stopPropagation()
-              setChapterOpen(String(chapter.id), (e.target as HTMLDetailsElement).open)
-            }}
+    <div className="storyPlot">
+      <label className="storyRailLabel">
+        Premise
+        <StoryField field="premise" rows={3} placeholder="Where the story starts." />
+      </label>
+      <span className="storyRailLabel">Beats</span>
+      {beats.length === 0 && <p className="hint">No beats.</p>}
+      <ul className="storyBeatList">
+        {/* Handle and row split, not itemProps: the row holds a text field. See useDragReorder. */}
+        {beats.map((beat, index) => (
+          <li
+            key={beat.id}
+            className={`storyBeatRow${beat.done ? ' done' : ''}${beat.id === current ? ' current' : ''}${drag.over === index ? ' dropTarget' : ''}`}
+            {...drag.dropProps(index)}
           >
-            <summary className={`beatChapter ${state}`}>
-              {chapter.title.trim() || `Chapter ${ci + 1}`}
-            </summary>
-            {beats.length === 0 ? (
-              <p className="placeholder">No beats yet.</p>
-            ) : (
-              <ul className="beatChecklist">
-                {beats.map((beat, i) => (
-                  <li key={beat.id}>
-                    <button
-                      type="button"
-                      className="beatChecklistRow"
-                      title="Go to this beat"
-                      onClick={() => jump(beat.id)}
-                    >
-                      {beat.beat.trim() || `Beat ${i + 1}`}
-                    </button>
-                    {busy && streamingBlockId === beat.id ? (
-                      <button type="button" className="castRowAction" title="Stop" onClick={stop}>
-                        <RiStopCircleLine size={19} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="castRowAction"
-                        title="Write this beat"
-                        disabled={busy}
-                        onClick={() => {
-                          jump(beat.id)
-                          writeBlock(chapter.id!, beat.id)
-                        }}
-                      >
-                        <RiSparkling2Line size={19} />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
-        )
-      })}
+            <span className="storyBeatHandle" title="Drag to reorder" aria-label="Drag to reorder" {...drag.handleProps(index)}>
+              <RiDraggable size={16} />
+            </span>
+            <input
+              type="checkbox"
+              checked={beat.done}
+              title="Done"
+              aria-label="Done"
+              onChange={(e) => setBeat(beat.id, { done: e.target.checked })}
+            />
+            <input
+              className="storyBeatText"
+              defaultValue={beat.text}
+              onBlur={(e) => e.target.value !== beat.text && setBeat(beat.id, { text: e.target.value })}
+            />
+            <button
+              type="button"
+              className="castRowAction"
+              title="Remove beat"
+              onClick={() => update({ beats: beats.filter((b) => b.id !== beat.id) })}
+            >
+              <RiCloseLine size={18} />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="storyBeatAdd"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!adding.trim()) return
+          update({ beats: [...beats, { id: crypto.randomUUID(), text: adding.trim(), done: false }] })
+          setAdding('')
+        }}
+      >
+        <input
+          className="storyBeatAddInput"
+          value={adding}
+          placeholder="Something that should happen"
+          onChange={(e) => setAdding(e.target.value)}
+        />
+        <button type="submit">Add</button>
+      </form>
+      <label className="storyRailLabel">
+        Ending
+        <StoryField field="ending" rows={3} placeholder="Where it's meant to end." />
+      </label>
     </div>
   )
 }
 
-// The Story's standing instruction: read on every generation, never cleared. Debounced so a
-// keystroke isn't a database write.
-function DirectionSection() {
-  const story = useWrite((s) => s.story)
-  const streaming = useWrite((s) => s.streaming)
-  const setDirection = useWrite((s) => s.setDirection)
-  const [draft, setDraft] = useState(story?.direction ?? '')
-  const timer = useRef<number | undefined>(undefined)
-
-  useEffect(() => {
-    setDraft(story?.direction ?? '')
-  }, [story?.id, story?.direction])
-
-  // Same flush-on-unmount rule as the editor: the pending keystrokes are still the Author's.
-  useEffect(
-    () => () => {
-      if (timer.current !== undefined) window.clearTimeout(timer.current)
-    },
-    [],
-  )
-
-  function onChange(text: string) {
-    setDraft(text)
-    window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      timer.current = undefined
-      setDirection(text)
-    }, 500)
-  }
-
+function NoteSection() {
   return (
     <>
-      <textarea
-        className="directionInput"
-        rows={4}
-        value={draft}
-        disabled={streaming}
-        placeholder="A standing instruction for this Story."
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => setDirection(draft)}
-      />
-      <p className="hint">Sent with every generation (not cleared)</p>
+      <StoryField field="note" rows={4} placeholder="A standing instruction for this Story." />
+      <p className="hint">Sent with every generation.</p>
     </>
+  )
+}
+
+/** Which text rule sets this Story uses. Writes `story.ruleSetIds`, this Story only. */
+function TextRulesSection() {
+  const story = useWrite((s) => s.story)
+  const update = useWrite((s) => s.update)
+  const { ids } = useStoryRules(story)
+  if (!story) return null
+  return (
+    <RuleSetPicker
+      ids={ids}
+      onChange={(ruleSetIds) => update({ ruleSetIds })}
+      scope="this Story"
+      hint="Applies to this Story only. Only a set's Find & Replace rules affect the document."
+    />
+  )
+}
+
+/** The `# ` headings in the document. Clicking one moves the cursor there. */
+function ChaptersSection() {
+  const text = useWrite((s) => s.story?.text ?? '')
+  const headings = chapterHeadings(text)
+  if (!headings.length) return <p className="hint">A line starting with "# " is a chapter heading.</p>
+  return (
+    <ul className="storyChapterList">
+      {headings.map((h, i) => (
+        <li key={`${h.offset}`}>
+          <button type="button" className="storyChapterRow" onClick={() => jumpTo(h.offset)}>
+            {i + 1}. {h.title}
+          </button>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -443,36 +427,11 @@ function PromptStackSection() {
   )
 }
 
-// Per Story, not per Chapter and not global: sampling is a property of the work being written.
-// The cast is deliberately not a layer, see Story.paramOverrides.
-function ParametersSection() {
-  const connections = useSettings((s) => s.connections)
-  const activeConnectionId = useSettings((s) => s.activeConnectionId)
-  const story = useWrite((s) => s.story)
-  const setParamOverrides = useWrite((s) => s.setParamOverrides)
-  const connection = connections.find((c) => c.id === activeConnectionId)
-
-  if (!connection)
-    return <p className="hint">Pick an active connection in Settings to set parameters.</p>
-
-  return (
-    <>
-      <p className="hint">Used for this Story only. An empty field uses the connection's value.</p>
-      <ParamEditor
-        overrides={story?.paramOverrides ?? {}}
-        connection={connection}
-        scopeLabel="story"
-        onChange={(paramOverrides) => setParamOverrides(paramOverrides)}
-      />
-    </>
-  )
-}
-
 function AppearanceSection() {
-  const showReasoning = useSettings((s) => s.appearance.showReasoning)
   const { palette, locked, patch } = usePaletteEditor()
   const story = useWrite((s) => s.story)
-  const setStoryWidth = useWrite((s) => s.setStoryWidth)
+  const update = useWrite((s) => s.update)
+  const setStoryWidth = (width: number) => update({ storyWidth: Math.min(100, Math.max(1, width || 100)) })
 
   return (
     <>
@@ -498,19 +457,6 @@ function AppearanceSection() {
         />
       </label>
       <p className="hint">Overrides the Story width in the palette.</p>
-      {/* The same global switch as the chat's, shown here to stay reachable without opening a
-          chat. There's no per-beat toggle. */}
-      <label
-        className="checkboxRow"
-        title="Hides reasoning on beats. It's still stored."
-      >
-        <input
-          type="checkbox"
-          checked={showReasoning}
-          onChange={(e) => useSettings.getState().setAppearance({ showReasoning: e.target.checked })}
-        />
-        Show reasoning
-      </label>
       {/* Font and size only: the chat's colors don't reach a Story. Showing them here would be
           a control that does nothing. */}
       <AppearancePanel colors={false} font={false} />
@@ -536,12 +482,13 @@ function AppearanceSection() {
 
 // Every section of the rail, in the order they sit in when nothing is pinned.
 const railSections: { id: string; label: string; body: () => ReactNode }[] = [
-  { id: 'beats', label: 'Beats', body: () => <StoryBeats /> },
-  { id: 'direction', label: 'Direction', body: () => <DirectionSection /> },
+  { id: 'plot', label: 'Plot', body: () => <PlotSection /> },
+  { id: 'note', label: "Author's Note", body: () => <NoteSection /> },
+  { id: 'chapters', label: 'Chapters', body: () => <ChaptersSection /> },
   { id: 'characters', label: 'Characters', body: () => <CastSection /> },
   { id: 'lorebooks', label: 'Lorebooks', body: () => <BooksSection /> },
   { id: 'promptStack', label: 'Prompt Stack', body: () => <PromptStackSection /> },
-  { id: 'parameters', label: 'Parameters', body: () => <ParametersSection /> },
+  { id: 'textRules', label: 'Text rules', body: () => <TextRulesSection /> },
   { id: 'appearance', label: 'Appearance', body: () => <AppearanceSection /> },
   { id: 'promptPreview', label: 'Prompt preview', body: () => <StoryPromptPanel /> },
 ]

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Message, PromptStack } from '../../core/storage/types'
 import { buildPrompt } from '../../core/prompt/buildPrompt'
-import { buildStoryPrompt } from '../../core/prompt/buildStoryPrompt'
-import { storyTokens } from '../../core/prompt/storyTokens'
+import { buildStoryPrompt, type StoryAction, type StoryInputs } from '../../core/prompt/buildStoryPrompt'
 import { emptyWorldInfo, type ResolvedWorldInfo } from '../../core/prompt/worldInfo'
 import { worldInfoFor } from '../../core/stores/chatStore'
 import { countTokens, loadTokenizer, perMessageOverhead } from '../../core/prompt/budget'
@@ -14,48 +13,24 @@ import { budgetOf, maxTokensOf } from '../../core/params/connectionParams'
 
 const defaultUserLine = 'Hello there.'
 
-// Example inputs for the Story-stack preview, never persisted, editable, reset on reload.
+// Example inputs for the Story-stack preview, never persisted, editable, reset on reload. Every
+// value is filled: the point here is to show the stack's shape, not a page of blanks.
 const exampleStory = 'The tavern had emptied hours ago. Nessu wiped the last glass and set it down.'
-const exampleDirection = 'Write a short paragraph continuing the scene.'
-const exampleCast = 'Name: Nessuvia\nNessu is the Development Team Lead.'
-// Stand-ins for the Story tokens: a stack that uses them previews as something readable rather
-// than as a page of blanks. Every token gets a value: the point here is to show the stack's shape.
-const exampleTokens = storyTokens({
+const exampleNote = 'Keep it quiet and slow.'
+const exampleInputs: Omit<StoryInputs, 'action' | 'before' | 'note'> = {
+  after: '',
+  selection: 'Nessu wiped the last glass and set it down.',
+  instruction: 'Make it tired.',
   title: 'Last Call',
   premise: 'A barkeeper closes up and finds someone still sitting in the dark.',
   ending: 'She hands back the key.',
-  themes: 'What closing time asks of you.',
+  beat: 'She asks him to leave',
+  nextBeats: ['He does not', 'Dawn'],
+  doneBeats: ['Nessu notices the last customer'],
+  cast: 'Name: Nessuvia\nNessu is the Development Team Lead.',
   castNames: ['Nessuvia'],
-  chapters: [
-    {
-      id: 1,
-      title: 'Opening',
-      summary: 'The tavern fills and empties.',
-      targetWords: 0,
-      blocks: [],
-    },
-    {
-      id: 2,
-      title: 'Last Call',
-      summary: '',
-      targetWords: 800,
-      blocks: [
-        { id: 'a', beat: 'Nessu notices the last customer', weight: 'brief' },
-        { id: 'b', beat: 'She asks him to leave', weight: 'long' },
-        { id: 'c', beat: 'He does not', weight: 'normal' },
-      ],
-    },
-    {
-      id: 3,
-      title: 'After',
-      summary: '',
-      targetWords: 0,
-      blocks: [{ id: 'd', beat: 'Dawn', weight: 'normal' }],
-    },
-  ],
-  chapterId: 2,
-  blockId: 'b',
-})
+}
+const actions: StoryAction[] = ['continue', 'rewrite', 'expand', 'shorten']
 
 export default function PromptPreview({ stack }: { stack: PromptStack }) {
   const [ready, setReady] = useState(false)
@@ -84,35 +59,37 @@ function budgetFor(connection?: Connection) {
     : undefined
 }
 
-// A Story stack has no character and no chat history: the Co-Writer takes a Story-context blob and
-// a Direction. The preview mirrors that: example prose plus an example Direction, nothing else.
+// A Story stack has no character and no chat history. The preview takes an example document, an
+// action and an Author's Note, with the plan filled in from the examples above.
 function StoryPreview({ stack, ready }: { stack: PromptStack; ready: boolean }) {
   const connection = useActiveConnection()
-  const [storyText, setStoryText] = useState(exampleStory)
-  const [direction, setDirection] = useState(exampleDirection)
+  const [before, setBefore] = useState(exampleStory)
+  const [note, setNote] = useState(exampleNote)
+  const [action, setAction] = useState<StoryAction>('continue')
 
-  const built = buildStoryPrompt(
-    {
-      stack,
-      castText: exampleCast,
-      tokens: exampleTokens,
-      storyText,
-      direction,
-    },
-    budgetFor(connection),
-  )
+  const built = buildStoryPrompt(stack, { ...exampleInputs, action, before, note }, budgetFor(connection))
 
   return (
     <div className="promptsPreviewBody">
 
       <div className="previewExamples">
         <label>
-          Example Story context
-          <textarea rows={3} value={storyText} onChange={(e) => setStoryText(e.target.value)} />
+          Example document
+          <textarea rows={3} value={before} onChange={(e) => setBefore(e.target.value)} />
         </label>
         <label>
-          Example Direction
-          <textarea rows={2} value={direction} onChange={(e) => setDirection(e.target.value)} />
+          Example Author's Note
+          <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+        </label>
+        <label>
+          Action
+          <select value={action} onChange={(e) => setAction(e.target.value as StoryAction)}>
+            {actions.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
@@ -121,7 +98,7 @@ function StoryPreview({ stack, ready }: { stack: PromptStack; ready: boolean }) 
 
       {built.droppedChars > 0 && (
         <p className="hint">
-          {built.droppedChars} characters of older Story prose would be dropped to fit the budget.
+          {built.droppedChars} characters from the top of the document would be dropped to fit the budget.
         </p>
       )}
 

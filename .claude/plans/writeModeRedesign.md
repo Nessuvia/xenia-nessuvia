@@ -1,6 +1,6 @@
 # Write mode redesign
 
-Status: decided, not started. Written 2026-10-01 from a question session with the owner.
+Status: v1 built 2026-10-02, awaiting browser testing. Written 2026-10-01 from a question session with the owner.
 
 ## Why
 
@@ -81,7 +81,7 @@ Only the most recent generation (continue or selection action) can be retried. R
 
 ### Length
 
-The stack defines what Short / Medium / Long mean (value and unit: words, tokens, sentences). The length control is a stack variable by convention: a stack var named `targetNumber` (name not final) is shown as the length control in the Write toolbar, with S/M/L presets and a box to type a number. The app adds no built-in length field. A stack that doesn't declare it gets no length control.
+The stack defines what Short / Medium / Long mean (value and unit: words, tokens, sentences). The length control is a stack variable by convention: a `length`-kind var named `length` is shown as the length control in the Write toolbar, with S/M/L presets and a box to type a number. The app adds no built-in length field. A stack that doesn't declare it gets no length control.
 
 ## Prompt building
 
@@ -123,11 +123,18 @@ Story width setting stays. Export stays (the document as markdown/txt).
 - AI-suggested beats: a button that proposes the next few beats from premise, ending and text so far.
 - Running the post-processing pass (`core/agent`) on Write generations and selection actions.
 
-## Open questions
+## Settled 2026-10-02 (formerly open questions)
 
-- Variable names the app exposes to the stack (`{{before}}`/`{{after}}`, `{{beats}}`, `{{cast}}`, `targetNumber`).
-- How many lookahead beats to send ("next few": fixed number, or a stack variable).
-- How the stack declares S/M/L presets for the length var. The current `{% var %}` syntax has slider/dropdown/text kinds and no "presets plus free number" kind.
-- Editor implementation. CodeMirror 6 is already a dependency and handles live-styled markdown and tracking the last insertion range. Not formally decided.
-- Hotkeys for continue and retry.
-- Whether ticked beats are still sent to the model (as "already happened") or only shown in the panel.
+- Variable names the app passes to the stack: `{{before}}`, `{{after}}`, `{{selection}}`, `{{beat}}`
+  (current), `{{nextBeats}}`, `{{doneBeats}}`, `{{premise}}`, `{{ending}}`, `{{note}}` (Author's
+  Note), `{{cast}}`, `{{action}}`, `{{instruction}}` (rewrite instruction).
+- Lookahead: every unticked beat after the current one goes in `{{nextBeats}}`. A template that
+  wants fewer can slice the list.
+- Ticked beats are sent as `{{doneBeats}}`, and the template decides whether to use them.
+- Length: a new var kind, `length`, with three presets, a unit and a default:
+  `{% var length length 50|150|400 words = 150 %}`. The Write toolbar shows S/M/L plus a number
+  box for a var of this kind named `length`. Elsewhere it renders as a number box.
+- Editor: CodeMirror 6. It must feel like a plain text editor by the end, not a code editor: no
+  gutter or line numbers, prose font, soft wrapping, no code-style selection or active-line look.
+- Hotkeys: Ctrl+Enter continues at the cursor, Ctrl+Shift+Enter retries the last generation,
+  Alt+Left/Alt+Right swipe.

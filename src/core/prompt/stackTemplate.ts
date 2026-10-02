@@ -39,6 +39,7 @@ const kindNames: Record<string, StackVariable['kind']> = {
   text: 'text',
   dice: 'dice',
   list: 'list',
+  length: 'length',
 }
 
 const lineAt = (text: string, index: number) => text.slice(0, index).split('\n').length
@@ -63,7 +64,7 @@ function parseVar(body: string): StackVariable | string {
   const [id, kindName, ...args] = head
   if (!id || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(id)) return 'A variable needs a name made of letters, digits and _.'
   const kind = kindNames[kindName?.toLowerCase() ?? '']
-  if (!kind) return `Unknown kind "${kindName ?? ''}". Use slider, range, dropdown, checkbox, text, list or dice.`
+  if (!kind) return `Unknown kind "${kindName ?? ''}". Use slider, range, dropdown, checkbox, text, list, dice or length.`
   const base = { id, label: label ?? id, ...(info ? { info } : {}) }
   const nums = args.map(Number)
   if (kind === 'sliderSingle' || kind === 'sliderRange') {
@@ -94,6 +95,16 @@ function parseVar(body: string): StackVariable | string {
     const value = def === undefined ? '' : unquote(def).split('|').map((s) => s.trim()).filter(Boolean).join('\n')
     return { ...base, kind, sep: sep === undefined ? ', ' : sep.replace(/\\n/g, '\n').replace(/\\t/g, '\t'), value }
   }
+  if (kind === 'length') {
+    // `length 50|150|400 words = 150`: short, medium and long, then the unit.
+    const [presetText = '', unit = 'words'] = args
+    const presets = presetText.split('|').map(Number)
+    if (presets.length !== 3 || presets.some((n) => Number.isNaN(n) || n <= 0))
+      return 'A length needs three presets and a unit: length 50|150|400 words.'
+    const value = def === undefined ? presets[1] : Number(def)
+    if (Number.isNaN(value)) return 'The default must be a number.'
+    return { ...base, kind, presets: presets as [number, number, number], unit, value }
+  }
   if (kind === 'text') return { ...base, kind, value: def === undefined ? '' : unquote(def) }
   return { ...base, kind, value: def === undefined ? '1d20' : unquote(def) }
 }
@@ -117,7 +128,7 @@ export function templateVariables(template: string): { variables: StackVariable[
 /** Whether a stored value fits the declaration. A value left over from an older declaration is dropped. */
 function fits(v: StackVariable, value: StackValue): boolean {
   if (v.kind === 'sliderRange') return Array.isArray(value) && value.length === 2
-  if (v.kind === 'sliderSingle') return typeof value === 'number'
+  if (v.kind === 'sliderSingle' || v.kind === 'length') return typeof value === 'number'
   if (v.kind === 'checkbox') return typeof value === 'boolean'
   if (v.kind === 'dropdown') return typeof value === 'string' && v.options.includes(value)
   return typeof value === 'string'
@@ -209,7 +220,7 @@ export function templateProblems(template: string, kind: 'chat' | 'story'): Temp
   for (const o of open) problems.push({ line: o.line, message: `{% ${o.tag} %} is never closed.` })
   if (kind === 'chat' && history === 0) problems.push({ line: 1, message: 'Add {{ history }} where the chat goes.' })
   if (history > 1) problems.push({ line: 1, message: 'Only one {{ history }} allowed.' })
-  if (kind === 'story' && !usesSlot(template, 'storyContext'))
-    problems.push({ line: 1, message: 'Add {{ storyContext }} where the Story prose goes.' })
+  if (kind === 'story' && !usesSlot(template, 'before'))
+    problems.push({ line: 1, message: 'Add {{ before }} where the document goes.' })
   return problems.sort((a, b) => a.line - b.line)
 }

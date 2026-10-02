@@ -56,6 +56,9 @@ export function variableValues(variables: StackVariable[] | undefined, random: (
       if (total !== undefined) out[id] = total
     } else if (v.kind === 'list') {
       out[id] = listItems(v.value).join(v.sep)
+    } else if (v.kind === 'length') {
+      out[id] = v.value
+      out[`${id}_unit`] = v.unit
     } else if (Array.isArray(v.value)) {
       out[`${id}_start`] = v.value[0]
       out[`${id}_end`] = v.value[1]
@@ -196,7 +199,8 @@ function flatten(node: Conditional): Node[] {
 function holds(flag: PromptConditions[string] | undefined, op?: Op, value?: string): boolean {
   if (!op || value === undefined) return Array.isArray(flag) ? flag.length > 0 : Boolean(flag)
   if (flag === undefined || typeof flag === 'boolean') return false
-  const want = value.trim().toLowerCase()
+  // Quotes are optional, as Jinja writers expect them: `= 'rewrite'` and `= rewrite` match alike.
+  const want = value.trim().replace(/^(['"])(.*)\1$/, '$2').toLowerCase()
   if (typeof flag === 'number') {
     const n = Number(want)
     if (!want || Number.isNaN(n)) return false

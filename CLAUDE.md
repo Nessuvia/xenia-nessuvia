@@ -32,7 +32,7 @@ There's no drag-and-drop library. Reordering is hand-rolled in `app/useDragReord
 or a `textarea` uses `handleProps` on a drag handle and `dropProps` on the row. `draggable` on an
 ancestor stops Chrome placing the caret in the field: the caret sticks at the start and clicking
 between words does nothing. `modules/lorebooks/EntryRows.tsx` and the beat rows in
-`modules/write/PlotLayout.tsx` are the pattern.
+`modules/write/StoryRail.tsx` are the pattern.
 
 Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, imported directly. No utility framework, no CSS-in-JS.
 
@@ -80,13 +80,15 @@ Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lor
 
 ## Seams: reuse these, don't reinvent
 
-- **Prompt assembly** lives in `core/prompt`. `buildPrompt` (chat), `buildStoryPrompt` (Write),
+- **Prompt assembly** lives in `core/prompt`. `buildPrompt` (chat), `buildStoryPrompt` (Write: the
+  app supplies `{{before}}`/`{{after}}`/`{{selection}}`, `{{action}}`, the plan and the note, and the
+  template owns every word; `{{before}}` is trimmed from the top to fit),
   `budget` (token counting and history trimming; `loadTokenizer` is async, `countTokens` is sync,
   and both have to stay that way; `tokenizers`/`autoTokenizer`/`tokenizerCache` pick and fetch which
   one counts), `flattenPrompt` (text-completion connections), `swapTokens`, `worldInfo`,
   `stackTemplate` (a stack is one template, `PromptStack.template`: `{% var %}` declarations,
   `{% message %}` and `{% depth %}` tags, `{{ history }}`, `templateProblems` for the editor),
-  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `chapterGuide`, `rewrite`. Anything changing what the model receives goes through
+  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `rewrite`. Anything changing what the model receives goes through
   one of these.
 - **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`).
   `flattenPrompt` is the only reader: role sequences, first/last turn overrides, newline wrapping,
@@ -177,9 +179,9 @@ Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lor
 
 ## Data
 
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(19)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `chapters`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
+Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(20)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
 
-- One `db.version(N).stores({...})` block, currently 19, holding the **complete** schema. The old
+- One `db.version(N).stores({...})` block, currently 20, holding the **complete** schema. The old
   chain was deleted. No block ever carried an `upgrade()` callback, and an older local DB upgrades
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:

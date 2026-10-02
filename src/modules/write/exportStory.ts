@@ -1,15 +1,14 @@
-// Story export: JSON (the records as stored), TXT (prose only) and HTML (one standalone file
-// painted from the active palette).
+// Story export: Markdown (the document as stored), TXT (markers removed) and HTML (one standalone
+// file painted from the active palette).
 //
 // Extension-ful imports on purpose: checkExportStory.ts runs the builders under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports. The builders
 // stay pure for that reason: only the three `export*` wrappers touch `document`.
-import type { Chapter, Story } from '../../core/storage/types.ts'
+import type { Story } from '../../core/storage/types.ts'
 import type { Palette } from '../../core/palette/palette.ts'
 import { effectiveFont, paletteVars } from '../../core/palette/palette.ts'
-import { chapterProse } from '../../core/prompt/chapterGuide.ts'
 import { readAloudBar, readAloudCss, readAloudScript } from '../../core/readAloud/readAloud.ts'
-import { parseProse, type ProsePiece } from './proseMarkup.ts'
+import { isHeading, parseProse, type ProsePiece } from './proseMarkup.ts'
 
 const fileName = (name: string) =>
   name.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'story'
@@ -23,17 +22,21 @@ function download(blob: Blob, name: string) {
   URL.revokeObjectURL(url)
 }
 
-const inOrder = (chapters: Chapter[]): Chapter[] => [...chapters].sort((a, b) => a.order - b.order)
-
-/** The chapter break, both formats use it: blank line, `1 - Title`, blank line. */
+/** The chapter heading both formats use: `1 - Title`. */
 const breakLine = (index: number, title: string) =>
   `${index + 1}${title.trim() ? ` - ${title.trim()}` : ''}`
 
-export function buildTxt(story: Story, chapters: Chapter[]): string {
-  const body = inOrder(chapters)
-    .map((c, i) => `\n\n${breakLine(i, c.title)}\n\n${chapterProse(c)}`)
-    .join('')
-  return `${story.title.trim() || 'Untitled Story'}${body}\n`
+/** Plain text: the title, then the document with headings numbered and inline markers removed.
+ *  Quote marks stay: they're part of the dialogue. */
+export function buildTxt(story: Story): string {
+  const plain = (pieces: ProsePiece[]): string =>
+    pieces.map((p) => ('text' in p ? p.text : p.kind === 'quote' ? `"${plain(p.children)}"` : plain(p.children))).join('')
+  let chapter = 0
+  const body = story.text
+    .split('\n')
+    .map((line) => (isHeading(line) ? breakLine(chapter++, line.slice(2)) : plain(parseProse(line))))
+    .join('\n')
+  return `${story.title.trim() || 'Untitled Story'}\n\n${body.trim()}\n`
 }
 
 export function escapeHtml(text: string): string {
@@ -53,8 +56,8 @@ const tagOf: Record<string, [string, string]> = {
 }
 
 /**
- * Prose to inline HTML. Real elements, not the editor's marker spans: the round-trip invariant
- * proseMarkup rests on exists for the contenteditable, and a static page has nothing to read back.
+ * Prose to inline HTML. Real elements: the editor keeps the markers in the text, and a static page
+ * has no need to.
  *
  * nesting color goes to the innermost element rather than the palette's
  * `storyColorOrder` ranking. If a bold-inside-quotes run needs to paint quote-colored the way the
@@ -73,7 +76,7 @@ export function proseHtml(text: string): string {
   return render(parseProse(text))
 }
 
-export function buildHtml(story: Story, chapters: Chapter[], palette: Palette): string {
+export function buildHtml(story: Story, palette: Palette): string {
   const vars = {
     ...paletteVars(palette),
     '--storyTextColor': palette.storyTextColor || 'var(--text)',
@@ -94,25 +97,34 @@ export function buildHtml(story: Story, chapters: Chapter[], palette: Palette): 
 
   const title = escapeHtml(story.title.trim() || 'Untitled Story')
 
-  const ordered = inOrder(chapters)
-
-  const body = ordered
-    .map((c, i) => {
-      const paras = c.blocks
-        .map((b) => b.content.trim())
-        .filter(Boolean)
-        .map((t) => `<p>${proseHtml(t)}</p>`)
-        .join('\n')
-      return `<h2 id="ch${i + 1}">${escapeHtml(breakLine(i, c.title))}</h2>\n${paras}`
+  // Headings become numbered <h2>s, paragraphs (runs between blank lines) become <p>s.
+  const headings: string[] = []
+  const body = story.text
+    .split(/\n\s*\n/)
+    .flatMap((para) => {
+      const out: string[] = []
+      let lines: string[] = []
+      const flushPara = () => {
+        if (lines.join('').trim()) out.push(`<p>${proseHtml(lines.join('\n').trim())}</p>`)
+        lines = []
+      }
+      for (const line of para.split('\n')) {
+        if (!isHeading(line)) {
+          lines.push(line)
+          continue
+        }
+        flushPara()
+        headings.push(line.slice(2).trim())
+        out.push(`<h2 id="ch${headings.length}">${escapeHtml(breakLine(headings.length - 1, line.slice(2)))}</h2>`)
+      }
+      flushPara()
+      return out
     })
     .join('\n')
 
   // Anchor links, no script: `scroll-margin-top` on the headings keeps the sticky bar off them.
-  const nav = ordered
-    .map(
-      (c, i) =>
-        `<a href="#ch${i + 1}"${c.title.trim() ? ` title="${escapeHtml(c.title.trim())}"` : ''}>${i + 1}</a>`,
-    )
+  const nav = headings
+    .map((h, i) => `<a href="#ch${i + 1}"${h ? ` title="${escapeHtml(h)}"` : ''}>${i + 1}</a>`)
     .join('')
 
   return `<!doctype html>
@@ -211,25 +223,15 @@ ${readAloudScript('nav, .readAloud')}
 `
 }
 
-export function exportStoryJson(story: Story, chapters: Chapter[]) {
-  download(
-    new Blob([JSON.stringify({ story, chapters: inOrder(chapters) }, null, 2)], {
-      type: 'application/json',
-    }),
-    `${fileName(story.title)}.json`,
-  )
+/** The document as stored. */
+export function exportStoryMarkdown(story: Story) {
+  download(new Blob([story.text], { type: 'text/markdown' }), `${fileName(story.title)}.md`)
 }
 
-export function exportStoryTxt(story: Story, chapters: Chapter[]) {
-  download(
-    new Blob([buildTxt(story, chapters)], { type: 'text/plain' }),
-    `${fileName(story.title)}.txt`,
-  )
+export function exportStoryTxt(story: Story) {
+  download(new Blob([buildTxt(story)], { type: 'text/plain' }), `${fileName(story.title)}.txt`)
 }
 
-export function exportStoryHtml(story: Story, chapters: Chapter[], palette: Palette) {
-  download(
-    new Blob([buildHtml(story, chapters, palette)], { type: 'text/html' }),
-    `${fileName(story.title)}.html`,
-  )
+export function exportStoryHtml(story: Story, palette: Palette) {
+  download(new Blob([buildHtml(story, palette)], { type: 'text/html' }), `${fileName(story.title)}.html`)
 }

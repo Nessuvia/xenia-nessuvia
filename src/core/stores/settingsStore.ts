@@ -220,9 +220,6 @@ interface SettingsState {
   exportKeys: boolean
   /** Write shelf: clicking a Story cover opens the editor instead of the preview panel. */
   openStoryDirectly: boolean
-  /** The Story tab's Chapter rail is collapsed. Global rather than per Story: whether the rail
-   *  shows is a working preference. Per Story is the upgrade path. */
-  railCollapsed: boolean
   /** Story rail section ids pinned to the top, in the order they were pinned. Global rather than
    *  per Story: which sections you keep to hand is a working habit. Per Story is the upgrade path. */
   storyRailPinned: string[]
@@ -250,7 +247,6 @@ interface SettingsState {
   setRuleSets(ruleSets: RuleSet[]): void
   setDebugMode(on: boolean): void
   setOpenStoryDirectly(on: boolean): void
-  setRailCollapsed(collapsed: boolean): void
   setStoryRailPinned(ids: string[]): void
   setStoryRailOpen(ids: string[]): void
   setPersonaTitleOff(on: boolean): void
@@ -312,9 +308,8 @@ export const useSettings = create<SettingsState>()(
       hotkeysOff: false,
       exportKeys: false,
       openStoryDirectly: false,
-      railCollapsed: false,
       storyRailPinned: [],
-      storyRailOpen: ['beats', 'characters'],
+      storyRailOpen: ['plot', 'note'],
       writeEnabled: true,
       multiplayerEnabled: true,
       enabledPlugins: {},
@@ -340,7 +335,6 @@ export const useSettings = create<SettingsState>()(
       setOpenStoryDirectly: (openStoryDirectly) => set({ openStoryDirectly }),
 
 
-      setRailCollapsed: (railCollapsed) => set({ railCollapsed }),
 
       setStoryRailPinned: (storyRailPinned) => set({ storyRailPinned }),
       setStoryRailOpen: (storyRailOpen) => set({ storyRailOpen }),

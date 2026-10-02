@@ -41,6 +41,18 @@ import { variableValues } from './template.ts'
   assert.deepStrictEqual(variableValues(variables.slice(6)), { banned: 'ozone; breath hitching', lines: '' })
 }
 
+// A length carries three presets and a unit; its default is the middle preset.
+{
+  const { variables, problems } = templateVariables(
+    '{% var length length 50|150|400 words %}\n{% var bad length 50|150 words %}',
+  )
+  assert.deepStrictEqual(variables, [
+    { id: 'length', label: 'length', kind: 'length', presets: [50, 150, 400], unit: 'words', value: 150 },
+  ])
+  assert.deepStrictEqual(problems.map((p) => p.line), [2])
+  assert.deepStrictEqual(variableValues(variables), { length: 150, length_unit: 'words' })
+}
+
 // A `%` inside an attribute doesn't end the tag, and the declaration leaves the body.
 {
   const tpl = '{% var lean checkbox = true info="34% smaller" %}\nText.'
@@ -110,9 +122,9 @@ import { variableValues } from './template.ts'
   assert.ok(msgs('{{ history }}\n{% depth 2 %}x')[0].includes('never closed'))
   assert.ok(msgs('{{ history }}\n{% enddepth %}')[0].includes('nothing to close'))
   assert.ok(msgs('{{ history }}\n{% depth 1 %}{% message user %}x{% enddepth %}{% endmessage %}').length > 0, 'crossed tags')
-  assert.deepStrictEqual(msgs('{{ storyContext }}', 'story'), [])
-  assert.ok(msgs('{{ storyContext }}\n{{ history }}', 'story')[0].includes('no chat history'))
-  assert.ok(msgs('prose', 'story')[0].includes('storyContext'))
+  assert.deepStrictEqual(msgs('{{ before }}', 'story'), [])
+  assert.ok(msgs('{{ before }}\n{{ history }}', 'story')[0].includes('no chat history'))
+  assert.ok(msgs('prose', 'story')[0].includes('before'))
   // A commented-out tag is not a tag.
   assert.deepStrictEqual(templateProblems('{{ history }}\n{# {% depth 2 %} #}', 'chat'), [])
 }

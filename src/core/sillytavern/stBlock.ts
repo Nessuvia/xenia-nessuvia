@@ -44,6 +44,7 @@ function declaration(v: StackVariable): string {
   if (v.kind === 'list') return `{% var ${v.id} list = "${attr(v.value.split('\n').join('|'))}" sep="${attr(v.sep.replace(/\n/g, '\\n'))}"${label}${info} %}`
   if (v.kind === 'dice') return `{% var ${v.id} dice = ${v.value}${label}${info} %}`
   if (v.kind === 'dropdown') return `{% var ${v.id} dropdown ${v.options.join('|')} = ${v.value}${label}${info} %}`
+  if (v.kind === 'length') return `{% var ${v.id} length ${v.presets.join('|')} ${v.unit} = ${v.value}${label}${info} %}`
   if (v.kind === 'sliderSingle') return `{% var ${v.id} slider ${v.min} ${v.max} ${v.step} = ${v.value}${label}${info} %}`
   return `{% var ${v.id} range ${v.min} ${v.max} ${v.step} = ${v.value[0]} ${v.value[1]}${label}${info} %}`
 }
