@@ -281,7 +281,7 @@ async function acrosticReply(
   }
   for (let attempt = 0; attempt < 2; attempt++) {
     const messages = acrosticMessages(prompt, template, json, attempt ? acrosticRetryNote : undefined)
-    // ponytail: the snapshot leaves out `extra` (the grammar, response_format). snapshotOf takes no extra yet.
+    // the snapshot leaves out `extra` (the grammar, response_format). snapshotOf takes no extra yet.
     reply.snapshot = snapshotOf(messages, via)
     reply.reasoning = ''
     let raw = ''

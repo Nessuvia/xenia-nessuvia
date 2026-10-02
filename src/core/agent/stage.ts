@@ -31,7 +31,7 @@ export function changedRanges(before: string, after: string): [number, number][]
   const n = a.length
   const m = b.length
   const w = m + 1
-  // ponytail: full LCS table, O(n·m). Replies past ~1000 words each way skip the flash. Myers diff if that matters.
+  // full LCS table, O(n·m). Replies past ~1000 words each way skip the flash. Myers diff if that matters.
   if ((n + 1) * w > 4_000_000) return []
   const t = new Uint16Array((n + 1) * w)
   for (let i = n - 1; i >= 0; i--) {

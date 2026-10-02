@@ -30,7 +30,7 @@ export const vadLoaded = () => lexicon !== null
  * A word's scores, or undefined when unknown or not loaded yet. NRC lists base forms, so an
  * inflection falls back to its stem: "screamed" to "scream".
  */
-// ponytail: suffix stripping, no real stemmer. "ran" and "stopped" miss. Add an irregular map when it matters.
+// suffix stripping, no real stemmer. "ran" and "stopped" miss. Add an irregular map when it matters.
 export function vadOf(word: string): Vad | undefined {
   if (!lexicon) return undefined
   const w = word.toLowerCase()

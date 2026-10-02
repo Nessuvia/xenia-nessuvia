@@ -7,7 +7,7 @@ const tagger = memoizeTagger(new CompromiseTagger())
 
 const auxiliaries = new Set(['be', 'is', 'was', 'were', 'been', 'being', 'am', 'are', 'had', 'has', 'have', 'do', 'did', 'does', 'could', 'would', 'should', 'will', 'can', 'might', 'must', 'may'])
 
-// ponytail: suffix stripping, not a lemmatizer. "looked"/"looks"/"looking" match; "stood"/"stand"
+// suffix stripping, not a lemmatizer. "looked"/"looks"/"looking" match; "stood"/"stand"
 // and "stopped"/"stops" don't. Swap in compromise's infinitive if the misses matter.
 const stem = (word: string) => word.toLowerCase().replace(/(?:ing|ed|es|s)$/, '')
 

@@ -5,7 +5,7 @@
 //   node acrostic.mjs --check   self-check
 //
 // Letters are ordered by English frequency and weighted 1/rank, so z turns up
-// about a twentieth as often as t. ponytail: Zipf on rank, not real letter
+// about a twentieth as often as t. Zipf on rank, not real letter
 // frequencies. Swap in a weight table if the draws feel off.
 const letters = 'etaoinshrdlcumwfgypbvkjxqz'
 const weights = letters.split('').map((_, i) => 1 / (i + 1))

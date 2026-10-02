@@ -80,7 +80,7 @@ function spokenWords(text: string): string {
  * A detector fix may reshape narration but not what is said: the spoken words come back in the same
  * order, none dropped or added. Punctuation inside speech may change, so "You could've. Easily."
  * can become "You could've, easily." Rewording speech is the dialogue pass's job.
- * ponytail: a tag doubled outside the quotes ("morning," he said. ... he said) still passes. The
+ * a tag doubled outside the quotes ("morning," he said. ... he said) still passes. The
  * narration-only spans are what keep that from happening.
  */
 export function keepsSpeech(passage: string, candidate: string): boolean {
@@ -106,7 +106,7 @@ function overlap(a: Set<string>, b: Set<string>): number {
  * takes of one sentence back to back ("He let out a rough laugh... He gave a rough laugh..."), and
  * replaced a paragraph with a copy of a later one it was shown as context.
  * A sentence under five words never counts: short lines repeat on purpose.
- * ponytail: word-set overlap, not order. Two different sentences built from the same words trip it;
+ * word-set overlap, not order. Two different sentences built from the same words trip it;
  * raise `echoOverlap` if that shows up.
  */
 export function echoes(candidate: string, rest: string): boolean {

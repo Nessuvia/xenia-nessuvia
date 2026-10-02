@@ -9,7 +9,7 @@ const locator = /\b(?:somewhere|in the distance|distant|far[- ]off|far away|down
 const sound =
   /\b(?:bark(?:ed|s|ing)?|slam(?:med|s|ming)?|honk(?:ed|s|ing)?|wail(?:ed|s|ing)?|howl(?:ed|s|ing)?|rustl(?:ed|es|ing)|hum(?:med|s|ming)?|chirp(?:ed|s|ing)?|caw(?:ed|s|ing)?|rumbl(?:ed|es|ing)|clang(?:ed|s|ing)?|tick(?:ed|s|ing)|dripp(?:ed|ing)|creak(?:ed|s|ing)?|rang|ringing|whin(?:ed|es|ing)|buzz(?:ed|es|ing)?|revv(?:ed|ing)|screech(?:ed|es|ing)|echo(?:ed|es|ing)|sirens?|laughter|shout(?:ed|s|ing)?|music|television|tv|radio)\b/i
 
-// ponytail: keyword pair, no parse. A plot-relevant distant sound ("somewhere a gun fired") is hit too; report mode shows it first.
+// keyword pair, no parse. A plot-relevant distant sound ("somewhere a gun fired") is hit too; report mode shows it first.
 export const ambientFiller: LintRule = {
   id: 'ambient-filler',
   label: 'Ambient filler',

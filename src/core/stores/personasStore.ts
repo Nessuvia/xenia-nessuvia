@@ -69,7 +69,7 @@ export const usePersonas = create<PersonasState>()((set, get) => ({
     }
   },
 
-  // ponytail: reads every message on each call. Fine behind a button; an index on personaId if it
+  // reads every message on each call. Fine behind a button; an index on personaId if it
   // ever needs to run on page load.
   findDeleted: async () => {
     const [messages, games] = await Promise.all([storage.getAll('messages'), storage.getAll('games')])

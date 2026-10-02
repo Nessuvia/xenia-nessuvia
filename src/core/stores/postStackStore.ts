@@ -85,7 +85,7 @@ export const usePostStacks = create<PostStacksState>()((set, get) => ({
     return get().save(copy)
   },
 
-  // ponytail: reads every chat row. postStackId is unindexed and this runs on one screen, on
+  // reads every chat row. postStackId is unindexed and this runs on one screen, on
   // demand. Index it if the count ever needs to be live.
   usage: async () => {
     const counts: Record<number, number> = {}

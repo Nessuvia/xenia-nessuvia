@@ -1,7 +1,7 @@
 // Dice notation for prompts: `2d6+3`, `d20`, or a bare `20` (one d20, as SillyTavern reads it).
 // Two ways in: an inline `{{roll::1d20}}` in any block, fresh per occurrence, and a stack variable
 // of kind 'dice', rolled once per send so every block that pastes it sees the same number.
-// ponytail: one term plus one modifier. `2d6+1d4` or keep-highest waits until a preset needs it.
+// one term plus one modifier. `2d6+1d4` or keep-highest waits until a preset needs it.
 
 const dicePattern = /^\s*(?:(\d*)d)?(\d+)\s*(?:([+-])\s*(\d+))?\s*$/i
 

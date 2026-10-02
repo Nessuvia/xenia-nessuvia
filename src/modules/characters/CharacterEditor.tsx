@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { newCharacter, useCharacters } from '../../core/stores/charactersStore'
 import { useSettings, useActiveConnection } from '../../core/stores/settingsStore'
 import { ColorInput } from '../../app/ColorInput'
@@ -19,6 +19,17 @@ import TrackersSection from './TrackersSection'
 import TagChips from './TagChips'
 import { useStacks } from '../../core/stores/stacksStore'
 import { usesSlot } from '../../core/prompt/stackTemplate'
+import { AskError, useAskContext, type AskContext } from '../../core/stores/askStore'
+import { stackFor, worldInfoFor } from '../../core/stores/chatStore'
+import { textRulesFor } from '../../core/stores/textRules'
+import { newPersona } from '../../core/stores/personasStore'
+import { xeniaPrompt } from '../../core/prompt/xeniaPrompts'
+import { buildPrompt } from '../../core/prompt/buildPrompt'
+import { loadTokenizer } from '../../core/prompt/budget'
+import { tokenizerFor } from '../../core/prompt/tokenizers'
+import { budgetOf } from '../../core/params/connectionParams'
+import { sendMessage } from '../../core/connectors/openaiCompatible'
+import { macroPersonaName, openingMessages, parseOpening } from './openingPrompt'
 
 // Identity and Metadata were Main and About: neither said what it held, and the labels are the
 // first thing anyone reads when working out what a card is made of.
@@ -743,6 +754,8 @@ export default function CharacterEditor({
         </div>
       </div>
 
+      <OpeningAsk characterId={characterId} draft={draft} onChange={change} />
+
       {lightbox && <GalleryLightbox src={lightbox} onClose={() => setLightbox(null)} />}
 
       {cropSrc && (
@@ -758,4 +771,79 @@ export default function CharacterEditor({
       )}
     </div>
   )
+}
+
+/**
+ * Registers Ask on the character page: the request becomes a new alternate greeting, written
+ * through the Chat default stack as a first reply would be. A follow-up revises the greeting the
+ * thread last wrote while it's still in the list. Stored raw, like a reply: display rules apply in
+ * the chat and in the Ask preview.
+ */
+function OpeningAsk({ characterId, draft, onChange }: { characterId: number | null; draft: Character; onChange: (next: Character) => void }) {
+  const latest = useRef({ draft, onChange })
+  latest.current = { draft, onChange }
+  const askContext = useMemo<AskContext>(
+    () => ({
+      id: `opening:${characterId ?? 'new'}`,
+      label: 'Characters → Openings',
+      info: 'Writes an opening with the Chat default stack and adds it as an alternate greeting. Follow-ups revise it.',
+      run: async (text, signal, connection, history) => {
+        const character = latest.current.draft
+        // Specificity: the global Chat default, the stack a new chat with this character starts on.
+        const stack = await stackFor(null)
+        const instruction = xeniaPrompt('openingAsk', useSettings.getState().xeniaPrompts).replace(/\{\{char\}\}/gi, () => character.name)
+        const messages = openingMessages(instruction, history, text)
+        await loadTokenizer(tokenizerFor(connection))
+        const prompt = buildPrompt(
+          {
+            stack,
+            character,
+            // No persona: its name is the macro, so the greeting keeps {{user}} and suits any persona.
+            persona: newPersona(macroPersonaName),
+            messages,
+            worldInfo: await worldInfoFor(character, null, messages, stack.worldInfoBudget),
+            ...textRulesFor(null),
+          },
+          budgetOf(connection),
+        )
+        // no prefill and no post-processing, unlike a chat reply. Add the prefill if a
+        // stack's voice depends on it.
+        let reply = ''
+        for await (const chunk of sendMessage(prompt.messages, connection, signal)) reply += chunk.content ?? ''
+        const opening = parseOpening(reply, character.name, connection.template?.reasoning)
+        if (!opening) throw new AskError('The reply was empty.', reply)
+
+        // Read after the await: the user may have typed in the editor meanwhile.
+        const current = latest.current.draft
+        const previous = history.findLast((t) => t.preview !== undefined)?.preview
+        const found = previous === undefined ? -1 : current.alternateGreetings.indexOf(previous)
+        const index = found === -1 ? current.alternateGreetings.length : found
+        const greetings = [...current.alternateGreetings]
+        greetings[index] = opening
+        latest.current.onChange({ ...current, alternateGreetings: greetings })
+
+        return {
+          reply: `${found === -1 ? 'Added as' : 'Replaced'} Alternate greeting ${index + 1}.`,
+          preview: opening,
+          undo: () => {
+            const now = latest.current.draft
+            const at = now.alternateGreetings.indexOf(opening)
+            if (at === -1) return
+            const restored = [...now.alternateGreetings]
+            const titles = [...(now.greetingTitles ?? [])]
+            if (found === -1) {
+              restored.splice(at, 1)
+              titles.splice(at, 1)
+            } else {
+              restored[at] = previous!
+            }
+            latest.current.onChange({ ...now, alternateGreetings: restored, greetingTitles: titles })
+          },
+        }
+      },
+    }),
+    [characterId],
+  )
+  useAskContext(askContext)
+  return null
 }

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Bump the patch version when pushing to dev, so the live build carries a new number.
-# ponytail: the bump commit is NOT part of the push that triggers it -- git has already
+# the bump commit is NOT part of the push that triggers it -- git has already
 # resolved the ref by the time pre-push runs. It rides along on the next push, so the
 # deployed version trails by one push. Move the bump into a deploy script if that matters.
 

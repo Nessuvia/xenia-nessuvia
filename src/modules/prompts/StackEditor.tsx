@@ -393,7 +393,7 @@ function TemplateAsk({ stack, onChange }: { stack: PromptStack; onChange: (stack
         const parsed = parseTemplateReply(reply)
         if (parsed.template === undefined) return { reply: parsed.text }
         const before = current.template
-        // ponytail: writes over the draft as it was at send time, like the Look ask.
+        // writes over the draft as it was at send time, like the Look ask.
         latest.current.onChange({ ...current, template: parsed.template })
         return {
           reply: `${parsed.text}

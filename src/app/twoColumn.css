@@ -32,7 +32,7 @@
 /* Phones and half-width windows: the detail panel goes under the list instead of beside it, and the
    frame scrolls as one page. Two side-by-side scrollers don't fit in the width, and a nested
    scroller inside a short viewport is worse than the page scroll a phone already has.
-   ponytail: window width, so a 1280px window with the sidebar collapsed still stacks. A container
+   window width, so a 1280px window with the sidebar collapsed still stacks. A container
    query on .twoColumn fixes that if it starts to matter. */
 @media (max-width: 1300px) {
   .twoColumn {

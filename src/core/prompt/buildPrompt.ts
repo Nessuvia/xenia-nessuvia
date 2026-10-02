@@ -280,7 +280,7 @@ export function buildPrompt(
 
   // Lorebook entries positioned at a depth. Each entry's `depth` places it, counted from the end of
   // history, same splice as the author's note.
-  // ponytail: always system turns. A `{% worldInfoDepth user %}` tag if a stack needs another role.
+  // always system turns. A `{% worldInfoDepth user %}` tag if a stack needs another role.
   for (const at of resolvedWorldInfo.atDepth) {
     const content = swap(resolveTemplate(at.text, conditions, vars))
     if (!content.trim()) continue
@@ -291,7 +291,7 @@ export function buildPrompt(
   // Both trailing turns are system turns. The merge below concatenates them: the hint says who
   // is up, then any rewrite instruction narrows what they should write. Neither overwrites the
   // other, and the more specific one has the last word.
-  // ponytail: fixed wording after the stack, a template slot when creators need to place or reword it.
+  // fixed wording after the stack, a template slot when creators need to place or reword it.
   const trackerText = trackerPrompt(trackers, values)
   if (trackerText) {
     resolved.push({ role: 'system', content: trackerText })

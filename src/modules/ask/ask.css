@@ -66,6 +66,12 @@
   color: var(--text);
 }
 
+.askPanelPreview {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
 .askPanelUndo {
   display: block;
   margin-top: 4px;

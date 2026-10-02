@@ -88,7 +88,7 @@ export default function LookPanel({ stack, onChange }: { stack: PromptStack; onC
             useSettings.getState().updateConnection({ ...connection, structuredOutput: mode })
           }
           const before = current.look
-          // ponytail: writes over the draft as it was at send time. The fields are disabled while asking.
+          // writes over the draft as it was at send time. The fields are disabled while asking.
           latest.current.onChange({ ...current, look: value })
           return {
             reply: 'Look updated.',

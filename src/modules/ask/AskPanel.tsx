@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { RiArrowLeftLine, RiCloseLine, RiDeleteBinLine, RiSendPlaneFill, RiStopFill } from '@remixicon/react'
 import { useAsk } from '../../core/stores/askStore'
 import { activeConnection, useSettings } from '../../core/stores/settingsStore'
+import { textRulesFor } from '../../core/stores/textRules'
+import { renderText } from '../chat/renderText'
 import './ask.css'
 
 /** Ask in the left sidebar: replaces the sidebar body while open. What a send does depends on the
@@ -62,6 +64,12 @@ export default function AskPanel() {
       <div className="askPanelThread">
         {turns.map((turn) => (
           <div key={turn.id} className={`askPanelBubble ${turn.role === 'user' ? 'askPanelMine' : 'askPanelTheirs'}`}>
+            {turn.preview !== undefined && (
+              // A new chat's rules: the Chat default stack's sets. Read at render, so a rule edit shows on the next paint.
+              <div className="askPanelPreview">
+                {renderText(turn.preview, { ...textRulesFor(null), role: 'assistant', stripState: true })}
+              </div>
+            )}
             {turn.content}
             {canUndo(turn) && (
               <button type="button" className="askPanelUndo" onClick={() => undo(turn.id)}>

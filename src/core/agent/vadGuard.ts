@@ -18,7 +18,7 @@ const axes: (keyof Vad)[] = ['v', 'a', 'd']
  * with gloom may lighten toward the joke; the same lift in a sad scene is blocked. Arousal is held
  * tighter than the other two: flattening a shouting match is the failure that reads worst.
  */
-// ponytail: word means from a unigram lexicon. Negation ("not happy") and sarcasm score wrong. The
+// word means from a unigram lexicon. Negation ("not happy") and sarcasm score wrong. The
 // defaults are a first guess; tune from live replies.
 export function vadAllows(before: Vad, after: Vad, last: Vad | undefined, limits: VadLimits): boolean {
   return axes.every((axis) => {

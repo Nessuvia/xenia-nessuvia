@@ -6,7 +6,7 @@ const percent = (n: number) => `${Math.round(n * 100)}%`
 
 // The share of words outside quoted speech, against the stack's range. One hit per reply, on the
 // paragraph that moves the ratio most.
-// ponytail: one paragraph per pass. A reply far outside the range needs several; loop if one isn't enough.
+// one paragraph per pass. A reply far outside the range needs several; loop if one isn't enough.
 export const narrationRatio: FlowRule = {
   id: 'narration-ratio',
   label: 'Narration ratio',

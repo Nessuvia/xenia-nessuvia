@@ -30,7 +30,7 @@ export default function SpoilerText({ text, secret, streaming = false }: { text:
     if (!text) return <>…</>
   }
 
-  // ponytail: each stretch between covers is marked up on its own, so a quote running across a
+  // each stretch between covers is marked up on its own, so a quote running across a
   // covered sentence shows its marks literally on either side. Render the whole line once and
   // splice the covers in by source offset (renderText's map) if that starts to show.
   const marked = (slice: string, key: string) => (

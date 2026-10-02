@@ -48,7 +48,7 @@ def codeSpans(text):
     """Comment bodies in a C-like file. Scans char by char tracking quote state."""
     spans = []
     i, n = 0, len(text)
-    # ponytail: a regex literal containing // or /* would be misread as a comment.
+    # a regex literal containing // or /* would be misread as a comment.
     # Hasn't happened in this codebase. If it does, the fix is to track the prev
     # significant token to tell division from a regex, which is ~20 lines.
     while i < n:

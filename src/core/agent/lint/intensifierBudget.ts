@@ -9,7 +9,7 @@ export const intensifiers = new Set([
 ])
 
 /** Intensifiers allowed per 100 words of narration: `base` in cold narration, `base + slope` at full heat. */
-// ponytail: guessed rates. Fit them on a real corpus when one is at hand.
+// guessed rates. Fit them on a real corpus when one is at hand.
 const rates: Record<LintProfile, { base: number; slope: number }> = {
   fiction: { base: 1, slope: 4 },
   fanfic: { base: 2, slope: 6 },
@@ -33,7 +33,7 @@ export const intensifierBudget: LintRule = {
     if (excess <= 0) return []
 
     const hits: LintHit[] = []
-    // ponytail: removes from the end backwards. Picking the coldest sentences first is the upgrade.
+    // removes from the end backwards. Picking the coldest sentences first is the upgrade.
     for (const [t, i] of [...found].reverse()) {
       if (excess <= 0) break
       const prev = tokens[i - 1]

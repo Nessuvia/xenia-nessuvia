@@ -369,7 +369,7 @@ export async function runAgent(
 
   // Message detectors, one hit at a time on the current text, detecting again after each fix so
   // spans stay small and a fix that also clears a later hit saves its call.
-  // ponytail: capped at maxFlowFixes calls per reply; raise it if long replies stay rough.
+  // capped at maxFlowFixes calls per reply; raise it if long replies stay rough.
   let smoothed = 0
   let smoothKept = 0
   const flows = async () => {

@@ -11,7 +11,7 @@ const minContentWords = 2
 // "the shoulders that filled the sleeves" twice in one reply. A three-word phrase, carrying at least two
 // words that aren't filler, that shows up again in a later paragraph. The later sentence is flagged,
 // once per phrase. Repeats inside one paragraph are left alone: that's rhythm, sometimes on purpose.
-// ponytail: exact word matches. "filled the sleeves" and "filling his sleeves" don't pair; stem if the misses matter.
+// exact word matches. "filled the sleeves" and "filling his sleeves" don't pair; stem if the misses matter.
 export const crossRepeats: FlowRule = {
   id: 'cross-repeats',
   label: 'Cross-paragraph repeats',

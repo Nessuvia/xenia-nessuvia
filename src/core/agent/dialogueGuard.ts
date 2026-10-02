@@ -40,7 +40,7 @@ function facts(speech: string[]): string[] {
  * - every line survives, and at most one is added
  * - names and numbers said aloud are still said
  * - no refusal turns into agreement: negations and questions don't go down
- * ponytail: counts, not meaning. "I can't" reworded to "no way" passes; "I won't" to "sure, why not"
+ * counts, not meaning. "I can't" reworded to "no way" passes; "I won't" to "sure, why not"
  * passes too, since "not" survives. Tighten per line if that shows up live.
  */
 export function keepsCommitments(before: string, after: string): boolean {

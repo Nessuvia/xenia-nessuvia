@@ -14,7 +14,7 @@ const lead = String.raw`(?:a|an|the|another|my|one|two|three|four|pair\s+of)`
 
 /**
  * Card phrasing for one rank: "a seven", "the 7 of hearts", "sevens", "7♥", "7s". A lone number
- * ("seven years ago") is let through on purpose. ponytail: "she's a queen" still matches; a
+ * ("seven years ago") is let through on purpose. "she's a queen" still matches; a
  * tagger pass is the upgrade if false hits annoy.
  */
 function rankPattern(rank: Rank): RegExp {

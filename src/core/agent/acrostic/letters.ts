@@ -5,7 +5,7 @@
  * articles put T, H, S, I and A on top. X, Z and Q sit near zero: a model asked for one writes
  * something strained.
  *
- * ponytail: hand-estimated, not measured from a corpus. Replace with counts from real replies if the
+ * hand-estimated, not measured from a corpus. Replace with counts from real replies if the
  * letters feel off.
  */
 export const letterWeights: Record<string, number> = {

@@ -21,7 +21,7 @@ export function acrosticInstruction(template: AcrosticTemplate, jsonMode: boolea
 /**
  * The chat's normal prompt with the acrostic instruction as a final system turn.
  *
- * ponytail: the instruction isn't counted against the token budget, which `buildPrompt` already
+ * the instruction isn't counted against the token budget, which `buildPrompt` already
  * trimmed history to. It's a few hundred tokens at most; route it through `appendSystem` if a
  * long chat starts overflowing.
  */

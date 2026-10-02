@@ -321,7 +321,7 @@ input[type='checkbox'] {
   cursor: pointer;
 }
 
-/* Stacked cards in block flow touched. ponytail: inside a flex parent with a gap this adds to the
+/* Stacked cards in block flow touched. inside a flex parent with a gap this adds to the
    gap; scope it to block parents if a list there looks loose. */
 #root label.checkboxRow + label.checkboxRow {
   margin-top: 6px;

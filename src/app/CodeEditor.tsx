@@ -58,7 +58,7 @@ export function CodeEditor({
     })
     view.current = v
     return () => v.destroy()
-    // ponytail: rebuilt per language and when `disabled` flips, which drops undo history across a
+    // rebuilt per language and when `disabled` flips, which drops undo history across a
     // tab switch. Keep one EditorState per language and swap with setState if that starts to matter.
   }, [lang, disabled, placeholder])
 

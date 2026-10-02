@@ -11,7 +11,7 @@
 // `{{setvar::x::text}}`, and another prompt pastes it with `{{getvar::x}}`, empty when the setter
 // is off. Each getvar becomes `{% if id %}text{% endif %}` on the setter's checkbox. A setvar with
 // an empty value is ST resetting the name before the setters run, and just goes.
-// ponytail: order-blind. A getvar above its setter in ST's order reads empty there and the
+// order-blind. A getvar above its setter in ST's order reads empty there and the
 // setter's text here. No preset seen relies on that; honour it if one does.
 import type { StackVariable } from '../storage/types.ts'
 import type { StPiece } from './stBlock.ts'

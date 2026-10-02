@@ -5,7 +5,7 @@ import type { FlowStyle } from './flowRules.ts'
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
 /** FNV-1a. A reply's seed: the same text draws the same window, so a pass run again aims the same way. */
-// ponytail: seeded by text, not message id. runAgent never sees the id; a re-run passes the stored
+// seeded by text, not message id. runAgent never sees the id; a re-run passes the stored
 // original, which is the same text.
 export function textSeed(text: string): number {
   let h = 0x811c9dc5

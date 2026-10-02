@@ -33,6 +33,14 @@ When you propose an edit, reply with your explanation, then the complete new tem
 
 Always send the whole template, never a fragment. Keep declarations, tags and variable ids working unless the user asks to change them. When you only discuss, send no block.`,
   },
+  {
+    id: 'openingAsk',
+    label: 'Ask for an opening',
+    info: 'Sent at the start of the request in Ask on a character. The Chat default stack builds the rest of the prompt.',
+    text: `[Out of character: write a new opening message for {{char}}, the first message of a new chat. Write it in {{char}}'s voice and in the style the instructions above ask for. Write {{user}} wherever the other person's name belongs. Reply with the opening message only, with no commentary before or after it. When asked to change it, reply with the whole revised opening.]
+
+What the opening should be:`,
+  },
 ]
 
 /** The text to send for a prompt: the user's override, or the shipped text when blank. */

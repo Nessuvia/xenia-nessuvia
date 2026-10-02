@@ -24,7 +24,7 @@ export interface TesterHit {
  * Everything is counted, switched off or not: the point is to see what a rule would catch before
  * turning it on. Ignored text still applies.
  *
- * ponytail: each item runs over the untouched reply, not over what the stages before it produced.
+ * each item runs over the untouched reply, not over what the stages before it produced.
  * A swap that creates or removes a later rule's match isn't reflected. Chain the stages here if
  * the counts are ever misleading.
  */

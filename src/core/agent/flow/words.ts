@@ -2,7 +2,7 @@
 import { inRanges } from '../../quality/temperature.ts'
 import type { Sentence } from '../../quality/sentences.ts'
 
-// ponytail: a keyword list, no parse. "Her hands were full of groceries" counts as a beat too. Move to
+// a keyword list, no parse. "Her hands were full of groceries" counts as a beat too. Move to
 // a POS pattern if the misses pile up.
 export const bodyWord =
   /\b(?:(?:eye)?brows?|jaw|throat|chest|shoulders?|arms?|legs?|knees?|feet|face|hands?|fingers?|fists?|palms?|knuckles?|lips?|mouth|eyes|gaze|head|neck|spine|nose|breath|weight|stomach|gut|nod(?:s|ded)?|shrug(?:s|ged)?|sigh(?:s|ed)?|swallow(?:s|ed)|exhal(?:es|ed)|inhal(?:es|ed)|shift(?:s|ed)|glanc(?:es|ed)|smirk(?:s|ed)|blink(?:s|ed)|tilt(?:s|ed)|lean(?:s|ed)|look(?:s|ed)|star(?:es|ed)|fidget(?:s|ed))\b/i

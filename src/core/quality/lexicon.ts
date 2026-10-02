@@ -39,7 +39,7 @@ export function applyLexicon(text: string, entries: LexiconEntry[], ignore: Igno
       return /^ ?\p{Lu}/u.test(match) ? rep.charAt(0).toUpperCase() + rep.slice(1) : rep
     })
   }
-  // ponytail: a removal at the start of a line leaves the following space; add a repair pass if it shows.
+  // a removal at the start of a line leaves the following space; add a repair pass if it shows.
   return out
 }
 

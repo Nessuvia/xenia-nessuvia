@@ -21,6 +21,8 @@ export interface AskTurn {
   content: string
   /** The context that produced this turn, for Undo. Absent on a plain chat turn. */
   contextId?: string
+  /** Text the bubble also shows rendered as a chat message, display rules applied. */
+  preview?: string
 }
 
 export interface AskResult {
@@ -28,6 +30,8 @@ export interface AskResult {
   reply: string
   /** Puts back what the change replaced. Held in memory only: a reload drops it. */
   undo?: () => void
+  /** See `AskTurn.preview`. */
+  preview?: string
 }
 
 /** What the current page offers Ask. Registered by the page with `useAskContext`. */
@@ -117,7 +121,7 @@ export const useAsk = create<AskState>()(
             if (context) {
               const history = get().turns.filter((t) => t.contextId === context.id)
               const result = await context.run(text, controller.signal, connection, history)
-              const reply = turn('assistant', result.reply, context.id)
+              const reply = { ...turn('assistant', result.reply, context.id), preview: result.preview }
               if (result.undo) undos.set(reply.id, result.undo)
               set({ turns: [...turns, reply] })
               return

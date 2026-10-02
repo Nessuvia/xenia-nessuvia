@@ -24,7 +24,7 @@ export const hedges = new Set([
 const negating = new Set(['almost', 'barely', 'nearly', 'hardly'])
 
 /** Hedges allowed per 100 words of narration: `base` in cold narration, `base + slope` at full heat. */
-// ponytail: matched to intensifierBudget's rates rather than fitted. Fit both on a real corpus.
+// matched to intensifierBudget's rates rather than fitted. Fit both on a real corpus.
 const rates: Record<LintProfile, { base: number; slope: number }> = {
   fiction: { base: 1, slope: 4 },
   fanfic: { base: 2, slope: 6 },

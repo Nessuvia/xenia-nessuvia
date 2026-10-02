@@ -371,8 +371,9 @@
      the block sits at the bottom of the viewport on a short rail and follows the content on a rail
      taller than the screen (Chat, Write). */
 
-  /* The fixed .sidebarBackButton replaces it on a phone. */
-  .sidebarBackLink {
+  /* The fixed .sidebarBackButton replaces it on a phone. Ask's back button stays: it's the only
+     way out of Ask, and the sidebar title is hidden while Ask is open. */
+  .sidebarBackLink:not(.askPanelBack) {
     display: none;
   }
 
