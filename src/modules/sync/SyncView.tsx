@@ -3,37 +3,20 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import BackupButtons from '../../app/BackupButtons'
 import PageHeader from '../../app/PageHeader'
 import { usePalette } from '../../core/stores/palettesStore'
-import { tableNames, type TableName } from '../../core/storage/storageInterface'
 import { useSettings } from '../../core/stores/settingsStore'
-import { bucketConfigured, type BucketConfig } from '../../core/sync/bucketConfig'
 import { connectDropbox, forgetAccessToken } from '../../core/sync/dropboxAuth'
 import { testDropbox } from '../../core/sync/dropboxClient'
 import { dropboxConfigured } from '../../core/sync/dropboxConfig'
-import { r2AccountId, r2Endpoint, r2Region } from '../../core/sync/r2Endpoint'
-import { testBucket } from '../../core/sync/s3Client'
-import type { SyncProvider } from '../../core/sync/syncTypes'
-import {
-  useSync,
-  type Direction,
-  type Progress,
-  type TableComparison,
-} from '../../core/sync/syncStore'
-
-/** Both all-tables buttons act on every table. The decision map is one direction across the
- *  board. Kept for the case where the user knows which side is right and skips the comparison. */
-function allTables(direction: Direction): Record<TableName, Direction> {
-  return Object.fromEntries(tableNames.map((t) => [t, direction])) as Record<TableName, Direction>
-}
+import { useSync, type Direction, type FileComparison, type Progress } from '../../core/sync/syncStore'
 
 function stamp(at: number | null): string {
   return at === null ? '' : new Date(at).toLocaleString()
 }
 
-const verdictLabel: Record<TableComparison['verdict'], string> = {
-  identical: 'Same on both sides',
-  localOnly: 'Changed here',
-  cloudOnly: 'Changed in the bucket',
-  both: 'Changed on both sides',
+function verdictLabel(c: FileComparison): string {
+  if (c.verdict === 'both') return 'Changed on both sides'
+  if (c.verdict === 'localOnly') return c.here ? 'Changed here' : 'Deleted here'
+  return c.there ? 'Changed in Dropbox' : 'Deleted in Dropbox'
 }
 
 export default function SyncView() {
@@ -52,10 +35,9 @@ export default function SyncView() {
         >
           <PageHeader
             title="Online Sync"
-            hint="Copies your library to your own storage. Settings upload separately."
+            hint="Copies your library to your Dropbox. Settings upload separately."
           />
 
-          <R2Section />
           <DropboxSection />
           <BackupSection />
         </div>
@@ -65,30 +47,20 @@ export default function SyncView() {
 }
 
 /**
- * One collapsible card. `<details>` does the collapsing: it's a disclosure, the browser already
- * has one, and the setup steps inside these sections are the same element.
- *
- * `provider` adds the picker. It sits in the body rather than in the summary, which is a button:
- * a radio nested inside one is reached by the click that toggles the section, and the status line
- * is what says which provider is live while a section is shut.
+ * One collapsible card. `<details>` does the collapsing: it's a disclosure, and the browser
+ * already has one.
  */
 function Section({
   title,
   status,
-  provider,
   startOpen = false,
   children,
 }: {
   title: string
   status: string
-  provider?: SyncProvider
   startOpen?: boolean
   children: ReactNode
 }) {
-  const active = useSettings((s) => s.syncProvider)
-  const setProvider = useSettings((s) => s.setSyncProvider)
-  // Read once, at mount. Switching provider shouldn't reach over and open the other card while
-  // the user is reading this one.
   const [open, setOpen] = useState(startOpen)
 
   return (
@@ -101,117 +73,24 @@ function Section({
       <summary className="syncSectionHead">
         <RiArrowRightSLine className="syncChevron" size={16} aria-hidden />
         <h3>{title}</h3>
-        <span className="syncStatus">
-          {provider && active === provider ? `In use · ${status}` : status}
-        </span>
+        <span className="syncStatus">{status}</span>
       </summary>
 
       {/* One wrapper so the rows get a gap: the card's own gap only reaches the summary and the
           slot a <details> lays its body out in. */}
       <div className="syncSectionBody">
-        {provider && (
-          <label className="syncPick">
-            <input
-              type="radio"
-              name="syncProvider"
-              checked={active === provider}
-              onChange={() => setProvider(provider)}
-            />
-            Use this for sync
-          </label>
-        )}
         {children}
       </div>
     </details>
   )
 }
 
-function R2Section() {
-  const status = useSync((s) => s.status)
-  const clearError = useSync((s) => s.clearError)
-  const bucket = useSettings((s) => s.bucket)
-  const setBucket = useSettings((s) => s.setBucket)
-  const activeProvider = useSettings((s) => s.syncProvider)
-
-  const [testState, setTestState] = useState<'idle' | 'testing' | 'ok'>('idle')
-  // A saved endpoint that isn't R2's opens as the six-field form. An existing Garage or B2
-  // config still edits as itself. A blank one is a fresh install, which starts on R2.
-  const [showAll, setShowAll] = useState(
-    () => Boolean(bucket.endpoint) && r2AccountId(bucket.endpoint) === null,
-  )
-
-  const busy = status !== 'idle'
-  const ready = bucketConfigured(bucket)
-  // Same fields bucketConfigured checks, named the way the visible form names them. `prefix` is
-  // empty and isn't in either list.
-  const fields: [keyof BucketConfig, string][] = showAll
-    ? [['endpoint', 'Endpoint'], ['region', 'Region']]
-    : [['endpoint', 'Account ID']]
-  fields.push(['bucket', 'Bucket'], ['accessKeyId', 'Access key'], ['secretAccessKey', 'Secret key'])
-  const missing = fields.filter(([field]) => !bucket[field]).map(([, label]) => label)
-
-  function change(patch: Partial<BucketConfig>) {
-    setBucket(patch)
-    setTestState('idle')
-  }
-
-  async function runTest() {
-    setTestState('testing')
-    clearError()
-    try {
-      await testBucket(bucket)
-      setTestState('ok')
-    } catch (err) {
-      setTestState('idle')
-      useSync.setState({ error: err instanceof Error ? err.message : "Couldn't reach the bucket." })
-    }
-  }
-
-  return (
-    <Section
-      title="Cloudflare R2"
-      provider="s3"
-      startOpen={activeProvider === 's3'}
-      status={testState === 'ok' ? 'Connected' : ready ? 'Configured' : 'Not set up'}
-    >
-      {showAll ? (
-        <BucketForm bucket={bucket} onChange={change} />
-      ) : (
-        <R2Form bucket={bucket} onChange={change} />
-      )}
-
-      <button type="button" className="syncLinkButton" onClick={() => setShowAll(!showAll)}>
-        {showAll ? 'Use Cloudflare R2' : 'Other S3-compatible provider'}
-      </button>
-
-      <SetupSteps />
-
-      <div className="syncActions">
-        {/* A disabled button on its own is a dead end: everything below here is hidden until the
-            config is complete. The reason has to be on screen. */}
-        {missing.length > 0 && <span className="syncNote">Still needed: {missing.join(', ')}.</span>}
-        <button type="button" onClick={runTest} disabled={!ready || busy || testState === 'testing'}>
-          {testState === 'testing' ? 'Testing…' : 'Test connection'}
-        </button>
-      </div>
-
-      {ready && <SyncActions provider="s3" where="bucket" />}
-    </Section>
-  )
-}
-
-/**
- * Everything that moves data, shown under whichever provider is selected. Both sections render it
- * and the inactive one renders nothing: one comparison and one progress bar belong to the run, not
- * to a provider, and two sets on screen would leave the user reading the wrong one.
- */
-function SyncActions({ provider, where }: { provider: SyncProvider; where: string }) {
-  const { status, error, progress, comparison, compare, apply, clearError } = useSync()
-  const active = useSettings((s) => s.syncProvider)
+/** Everything that moves data. */
+function SyncActions() {
+  const { status, error, progress, comparison, compare, apply, applyAll, clearError } = useSync()
   const lastSyncedAt = useSettings((s) => s.lastSyncedAt)
-  const [decisions, setDecisions] = useState<Partial<Record<TableName, Direction>>>({})
+  const [decisions, setDecisions] = useState<Record<string, Direction>>({})
 
-  if (active !== provider) return null
   const busy = status !== 'idle'
 
   return (
@@ -230,26 +109,25 @@ function SyncActions({ provider, where }: { provider: SyncProvider; where: strin
         <SplitButton
           busy={busy}
           actions={[
-            ['Upload all', () => apply(allTables('push'), 'push')],
-            ['Upload w/o settings', () => apply(allTables('push'))],
+            ['Upload all', () => applyAll('push', 'push')],
+            ['Upload w/o settings', () => applyAll('push')],
           ]}
         />
         <SplitButton
           busy={busy}
           actions={[
-            ['Download all', () => apply(allTables('pull'), 'pull')],
+            ['Download all', () => applyAll('pull', 'pull')],
             ['Download settings', () => apply({}, 'pull')],
-            ['Download content', () => apply(allTables('pull'))],
+            ['Download content', () => applyAll('pull')],
           ]}
         />
         {lastSyncedAt !== null && <span className="syncNote">Last synced {stamp(lastSyncedAt)}</span>}
       </div>
 
       <p className="syncNote">
-        Settings include your connections and their API keys, the credentials for this {where}, and
-        the Ask scratchpad. They're written as plain text, readable by anyone who can read the{' '}
-        {where} and by the provider hosting it. Downloading them replaces the settings in this
-        browser, apart from the sync details.
+        Settings include your connections and their API keys, and the Ask scratchpad. They're
+        written as plain text, readable by anyone who can read this Dropbox account. Downloading
+        them replaces the settings in this browser, apart from the sync details.
       </p>
 
       {comparison && (
@@ -257,15 +135,15 @@ function SyncActions({ provider, where }: { provider: SyncProvider; where: strin
           comparison={comparison}
           decisions={decisions}
           busy={busy}
-          onDecide={(table, direction) => setDecisions((d) => ({ ...d, [table]: direction }))}
+          onDecide={(path, direction) => setDecisions((d) => ({ ...d, [path]: direction }))}
           // The radios show `suggested` as pre-selected. Apply has to act on it. Only an
           // explicit click lands in `decisions`; without this merge a pre-filled row would look
           // chosen and then be skipped.
           onApply={() => {
-            const merged: Partial<Record<TableName, Direction>> = {}
-            for (const [name, c] of Object.entries(comparison) as [TableName, TableComparison][]) {
-              const chosen = decisions[name] ?? c.suggested
-              if (chosen) merged[name] = chosen
+            const merged: Record<string, Direction> = {}
+            for (const c of comparison) {
+              const chosen = decisions[c.path] ?? c.suggested
+              if (chosen) merged[c.path] = chosen
             }
             apply(merged)
           }}
@@ -281,8 +159,8 @@ function SyncActions({ provider, where }: { provider: SyncProvider; where: strin
 
 /**
  * Every button that moves data is primed by the first click and fired by the second. Leaving the
- * button cancels, the same pattern as the regex conversion in RuleBuilder. Upload overwrites the
- * bucket and download overwrites this browser: neither should be one stray click away.
+ * button cancels, the same pattern as the regex conversion in RuleBuilder. Upload overwrites
+ * Dropbox and download overwrites this browser: neither should be one stray click away.
  */
 function PrimedButton({
   label,
@@ -338,118 +216,6 @@ function SplitButton({ actions, busy }: { actions: [string, () => void][]; busy:
   )
 }
 
-/** R2's endpoint is its account ID in a fixed hostname and its region is always `auto`. Those
- *  two fields are filled in rather than asked for. The stored BucketConfig is the same either way:
- *  nothing below this component knows which form wrote it. */
-function R2Form({
-  bucket,
-  onChange,
-}: {
-  bucket: BucketConfig
-  onChange(patch: Partial<BucketConfig>): void
-}) {
-  return (
-    <div className="syncBucket">
-      <label>
-        Account ID
-        <input
-          value={r2AccountId(bucket.endpoint) ?? ''}
-          onChange={(e) => onChange({ endpoint: r2Endpoint(e.target.value), region: r2Region })}
-          placeholder="From the R2 dashboard"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Bucket
-        <input
-          value={bucket.bucket}
-          onChange={(e) => onChange({ bucket: e.target.value })}
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Access key
-        <input
-          value={bucket.accessKeyId}
-          onChange={(e) => onChange({ accessKeyId: e.target.value })}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Secret key
-        <input
-          type="password"
-          value={bucket.secretAccessKey}
-          onChange={(e) => onChange({ secretAccessKey: e.target.value })}
-          autoComplete="off"
-        />
-      </label>
-      <label>
-        Folder
-        <input
-          value={bucket.prefix}
-          onChange={(e) => onChange({ prefix: e.target.value })}
-          placeholder="Optional"
-          spellCheck={false}
-        />
-      </label>
-    </div>
-  )
-}
-
-/**
- * The CORS policy is the step that goes wrong, and it fails as a blocked preflight the browser
- * won't explain. Built from location.origin so it's right for whichever build is running.
- */
-function SetupSteps() {
-  const [copied, setCopied] = useState(false)
-  const policy = JSON.stringify(
-    [
-      {
-        AllowedOrigins: [location.origin],
-        AllowedMethods: ['GET', 'PUT', 'HEAD', 'DELETE'],
-        AllowedHeaders: ['*'],
-        ExposeHeaders: ['x-amz-meta-hash'],
-      },
-    ],
-    null,
-    2,
-  )
-
-  return (
-    <details className="syncSetup">
-      <summary>Bucket setup</summary>
-      <ol>
-        <li>Create a bucket in the Cloudflare R2 dashboard.</li>
-        <li>
-          Create an R2 API token: an Account API token, Object Read &amp; Write, scoped to that
-          bucket only.
-        </li>
-        <li>
-          Paste the account ID, the bucket name, and both halves of the token, the access key ID
-          and the secret access key.
-        </li>
-        <li>Add this CORS policy to the bucket:</li>
-      </ol>
-      <pre>{policy}</pre>
-      <button
-        type="button"
-        className="syncLinkButton"
-        onClick={() => {
-          navigator.clipboard.writeText(policy)
-          setCopied(true)
-        }}
-      >
-        {copied ? 'Copied' : 'Copy policy'}
-      </button>
-      <p className="syncNote">
-        Press Test connection once the policy is saved.
-      </p>
-    </details>
-  )
-}
-
 /** One line, replaced as the run moves on. Nothing is kept: the only line worth reading twice is a
  *  failure, and that one is left standing. */
 function RunProgress({ progress }: { progress: Progress }) {
@@ -479,7 +245,6 @@ function DropboxSection() {
   const clearError = useSync((s) => s.clearError)
   const dropbox = useSettings((s) => s.dropbox)
   const setDropbox = useSettings((s) => s.setDropbox)
-  const activeProvider = useSettings((s) => s.syncProvider)
   const [state, setState] = useState<'idle' | 'working' | 'ok'>('idle')
 
   const connected = dropboxConfigured(dropbox)
@@ -523,8 +288,7 @@ function DropboxSection() {
   return (
     <Section
       title="Dropbox"
-      provider="dropbox"
-      startOpen={activeProvider === 'dropbox'}
+      startOpen
       status={state === 'ok' ? 'Connected' : connected ? 'Signed in' : 'Not set up'}
     >
       <div className="syncActions">
@@ -559,7 +323,7 @@ function DropboxSection() {
         </div>
       )}
 
-      {connected && <SyncActions provider="dropbox" where="account" />}
+      {connected && <SyncActions />}
     </Section>
   )
 }
@@ -577,73 +341,8 @@ function BackupSection() {
   )
 }
 
-function BucketForm({
-  bucket,
-  onChange,
-}: {
-  bucket: BucketConfig
-  onChange(patch: Partial<BucketConfig>): void
-}) {
-  return (
-    <div className="syncBucket">
-      <label>
-        Endpoint
-        <input
-          value={bucket.endpoint}
-          onChange={(e) => onChange({ endpoint: e.target.value })}
-          placeholder="http://localhost:3900"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Bucket
-        <input
-          value={bucket.bucket}
-          onChange={(e) => onChange({ bucket: e.target.value })}
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Region
-        <input
-          value={bucket.region}
-          onChange={(e) => onChange({ region: e.target.value })}
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Folder
-        <input
-          value={bucket.prefix}
-          onChange={(e) => onChange({ prefix: e.target.value })}
-          placeholder="Optional"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Access key
-        <input
-          value={bucket.accessKeyId}
-          onChange={(e) => onChange({ accessKeyId: e.target.value })}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        Secret key
-        <input
-          type="password"
-          value={bucket.secretAccessKey}
-          onChange={(e) => onChange({ secretAccessKey: e.target.value })}
-          autoComplete="off"
-        />
-      </label>
-    </div>
-  )
-}
-
 /**
- * The per-table decision list. A table changed on both sides has no suggestion and no default.
+ * The per-file decision list. A file changed on both sides has no suggestion and no default.
  * `apply` refuses until every one of them has a direction. This is where that gets answered.
  */
 function ComparisonTable({
@@ -653,50 +352,49 @@ function ComparisonTable({
   onDecide,
   onApply,
 }: {
-  comparison: Partial<Record<TableName, TableComparison>>
-  decisions: Partial<Record<TableName, Direction>>
+  comparison: FileComparison[]
+  decisions: Record<string, Direction>
   busy: boolean
-  onDecide(table: TableName, direction: Direction): void
+  onDecide(path: string, direction: Direction): void
   onApply(): void
 }) {
-  const rows = (Object.entries(comparison) as [TableName, TableComparison][]).filter(
-    ([, c]) => c.verdict !== 'identical',
-  )
-
-  if (!rows.length) return <p className="syncNote">Everything matches the bucket.</p>
+  if (!comparison.length) return <p className="syncNote">Everything matches Dropbox.</p>
 
   return (
     <div className="syncComparison">
-      {rows.map(([table, c]) => {
-        const chosen = decisions[table] ?? c.suggested
-        return (
-          <div className="syncRow" key={table}>
-            <span className="syncRowName">{table}</span>
-            <span className="syncNote">{verdictLabel[c.verdict]}</span>
-            <label>
-              <input
-                type="radio"
-                name={`dir-${table}`}
-                checked={chosen === 'push'}
-                onChange={() => onDecide(table, 'push')}
-              />
-              Upload
-            </label>
-            <label>
-              <input
-                type="radio"
-                name={`dir-${table}`}
-                checked={chosen === 'pull'}
-                onChange={() => onDecide(table, 'pull')}
-              />
-              Download
-            </label>
-          </div>
-        )
-      })}
+      {/* Scrolls on its own so Apply stays in reach under a long list. */}
+      <div className="syncComparisonRows">
+        {comparison.map((c) => {
+          const chosen = decisions[c.path] ?? c.suggested
+          return (
+            <div className="syncRow" key={c.path}>
+              <span className="syncRowName">{c.label}</span>
+              <span className="syncNote">{verdictLabel(c)}</span>
+              <label>
+                <input
+                  type="radio"
+                  name={`dir-${c.path}`}
+                  checked={chosen === 'push'}
+                  onChange={() => onDecide(c.path, 'push')}
+                />
+                Upload
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name={`dir-${c.path}`}
+                  checked={chosen === 'pull'}
+                  onChange={() => onDecide(c.path, 'pull')}
+                />
+                Download
+              </label>
+            </div>
+          )
+        })}
+      </div>
       <div className="syncActions">
         <PrimedButton label={busy ? 'Working…' : 'Apply'} onFire={onApply} disabled={busy} />
-        <span className="syncNote">Downloading a table replaces it in this browser.</span>
+        <span className="syncNote">Downloading a file replaces what it holds in this browser.</span>
       </div>
     </div>
   )

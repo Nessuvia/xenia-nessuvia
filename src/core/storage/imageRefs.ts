@@ -5,7 +5,7 @@
  *
  * An image is named by the SHA-256 of its bytes, `<hash>.<ext>`, and the row carries
  * `nessuImage:<hash>.<ext>` in its place. A name never changes meaning, so sync uploads one only
- * when the bucket lacks it, and two cards sharing an avatar share one file.
+ * when Dropbox lacks it, and two cards sharing an avatar share one file.
  *
  * The walk is generic: any string field that is an entire base64 `data:image/...` URL is swapped,
  * wherever it sits in a row. Avatars and background images today, whatever gains an image later.
@@ -16,7 +16,7 @@ import type { StoredRecord } from './storageInterface.ts'
 
 const refPrefix = 'nessuImage:'
 const dataUrlPattern = /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=]*)$/
-/** Also the only names a ZIP or a bucket may hand back to inlineImages. */
+/** Also the only names a ZIP or Dropbox may hand back to inlineImages. */
 export const imageNamePattern = /^[0-9a-f]{64}\.[a-z0-9]+$/
 const refPattern = /nessuImage:([0-9a-f]{64}\.[a-z0-9]+)/g
 
@@ -103,8 +103,7 @@ export async function inlineImages(
 }
 
 /**
- * Every image name a serialized table refers to. The orphan finder is this over every table,
- * subtracted from what the bucket lists.
+ * Every image name a serialized table or sync file refers to.
  */
 export function referencedImages(json: string): Set<string> {
   return new Set([...json.matchAll(refPattern)].map((m) => m[1]))

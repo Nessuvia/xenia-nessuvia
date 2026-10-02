@@ -1,5 +1,5 @@
 // Static hosting plus one route. The app has no backend: sync goes from the browser straight to
-// the user's own bucket, and multiplayer goes straight to the relay the host runs. Nothing of
+// the user's own Dropbox, and multiplayer goes straight to the relay the host runs. Nothing of
 // anyone's is stored on our side.
 //
 // The one exception is /aicc/, which forwards a card download to aicharactercards.com. That API

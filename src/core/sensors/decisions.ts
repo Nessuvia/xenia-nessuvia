@@ -1,5 +1,5 @@
 /**
- * Talks outward on purpose, like `sync/syncClient.ts` and `prompt/tokenizerCache.ts` do.
+ * Talks outward on purpose, like `sync/dropboxClient.ts` and `prompt/tokenizerCache.ts` do.
  *
  * The Decisions API is not the chat endpoint and its path can't be derived from one: OpenRouter
  * serves `/api/alpha/decisions`, NanoGPT `/api/v1/decisions`, Typesafe `/v1/systemone`. So a

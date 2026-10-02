@@ -4,9 +4,7 @@ import type { StructuredMode } from '../palette/palettePrompt'
 import type { ConnectionType, InstructTemplate, ParamValue } from '../params/paramDef.ts'
 // Extensioned: this store is reachable from checkDirtyTables.ts under node --strip-types.
 import { tableNames, type TableName } from '../storage/storageInterface.ts'
-import { emptyBucketConfig, type BucketConfig } from '../sync/bucketConfig.ts'
 import { emptyDropboxConfig, type DropboxConfig } from '../sync/dropboxConfig.ts'
-import { hashKey, type SyncProvider } from '../sync/syncTypes.ts'
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import type { PromptProcessing, SingleLabels } from '../connectors/promptProcessing.ts'
@@ -169,25 +167,20 @@ export function newReplaceRule(): ReplaceRule {
 
 
 interface SettingsState {
-  /** The user's own S3-compatible bucket, or blank fields when sync isn't set up. Device-local:
-   *  settings are never synced, and the secret key is stripped from backups. */
-  bucket: BucketConfig
-  /** A Dropbox sign-in, or blank when there isn't one. Device-local, like `bucket`. */
+  /** A Dropbox sign-in, or blank when there isn't one. Device-local: a settings pull keeps this
+   *  device's own, and the refresh token is stripped from backups. */
   dropbox: DropboxConfig
-  /** Which of the two a sync run uses. Both stay configured so switching back doesn't mean
-   *  signing in again. */
-  syncProvider: SyncProvider
   /** The Centrifugo endpoint multiplayer sessions run over, blank when none is set up.
-   *  Device-local, like `bucket`. */
+   *  Device-local, like `dropbox`. */
   relay: RelayConfig
   /** Tables written since their last successful push, so a reload doesn't lose pending work.
    *  Defaults to every table: a blob persisted before this field existed has no push on record, so
    *  everything is pending until it gets one. Written by `core/sync/dirtyTables.ts`. */
   dirtyTables: TableName[]
-  /** The hash of each table as it was last pushed, so compare can tell an unchanged table from a
-   *  changed one without downloading anything. Keyed by `hashKey`, provider and table: the two
-   *  providers hash differently. A key absent here has never been pushed to that provider. */
-  tableHashes: Record<string, string>
+  /** Dropbox's content_hash of each sync file as it was last pushed or pulled, keyed by its path
+   *  in the sync folder (`core/sync/syncFiles.ts`). Compare tells a changed file from an unchanged
+   *  one without downloading anything. A path absent here has never been synced. */
+  syncedHashes: Record<string, string>
   /** When the last apply finished, from the device clock. Display only, the store's own
    *  updatedAt is the authority for which side is newer. */
   lastSyncedAt: number | null
@@ -282,11 +275,10 @@ interface SettingsState {
   setPalettePrompt(prompt: string): void
   markTableDirty(table: TableName): void
   markTablesClean(tables: TableName[]): void
-  /** Records a table as pushed or pulled: its hash is now the cloud's, and it's no longer dirty. */
-  setTableSynced(table: TableName, hash: string): void
-  setBucket(patch: Partial<BucketConfig>): void
+  /** Records sync files as pushed or pulled at the hash given. Null forgets a path: the file is
+   *  gone from both sides. One call for many, so a compare persists once. */
+  setSyncedHashes(patch: Record<string, string | null>): void
   setDropbox(patch: Partial<DropboxConfig>): void
-  setSyncProvider(provider: SyncProvider): void
   setRelay(patch: Partial<RelayConfig>): void
   setLastSyncedAt(at: number): void
 }
@@ -294,12 +286,10 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      bucket: emptyBucketConfig,
       dropbox: emptyDropboxConfig,
-      syncProvider: 's3',
       relay: emptyRelayConfig,
       dirtyTables: [...tableNames],
-      tableHashes: {},
+      syncedHashes: {},
       lastSyncedAt: null,
       connections: [],
       activeConnectionId: null,
@@ -406,24 +396,25 @@ export const useSettings = create<SettingsState>()(
       markTablesClean: (tables) =>
         set((s) => ({ dirtyTables: s.dirtyTables.filter((t) => !tables.includes(t)) })),
 
-      setTableSynced: (table, hash) =>
-        set((s) => ({
-          dirtyTables: s.dirtyTables.filter((t) => t !== table),
-          tableHashes: { ...s.tableHashes, [hashKey(s.syncProvider, table)]: hash },
-        })),
+      setSyncedHashes: (patch) =>
+        set((s) => {
+          const syncedHashes = { ...s.syncedHashes }
+          for (const [path, hash] of Object.entries(patch)) {
+            if (hash === null) delete syncedHashes[path]
+            else syncedHashes[path] = hash
+          }
+          return { syncedHashes }
+        }),
 
       // Merged over the defaults so a blob persisted before this field existed still resolves.
-      setBucket: (patch) =>
-        set((s) => ({ bucket: { ...emptyBucketConfig, ...s.bucket, ...patch } })),
-
+      // A new folder or a new sign-in is a different place, and the hashes on record describe the
+      // old one. Kept, they'd read every file missing from the new folder as deleted there.
       setDropbox: (patch) =>
-        set((s) => ({ dropbox: { ...emptyDropboxConfig, ...s.dropbox, ...patch } })),
-
-      // Every table goes dirty on a switch. `dirtyTables` is one set across both providers, so a
-      // table pushed to one and then edited would look clean to the other, which still holds an
-      // older hash for it. The cost is one hash per table on the next compare and no upload.
-      setSyncProvider: (syncProvider) =>
-        set((s) => (s.syncProvider === syncProvider ? s : { syncProvider, dirtyTables: [...tableNames] })),
+        set((s) => {
+          const dropbox = { ...emptyDropboxConfig, ...s.dropbox, ...patch }
+          const moved = dropbox.folder !== s.dropbox.folder || dropbox.refreshToken !== s.dropbox.refreshToken
+          return moved ? { dropbox, syncedHashes: {}, dirtyTables: [...tableNames] } : { dropbox }
+        }),
 
       setRelay: (patch) =>
         set((s) => ({ relay: { ...emptyRelayConfig, ...s.relay, ...patch } })),

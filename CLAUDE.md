@@ -9,7 +9,7 @@ Four paths leave the tab:
 - The model endpoint. OpenAI-compatible, hosted or localhost, with the user's own key.
 - The multiplayer relay, a Centrifugo instance the user runs. Broadcast and presence only. Nothing
   is stored there. API keys stay out of it.
-- The user's own S3-compatible bucket, when sync is on. No server of ours sits in the path.
+- The user's own Dropbox app folder, when sync is on. No server of ours sits in the path.
 - jsDelivr, for a tokenizer vocabulary, on the download button in a connection. Two public JSON
   files, no key, no user text. See `core/prompt/tokenizerCache.ts`.
 
@@ -25,7 +25,7 @@ This codebase is a WIP. Treat imported data and existing IndexedDB contents as d
 
 Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (IndexedDB) · pnpm
 
-Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules), `centrifuge` (multiplayer relay client), `aws4fetch` (SigV4 for bucket sync), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
+Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `compromise` (POS tagging for pattern-mode rules), `centrifuge` (multiplayer relay client), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
 
 There's no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
 `itemProps` makes the whole row draggable and suits a row of plain content. A row holding an `input`
@@ -52,7 +52,7 @@ Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, 
     /agent      the agent pass: rules and runAgent
     /quality    sentence splitter and lexicon
     /multiplayer  relay channels, session protocol, turn order, narrator
-    /sync       S3 bucket push/pull and dirty-table tracking
+    /sync       Dropbox push/pull, per-file layout, and dirty-table tracking
     /settings   settings resolution helpers
   /modules
     /<name>     one folder per feature: index.ts self-registers it, plus its components and .css```
@@ -136,8 +136,10 @@ Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lor
   stack features: leading comments become a prompt's `info`, setvar/getvar pairs become checkbox
   variables and `{% if %}` branches. `{{roll}}` needs no rewrite. The passes work on a list of
   pieces (`stBlock.ts`) and `stTemplate` writes it out as one template.
-- **Sync** goes through `core/sync/syncClient.ts`, the only outward-facing file. `dirtyTables.ts`
-  decides what needs pushing.
+- **Sync** goes through `core/sync/dropboxClient.ts`, the only outward-facing file. `syncFiles.ts`
+  lays the library out as files (a folder per character holding its card, chats and images; whole
+  files for the other tables), and a file is the unit compared and moved. `dirtyTables.ts` decides
+  which groups get rebuilt and hashed.
 - **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for
   the structural layer.
 - **Sampler params** live in `core/params`. A param def is a row rather than code, and a new sampler
@@ -211,8 +213,8 @@ whether restoring a backup on another machine should carry it. If it shouldn't, 
 - Components read from and call into stores. **A component must never touch Dexie.** `core/storage`
   is the only importer of Dexie and that rule has no exceptions.
 - The send path never calls `fetch` from a component: it goes store → connector. Five files outside
-  `core/connectors` talk outward on purpose, each saying why in its header. `sync/syncClient.ts`
-  (every request is SigV4-signed, and threading a signer elsewhere buys nothing),
+  `core/connectors` talk outward on purpose, each saying why in its header. `sync/dropboxClient.ts`
+  (every request carries a bearer token the auth module owns),
   `multiplayer/centrifugoChannel.ts` (the relay client), the two Settings probes,
   `ConnectionEditor.tsx`'s connection test and `readContextLimit.ts`, one-shot diagnostics built
   from the connectors' own `completionUrl`/`modelsUrl`/`buildRequestBody`, and

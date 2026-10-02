@@ -1,7 +1,6 @@
 /**
  * What's kept after a Dropbox sign-in, on its own so both the settings store and the client can
- * import it without a cycle. Same shape of file as bucketConfig.ts, and no imports for the same
- * reason: settingsStore is reachable from checkDirtyTables.ts under node --strip-types.
+ * import it without a cycle. No imports of its own: settingsStore is reachable from checkDirtyTables.ts under node --strip-types.
  */
 
 export const dropboxAppKey = 'he2i603yk96vlln'

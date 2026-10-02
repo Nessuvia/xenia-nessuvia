@@ -1,6 +1,6 @@
 /**
  * Which relay a session runs on. On its own: the settings store and the channel code import
- * it without a cycle, the same way `sync/bucketConfig.ts` sits between settings and the sync client.
+ * it without a cycle, the same way `sync/dropboxConfig.ts` sits between settings and the sync client.
  *
  * No imports of its own: `checkRelayConfig.ts` runs under node --strip-types.
  */

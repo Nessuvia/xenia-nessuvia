@@ -1,5 +1,5 @@
 /**
- * Where a table lives in the app folder, and how that path travels to Dropbox.
+ * Where a sync file lives in the app folder, and how that path travels to Dropbox.
  *
  * Pure, and split out from dropboxClient.ts so checkDropboxPath.ts can run it under
  * `node --experimental-strip-types`: the client reaches settingsStore and Dexie through it.
@@ -13,8 +13,8 @@ export function folderPath(c: DropboxConfig): string {
   return folder ? `/${folder}` : ''
 }
 
-export function filePath(c: DropboxConfig, name: string): string {
-  return `${folderPath(c)}/${name}.json`
+export function filePath(c: DropboxConfig, path: string): string {
+  return `${folderPath(c)}/${path}`
 }
 
 /**

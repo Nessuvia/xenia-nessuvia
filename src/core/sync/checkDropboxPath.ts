@@ -6,17 +6,17 @@ const at = (folder: string) => ({ ...emptyDropboxConfig, folder })
 
 // No folder: the tables sit at the app folder's own root, which Dropbox spells ''.
 assert.equal(folderPath(at('')), '')
-assert.equal(filePath(at(''), 'chats'), '/chats.json')
+assert.equal(filePath(at(''), 'chats.json'), '/chats.json')
 
 // The three ways a user types one folder all mean the same folder.
 for (const typed of ['books', '/books', 'books/', '/books/']) {
   assert.equal(folderPath(at(typed)), '/books', typed)
-  assert.equal(filePath(at(typed), 'chats'), '/books/chats.json', typed)
+  assert.equal(filePath(at(typed), 'chats.json'), '/books/chats.json', typed)
 }
 
 // A lone slash is the root, not a folder named ''. Without the trim this builds '//chats.json'.
 assert.equal(folderPath(at('/')), '')
-assert.equal(filePath(at('/'), 'chats'), '/chats.json')
+assert.equal(filePath(at('/'), 'chats.json'), '/chats.json')
 
 // Plain ASCII passes through untouched, quotes and all: the header carries real JSON.
 assert.equal(apiArg({ path: '/chats.json' }), '{"path":"/chats.json"}')

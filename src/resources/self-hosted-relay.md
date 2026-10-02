@@ -7,7 +7,7 @@ You need two programs running: Centrifugo, which is the relay, and `cloudflared`
 public address the browser will accept. Both are single binaries with no installer. On Windows,
 `centrifugo/relay.bat` starts both and prints the address to paste in.
 
-Sync is unaffected. That is a separate path to a bucket you run (`self-hosted-sync.md`), and the two
+Sync is unaffected. It goes to your own Dropbox, and the two
 share no settings.
 
 ## Quick guide, on Windows

@@ -1,14 +1,14 @@
 /**
  * Downloaded tokenizer vocabularies.
  *
- * This is the fourth thing that talks outward, alongside sync/syncClient.ts,
+ * This is the fourth thing that talks outward, alongside sync/dropboxClient.ts,
  * multiplayer/centrifugoChannel.ts and the two Settings probes. It fetches two public JSON files from
  * jsDelivr and nothing else: no key, no header, no user text, and only when the user presses the
  * button in the connection editor. A vocab is a static asset. It never reaches the model
  * endpoint or the relay, and nothing about the request identifies the browser beyond the URL.
  *
  * Storage is the Cache API rather than Dexie on purpose. A vocab is redownloadable and up to 17 MB;
- * in Dexie it'd ride along in every S3 sync push and every exported backup. This also keeps
+ * in Dexie it'd ride along in every sync push and every exported backup. This also keeps
  * core/storage the only importer of Dexie.
  */
 import { tokenizerDef, vocabUrls, type ResolvedTokenizerId } from './tokenizers.ts'

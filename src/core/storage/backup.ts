@@ -4,10 +4,8 @@ import { isPartialRestore, mergeConnections, renameConnections } from './shareab
 import { tableNames, type TableName } from './storageInterface'
 import { withDirtySuppressed } from '../sync/dirtyTables'
 import { settingsKey } from '../sync/settingsObject'
-import { hashPayload, tablePayload } from './tablePayload'
 import { withSeedFlags } from './seedFlags'
 import { packBackup, unpackBackup, type Backup } from './backupZip'
-import { extractImages } from './imageRefs'
 
 // settingsKey is the persisted settings store. It lives in localStorage rather than a Dexie table,
 // and rides in a backup and in a sync. The Ask transcript is a preference of this browser and stays out.
@@ -58,22 +56,6 @@ export async function buildBackup({ keys, shareable }: BackupOptions = {}): Prom
   }
 }
 
-
-/**
- * One table, ready to push: the payload, the exact JSON that goes over the wire, and its hash.
- * Serialized once, the push path needs the string for its size check and as the request body, and
- * the hash to skip a table that hasn't changed since its last push.
- *
- * Settings are deliberately absent. They never enter a table payload, which is what keeps API keys
- * on the device.
- */
-export async function buildTablePayload(name: TableName) {
-  // Images leave as their own files: the payload carries refs, and `images` the bytes behind them.
-  const { rows, images } = await extractImages(await storage.getAll(name))
-  const payload = tablePayload(name, rows)
-  const json = JSON.stringify(payload)
-  return { payload, json, images, hash: await hashPayload(json) }
-}
 
 export async function downloadBackup(backup: Backup, tag = '') {
   const zip = await packBackup(backup)

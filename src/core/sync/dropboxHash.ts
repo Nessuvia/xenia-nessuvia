@@ -1,7 +1,7 @@
 /**
  * Dropbox's content_hash, computed locally.
  *
- * S3 carries our SHA-256 as object metadata; Dropbox has no user metadata on a file, so compare
+ * Dropbox has no user metadata on a file, so compare
  * needs a hash both sides can produce from the bytes alone. list_folder already returns
  * content_hash for free, so the cheap answer is to compute the same thing here instead of keeping
  * a manifest file in sync alongside the data.

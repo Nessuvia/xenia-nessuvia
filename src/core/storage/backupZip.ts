@@ -1,8 +1,8 @@
 /**
- * A backup file is a ZIP laid out the way sync lays out a bucket:
+ * A backup file is a ZIP:
  *
  *   manifest.json       format, version, exportedAt, shareable
- *   <table>.json        a TablePayload, the same object sync pushes
+ *   <table>.json        a TablePayload
  *   settings.json       the settings blob, as sync pushes it
  *   ask.json            the Ask transcript
  *   images/<name>       one file per image, named by imageRefs.ts
