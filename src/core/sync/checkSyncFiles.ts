@@ -1,10 +1,14 @@
 import assert from 'node:assert'
-import { buildGroup, cardPath, chatPath, imageDir, parsePath, parsePayload, tablePath } from './syncFiles.ts'
+import { buildGroup, cardPath, chatPath, imageDir, notePath, parsePath, parsePayload, tablePath } from './syncFiles.ts'
 
 // Paths round-trip, and anything else in the folder is ignored.
 assert.deepEqual(parsePath(cardPath(3)), { kind: 'card', characterId: 3 })
 assert.deepEqual(parsePath(chatPath(3, 12)), { kind: 'chat', characterId: 3, chatId: 12 })
 assert.deepEqual(parsePath(tablePath('personas')), { kind: 'table', table: 'personas' })
+assert.deepEqual(parsePath(notePath(7)), { kind: 'note', noteId: 7 })
+assert.equal(parsePath('notes.json'), null)
+const notes = await buildGroup('notes', { notes: [{ id: 7, ownerId: 'local', title: 'Ann' }, { id: 8, ownerId: 'local', title: '' }] })
+assert.deepEqual(notes.map((f) => [f.path, f.label]), [[notePath(7), 'Ann'], [notePath(8), 'Note 8']])
 // The split tables are never whole files. A leftover from the old layout isn't read as one.
 for (const old of ['characters.json', 'chats.json', 'messages.json', 'settings.json', 'images/ab.png']) {
   assert.equal(parsePath(old), null, old)

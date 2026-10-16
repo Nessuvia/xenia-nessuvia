@@ -12,6 +12,7 @@ import PersonaSwitcher from './PersonaSwitcher'
 import ChatSettingsPanel from '../modules/chat/ChatSettingsPanel'
 import StoryRail from '../modules/write/StoryRail'
 import GameSettingsPanel from '../modules/games/GameSettingsPanel'
+import NotesTree from '../modules/notes/NotesTree'
 import BookmarkList from '../modules/chat/BookmarkList'
 import BackupButtons from './BackupButtons'
 import TourButton from './TourButton'
@@ -35,6 +36,8 @@ export default function Sidebar() {
   // So does an open game. The live board has its own route purely for this match to key on;
   // /games itself stays the Play and History tabs.
   const gameId = useMatch('/games/:gameId')?.params.gameId
+  // Notes takes it over on every Notes page: the tree is how you move around in there.
+  const notesOpen = useMatch('/notes/*') !== null
   // Back to the character list, not the character's own page, leaving a chat means leaving the
   // character, and getting to the list from the character page was the extra step people hit.
   const back = '/chat'
@@ -204,7 +207,7 @@ export default function Sidebar() {
 
     <nav
       ref={rail}
-      className={`navbar sidebar ${drawer.className}${chatId || storyId || gameId ? ' inChat' : ''}${collapsed ? ' collapsed' : ''}`}
+      className={`navbar sidebar ${drawer.className}${chatId || storyId || gameId || notesOpen ? ' inChat' : ''}${collapsed ? ' collapsed' : ''}`}
       style={railStyle}
       // Going somewhere closes the drawer: the destination isn't hidden behind it. One handler
       // rather than an onClick per link, the rail's links come from four different places. Links
@@ -237,6 +240,10 @@ export default function Sidebar() {
             </Link>
           ) : gameId ? (
             <Link to="/games" className="sidebar-item sidebarIconOnly" title="Go back" aria-label="Go back">
+              <RiArrowLeftLine size={18} />
+            </Link>
+          ) : notesOpen ? (
+            <Link to="/" className="sidebar-item sidebarIconOnly" title="Go back" aria-label="Go back">
               <RiArrowLeftLine size={18} />
             </Link>
           ) : (
@@ -376,6 +383,15 @@ export default function Sidebar() {
                 Go back
               </Link>
               <GameSettingsPanel key={gameId} />
+            </>
+          ) : notesOpen ? (
+            <>
+              {/* Notes has no landing page to go back to: back is the main nav's first page. */}
+              <Link to="/" className="sidebar-item sidebarBackLink">
+                <RiArrowLeftLine size={18} />
+                Go back
+              </Link>
+              <NotesTree />
             </>
           ) : (
             modules

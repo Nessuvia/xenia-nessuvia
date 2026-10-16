@@ -35,6 +35,7 @@ import { useWrite } from '../../core/stores/writeStore'
 import { usePalette } from '../../core/stores/palettesStore'
 import { effectiveFont } from '../../core/palette/palette'
 import { hotkeysOn } from '../../app/hotkeys'
+import '../../app/proseDoc.css'
 import { isHeading, proseMarks, wrapEdit } from './proseMarkup'
 import { findAll, ruleMatches } from './findReplace'
 
@@ -51,7 +52,7 @@ function decorate(view: EditorView, order: MarkerKind[], hide: boolean): Decorat
     for (let pos = from; pos <= to; ) {
       const line = view.state.doc.lineAt(pos)
       if (isHeading(line.text)) {
-        ranges.push(Decoration.line({ class: 'storyDocHeading' }).range(line.from))
+        ranges.push(Decoration.line({ class: 'proseDocHeading' }).range(line.from))
         ranges.push((hide ? hidden : Decoration.mark({ class: 'proseMark' })).range(line.from, line.from + 2))
       }
       for (const m of proseMarks(line.text, order)) {
@@ -73,7 +74,7 @@ const onlyHidden = (set: DecorationSet): DecorationSet => {
   return Decoration.set(out)
 }
 
-const styling = (order: MarkerKind[], hide: boolean) =>
+export const styling = (order: MarkerKind[], hide: boolean) =>
   ViewPlugin.fromClass(
     class {
       decorations: DecorationSet
@@ -140,7 +141,7 @@ const viewExtensions = (raw: boolean, order: MarkerKind[], rules: ReplaceRule[])
   raw ? styling(order, false) : [styling(order, true), replaceView(rules)]
 
 /** Ctrl+B/I/Q: wrap the selection in a marker, or unwrap it. An empty selection does nothing. */
-const wrapWith = (mark: string) => (view: EditorView) => {
+export const wrapWith = (mark: string) => (view: EditorView) => {
   // readOnly stops typing but not a dispatch: a generation in flight owns the document.
   if (view.state.readOnly) return true
   const r = view.state.selection.main
@@ -403,5 +404,5 @@ export default function StoryDocument({ raw, replaceRules }: { raw: boolean; rep
     '--storyLineHeight': palette.lineHeight || '',
   } as React.CSSProperties
 
-  return <div ref={host} className="storyDoc" style={proseStyle} aria-busy={streaming} />
+  return <div ref={host} className="storyDoc proseDoc" style={proseStyle} aria-busy={streaming} />
 }

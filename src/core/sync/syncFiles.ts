@@ -5,6 +5,7 @@
  *   characters/<id>/card.json            one character row
  *   characters/<id>/chats/<chatId>.json  one chat row and its messages, filed under `characterId`
  *   characters/<id>/images/<name>        images those two refer to
+ *   notes/<id>.json                      one note row
  *   <table>.json                         every other table, whole
  *   images/<name>                        images the whole tables refer to
  *   settings.json                        the settings blob, moved by its own step
@@ -27,15 +28,16 @@ export interface SyncPayload {
 export type SyncFileKind =
   | { kind: 'card'; characterId: number }
   | { kind: 'chat'; characterId: number; chatId: number }
+  | { kind: 'note'; noteId: number }
   | { kind: 'table'; table: TableName }
 
 /** A group is the set of files built from the same tables. Dirty tracking is per table, so a clean
  *  group is skipped whole on compare. */
 export type SyncGroup = 'characters' | 'chats' | TableName
 
-const splitTables: TableName[] = ['characters', 'chats', 'messages']
+const splitTables: TableName[] = ['characters', 'chats', 'messages', 'notes']
 const wholeTables = tableNames.filter((t) => !splitTables.includes(t))
-export const syncGroups: SyncGroup[] = ['characters', 'chats', ...wholeTables]
+export const syncGroups: SyncGroup[] = ['characters', 'chats', 'notes', ...wholeTables]
 
 export function groupTables(group: SyncGroup): TableName[] {
   return group === 'chats' ? ['chats', 'messages'] : [group]
@@ -43,6 +45,7 @@ export function groupTables(group: SyncGroup): TableName[] {
 
 export const cardPath = (characterId: number) => `characters/${characterId}/card.json`
 export const chatPath = (characterId: number, chatId: number) => `characters/${characterId}/chats/${chatId}.json`
+export const notePath = (noteId: number) => `notes/${noteId}.json`
 export const tablePath = (table: TableName) => `${table}.json`
 
 /** Null for anything that isn't a sync file: images, settings.json, whatever else the user keeps. */
@@ -51,6 +54,8 @@ export function parsePath(path: string): SyncFileKind | null {
   if (m) return { kind: 'card', characterId: Number(m[1]) }
   m = /^characters\/(\d+)\/chats\/(\d+)\.json$/.exec(path)
   if (m) return { kind: 'chat', characterId: Number(m[1]), chatId: Number(m[2]) }
+  m = /^notes\/(\d+)\.json$/.exec(path)
+  if (m) return { kind: 'note', noteId: Number(m[1]) }
   m = /^(\w+)\.json$/.exec(path)
   const table = m?.[1] as TableName | undefined
   if (table && wholeTables.includes(table)) return { kind: 'table', table }
@@ -58,6 +63,7 @@ export function parsePath(path: string): SyncFileKind | null {
 }
 
 export function groupOf(kind: SyncFileKind): SyncGroup {
+  if (kind.kind === 'note') return 'notes'
   return kind.kind === 'card' ? 'characters' : kind.kind === 'chat' ? 'chats' : kind.table
 }
 
@@ -123,6 +129,11 @@ export async function buildGroup(
           messages: (byChat.get(chat.id!) ?? []).sort(byId).map(({ id: _id, ...m }) => m as StoredRecord),
         }),
       ),
+    )
+  }
+  if (group === 'notes') {
+    return Promise.all(
+      (rows.notes ?? []).map((n) => localFile(notePath(n.id!), String(n.title || `Note ${n.id}`), { notes: [n] })),
     )
   }
   return [await localFile(tablePath(group), group, { [group]: [...(rows[group] ?? [])].sort(byId) })]

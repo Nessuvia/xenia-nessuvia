@@ -31,6 +31,7 @@ export type TableName =
   | 'backgroundImages'
   | 'paramDefs'
   | 'games'
+  | 'notes'
 
 /** Every stored record carries an ownerId; id is assigned by Dexie on insert. */
 export interface StoredRecord {
@@ -74,4 +75,6 @@ export const tableNames: TableName[] = [
   'paramDefs',
   // Played games, log and all. Small rows: a seed, a few hundred events, no card positions.
   'games',
+  // The Notes tree. Plain text rows.
+  'notes',
 ]

@@ -599,49 +599,10 @@ h3.storyPreviewTitle {
   color: var(--textMuted);
 }
 
-/* A `# ` line. em, not px: it scales with the Story's own font size. */
-.storyDocHeading {
-  font-size: 1.4em;
-  font-weight: 600;
-}
-
-/* Inline markers. The markers stay in the text, only dimmed. */
-.storyDoc .proseBold {
-  font-weight: 700;
-}
-
-.storyDoc .proseEm {
-  font-style: italic;
-}
-
-.storyDoc .proseMark {
-  color: var(--textDim);
-}
-
-/* Color goes on the span that won its kind, which proseMarks decides from the Story color order.
-   A span that lost stamps no data-win and inherits the winner's color. */
-.storyDoc [data-win='emphasis'] {
-  color: var(--storyEmphasisColor, inherit);
-}
-
-.storyDoc [data-win='bold'] {
-  color: var(--storyBoldColor, inherit);
-}
-
-.storyDoc [data-win='quotes'] {
-  color: var(--storyQuoteColor, inherit);
-}
-
 /* A Find & Replace rule's replacement, shown in place of what's stored. Underlined dotted, so the
    text reads normally but doesn't pass for typed text when editing around it. */
 .storyReplaced {
   text-decoration: underline dotted var(--textDim);
-}
-
-.storyDoc .proseCode {
-  font-family: ui-monospace, monospace;
-  font-size: 0.9em;
-  color: var(--codeText);
 }
 
 /* The open Story's rail, in the app sidebar under the Go back link. Fill/scroll behavior comes

@@ -1,0 +1,41 @@
+/* Markdown styling inside a prose document: the Write Story and a Note. The classes come from
+   proseMarkup's decorations; the editor root carries .proseDoc. */
+
+/* A `# ` line. em, not px: it scales with the document's own font size. */
+.proseDocHeading {
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+/* Inline markers. The markers stay in the text, only dimmed. */
+.proseDoc .proseBold {
+  font-weight: 700;
+}
+
+.proseDoc .proseEm {
+  font-style: italic;
+}
+
+.proseDoc .proseMark {
+  color: var(--textDim);
+}
+
+/* Color goes on the span that won its kind, which proseMarks decides from the palette's Story
+   color order. A span that lost stamps no data-win and inherits the winner's color. */
+.proseDoc [data-win='emphasis'] {
+  color: var(--storyEmphasisColor, inherit);
+}
+
+.proseDoc [data-win='bold'] {
+  color: var(--storyBoldColor, inherit);
+}
+
+.proseDoc [data-win='quotes'] {
+  color: var(--storyQuoteColor, inherit);
+}
+
+.proseDoc .proseCode {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  color: var(--codeText);
+}

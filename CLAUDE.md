@@ -68,7 +68,7 @@ Modules self-register by calling `registerModule` from their `index.ts`. The sid
 
 `component` is `lazy()` for route views. `chatPanels` stay eager and render inside the chat rather than behind a route.
 
-Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
+Registered today: `chat`, `write`, `notes`, `multiplayer`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
 
 - `learn` is registered in every build. The sidebar shows its button on dev only
   (`import.meta.env.DEV` in `Sidebar.tsx`), and `/learn` resolves on live with no way in.
@@ -179,9 +179,9 @@ Registered today: `chat`, `write`, `multiplayer`, `characters`, `personas`, `lor
 
 ## Data
 
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(20)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `palettes`, `backgroundImages`, `paramDefs`, `games`.
+Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(22)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `palettes`, `backgroundImages`, `paramDefs`, `games`, `notes`.
 
-- One `db.version(N).stores({...})` block, currently 20, holding the **complete** schema. The old
+- One `db.version(N).stores({...})` block, currently 22, holding the **complete** schema. The old
   chain was deleted. No block ever carried an `upgrade()` callback, and an older local DB upgrades
   straight to the current schema. Adding a table or index means editing that block and raising the
   number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:
@@ -298,6 +298,6 @@ One is `.mjs` (`core/multiplayer/checkTurnOrder.mjs`). The glob above catches it
 
 When you add non-trivial logic (a branch, a loop, a parser, a security path), add one `check*.ts` next to it: the smallest thing that fails if the logic breaks. No frameworks, no fixtures, no per-function suites unless asked. Trivial one-liners need no check.
 
-**Then stop and hand off.** User drives Chrome and tests in the browser personally. Don't launch a browser, don't drive the Chrome tools, and don't leave `npx pnpm dev` running in the background unless asked. Report that the build and checks are clean and say what's ready to look at.
+**Then stop and hand off.** User drives Chrome and tests in the browser personally. Don't launch a browser, don't drive the Chrome tools, and don't leave `npx pnpm dev` running in the background unless asked. Report that the build and checks are clean and say what's ready to look at. End there: don't close a message with a question or an offer of next steps. The user says what comes next.
 
 `npx pnpm lint` (oxlint) exists from the Vite template and isn't enforced. Don't run it or add lint gates unless asked.

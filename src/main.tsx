@@ -5,6 +5,7 @@ import App from './App'
 import './app/skins' // pulls in every skin stylesheet
 import './modules/chat' // self-registers into moduleRegistry
 import './modules/write'
+import './modules/notes'
 import './modules/multiplayer'
 import './modules/characters'
 import './modules/personas'

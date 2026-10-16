@@ -10,7 +10,7 @@ const db = new Dexie('nessuTavern')
 // schema. The number only ever goes up. IndexedDB refuses to open a database whose
 // stored version is higher than the one requested. Renumbering to 1 would throw VersionError on
 // every browser that already has the data.
-db.version(20).stores({
+db.version(22).stores({
   characters: '++id, ownerId',
   personas: '++id, ownerId',
   worldInfo: '++id, ownerId, bookId',
@@ -27,6 +27,8 @@ db.version(20).stores({
   bodyMaps: null,
   paramDefs: '++id, ownerId, key',
   games: '++id, ownerId, characterId',
+  notes: '++id, ownerId, parentId',
+  writingDays: null, // Notes' writing stats were removed
 })
 
 function table(name: TableName) {

@@ -110,6 +110,7 @@ async function buildFromStorage(group: SyncGroup): Promise<LocalFile[]> {
 /** What the row says. Read from this browser, so a file that only exists in Dropbox shows its path. */
 async function labelFor(path: string, kind: SyncFileKind): Promise<string> {
   if (kind.kind === 'table') return kind.table
+  if (kind.kind === 'note') return String((await storage.get('notes', kind.noteId))?.title || path)
   const character = await storage.get('characters', kind.characterId)
   const name = String(character?.displayName || character?.name || `Character ${kind.characterId}`)
   if (kind.kind === 'card') return character ? name : path
@@ -127,6 +128,8 @@ async function writeLocal(kind: SyncFileKind, payload: SyncPayload, images: Map<
     if (pulled.length) await storage.putAll(kind.table, pulled)
   } else if (kind.kind === 'card') {
     await storage.putAll('characters', await rows('characters'))
+  } else if (kind.kind === 'note') {
+    await storage.putAll('notes', await rows('notes'))
   } else {
     await removeMessages(kind.chatId)
     await storage.putAll('chats', await rows('chats'))
@@ -145,6 +148,10 @@ async function removeLocal(kind: SyncFileKind, path: string) {
   if (kind.kind === 'table') return storage.clear(kind.table)
   if (kind.kind === 'card') {
     if (await storage.get('characters', kind.characterId)) await storage.remove('characters', kind.characterId)
+    return
+  }
+  if (kind.kind === 'note') {
+    if (await storage.get('notes', kind.noteId)) await storage.remove('notes', kind.noteId)
     return
   }
   const chat = await storage.get('chats', kind.chatId)

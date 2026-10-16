@@ -412,6 +412,27 @@ export interface Game {
   updatedAt: number
 }
 
+export type NoteStatus = 'idea' | 'draft' | 'revised' | 'done'
+
+/** One page in the Notes tree. A scene, a chapter, a character sheet and a folder are all notes. */
+export interface Note {
+  id?: number
+  ownerId: string
+  /** null = top level. */
+  parentId: number | null
+  /** Position among siblings. */
+  sortOrder: number
+  title: string
+  /** Markdown, exactly as typed. */
+  text: string
+  status: NoteStatus
+  synopsis: string
+  /** Off takes this note and everything under it out of a manuscript. */
+  inManuscript: boolean
+  createdAt: number
+  updatedAt: number
+}
+
 /**
  * An uploaded background image. Its own table rather than a field on the palette. Referenced by
  * `Background.imageId`.
