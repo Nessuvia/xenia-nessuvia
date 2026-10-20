@@ -286,6 +286,8 @@ This covers user-visible text. Code comments explain reasoning and can breathe.
 
 `wrangler.jsonc` deploys the built `dist`. It holds no binding beyond `ASSETS`.
 
+`main` is what's live. Workers Builds watches it and deploys every commit that lands there. Never commit to `main` directly: work on a branch and merge it in. There's no version number. The sidebar shows the date and short hash of the commit a build came from, read from git in `vite.config.ts`.
+
 `pnpm-workspace.yaml` pins which install scripts may run and explains the `packageManager` pin in `package.json`. pnpm 10 rejects that file outright.
 
 ## Verifying work

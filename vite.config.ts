@@ -2,12 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { dropboxCallbackRoute } from './src/core/sync/dropboxCallback.ts'
-import pkg from './package.json' with { type: 'json' }
+import { execSync } from 'node:child_process'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Build version shown in the sidebar credit line; package.json is the one place it lives.
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // Shown in the sidebar credit line: the date and short hash of the commit this build came from.
+  define: {
+    __APP_UPDATED__: JSON.stringify(execSync('git log -1 --format="%cd (%h)" --date=format:%m/%d/%Y').toString().trim()),
+  },
   plugins: [
     react(),
     VitePWA({
