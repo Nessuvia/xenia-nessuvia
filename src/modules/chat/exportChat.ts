@@ -112,7 +112,7 @@ export function escapeHtml(text: string): string {
  * quotes and code match the screen. React escapes text nodes.
  *
  * Tag rules render a `<think>` block as the same collapsed `<details>` used on screen. No
- * replaceRules or hammer options apply.
+ * replaceRules apply.
  *
  * react-dom/server is imported dynamically here: it is 57 KB gzipped, and only an HTML export
  * needs it. A static import would put it in the vendor chunk every visitor downloads.

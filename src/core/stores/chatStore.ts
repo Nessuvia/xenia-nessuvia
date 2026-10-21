@@ -16,7 +16,7 @@ import { parseState, type StateParse, type TrackerValue } from '../trackers/pars
 import { trackerValues, withTrackerUpdate } from '../trackers/trackerState'
 import { tokenizerFor } from '../prompt/tokenizers'
 import type { Connection } from './settingsStore'
-import { activeConnection, resolveConnection, useSettings } from './settingsStore'
+import { activeConnection, useSettings } from './settingsStore'
 import { resolveParams } from '../settings/resolveParams'
 import { displayName, useCharacters } from './charactersStore'
 import { usePersonas } from './personasStore'
@@ -25,38 +25,15 @@ import { chatTitle } from './chatTitle'
 import {
   continued,
   deletedSwipes,
-  passOriginalFor,
-  passReadingsFor,
-  passSummaryFor,
-  passed,
   regenerated,
-  revertPass,
   selectSwipe,
   swipeIndex,
-  withAcrostic,
-  withPass,
-  withReadings,
 } from './swipes'
 import { forgetSwipes, rememberSnapshot } from './snapshots'
-import { recentContext, runAgent, type Complete } from '../agent/runAgent'
-import { runTrack, type TrackDeps } from '../agent/runTrack'
-import { askSensors } from '../sensors/decisions'
-import { sensorState } from '../sensors/state'
-import type { Reading } from '../sensors/sensor'
-import { resolveChatAgent } from '../agent/agentConfig'
-import { resolvePostStack, runStages, type AcrosticConfig } from '../agent/postStack'
-import { drawAcrostic } from '../agent/acrostic/draw'
-import { parseAcrostic, parsedEnough, type AcrosticRecord } from '../agent/acrostic/parse'
-import { acrosticWindow } from '../agent/acrostic/window'
-import { acrosticGrammar, acrosticMessages, slotTag } from '../prompt/acrosticPrompt'
 import { ideaInstruction } from '../prompt/ideasPrompt'
 import { miscPrompt, withPlaceholder } from '../prompt/miscPrompts'
 import { useIdeas } from './ideasStore'
-import { defaultTemplate } from '../params/paramDef'
 import type { ChatMessage } from '../connectors/connectorInterface'
-import { usePostStacks } from './postStackStore'
-import type { AgentStage } from '../agent/stage'
-import { isSentinel } from '../connectors/sentinel'
 import { autoTurns, nextSpeakerIndex, participants } from './roster'
 import { parseCommand, stripEscape } from './slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
@@ -68,7 +45,7 @@ import { bookIdsFor, useLorebooks } from './lorebooksStore'
 import { useBlips } from './blipStore'
 import { isNarrator, narratorCharacter, narratorId } from '../multiplayer/narrator'
 import { narratorBookIds } from './narratorBooks'
-import { budgetOf, maxTokensOf, withParam } from '../params/connectionParams'
+import { budgetOf, maxTokensOf } from '../params/connectionParams'
 
 /**
  * The active session's people as `Name: description` lines, filling {{personas}}, or undefined
@@ -88,115 +65,6 @@ export function setSessionCast(cast: Character[] | undefined): void {
 }
 
 const byTime = (a: Message, b: Message) => a.createdAt - b.createdAt || a.id! - b.id!
-
-/** What a pass leaves behind: the text to store, and the three parallel-array fields. */
-interface PassResult {
-  /** What goes in `content` and the selected swipe. */
-  text: string
-  /** The pre-pass text, set only when the pass changed something. */
-  original?: string
-  /** Rewrites that kept the original. */
-  failed?: string
-  /** What the pass did, in one line. Set only when it changed something. */
-  summary?: string
-  /** What the sensors read for the kept attempt. Empty when nothing sensed. */
-  readings?: Reading[]
-}
-
-/**
- * The post-processing track around one finished generation: sense, retry while a gate says so,
- * then clean the winner with the stages the readings chose.
- * Off, or a sentinel connection, returns the text untouched.
- * Abort returns the pass as far as it got. A failed call counts as a rejected candidate.
- */
-async function agentPass(
-  chat: Chat,
-  text: string,
-  /** The messages before this reply. The last few go to rewrites as context. */
-  history: Message[],
-  signal: AbortSignal,
-  onProgress: (text: string, pending: string[], stage?: AgentStage) => void,
-  /** Set by the manual action, which runs whether or not auto is on. */
-  force = false,
-  /** "Post-process (clean only)": every stage that runs in code, and no rewrite rules, so no request. */
-  cleanOnly = false,
-  /** How this call site asks the main model again, with the nudge appended at prompt build time
-   *  only. Absent means a retry gate can't fire here: the track senses and cleans, and never
-   *  re-rolls. Wiring a site up is adding this one closure. */
-  regenerate?: (nudge: string) => Promise<string>,
-  /** The card, persona and system prompt as one block, for a sensor that asked for `context`. */
-  sensorContext?: string,
-): Promise<PassResult> {
-  const config = useSettings.getState().agent
-  if (!force && !resolveChatAgent(config, chat.agent).enabled) return { text }
-  const connection = resolveConnection(config.connectionId)
-  if (!cleanOnly && (!connection || isSentinel(connection.endpointUrl))) return { text }
-  // What the pass does comes from the stack; the global config only says whether and how.
-  const stack = resolvePostStack(chat.postStackId, config.defaultStackId, usePostStacks.getState().stacks)
-  const staged = { ...runStages(stack, textRulesFor(chat).tagRules), context: recentContext(history, stack.contextMessages), lastMessage: history.at(-1)?.content.slice(history.at(-1)?.reasoningEnd ?? 0) }
-  // Detector fixes and folds are model calls too, so clean only drops them with the rewrite rules.
-  const run = cleanOnly ? { ...staged, rules: staged.rules.filter((r) => r.action !== 'rewrite' && r.action !== 'fold'), flow: undefined, flowPass: undefined, dialoguePass: false } : staged
-
-  const complete: Complete = async (messages) => {
-    // Unreachable with clean only: with no rewrite rules, runAgent never asks.
-    if (!connection) return ''
-    const wide = withParam(connection, 'max_tokens', Math.max(maxTokensOf(connection), Math.ceil(text.length / 4) + 200))
-    let out = ''
-    try {
-      for await (const chunk of sendMessage(messages, wide, signal)) out += chunk.content ?? ''
-    } catch (err) {
-      if (signal.aborted) throw err
-      return ''
-    }
-    return out
-  }
-  const wait = (config.style ?? 'stylized') === 'stylized' ? (ms: number) => new Promise<void>((done) => setTimeout(done, ms)) : undefined
-
-  // Clean only makes no request at all, so it never senses: asking a decisions model would be a
-  // request, and the promise that action makes is that there isn't one.
-  if (cleanOnly) {
-    const outcome = await runAgent(text, run, complete, onProgress, wait).finally(() => onProgress(text, []))
-    return { text: outcome.text, original: outcome.text === text ? undefined : text, summary: outcome.summary, failed: outcome.failed }
-  }
-
-  // A null id means sensors are off. Not `resolveConnection`, which falls back to the active
-  // connection: a chat endpoint can't answer a decisions call, and silently asking one would fail
-  // on every reply.
-  const sensorId = resolveChatAgent(config, chat.agent).sensors ? config.sensorConnectionId : null
-  const sensorConnection = sensorId ? useSettings.getState().connections.find((c) => c.id === sensorId) : undefined
-
-  const deps: TrackDeps = {
-    ask: async (body, sensors) => {
-      if (!sensorConnection) return []
-      const state = sensorState(sensors, body, history.map((m) => ({ role: m.role, content: m.content })), sensorContext)
-      return (await askSensors(sensors, state, sensorConnection, signal)).readings
-    },
-    // A site that hasn't wired a regenerate can't re-roll. An empty reply reads as a failed call,
-    // so the track keeps what it has instead of replacing it with nothing.
-    regenerate: regenerate ?? (async () => ''),
-    complete,
-  }
-
-  const outcome = await runTrack(text, stack, deps, {
-    // Each earlier reply's own readings feed the windows. They're stored per swipe, so swiping
-    // back rolls the averages back too.
-    history: history.filter((m) => m.role === 'assistant').map((m) => passReadingsFor(m) ?? []),
-    tagRules: textRulesFor(chat).tagRules,
-    context: staged.context,
-    lastMessage: staged.lastMessage,
-    onProgress,
-    wait,
-  }).finally(() => onProgress(text, []))
-
-  return {
-    text: outcome.text,
-    // What the writing model produced is the attempt that was kept, which a retry may have changed.
-    original: outcome.text === outcome.kept ? undefined : outcome.kept,
-    summary: [outcome.senseSummary, outcome.summary].filter(Boolean).join(' ') || undefined,
-    failed: outcome.failed,
-    readings: outcome.readings,
-  }
-}
 
 // Not state: nothing renders from it, and `streaming` already drives the button.
 let abort: AbortController | null = null
@@ -226,113 +94,9 @@ interface Reply {
   reasoning: string
   finishReason: string
   snapshot?: string
-  /** The acrostic behind the text. Absent when it was generated normally. */
-  acrostic?: AcrosticRecord
-  /** Set when acrostic was asked for and fell back. Goes in front of the pass summary. */
-  note?: string
 }
 
 const newReply = (): Reply => ({ text: '', reasoning: '', finishReason: '' })
-
-const acrosticRetryNote = 'Your last reply lost the line tags. Write every line with its tag.'
-const acrosticFallbackNote = "Acrostic lines didn't come back, so this reply was generated normally."
-
-/** One-line notes as one line. Undefined when there are none. */
-const joinNotes = (...notes: (string | undefined)[]) => notes.filter(Boolean).join(' ') || undefined
-
-/**
- * The acrostic stage this chat's next reply runs, or null. Needs post-processing on for the chat.
- * `force` is Randomized swipe, which runs whether or not the stack's stage is switched on.
- */
-function acrosticStage(chat: Chat, force: boolean): AcrosticConfig | null {
-  const agent = useSettings.getState().agent
-  if (!resolveChatAgent(agent, chat.agent).enabled) return null
-  const stage = resolvePostStack(chat.postStackId, agent.defaultStackId, usePostStacks.getState().stacks).acrostic
-  return force || stage.enabled ? stage : null
-}
-
-/**
- * An acrostic reply, through the chat's own connection: draw a template from the recent replies, ask
- * for it, parse the lines. One retry on the same template when fewer than half come back, then
- * false and the caller streams normally. The text isn't streamed: half-written tagged lines mean
- * nothing on screen.
- */
-async function acrosticReply(
-  prompt: ChatMessage[],
-  connection: Connection,
-  history: Message[],
-  stage: AcrosticConfig,
-  signal: AbortSignal,
-  reply: Reply,
-): Promise<boolean> {
-  const seed = Math.floor(Math.random() * 2 ** 32)
-  const template = drawAcrostic(acrosticWindow(history), stage, seed)
-  const textCompletion = connection.type === 'text'
-  // JSON mode is a chat-completion request field. A text connection writes tagged lines.
-  const json = stage.jsonMode && !textCompletion
-  // Text completion: the first tag goes into the prompt, so the model starts inside the format.
-  const firstTag = slotTag(template.paragraphs[0][0])
-  const via: Connection = textCompletion
-    ? { ...connection, template: { ...(connection.template ?? defaultTemplate()), prefill: `${connection.template?.prefill ?? ''}${firstTag}` } }
-    : connection
-  const extra = {
-    ...(json ? { response_format: { type: 'json_object' } } : {}),
-    ...(connection.grammarField && !json ? { [connection.grammarField]: acrosticGrammar(template, textCompletion) } : {}),
-  }
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const messages = acrosticMessages(prompt, template, json, attempt ? acrosticRetryNote : undefined)
-    // the snapshot leaves out `extra` (the grammar, response_format). snapshotOf takes no extra yet.
-    reply.snapshot = snapshotOf(messages, via)
-    reply.reasoning = ''
-    let raw = ''
-    for await (const chunk of sendMessage(messages, via, signal, extra)) {
-      if (chunk.reasoning) {
-        reply.reasoning += chunk.reasoning
-        useChats.setState({ streamingReasoning: reply.reasoning })
-      }
-      if (chunk.content) raw += chunk.content
-      if (chunk.finishReason) reply.finishReason = chunk.finishReason
-    }
-    if (signal.aborted) throw new DOMException('Stopped', 'AbortError')
-    const parsed = parseAcrostic(textCompletion ? firstTag + raw : raw, template)
-    if (parsedEnough(parsed)) {
-      reply.text = parsed.text
-      reply.acrostic = { seed, template, fit: parsed.fit }
-      useChats.setState({ streamingText: reply.text })
-      return true
-    }
-  }
-  return false
-}
-
-/**
- * The reply for a built prompt: acrostic when the chat asks for it and the lines come back, the
- * ordinary stream otherwise. Writes into `reply` as it goes. Continue never comes through here.
- */
-async function generateReply(
-  chat: Chat,
-  prompt: ChatMessage[],
-  connection: Connection,
-  history: Message[],
-  signal: AbortSignal,
-  reply: Reply,
-  forceAcrostic = false,
-): Promise<void> {
-  const stage = acrosticStage(chat, forceAcrostic)
-  if (stage) {
-    // Held: the bubble shows the Writing marker until the parsed reply is in.
-    useChats.setState({ holding: true })
-    try {
-      if (await acrosticReply(prompt, connection, history, stage, signal, reply)) return
-    } finally {
-      useChats.setState({ holding: false })
-    }
-    reply.note = acrosticFallbackNote
-    reply.reasoning = ''
-    useChats.setState({ streamingReasoning: '' })
-  }
-  await streamReply(prompt, connection, signal, reply)
-}
 
 /**
  * The ordinary stream, with the connection's prefill in place.
@@ -425,10 +189,7 @@ function reasoningEndOf(text: string, connection: Connection): number | undefine
   return reasoningSpan(text, config)?.end
 }
 
-/**
- * The `<state>` parse of a reply against the chat card's trackers. Reads the text the writing model
- * produced: an agent pass could rewrite the tag. Undefined when the card has no trackers.
- */
+/** The `<state>` parse of a reply against the chat card's trackers. Undefined when the card has no trackers. */
 function trackerUpdate(character: Character, chat: Chat, history: Message[], text: string, connection: Connection): StateParse | undefined {
   const defs = character.trackers ?? []
   if (!defs.length) return undefined
@@ -512,16 +273,6 @@ interface ChatState {
    *  Only reset when a stream starts, nothing renders it while `streaming` is false. */
   streamingReasoning: string
   streaming: boolean
-  /** A pass stage's candidate is streaming over a reply that already finished. The text in
-   *  `streamingText` is being replaced as it arrives, which is the intended feel; this is what
-   *  lets the bubble say so. */
-  passing: boolean
-  /** Sentences the agent is still reworking inside `streamingText`. */
-  streamingPending: string[]
-  /** Stylized runs only: the marked reply and its beat. Null otherwise. */
-  streamingStage: AgentStage | null
-  /** An acrostic reply is being generated: nothing streams, and the bubble shows the Writing marker. */
-  holding: boolean
   /** Which chat the stream belongs to: opening another chat mid-generation doesn't show its
    *  reply there. Null when idle. */
   streamingChatId: number | null
@@ -555,8 +306,6 @@ interface ChatState {
   load(chatId: number): Promise<void>
   /** A chat's messages in order, without opening it, what the chat list's export reads. */
   messagesOf(chatId: number): Promise<Message[]>
-  /** Every chat of every character, newest first, without touching chat state. The Post-processing tester's picker. */
-  allChats(): Promise<Chat[]>
   createChat(characterId: number): Promise<number>
   renameChat(id: number, title: string): Promise<void>
   /** Write straight to the open chat: the settings panel debounces, there's no dirty state. */
@@ -576,22 +325,13 @@ interface ChatState {
   /** Close the error bar without retrying. */
   clearError(): void
   /** Re-roll any assistant message into a new swipe. With an instruction, it's a rewrite. */
-  /** `options.acrostic` is Randomized swipe: an acrostic take whether or not the stack's stage is on. */
-  regenerate(character: Character, messageId: number, instruction?: string, options?: { acrostic?: boolean }): Promise<void>
+  regenerate(character: Character, messageId: number, instruction?: string): Promise<void>
   /** Carry the last reply on from where it stopped, into the swipe that's showing. */
   continueLast(character: Character): Promise<void>
   /** Pick an alternate. No generation. */
   swipeTo(messageId: number, index: number): Promise<void>
   /** Drop alternates by index. Deleting the last one deletes the message. */
   deleteSwipes(messageId: number, indices: number[]): Promise<void>
-  /** Run the agent pass over an assistant message by hand. Always starts from the stored original, so
-   *  running it twice doesn't compound, and replaces the previous rewrite. */
-  /** `cleanOnly` skips rewrite rules, so the pass makes no request. */
-  passMessage(messageId: number, cleanOnly?: boolean): Promise<void>
-  /** Put the pre-Gold-Pass text back and forget the rewrite. */
-  revertMessagePass(messageId: number): Promise<void>
-  /** Hide the "kept after N tries" notice on the selected swipe. */
-  dismissPassFailure(messageId: number): Promise<void>
   stop(): void
   editMessage(id: number, content: string): Promise<void>
   /** A player tracker edit. Lands on the last message, so it carries forward and outlives that message's swipes. */
@@ -609,10 +349,6 @@ export const useChats = create<ChatState>()((set, get) => ({
   streamingText: '',
   streamingReasoning: '',
   streaming: false,
-  passing: false,
-  streamingPending: [],
-  streamingStage: null,
-  holding: false,
   streamingChatId: null,
   viewingChatId: null,
   setViewing: (chatId) => set({ viewingChatId: chatId }),
@@ -678,11 +414,6 @@ export const useChats = create<ChatState>()((set, get) => ({
   messagesOf: async (chatId) => {
     const rows = (await storage.find('messages', 'chatId', chatId)) as unknown as Message[]
     return rows.sort(byTime)
-  },
-
-  allChats: async () => {
-    const rows = (await storage.getAll('chats')) as unknown as Chat[]
-    return rows.sort((a, b) => b.updatedAt - a.updatedAt)
   },
 
   createChat: async (characterId) => {
@@ -932,10 +663,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       let reasoning = ''
       let finishReason = ''
       let snapshot: string | undefined
-      let passOriginal: string | undefined
-      let passFail: string | undefined
-      let passSummary: string | undefined
-      let passReads: Reading[] | undefined
       try {
         const stack = await stackFor(chat)
         // The template first, the stack's Narrator misc prompt second. A stack with an `{% if Narrator %}`
@@ -947,56 +674,29 @@ export const useChats = create<ChatState>()((set, get) => ({
           : narratorCharacter(miscPrompt('narrator', stack.miscPrompts))
         const persona = await usePersonas.getState().ensureActive()
         await loadTokenizer(tokenizerFor(connection))
-        // Held so a sensor retry can build the same prompt again with a nudge in place of the idea.
-        const promptArgs = {
-          stack,
-          character,
-          persona,
-          chat,
-          speaker: told,
-          messages: get().messages,
-          worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
-          ...textRulesFor(chat),
-          cast: _sessionCast,
-          personas: _sessionPersonas,
-        }
         const promptMessages = buildPrompt(
-          { ...promptArgs, appendSystem: takeIdea(stack.miscPrompts) },
+          {
+            stack,
+            character,
+            persona,
+            chat,
+            speaker: told,
+            messages: get().messages,
+            worldInfo: await worldInfoFor(speaker, chat, get().messages, stack.worldInfoBudget),
+            ...textRulesFor(chat),
+            cast: _sessionCast,
+            personas: _sessionPersonas,
+            appendSystem: takeIdea(stack.miscPrompts),
+          },
           budgetOf(connection),
         )
         set({ trimmedCount: promptMessages.droppedCount })
-        await generateReply(chat, promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, reply)
+        await streamReply(promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal, reply)
         text = reply.text
         reasoning = reply.reasoning
         finishReason = reply.finishReason
         snapshot = reply.snapshot
 
-        /**
-         * A retry gate's re-roll. The nudge rides in on `appendSystem`, which is prompt-time only:
-         * the user's own message is never edited, and nothing about the nudge is stored.
-         */
-        const regenerate = async (nudge: string) => {
-          const again = buildPrompt({ ...promptArgs, appendSystem: nudge }, budgetOf(connection))
-          const retried = newReply()
-          set({ streamingText: '' })
-          await generateReply(chat, again.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, retried)
-          return retried.text
-        }
-        // The system block the prompt already built: the card, the persona and the system prompt,
-        // which is exactly what a sensor asking about intent needs to compare against.
-        const sensorContext = promptMessages.messages.find((m) => m.role === 'system')?.content
-
-        // Agent pass over the finished reply.
-        if (text && !controller.signal.aborted) {
-          set({ passing: true })
-          const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), false, false, regenerate, sensorContext)
-          text = pass.text
-          passOriginal = pass.original
-          passFail = pass.failed
-          passSummary = pass.summary
-          passReads = pass.readings
-          set({ streamingText: text })
-        }
       } catch (err) {
         // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
         if (!controller.signal.aborted) {
@@ -1009,7 +709,6 @@ export const useChats = create<ChatState>()((set, get) => ({
         snapshot = reply.snapshot
       } finally {
         abort = null
-        set({ passing: false })
       }
 
       // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -1042,13 +741,7 @@ export const useChats = create<ChatState>()((set, get) => ({
           // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
           reasonings: [reasoning || undefined],
           reasoningEnd: reasoningEndOf(text, connection),
-          // Parallel to swipes as well: what the writing model said, before the pass.
-          passOriginals: [passOriginal],
-          passFailed: [passFail],
-          passSummaries: [joinNotes(reply.note, passSummary)],
-          passReadings: [passReads],
-          acrostics: [reply.acrostic],
-          trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
+          trackerUpdates: [trackerUpdate(character, chat, get().messages, text, connection)],
           createdAt: Date.now(),
         })
         rememberSnapshot(id, 0, snapshot)
@@ -1082,10 +775,6 @@ export const useChats = create<ChatState>()((set, get) => ({
     let text = ''
     let reasoning = ''
     let finishReason = ''
-    let passOriginal: string | undefined
-    let passFail: string | undefined
-    let passSummary: string | undefined
-    let passReads: Reading[] | undefined
     let snapshot: string | undefined
     const reply = newReply()
     try {
@@ -1109,23 +798,11 @@ export const useChats = create<ChatState>()((set, get) => ({
         budgetOf(connection),
       )
       set({ trimmedCount: promptMessages.droppedCount })
-      await generateReply(chat, promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), get().messages, controller.signal, reply)
+      await streamReply(promptMessages.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal, reply)
       text = reply.text
       reasoning = reply.reasoning
       finishReason = reply.finishReason
       snapshot = reply.snapshot
-
-      // Agent pass over the finished reply.
-      if (text && !controller.signal.aborted) {
-        set({ passing: true })
-        const pass = await agentPass(chat, text, get().messages, controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
-        text = pass.text
-        passOriginal = pass.original
-        passFail = pass.failed
-        passSummary = pass.summary
-        passReads = pass.readings
-        set({ streamingText: text })
-      }
     } catch (err) {
       // A deliberate stop keeps the partial; a real failure discards it and keeps the error.
       if (!controller.signal.aborted) {
@@ -1138,7 +815,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       snapshot = reply.snapshot
     } finally {
       abort = null
-      set({ passing: false })
     }
 
     // A clean stream that never produced reply text: don't vanish silently, say so, and name the
@@ -1171,13 +847,7 @@ export const useChats = create<ChatState>()((set, get) => ({
         // Parallel to swipes: this reply is swipe 0 even before there's a swipes array.
         reasonings: [reasoning || undefined],
         reasoningEnd: reasoningEndOf(text, connection),
-        // Parallel to swipes as well: what the writing model said, before the pass.
-        passOriginals: [passOriginal],
-        passFailed: [passFail],
-        passSummaries: [joinNotes(reply.note, passSummary)],
-        passReadings: [passReads],
-        acrostics: [reply.acrostic],
-        trackerUpdates: [trackerUpdate(character, chat, get().messages, passOriginal ?? text, connection)],
+        trackerUpdates: [trackerUpdate(character, chat, get().messages, text, connection)],
         createdAt: Date.now(),
       })
       rememberSnapshot(id, 0, snapshot)
@@ -1200,7 +870,7 @@ export const useChats = create<ChatState>()((set, get) => ({
     else await get().retry(character)
   },
 
-  regenerate: async (character, messageId, instruction, options) => {
+  regenerate: async (character, messageId, instruction) => {
     const chat = get().chat
     if (!chat) return
     const at = get().messages.findIndex((m) => m.id === messageId)
@@ -1243,10 +913,6 @@ export const useChats = create<ChatState>()((set, get) => ({
 
     let text = ''
     let reasoning = ''
-    let passOriginal: string | undefined
-    let passFail: string | undefined
-    let passSummary: string | undefined
-    let passReads: Reading[] | undefined
     let finishReason = ''
     let snapshot: string | undefined
     const reply = newReply()
@@ -1272,23 +938,11 @@ export const useChats = create<ChatState>()((set, get) => ({
         budgetOf(connection),
       )
       set({ trimmedCount: prompt.droppedCount })
-      await generateReply(chat, prompt.messages, withPlaceholder(connection, stack.miscPrompts), get().messages.slice(0, at), controller.signal, reply, options?.acrostic)
+      await streamReply(prompt.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal, reply)
       text = reply.text
       reasoning = reply.reasoning
       finishReason = reply.finishReason
       snapshot = reply.snapshot
-
-      // Agent pass, same as the send path.
-      if (text && !controller.signal.aborted) {
-        set({ passing: true })
-        const pass = await agentPass(chat, text, get().messages.slice(0, at), controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }))
-        text = pass.text
-        passOriginal = pass.original
-        passFail = pass.failed
-        passSummary = pass.summary
-        passReads = pass.readings
-        set({ streamingText: text })
-      }
     } catch (err) {
       // A deliberate stop keeps the partial as a swipe; a real failure changes nothing.
       if (!controller.signal.aborted) {
@@ -1310,7 +964,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       snapshot = reply.snapshot
     } finally {
       abort = null
-      set({ passing: false })
     }
 
     set({
@@ -1322,11 +975,8 @@ export const useChats = create<ChatState>()((set, get) => ({
       error: finishReason === 'length' ? lengthNotice(maxTokensOf(connection)) : '',
     })
     const regen = regenerated(target, text, reasoning, instruction)
-    // Applied after rather than threaded through `regenerated`: it pads both arrays to the swipe
-    // count itself. An older message's holes stay where they belong.
-    const passedRegen = regen && withAcrostic(withReadings(withPass(regen, passOriginal, passFail, joinNotes(reply.note, passSummary)), passReads), reply.acrostic)
-    const tracked = passedRegen && trackerUpdate(character, chat, get().messages.slice(0, at), passOriginal ?? text, connection)
-    const updated = tracked ? withTrackerUpdate(passedRegen, tracked) : passedRegen
+    const tracked = regen && trackerUpdate(character, chat, get().messages.slice(0, at), text, connection)
+    const updated = tracked ? withTrackerUpdate(regen, tracked) : regen
     if (updated) {
       await storage.put('messages', updated as unknown as StoredRecord)
       rememberSnapshot(target.id!, swipeIndex(updated), snapshot)
@@ -1408,14 +1058,6 @@ export const useChats = create<ChatState>()((set, get) => ({
       )
       set({ trimmedCount: prompt.droppedCount })
       snapshot = snapshotOf(prompt.messages, withPlaceholder(connection, stack.miscPrompts))
-      // Deliberately not passed. A continuation's reply is the accepted prefix plus
-      // what the model just added, and `continued` writes the whole thing back over the swipe. A
-      // second pass would edit text the user already kept. Wiring it needs the pass to be told which
-      // span is new and to leave the rest alone.
-      //
-      // The pass is skipped here for the same reason, and more strongly: a rewrite stage remakes a whole
-      // passage rather than a flagged span. It'd restate the prefix the user accepted. The
-      // manual action on the message is how a continued reply gets rewritten.
       for await (const chunk of sendMessage(prompt.messages, withPlaceholder(connection, stack.miscPrompts), controller.signal)) {
         if (chunk.reasoning) {
           reasoning += chunk.reasoning
@@ -1470,74 +1112,6 @@ export const useChats = create<ChatState>()((set, get) => ({
         useBlips.getState().mark(target.speakerId ?? chat.characterId)
       }
     }
-  },
-
-  passMessage: async (messageId, cleanOnly = false) => {
-    const chat = get().chat
-    if (!chat) return
-    const at = get().messages.findIndex((m) => m.id === messageId)
-    const target = get().messages[at]
-    if (!target || target.role !== 'assistant') return
-
-    // Always from the stored original: running this twice passes the reply again rather than
-    // passing what the last run produced.
-    const source = passOriginalFor(target) ?? target.content
-    if (!source.trim()) return
-
-    const speaker = useCharacters
-      .getState()
-      .characters.find((c) => c.id === target.speakerId)
-
-    const controller = new AbortController()
-    abort = controller
-    set({
-      streaming: true,
-      passing: true,
-      streamingChatId: chat.id ?? null,
-      // The bubble renders streamingText in place of the message: it starts as the source and
-      // is overwritten as the rewrite arrives.
-      streamingText: source,
-      streamingReasoning: '',
-      error: '',
-      regeneratingId: messageId,
-      speakingName: target.speakerName ?? speaker?.name ?? '',
-    })
-
-    let result: PassResult
-    try {
-      result = await agentPass(chat, source, get().messages.slice(0, at), controller.signal, (t, pending, stage) => set({ streamingText: t, streamingPending: pending, streamingStage: stage ?? null }), true, cleanOnly)
-    } catch {
-      // Stop no longer reaches here: runAgent returns what the pass had done so far. Only a real
-      // failure lands here, and it leaves the message as it was.
-      set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
-      abort = null
-      return
-    }
-    abort = null
-    set({ streaming: false, passing: false, streamingChatId: null, streamingText: '', regeneratingId: null, speakingName: '' })
-
-    const updated = result.original
-      ? withReadings(passed(target, result.text, result.original ?? source, result.summary, result.failed), result.readings)
-      : withPass(selectSwipe(target, swipeIndex(target)), passOriginalFor(target), result.failed)
-    await storage.put('messages', updated as unknown as StoredRecord)
-    if (get().chat?.id === chat.id) await get().load(chat.id!)
-  },
-
-  dismissPassFailure: async (messageId) => {
-    const message = get().messages.find((m) => m.id === messageId)
-    if (!message) return
-    // Clears the notice on the selected swipe only. The passed text and its original stay.
-    await storage.put('messages', withPass(message, passOriginalFor(message), undefined, passSummaryFor(message)) as unknown as StoredRecord)
-    await get().load(message.chatId)
-  },
-
-  revertMessagePass: async (messageId) => {
-    const message = get().messages.find((m) => m.id === messageId)
-    if (!message) return
-    const updated = revertPass(message)
-    if (!updated) return
-    await storage.put('messages', updated as unknown as StoredRecord)
-    await get().load(message.chatId)
   },
 
   swipeTo: async (messageId, index) => {

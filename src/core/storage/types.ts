@@ -1,8 +1,5 @@
 import type { StateParse, TrackerDef, TrackerValue } from '../trackers/parseState.ts'
 import type { MoveQuality } from '../games/goFish'
-import type { ChatAgent } from '../agent/agentConfig.ts'
-import type { PostStackConfig } from '../agent/postStack.ts'
-import type { AcrosticRecord } from '../agent/acrostic/parse.ts'
 import type { GameEvent, GameKind } from '../games/gameEvent'
 import type { ReplaceRule, TagRule } from '../stores/settingsStore.ts'
 
@@ -197,10 +194,6 @@ export interface Chat {
   /** Pinned to the sidebar for quick access. Absent = not bookmarked. */
   bookmarked?: boolean
   paramOverrides?: ParamOverrides
-  /** Per-chat agent override: on/off and display mode. */
-  agent?: ChatAgent
-  /** This chat's post-processing stack, overriding the global default. Absent = use the default. */
-  postStackId?: number
   /** Text rule sets in priority order: 'global', 'stack:<id>', or a user set's id. Absent =
    *  Global plus the stack's own set, if it has one. */
   ruleSetIds?: string[]
@@ -239,20 +232,8 @@ export interface Message {
   /** Which character said this, in a group chat. Absent = the chat's single character. */
   speakerId?: number
   speakerName?: string
-  /** The text as the writing model produced it, for each swipe the agent pass changed. `content`
-   *  and `swipes[i]` hold what the pass produced; this holds what was said first. Holes on swipes
-   *  the pass left alone. Unindexed. Original and final only, no intermediate stages. */
-  passOriginals?: (string | undefined)[]
-  /** What the pass did to each swipe, in one line, for the bubble. Absent where it did nothing. */
-  passSummaries?: (string | undefined)[]
-  /** Why a stage's candidate was thrown away, parallel to `swipes`. Drives the marker and the
-   *  retry action, cleared on a run that keeps something. */
-  passFailed?: (string | undefined)[]
   /** The `<state>` parse of each swipe, parallel to `swipes`. Holes where the card had no trackers. */
   trackerUpdates?: (StateParse | undefined)[]
-  /** The acrostic behind each swipe: seed, template and letter fit. Parallel to `swipes`, holes where
-   *  a swipe was generated normally. Unindexed. */
-  acrostics?: (AcrosticRecord | undefined)[]
   /** Player tracker edits made while this was the last message. Survive swipes. */
   trackerOverrides?: Record<string, TrackerValue>
   /** A `/break` row: a rule drawn across the chat, with empty content. `buildPrompt` drops it. */
@@ -372,16 +353,6 @@ export interface StackLook {
   css: string
   /** Variables without a data-var slot aren't shown. Their values still apply. */
   hideUnplaced?: boolean
-}
-
-/** A named post-processing config. Shareable: it carries no connection and no key. */
-export interface PostStack {
-  id?: number
-  ownerId: string
-  name: string
-  config: PostStackConfig
-  createdAt: number
-  updatedAt: number
 }
 
 /**

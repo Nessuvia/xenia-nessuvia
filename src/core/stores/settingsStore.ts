@@ -8,13 +8,12 @@ import { emptyDropboxConfig, type DropboxConfig } from '../sync/dropboxConfig.ts
 import { emptyRelayConfig, type RelayConfig } from '../multiplayer/relayConfig.ts'
 import type { TokenizerId } from '../prompt/tokenizers.ts'
 import type { PromptProcessing, SingleLabels } from '../connectors/promptProcessing.ts'
-import { defaultAgentConfig, type AgentConfig } from '../agent/agentConfig.ts'
 /** The three colorable inline markers, distinct from plain text. Order in `Palette.colorOrder`
  *  is top-first (strongest first), see renderText for how precedence resolves. */
 export type MarkerKind = 'emphasis' | 'bold' | 'quotes'
 
 /** Idea suggestions above the chat input. Global: one switch and one connection for every chat.
- *  Separate from post-processing. A per-chat switch on `Chat` is the upgrade path. */
+ *  A per-chat switch on `Chat` is the upgrade path. */
 export interface IdeasConfig {
   enabled: boolean
   /** null uses the active connection. */
@@ -22,9 +21,6 @@ export interface IdeasConfig {
 }
 
 const defaultIdeasConfig: IdeasConfig = { enabled: false, connectionId: null }
-
-/** The request field a backend reads a GBNF grammar from: llama.cpp and KoboldCpp, TabbyAPI, vLLM and Aphrodite. */
-export type GrammarField = 'grammar' | 'grammar_string' | 'guided_grammar'
 
 export interface Connection {
   id: string
@@ -55,14 +51,6 @@ export interface Connection {
   /** How much structure this endpoint accepts on a request, learned on the first palette ask
    *  rather than configured. Undefined means it hasn't been tried yet. */
   structuredOutput?: StructuredMode
-  /** This endpoint answers typed questions rather than writing prose: it speaks the Decisions API,
-   *  not chat completions. Its `endpointUrl` is used verbatim, because the decisions path differs
-   *  per provider and can't be derived. A flagged connection is offered to sensors and hidden from
-   *  the chat pickers. */
-  decisions?: boolean
-  /** Where an acrostic reply's GBNF grammar goes. Undefined sends none, and the reply relies on the
-   *  instruction and the parser alone. */
-  grammarField?: GrammarField
   /** SillyTavern's prompt converters, for endpoints that restrict message shape. Chat type only.
    *  Undefined is `none`. */
   promptProcessing?: PromptProcessing
@@ -201,8 +189,6 @@ interface SettingsState {
   seededParamDefs: boolean
   /** Whether the default chat and story stacks have been written. Set once, so a delete sticks. */
   seededStacks: boolean
-  /** Whether the Default post-processing stack has been written. Set once, so a delete sticks. */
-  seededPostStacks: boolean
   /** The prompt we send to the LLM. '' means `defaultPalettePrompt`, so Reset is a clear. */
   palettePrompt: string
   /** Replies come from a local lorem generator instead of the connection, so nothing is sent. */
@@ -233,14 +219,11 @@ interface SettingsState {
    *  until it's turned on in Settings > Miscellaneous > Plugins. */
   enabledPlugins: Record<string, boolean>
   appearance: Appearance
-  /** The agent pass. Global. A per-chat override is the upgrade path. */
-  agent: AgentConfig
   /** Overrides for Xenia's own prompts (`core/prompt/xeniaPrompts.ts`), by id. Blank uses the default. */
   xeniaPrompts: Record<string, string>
   setXeniaPrompt(id: string, text: string): void
   ideas: IdeasConfig
   setIdeas(patch: Partial<IdeasConfig>): void
-  setAgent(patch: Partial<AgentConfig>): void
   setAppearance(patch: Partial<Appearance>): void
   /** User-made text rule sets. Global is `appearance`; a stack's set lives on the stack. */
   ruleSets: RuleSet[]
@@ -267,7 +250,6 @@ interface SettingsState {
   markCharactersSeeded(): void
   markParamDefsSeeded(): void
   markStacksSeeded(): void
-  markPostStacksSeeded(): void
   setPalettePrompt(prompt: string): void
   markTableDirty(table: TableName): void
   markTablesClean(tables: TableName[]): void
@@ -299,7 +281,6 @@ export const useSettings = create<SettingsState>()(
       seededCharacters: false,
       seededParamDefs: false,
       seededStacks: false,
-      seededPostStacks: false,
       palettePrompt: '',
       debugMode: false,
       personaTitleOff: false,
@@ -314,7 +295,6 @@ export const useSettings = create<SettingsState>()(
       multiplayerEnabled: true,
       enabledPlugins: {},
       appearance: defaultAppearance,
-      agent: defaultAgentConfig,
       xeniaPrompts: {},
       setXeniaPrompt: (id, text) => set((s) => ({ xeniaPrompts: { ...s.xeniaPrompts, [id]: text } })),
       ideas: defaultIdeasConfig,
@@ -328,7 +308,6 @@ export const useSettings = create<SettingsState>()(
       ruleSets: [],
       setRuleSets: (ruleSets) => set({ ruleSets }),
 
-      setAgent: (patch) => set((s) => ({ agent: { ...defaultAgentConfig, ...s.agent, ...patch } })),
 
       setDebugMode: (debugMode) => set({ debugMode }),
 
@@ -377,7 +356,6 @@ export const useSettings = create<SettingsState>()(
       markCharactersSeeded: () => set({ seededCharacters: true }),
       markParamDefsSeeded: () => set({ seededParamDefs: true }),
       markStacksSeeded: () => set({ seededStacks: true }),
-      markPostStacksSeeded: () => set({ seededPostStacks: true }),
       setPalettePrompt: (palettePrompt) => set({ palettePrompt }),
 
       // Returns the same array when the table is already flagged. A run of writes to one table

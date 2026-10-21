@@ -1,7 +1,6 @@
 import { RiSettings3Line } from '@remixicon/react'
 import { lazyView, registerModule } from '../../app/moduleRegistry'
 import { tabs } from './tabs'
-import AgentChatPanel from './AgentChatPanel'
 
 registerModule({
   id: 'settings',
@@ -10,8 +9,4 @@ registerModule({
   route: '/settings',
   component: lazyView(() => import('./SettingsView')),
   tabs,
-  // Chat-sidebar panels stay eager: they render inside the chat, not behind a route.
-  chatPanels: [
-    { label: 'Post-processing', component: AgentChatPanel },
-  ],
 })

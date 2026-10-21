@@ -33,7 +33,7 @@ The Palette feature covers font loading, app-wide text colors, and panel styles,
 
 Chat is the most conventional feature here. It supports the full TavernV2 specification, plus extras: Alternate Descriptions, a Gallery, per-character text coloring. Lorebooks stay simple today: keyword-triggered world info entries that inject on a match, with no advanced insertion strategies yet.
 
-Model output can be cleaned before it reaches the screen, two ways. The grammar hammer runs a rules pass over the displayed text and leaves the stored message untouched. Second Pass covers heavier cleanup: write post-processing rules, from stripping a repeated tic to long regex replacements. Both change only what you see, never what's saved.
+Find/replace rules, literal or regex, apply on screen, in the prompt, or both. Tag rules hide or collapse tagged blocks. Neither rewrites the stored message.
 
 **Write**
 

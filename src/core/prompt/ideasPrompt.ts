@@ -1,6 +1,5 @@
 // Extension-ful imports on purpose: checkIdeas.ts runs this under `node --experimental-strip-types`.
 import type { ChatMessage } from '../connectors/connectorInterface'
-import { taggedLines } from '../agent/acrostic/parse.ts'
 import { fillSlots, miscPrompt, type MiscPrompts } from './miscPrompts.ts'
 
 /** The fields the ideas request reads off a message. Structural, so the check needs no storage types. */
@@ -54,6 +53,33 @@ export function ideasMessages(messages: IdeaMessage[], names: IdeaNames, prompts
       content: fillSlots(miscPrompt('ideas', prompts), { replies: ideasTranscript(messages, names), message, char, user }),
     },
   ]
+}
+
+/** A tag line: `[2] An idea.`. Anything after the id inside the brackets is ignored, so a garbled label still counts. */
+const tagLine = /^\s*\[(\d+(?:\.\d+)?)(?:\|[^\]\n]*)?\]\s*(.*)$/
+
+/**
+ * Lines by id from tagged text. Anything that isn't a tag line is junk and skipped, except the first
+ * non-empty line after a tag left bare: a model that puts the line under its tag still counts.
+ * The first line for an id wins.
+ */
+function taggedLines(reply: string): Map<string, string> {
+  const out = new Map<string, string>()
+  let waiting: string | null = null
+  for (const line of reply.split('\n')) {
+    const tag = tagLine.exec(line)
+    if (tag) {
+      const text = tag[2].trim()
+      waiting = text ? null : tag[1]
+      if (text && !out.has(tag[1])) out.set(tag[1], text)
+      continue
+    }
+    if (waiting && line.trim()) {
+      if (!out.has(waiting)) out.set(waiting, line.trim())
+      waiting = null
+    }
+  }
+  return out
 }
 
 /** Up to three ideas from tagged lines, in the order they came. Surrounding quotes are dropped. */

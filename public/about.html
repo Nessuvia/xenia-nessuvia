@@ -54,7 +54,6 @@
           "Multiplayer sessions via a self-hosted relay where guests join by link with zero setup or API keys",
           "Character card chat with TavernV2 card import",
           "World info entries that trigger on keywords",
-          "Grammar hammer, a rules-based cleanup pass over model output that leaves stored text untouched",
           "Long-form Write mode with chapters built from beats and word targets",
           "Ask mode for single off-chat questions to the model",
           "Reusable, rearrangeable prompt blocks with XML-style tagging and live-adjustable scroll values",
@@ -62,7 +61,6 @@
           "Connects to any OpenAI-compatible endpoint, local or hosted, chat or text completion",
           "Sampler parameters defined as data rows, extensible without a code change",
           "Prompt preview and raw request inspector for debugging what the model receives",
-          "Second Pass post-processing rules for cleaning up model output",
           "Single-file JSON export and import with API keys and bucket credentials stripped",
           "Optional sync to a user-owned S3-compatible bucket",
           "Installable as a PWA for offline home-screen use"
@@ -174,12 +172,6 @@
       stays readable at a glance. Characters can carry a gallery of linked images beyond the main
       avatar. World info entries trigger on keywords in the conversation and inject their text into
       the prompt when they match. Lorebook control is intentionally simple today.
-    </p>
-    <p>
-      Before it reaches the screen, model output passes through the grammar hammer: a rules pass
-      that strips repeated tics and cleans up formatting. It only touches what's displayed; the
-      stored message is the model's raw text. For more involved cleanup, Second Pass lets you
-      run your own post-processing rules over model output without changing what gets saved.
     </p>
 
     <h2>Write</h2>

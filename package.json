@@ -23,7 +23,6 @@
     "@remixicon/react": "^4.9.0",
     "centrifuge": "^5.7.1",
     "codemirror": "^6.0.2",
-    "compromise": "^14.16.0",
     "dexie": "^4.4.4",
     "fflate": "^0.8.3",
     "gpt-tokenizer": "^3.4.0",
