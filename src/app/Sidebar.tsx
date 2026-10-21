@@ -248,7 +248,7 @@ export default function Sidebar() {
             </Link>
           ) : (
             modules
-              .filter((mod) => !['personas', 'sync', 'learn'].includes(mod.id))
+              .filter((mod) => !['personas', 'sync', 'notes', 'learn'].includes(mod.id))
               .filter((mod) => mod.id !== 'write' || writeEnabled)
               .filter((mod) => mod.id !== 'multiplayer' || multiplayerEnabled)
               .filter((mod) => isEnabled(mod, enabledPlugins))
@@ -285,7 +285,7 @@ export default function Sidebar() {
               <button type="button" className="sidebar-item sidebarIconButton" title="Ask" aria-label="Ask" onClick={openAsk}>
                 <RiQuestionAnswerLine size={18} />
               </button>
-              {(import.meta.env.DEV ? ['learn'] : [])
+              {['notes', ...(import.meta.env.DEV ? ['learn'] : [])]
                 .map((id) => modules.find((mod) => mod.id === id))
                 .filter((mod) => mod !== undefined)
                 .map((mod) => (
@@ -395,8 +395,8 @@ export default function Sidebar() {
             </>
           ) : (
             modules
-              // Personas and Sync sit at the foot of the rail; Ask and Learn are icon buttons.
-              .filter((mod) => !['personas', 'sync', 'learn'].includes(mod.id))
+              // Personas and Sync sit at the foot of the rail; Ask, Notes and Learn are icon buttons.
+              .filter((mod) => !['personas', 'sync', 'notes', 'learn'].includes(mod.id))
               .filter((mod) => mod.id !== 'write' || writeEnabled)
               .filter((mod) => mod.id !== 'multiplayer' || multiplayerEnabled)
               .filter((mod) => isEnabled(mod, enabledPlugins))
@@ -448,7 +448,7 @@ export default function Sidebar() {
               <button type="button" className="sidebar-item sidebarIconButton" title="Ask" aria-label="Ask" onClick={openAsk}>
                 <RiQuestionAnswerLine size={18} />
               </button>
-              {(import.meta.env.DEV ? ['learn'] : [])
+              {['notes', ...(import.meta.env.DEV ? ['learn'] : [])]
                 .map((id) => modules.find((mod) => mod.id === id))
                 .filter((mod) => mod !== undefined)
                 .map((mod) => (
