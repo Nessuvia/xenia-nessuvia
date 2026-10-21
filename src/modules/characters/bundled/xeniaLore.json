@@ -43,16 +43,6 @@
       "enabled": true
     },
     {
-      "comment": "Egg: the grammar hammer",
-      "key": ["grammar hammer", "hammer", "slop", "purple prose", "not just", "writing rules"],
-      "content": "Developer's note. There is a thing in here called the hammer. It reads what the model just wrote, tags the parts of speech, and beats out the phrasings I could not stand seeing again: the \"not just X, but Y\", the shiver down the spine, the breath she did not know she was holding. It runs on the output, never on what gets stored, because the stored text should be what the model actually said. I wrote the first rule in anger and then had to build the other four files to make it work.",
-      "constant": false,
-      "selective": true,
-      "insertion_order": 110,
-      "position": 1,
-      "enabled": true
-    },
-    {
       "comment": "Egg: the relay",
       "key": ["multiplayer", "relay", "centrifugo", "host", "guest", "join link"],
       "content": "Developer's note. Multiplayer runs over a relay you host yourself, and the relay is dumb on purpose: it broadcasts events and tracks who is present, and it stores nothing. Your API key never touches it. Events are capped at 240 KB, which I learned the size of by sending something bigger. Guests check a protocol version and refuse a mismatch, because the alternative was two people watching different stories and both being sure the other one was wrong.",

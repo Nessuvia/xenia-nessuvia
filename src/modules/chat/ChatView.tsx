@@ -2,7 +2,7 @@ import { personaById } from '../../core/stores/personaLinks'
 import { useChatTextRules } from '../../core/stores/textRules'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { RiArrowDownSLine, RiDeleteBinLine, RiRobot2Line, RiSparkling2Line } from '@remixicon/react'
+import { RiArrowDownSLine, RiDeleteBinLine, RiRobot2Line } from '@remixicon/react'
 import { useParams } from 'react-router-dom'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters, displayName } from '../../core/stores/charactersStore'
@@ -23,10 +23,7 @@ import { oldMessageInstruction } from '../../core/prompt/rewrite'
 import { emptyColors } from '../../core/storage/types'
 import { participants } from '../../core/stores/roster'
 import { useBlips } from '../../core/stores/blipStore'
-import { resolveChatAgent } from '../../core/agent/agentConfig'
-import { agentSegments } from './agentSegments'
 import { TrackerFloat } from './TrackerPanel'
-import AgentStream from './AgentStream'
 import IdeaChips from './IdeaChips'
 import { useBarFold } from './useBarFold'
 import { hotkeysOn } from '../../app/hotkeys'
@@ -60,13 +57,6 @@ export default function ChatView() {
     deleteMessage,
     deleteMessages,
     deleteSwipes,
-    passing,
-    streamingPending,
-    streamingStage,
-    holding,
-    passMessage,
-    revertMessagePass,
-    dismissPassFailure,
   } = useChats()
   const { characters, load: loadCharacters } = useCharacters()
   const connection = useActiveConnection()
@@ -75,7 +65,6 @@ export default function ChatView() {
   const activePersonaId = useSettings((s) => s.activePersonaId)
   const appearance = useAppearance()
   const textRules = useChatTextRules()
-  const agentConfig = useSettings((s) => s.agent)
   const ideasEnabled = useSettings((s) => s.ideas.enabled)
   const palette = usePalette()
   const activePersona = personas.find((p) => p.id === activePersonaId)
@@ -157,14 +146,6 @@ export default function ChatView() {
 
   const lastUserId = messages.findLast((m) => m.role === 'user')?.id
   if (!chat || !character) return <p className="placeholder">Loading…</p>
-  const agent = resolveChatAgent(agentConfig, chat.agent)
-  // Stylized hands over its own marks and streams plainly until they arrive. A manual pass in a
-  // chat with the agent off streams plainly too.
-  const stylized = (agentConfig.style ?? 'stylized') === 'stylized'
-  // An acrostic reply is held whatever the display mode: its half-written lines are tags.
-  const segments = holding
-    ? null
-    : streamingStage?.marks ?? agentSegments(streamingText, streamingPending, agent.enabled && !stylized ? agent.display : 'blur', passing)
 
   /** The card a message was written by, when it's still around, for the avatar and the re-roll. */
   const speakerOf = (speakerId?: number) =>
@@ -186,7 +167,6 @@ export default function ChatView() {
           '--emphasisColor': palette.emphasisColor || '',
           '--boldColor': palette.boldColor || '',
           '--quoteColor': palette.quoteColor || '',
-          '--agentBeat': streamingStage ? `${streamingStage.beat}ms` : '',
         } as CSSProperties
       }
     >
@@ -288,15 +268,8 @@ export default function ChatView() {
             onDelete={() => deleteMessage(m.id!)}
             onRegenerate={() => regenerate(character, m.id!)}
             onRewrite={(instruction) => regenerate(character, m.id!, instruction)}
-            onRandomSwipe={agent.enabled ? () => regenerate(character, m.id!, undefined, { acrostic: true }) : undefined}
             onSwipe={(index) => swipeTo(m.id!, index)}
             onDeleteSwipes={(indices) => deleteSwipes(m.id!, indices)}
-            onPass={m.role === 'assistant' && !streaming ? () => passMessage(m.id!) : undefined}
-            onPassClean={m.role === 'assistant' && !streaming ? () => passMessage(m.id!, true) : undefined}
-            onPassRevert={() => revertMessagePass(m.id!)}
-            onPassDismiss={() => dismissPassFailure(m.id!)}
-            passing={regeneratingId === m.id && passing}
-            streamingSegments={segments}
           />
           ),
         )}
@@ -325,18 +298,11 @@ export default function ChatView() {
                 {renderText(streamingReasoning, { tagRules: textRules.tagRules, order: palette.colorOrder })}
               </details>
             )}
-            {/* A pass stage is overwriting the reply that just finished: what's on screen is
-                being replaced as it arrives. */}
-            {passing && (
-              <p className="passMarker">
-                <RiSparkling2Line size={14} />
-                Passing
-              </p>
-            )}
             <div className="messageBody">
               {/* Mid-stream an opener has no closer yet. The block looks like plain text
                   until the model finishes it and folds away. */}
-              <AgentStream segments={segments} render={(t) => renderText(t, { tagRules: textRules.tagRules, order: palette.colorOrder, streaming: true })} />
+              {renderText(streamingText, { tagRules: textRules.tagRules, order: palette.colorOrder, streaming: true })}
+              <span className="caret">▌</span>
             </div>
           </div>
         )}

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotes } from '../../core/stores/notesStore'
 import { manuscript } from '../../core/notes/noteTree'
-import { wordCount } from '../../core/agent/flow/words'
+import { wordCount } from '../../core/quality/words'
 import { isHeading, parseProse, type ProsePiece } from '../write/proseMarkup'
 
 const classOf = { bold: 'proseBold', em: 'proseEm', boldEm: 'proseBold proseEm', quote: 'proseQuote', code: 'proseCode' }

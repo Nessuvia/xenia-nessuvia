@@ -4,13 +4,11 @@ import {
   RiArrowRightSLine,
   RiCloseLine,
   RiDeleteBinLine,
-  RiErrorWarningLine,
   RiMoreLine,
   RiPencilLine,
   RiRefreshLine,
   RiRobot2Line,
   RiSendPlaneLine,
-  RiSparkling2Line,
 } from '@remixicon/react'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { hotkeysOn, typingIn } from '../../app/hotkeys'
@@ -18,24 +16,18 @@ import type { AvatarSource, CharacterColors, Message } from '../../core/storage/
 import { Avatar } from '../../app/Avatar'
 import { isNarrator } from '../../core/multiplayer/narrator'
 import {
-  passFailedFor,
-  passOriginalFor,
-  passSummaryFor,
   reasoningFor,
   swipeCount,
   swipeIndex,
 } from '../../core/stores/swipes'
 import { snapshotFor } from '../../core/stores/snapshots'
 import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
-import MakeRulePopover from './MakeRulePopover'
 import { reasoningSpan } from '../../core/prompt/reasoning'
 import { stripState } from '../../core/trackers/trackerState'
 import { usePalette } from '../../core/stores/palettesStore'
 import { renderText } from './renderText'
 import RewriteBox from './RewriteBox'
 import TrackerWarning from './TrackerWarning'
-import AgentStream from './AgentStream'
-import type { Segment } from './agentSegments'
 import SelectionEditDialog from './SelectionEditDialog'
 import { contract } from './contract'
 import { useMediaQuery } from '../../app/useMediaQuery'
@@ -79,15 +71,8 @@ export default function MessageBubble({
   onDelete,
   onRegenerate,
   onRewrite,
-  onRandomSwipe,
   onSwipe,
   onDeleteSwipes,
-  onPass,
-  onPassClean,
-  onPassRevert,
-  onPassDismiss,
-  passing = false,
-  streamingSegments,
   readOnly = false,
 }: {
   message: Message
@@ -120,24 +105,9 @@ export default function MessageBubble({
   onDelete: () => void
   onRegenerate: () => void
   onRewrite: (instruction: string) => void
-  /** A new swipe drawn as an acrostic. Omitted when post-processing is off for the chat. */
-  onRandomSwipe?: () => void
   onSwipe: (index: number) => void
   /** Drop these alternates. Dropping all of them deletes the message. */
   onDeleteSwipes: (indices: number[]) => void
-  /** Run the agent pass over this message, and the retry on a failed one. Omitted by views that
-   *  have no pass (Ask, and a multiplayer guest). */
-  onPass?: () => void
-  /** The pass without rewrite rules: only what runs in code, no request. */
-  onPassClean?: () => void
-  /** Put the pre-rewrite text back. */
-  onPassRevert?: () => void
-  /** Hide the failed-pass notice. */
-  onPassDismiss?: () => void
-  /** A pass stage's candidate is streaming over this message's text right now. */
-  passing?: boolean
-  /** The re-roll under the agent's display mode. null shows a working marker. Omitted shows the plain stream. */
-  streamingSegments?: Segment[] | null
   /** No action buttons at all. A guest in a session owns none of the transcript. */
   readOnly?: boolean
 }) {
@@ -162,7 +132,6 @@ export default function MessageBubble({
   )
   const cancelled = useRef(false)
   const [inspecting, setInspecting] = useState(false)
-  const [showOriginal, setShowOriginal] = useState(false)
   const appearance = useAppearance()
   const { tagRules, replaceRules } = useChatTextRules()
   const palette = usePalette()
@@ -188,7 +157,6 @@ export default function MessageBubble({
     { x: number; y: number; span: Span; text: string } | null
   >(null)
   const [editingSelection, setEditingSelection] = useState<{ span: Span; text: string } | null>(null)
-  const [makingRule, setMakingRule] = useState<{ x: number; y: number; text: string } | null>(null)
 
   const assistant = message.role === 'assistant'
   const count = swipeCount(message)
@@ -225,9 +193,6 @@ export default function MessageBubble({
   const modelRegen = canRegenerate && !greeting
   // `who` already resolves the speaker's display name (or the stamped name for a deleted card).
   const name = who
-  const passOriginal = passOriginalFor(message)
-  const passFailure = passFailedFor(message)
-  const passSummary = passSummaryFor(message)
 
   // Right-click on a run of selected text in a reply. Shift falls through to the browser's own
   // menu, and so does anything the selection can't be traced back to: a selection that leaves this
@@ -235,7 +200,7 @@ export default function MessageBubble({
   // Filled by the body's renderText below: where each rendered character sits in bodyText.
   const bodyMap: SourceMap = { runs: [], mapped: { text: '', from: [], to: [] } }
   const openSelectionMenu = (x: number, y: number): boolean => {
-    if (!assistant || readOnly || showOriginal || streamingText !== null) return false
+    if (!assistant || readOnly || streamingText !== null) return false
     const root = bodyRef.current
     const selection = window.getSelection()
     if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return false
@@ -313,20 +278,6 @@ export default function MessageBubble({
                 <RiArrowRightSLine size={16} />
               </button>
             </span>
-          )}
-          {passOriginal !== undefined && (
-            <button
-              type="button"
-              title={
-                showOriginal
-                  ? 'Show the swept text'
-                  : passSummary || "Show the text before post-processing"
-              }
-              aria-pressed={showOriginal}
-              onClick={() => setShowOriginal(!showOriginal)}
-            >
-              <RiSparkling2Line size={16} />
-            </button>
           )}
           <button
             type="button"
@@ -410,28 +361,6 @@ export default function MessageBubble({
               >
                 Add newlines
               </button>
-              {assistant && onPass && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPass()
-                    setQuickActions(false)
-                  }}
-                >
-                  {passOriginal === undefined ? "Post-process" : "Post-process again"}
-                </button>
-              )}
-              {assistant && onPassClean && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPassClean()
-                    setQuickActions(false)
-                  }}
-                >
-                  Post-process (clean only)
-                </button>
-              )}
               {assistant && (
                 <button
                   type="button"
@@ -454,18 +383,6 @@ export default function MessageBubble({
                   Show full API call
                 </button>
               )}
-              {assistant && onRandomSwipe && (
-                <button
-                  type="button"
-                  disabled={!modelRegen}
-                  onClick={() => {
-                    onRandomSwipe()
-                    setQuickActions(false)
-                  }}
-                >
-                  Randomized swipe
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => {
@@ -475,18 +392,6 @@ export default function MessageBubble({
               >
                 Copy
               </button>
-              {assistant && onPassRevert && passOriginal !== undefined && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOriginal(false)
-                    onPassRevert()
-                    setQuickActions(false)
-                  }}
-                >
-                  Revert the sweep
-                </button>
-              )}
             </div>
           </details>
         </span>
@@ -515,16 +420,17 @@ export default function MessageBubble({
 
       {streamingText !== null ? (
         <div className="messageBody">
-          <AgentStream segments={streamingSegments === undefined ? [{ text: streamingText, mark: 'none' }] : streamingSegments} render={(t) => renderText(stripState(t), { tagRules, replaceRules, order, role: message.role, streaming: true })} />
+          {renderText(stripState(streamingText), { tagRules, replaceRules, order, role: message.role, streaming: true })}
+          <span className="caret">▌</span>
         </div>
       ) : draft === null ? (
         <div
           ref={bodyRef}
           onContextMenu={onBodyContextMenu}
           onPointerUp={onBodyPointerUp}
-          className={showOriginal && passOriginal !== undefined ? 'messageBody passOriginalBody' : 'messageBody'}
+          className="messageBody"
         >
-          {renderText(showOriginal && passOriginal !== undefined ? passOriginal : bodyText, {
+          {renderText(bodyText, {
             stripState: true,
             map: bodyMap,
             tagRules,
@@ -590,14 +496,8 @@ export default function MessageBubble({
             onEdit(replaceSpan(message.content, selectionMenu.span, mark + message.content.slice(start, end) + mark))
             setSelectionMenu(null)
           }}
-          onMakeRule={() => {
-            setMakingRule({ x: selectionMenu.x, y: selectionMenu.y, text: selectionMenu.text })
-            setSelectionMenu(null)
-          }}
         />
       )}
-
-      {makingRule && <MakeRulePopover at={makingRule} text={makingRule.text} onClose={() => setMakingRule(null)} />}
 
       {editingSelection && (
         <SelectionEditDialog
@@ -608,30 +508,6 @@ export default function MessageBubble({
             setEditingSelection(null)
           }}
         />
-      )}
-
-      {passing && streamingText !== null && (
-        <p className="passMarker">
-          <RiSparkling2Line size={14} />
-          Passing
-        </p>
-      )}
-
-      {passFailure && streamingText === null && (
-        <p className="passMarker">
-          <RiErrorWarningLine size={14} />
-          {passFailure}
-          {onPass && (
-            <button type="button" className="passMarkerRetry" onClick={onPass}>
-              Retry
-            </button>
-          )}
-          {onPassDismiss && (
-            <button type="button" className="passMarkerRetry" title="Dismiss" aria-label="Dismiss" onClick={onPassDismiss}>
-              <RiCloseLine size={14} />
-            </button>
-          )}
-        </p>
       )}
 
       {draft !== null && <p className="editHint">Enter or click out saves · Shift+Enter for a new line · Esc discards</p>}

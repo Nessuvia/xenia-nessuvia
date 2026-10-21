@@ -121,7 +121,6 @@ Story width setting stays. Export stays (the document as markdown/txt).
 ## Deferred (not v1)
 
 - AI-suggested beats: a button that proposes the next few beats from premise, ending and text so far.
-- Running the post-processing pass (`core/agent`) on Write generations and selection actions.
 
 ## Settled 2026-10-02 (formerly open questions)
 

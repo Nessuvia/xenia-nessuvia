@@ -6,7 +6,7 @@ import {
   type SingleLabels,
 } from '../../core/connectors/promptProcessing'
 import { RiEyeLine } from '@remixicon/react'
-import type { Connection, GrammarField } from '../../core/stores/settingsStore'
+import type { Connection } from '../../core/stores/settingsStore'
 import type { ConnectionType } from '../../core/params/paramDef'
 import { defaultTemplate } from '../../core/params/paramDef'
 import { listModels } from '../../core/connectors/listModels'
@@ -310,20 +310,6 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
 
           <TokenizerPicker connection={draft} onChange={(t) => set('tokenizer', t)} />
 
-          <label>
-            Grammar field
-            <select
-              value={draft.grammarField ?? ''}
-              onChange={(e) => set('grammarField', (e.target.value || undefined) as GrammarField | undefined)}
-            >
-              <option value="">Off</option>
-              <option value="grammar">grammar (llama.cpp, KoboldCpp)</option>
-              <option value="grammar_string">grammar_string (TabbyAPI)</option>
-              <option value="guided_grammar">guided_grammar (vLLM, Aphrodite)</option>
-            </select>
-            <small>Sends a GBNF grammar with acrostic replies.</small>
-          </label>
-
           {draft.type === 'chat' && (
             <label>
               Prompt processing
@@ -351,19 +337,6 @@ export default function ConnectionEditor({ connection, onSave, onClose }: Props)
               </select>
             </label>
           )}
-
-          <label className="checkboxRow">
-            <input
-              type="checkbox"
-              checked={!!draft.decisions}
-              onChange={(e) => set('decisions', e.target.checked || undefined)}
-            />
-            Decisions endpoint
-          </label>
-          <small>
-            This endpoint answers typed questions instead of writing prose. The URL is used as
-            written. Post-processing sensors can use it; chats cannot.
-          </small>
         </div>
       </details>
 

@@ -1,43 +1,12 @@
 # Roadmap: next sessions (2026-10-20)
 
-Two pieces of work, in this order. Loose notes to point a session at.
+Two pieces of work, in this order. The first is done. Loose notes to point a session at.
 
-## 1. Remove post-processing
+## 1. Remove post-processing (done 2026-10-20, branch `post-process-remove`)
 
-**Why:** few people used it, and the ones who did found it flawed. Find/replace plus tag hide/collapse
-(`textRules` on stacks and globally: `ReplaceRule`, `TagRule` in `settingsStore.ts`) covers what most
-people want, and find/replace is regex, so it's plenty powerful.
-
-**Scope: all of it.**
-
-- Delete `core/agent` (rules, runAgent, lint, flow, acrostic, VAD guard, style draw, postStack, explain,
-  stage, builder) and `core/hammer`.
-- Delete `modules/postProcessing` and its import in `main.tsx`.
-- Delete `core/quality` except `sentences.ts` (SpoilerText uses it). That takes `lexicon`,
-  `temperature`, `vad`, `vadData` and `scripts/buildVad.mjs` with it, plus any precache exclusion for
-  the VAD chunk in the Vite/PWA config.
-- Move `wordCount` from `core/agent/flow/words` into `core/quality` next to `sentences.ts`, and repoint
-  `notes/Manuscript.tsx` and `notes/NotesView.tsx`.
-- Drop the `compromise` dependency if nothing else imports it.
-- Chat side: `chatStore` (`streamingPending`, `streamingStage`, the runAgent call), `swipes.ts`
-  (`passOriginals`) and `checkSwipes.ts`, `modules/chat/agentSegments.ts` + its check, `AgentStream.tsx`,
-  `MakeRulePopover.tsx`, the agent bits of `MessageBubble.tsx` and `ChatView.tsx`, and the CSS in
-  `chat.css` that animates stylized mode.
-- Settings side: `settingsStore.agent` / `setAgent`, `modules/settings/AgentChatPanel.tsx`, the
-  Settings › Agent tab, and `Chat.agent` plus the agent fields on `Message` in `types.ts`.
-- Stale data is fine: old chats, messages and backups carrying `agent` / `passOriginals` fields, or
-  `postStack` export files, are simply ignored. No migration and no import shim.
-- Docs: remove the Agent pass, Rules and Style checks entries from `CLAUDE.md` and the `compromise`
-  line under Stack, and delete `.claude/plans/postProcessingV3.md` (superseded, nothing waits on it).
-  The "Post-processing v3 design" memory is stale too.
-
-**The word-swap lexicon goes as well.** The only things it does that a find/replace row doesn't are
-(a) keeping a leading capital on the replacement and (b) skipping code spans and URLs. Word edges are
-just `\b` in regex. Neither gap justifies keeping a second system. If people ask for case-keeping later,
-it's a `keepCase` flag on `ReplaceRule`, not the lexicon coming back.
-
-**Done when:** build and `scripts/agent-test.sh` are clean, nothing imports the deleted folders, a chat
-sends and streams a reply with no agent step, and Settings has no Agent tab.
+Removed with it: sensors and the Decisions endpoint flag, acrostic swipes and the Grammar field, the
+`postStacks` table (schema 23), `compromise`, and the VAD lexicon. Suggest ideas keeps its own copy of
+the tag-line parser in `prompt/ideasPrompt.ts`; `wordCount` lives in `quality/words.ts`.
 
 ## 2. Models / connections / presets (design first, then build)
 

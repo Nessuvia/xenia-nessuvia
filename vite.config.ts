@@ -39,9 +39,7 @@ export default defineConfig({
         // cl100k is an opt-in pick, so it is fetched when chosen rather than costing every install
         // ~950 kB up front. Offline without it, counts fall back to o200k, the same thing that
         // happens for a family whose vocab has not been downloaded.
-        // The NRC VAD lexicon (~900 kB) only matters once style checks are on. Offline without
-        // it, scene temperature rests on the structural signals.
-        globIgnores: ['**/cl100k_base-*.js', '**/vadData-*.js'],
+        globIgnores: ['**/cl100k_base-*.js'],
         // The Dropbox OAuth callback has to reach the network rather than the SPA fallback:
         // index.html here boots the whole app inside the popup and the code is never read. The
         // pattern is shared with checkDropboxCallback.ts, which is where the reasoning lives.

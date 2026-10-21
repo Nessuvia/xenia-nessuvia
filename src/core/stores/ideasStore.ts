@@ -6,8 +6,8 @@ import { ideasMessages, parseIdeas, type IdeaNames } from '../prompt/ideasPrompt
 import { resolveConnection, useSettings } from './settingsStore'
 
 /**
- * Suggested ideas for what happens next in a chat. Transient: nothing here is stored. Separate from
- * post-processing, and chat-only. `chatStore` reads the picked idea on send; this store never reads
+ * Suggested ideas for what happens next in a chat. Transient: nothing here is stored. Chat-only.
+ * `chatStore` reads the picked idea on send; this store never reads
  * the chat store, so the chat's messages and wording are handed in.
  */
 interface IdeasState {

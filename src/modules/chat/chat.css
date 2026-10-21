@@ -811,38 +811,6 @@
   width: var(--numberWidth);
 }
 
-/* Grammar Hammer's rule list: cards, not nested under the enable toggle. */
-.grammarRuleList {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.chatSettings label.ruleToggleRow {
-  width: 100%;
-}
-
-.ruleToggleText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.ruleToggleName {
-  color: var(--text);
-}
-
-.ruleTogglePattern {
-  color: var(--textMuted);
-  font-size: 12px;
-  font-family: monospace;
-  overflow-wrap: break-word;
-}
-
 .chatSettings .optionalBlock {
   display: flex;
   flex-direction: column;
@@ -1212,28 +1180,6 @@
 
 .caret {
   color: var(--textDim);
-}
-
-/* Agent pass: a quiet line under the reply saying which sentences kept their original. The
-   reply itself is untouched, so this is a note rather than an error banner. */
-.passMarker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 0 0;
-  color: var(--textDim);
-  font-size: 11px;
-}
-
-.passMarkerRetry {
-  padding: 2px 6px;
-  font-size: 11px;
-}
-
-/* The pre-pass text, shown in place of the message while the header toggle is on. Dimmed so a
-   glance never mistakes it for what's stored. */
-.passOriginalBody {
-  color: var(--textMuted);
 }
 
 .chatError {
@@ -1937,104 +1883,9 @@
   width: 100%;
 }
 
-/* "Make rule": opens where the selection menu was, and escapes the message like it. */
-.chatMakeRule {
-  position: fixed;
-  z-index: var(--layer-3);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 280px;
-  /* A window shorter than the popover scrolls it rather than cutting off the buttons. */
-  max-height: calc(100vh - 16px);
-  overflow-y: auto;
-  padding: 8px;
-  background: var(--surface);
-  border: 1px solid var(--borderStrong);
-  border-radius: calc(var(--radius) + 2px);
-}
-
-.chatMakeRuleField {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--textMuted);
-}
-
-.chatMakeRuleText {
-  width: 100%;
-  resize: vertical;
-}
-
-.chatMakeRuleActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .selectionEditText {
   width: 100%;
   resize: vertical;
-}
-
-/* Agent pass, blur mode: a sentence the agent is still reworking. */
-.chatAgentPending {
-  filter: blur(3px);
-}
-
-/* Stylized post-processing. Asked for: the edits animate so the reader watches them happen.
-   --agentBeat is set on .chatView from the pass and shrinks when a reply has many hits.
-   A delete sharpens, a line draws through it, it fades, then the gap closes. The line is a
-   background so it can grow left to right across wrapped lines. */
-.chatAgentStrike {
-  background: linear-gradient(var(--danger), var(--danger)) no-repeat 0 55% / 0% 0.1em;
-  animation: chatAgentStrike var(--agentBeat, 600ms) ease-in forwards;
-}
-
-@keyframes chatAgentStrike {
-  0% { filter: blur(3px); }
-  25% { filter: blur(0); background-size: 0% 0.1em; opacity: 1; font-size: 1em; }
-  60% { background-size: 100% 0.1em; opacity: 1; }
-  85% { background-size: 100% 0.1em; opacity: 0; font-size: 1em; }
-  100% { background-size: 100% 0.1em; opacity: 0; font-size: 0; }
-}
-
-/* An accepted rewrite comes in from the blur the old text had. */
-.chatAgentFresh {
-  animation: chatAgentFresh var(--agentBeat, 600ms) ease-out;
-}
-
-@keyframes chatAgentFresh {
-  from { filter: blur(3px); opacity: 0.4; }
-  to { filter: blur(0); opacity: 1; }
-}
-
-/* A word a swap or a style fix changed tints once. */
-.chatAgentFlash {
-  border-radius: calc(var(--radius) - 2px);
-  animation: chatAgentFlash 1200ms ease-out;
-}
-
-@keyframes chatAgentFlash {
-  from { background: color-mix(in srgb, var(--accent) 40%, transparent); }
-  to { background: transparent; }
-}
-
-/* Crossfades stay. The strike, the collapse and the tint go: a delete only fades. */
-@media (prefers-reduced-motion: reduce) {
-  .chatAgentStrike {
-    background: none;
-    animation-name: chatAgentFade;
-  }
-
-  .chatAgentFlash {
-    animation: none;
-  }
-}
-
-@keyframes chatAgentFade {
-  from { opacity: 1; }
-  to { opacity: 0; }
 }
 
 /* Trackers. The widgets' own rules live in app/trackerWidgets.css. */

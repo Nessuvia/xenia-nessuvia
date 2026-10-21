@@ -806,7 +806,7 @@ function OpeningAsk({ characterId, draft, onChange }: { characterId: number | nu
           },
           budgetOf(connection),
         )
-        // no prefill and no post-processing, unlike a chat reply. Add the prefill if a
+        // no prefill, unlike a chat reply. Add the prefill if a
         // stack's voice depends on it.
         let reply = ''
         for await (const chunk of sendMessage(prompt.messages, connection, signal)) reply += chunk.content ?? ''
