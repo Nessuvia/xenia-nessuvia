@@ -6,8 +6,8 @@ import type { Character } from '../storage/types'
 import { emptyColors } from '../storage/types'
 // core reaching into a module, because the card parser and the bundled folder both live
 // there. Move importCard into core if a second core caller ever wants it.
-import { bundledCharacters, bundledLorebooks } from '../../modules/characters/bundledCharacters'
-import { importBook, importCard } from '../../modules/characters/importCard'
+import { bundledCharacters, bundledLorebooks } from '../cards/bundledCharacters'
+import { importBook, importCard } from '../cards/importCard'
 import { useLorebooks } from './lorebooksStore'
 import { useSettings } from './settingsStore'
 

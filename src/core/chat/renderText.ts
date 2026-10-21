@@ -3,8 +3,8 @@
 // fine without JSX.
 import { createElement, Fragment } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import type { MarkerKind, ReplaceRule, TagRule } from '../../core/stores/settingsStore'
-import { tagApplies } from '../../core/prompt/textRules.ts'
+import type { MarkerKind, ReplaceRule, TagRule } from '../stores/settingsStore'
+import { tagApplies } from '../prompt/textRules.ts'
 import { identity, replaceMapped, trimEndMapped, type Mapped, type SourceMap } from './sourceMap.ts'
 
 // Which color a marker's text takes when several overlap. Text is the implicit baseline below

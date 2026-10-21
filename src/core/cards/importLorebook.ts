@@ -1,6 +1,6 @@
 // Type-only imports on purpose: checkImportLorebook.ts runs this under
 // `node --experimental-strip-types`, which can't resolve extensionless app imports (or boot Dexie).
-import type { EntryPosition, Lorebook, WorldInfoEntry } from '../../core/storage/types'
+import type { EntryPosition, Lorebook, WorldInfoEntry } from '../storage/types'
 
 type Loose = Record<string, unknown>
 

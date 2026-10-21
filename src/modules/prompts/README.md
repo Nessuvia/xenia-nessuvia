@@ -20,14 +20,14 @@ style, `check*` scripts). This file only covers what's specific to stacks.
 | `{{char}}`, `{{user}}` and other tokens | `core/prompt/swapTokens.ts` |
 | Dice (`{{roll::1d20}}`, `dice` kind) | `core/prompt/dice.ts` |
 | Utility prompts (continue, rewrite, narrator, outlines...) | `core/prompt/miscPrompts.ts` (a row per prompt), UI in `MiscPromptsPanel.tsx` |
-| What each kind requires (Story needs `storyContext`, has no history or depth) | `templateProblems` in `stackTemplate.ts`; `stackKinds.ts` wraps it for the editor |
+| What each kind requires (Story needs `storyContext`, has no history or depth) | `templateProblems` in `core/prompt/stackTemplate.ts`; `core/prompt/stackKinds.ts` wraps it for the editor |
 | CodeMirror editor, highlighting, completion | `TemplateEditor.tsx` |
 | The editor page layout (tabs `#stacks`, `#look`, `#misc`) | `StackEditor.tsx`, styles in `prompts.css` |
 | The live preview beside the template | `PromptPreview.tsx` |
 | The controls players see in chat and Story panels | `PromptToggles.tsx` (standard list), `VariableControl.tsx` (one control per kind) |
 | Custom looks | See "Looks" below |
-| Export/import of stack files | `stackFile.ts` (format `nessu-prompt-stack`, version 3) |
-| Bundled/default stacks | `core/stores/stacksStore.ts` (`bundledStacks`, `defaultStack`...), JSON in `xeniaChatStack.json`, `defaultStoryStack.json` |
+| Export/import of stack files | `core/prompt/stackFile.ts` (format `nessu-prompt-stack`, version 3) |
+| Bundled/default stacks | `core/stores/stacksStore.ts` (`bundledStacks`, `defaultStack`...), JSON and template in `core/prompt/` (`xeniaChatStack.json`, `defaultStoryStack.json`, `ffXeniaStory.txt`) |
 | SillyTavern preset import | `core/sillytavern/` (`stMacros.ts` rewrites macros to variables and `{% if %}`, `stBlock.ts` writes declarations back out) |
 
 ## Non-obvious things
@@ -97,7 +97,7 @@ A look is maker HTML and CSS that lays out the variables in the chat and Story p
 - **Allowing a new tag or attribute:** edit `lookPolicy` in `sanitizeHtml.ts`, then update the
   Reference list in `LookPanel.tsx` and the rules in `lookPrompt.ts`. Those three must agree or the
   model writes markup the sanitizer rejects.
-- **Remote URLs** need `stack.allowRemote`, which `stackFile.ts` never exports or imports.
+- **Remote URLs** need `stack.allowRemote`, which `core/prompt/stackFile.ts` never exports or imports.
 
 ### Ask AI for a look
 

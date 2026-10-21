@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { JSX } from 'react'
 import { Avatar } from '../../app/Avatar'
-import { downscaleImage } from '../join/downscale'
+import { downscaleImage } from './downscale'
 import './multiplayer.css'
 
 /** The same caps the host validates against, so the field stops you before the wire does. */

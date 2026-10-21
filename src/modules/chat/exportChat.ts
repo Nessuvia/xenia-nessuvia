@@ -11,7 +11,7 @@ import type { TagRule } from '../../core/stores/settingsStore'
 import type { Palette } from '../../core/palette/palette.ts'
 import { effectiveFont, paletteVars } from '../../core/palette/palette.ts'
 import { readAloudBar, readAloudCss, readAloudScript } from '../../core/readAloud/readAloud.ts'
-import { renderText } from './renderText.ts'
+import { renderText } from '../../core/chat/renderText.ts'
 
 const fileName = (name: string) =>
   name.trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'chat'

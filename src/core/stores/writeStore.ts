@@ -28,7 +28,7 @@ import { usePersonas } from './personasStore'
 import { maxTokensOf } from '../params/connectionParams'
 import { applyReplace } from '../prompt/textRules'
 import { usesSlot } from '../prompt/stackTemplate'
-import { storyReplaceRules } from './textRules'
+import { storyReplaceRules } from './useTextRules'
 
 function newStory(title: string): Story {
   return {

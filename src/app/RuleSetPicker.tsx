@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RiIndeterminateCircleLine } from '@remixicon/react'
-import { useAllSets } from '../core/stores/textRules'
+import { useAllSets } from '../core/stores/useTextRules'
 import './ruleSetPicker.css'
 
 export default function RuleSetPicker({

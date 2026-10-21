@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/modules/chat/checkRenderText.ts
+// Run: node --experimental-strip-types src/core/chat/checkRenderText.ts
 import assert from 'node:assert'
 import { Fragment } from 'react'
 import type { ReactElement, ReactNode } from 'react'
@@ -153,7 +153,7 @@ renderText(source)
 assert.strictEqual(source, before)
 
 // --- replace rules ---
-const rule = (p: Partial<import('../../core/stores/settingsStore').ReplaceRule>) => ({
+const rule = (p: Partial<import('../stores/settingsStore').ReplaceRule>) => ({
   id: '1',
   find: '',
   replace: '',

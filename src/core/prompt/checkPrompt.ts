@@ -2,7 +2,7 @@
 import assert from 'node:assert'
 import type { Character, Message, Persona, PromptStack } from '../storage/types'
 import type { Connection } from '../stores/settingsStore'
-import { resolveParams } from '../settings/resolveParams.ts'
+import { resolveParams } from '../params/resolveParams.ts'
 import { budgetOf } from '../params/connectionParams.ts'
 import { buildPrompt } from './buildPrompt.ts'
 import { characterTokens, chatTokens, swapTokens } from './swapTokens.ts'

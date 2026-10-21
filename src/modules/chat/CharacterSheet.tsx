@@ -8,7 +8,7 @@ import { useLorebooks } from '../../core/stores/lorebooksStore'
 import { Avatar } from '../../app/Avatar'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import CharacterEditor from '../characters/CharacterEditor'
-import { exportCardJson, exportCardPng } from '../characters/exportCard'
+import { exportCardJson, exportCardPng } from '../../core/cards/exportCard'
 import ChatList from './ChatList'
 import type { Lorebook } from '../../core/storage/types'
 

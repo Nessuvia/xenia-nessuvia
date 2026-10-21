@@ -2,8 +2,8 @@
 // its own stack keeps it; these only fill in where nothing more specific is set.
 import { useStacks } from '../../core/stores/stacksStore'
 import { useSettings } from '../../core/stores/settingsStore'
-import { stackKind } from './stackKinds'
-import type { StackKind } from './stackKinds'
+import { stackKind } from '../../core/prompt/stackKinds'
+import type { StackKind } from '../../core/prompt/stackKinds'
 
 type DefaultKey = 'activeStackId' | 'activeStoryStackId' | 'activeGameStackId' | 'activeMultiplayerStackId'
 

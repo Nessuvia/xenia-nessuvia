@@ -1,4 +1,4 @@
-import { useChatTextRules } from '../../core/stores/textRules'
+import { useChatTextRules } from '../../core/stores/useTextRules'
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
@@ -25,7 +25,7 @@ import { useActiveConnection, useAppearance } from '../../core/stores/settingsSt
 import { reasoningSpan } from '../../core/prompt/reasoning'
 import { stripState } from '../../core/trackers/trackerState'
 import { usePalette } from '../../core/stores/palettesStore'
-import { renderText } from './renderText'
+import { renderText } from '../../core/chat/renderText'
 import RewriteBox from './RewriteBox'
 import TrackerWarning from './TrackerWarning'
 import SelectionEditDialog from './SelectionEditDialog'
@@ -33,7 +33,7 @@ import { contract } from './contract'
 import { useMediaQuery } from '../../app/useMediaQuery'
 import SelectionMenu from './SelectionMenu'
 import { cutSpan, replaceSpan, textOffset, type Span } from './selectionEdit'
-import { storedSpan, type SourceMap } from './sourceMap'
+import { storedSpan, type SourceMap } from '../../core/chat/sourceMap'
 import PromptInspector from '../../app/PromptInspector'
 import { createPortal } from 'react-dom'
 import { useCloseOnOutside } from '../../app/useCloseOnOutside'

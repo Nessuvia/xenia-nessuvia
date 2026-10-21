@@ -6,10 +6,10 @@ import type { PromptStack } from '../storage/types'
 import { useSettings } from './settingsStore'
 // core reaching into a module, same as charactersStore, the stack file parser and the
 // bundled file both live with the prompts module.
-import { parseStack } from '../../modules/prompts/stackFile'
-import storyStackFile from '../../modules/prompts/defaultStoryStack.json'
-import xeniaChatFile from '../../modules/prompts/xeniaChatStack.json'
-import ffXeniaTemplate from '../../modules/prompts/ffXeniaStory.txt?raw'
+import { parseStack } from '../prompt/stackFile'
+import storyStackFile from '../prompt/defaultStoryStack.json'
+import xeniaChatFile from '../prompt/xeniaChatStack.json'
+import ffXeniaTemplate from '../prompt/ffXeniaStory.txt?raw'
 
 /** Short on purpose: on real cards personality/scenario/examples are usually blank. */
 export function defaultStack(name = 'Default'): PromptStack {

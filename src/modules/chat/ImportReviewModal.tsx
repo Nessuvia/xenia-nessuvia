@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { RiCloseLine } from '@remixicon/react'
-import type { ImportedBook } from '../lorebooks/importLorebook'
+import type { ImportedBook } from '../../core/cards/importLorebook'
 
 /**
  * Shown between parsing a card and saving it, when the card carries tags or an embedded lorebook.

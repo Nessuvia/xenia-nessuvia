@@ -1,7 +1,7 @@
 import { importCard } from './importCard'
-import { importLorebook, type ImportedBook } from '../lorebooks/importLorebook'
-import { parsePngCard, pngDataUrl } from '../../core/connectors/pngCard'
-import type { Character } from '../../core/storage/types'
+import { importLorebook, type ImportedBook } from './importLorebook'
+import { parsePngCard, pngDataUrl } from '../connectors/pngCard'
+import type { Character } from '../storage/types'
 
 /**
  * Character cards that ship with the build. Drop a v2/v3 (or bare) card into `bundled/` (a `.json`

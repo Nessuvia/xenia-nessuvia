@@ -6,7 +6,7 @@ import type { Lorebook } from '../storage/types'
 // core reaching into a module, the same way charactersStore reaches for the card parser: the
 // file readers live with the UI that offers them. Move them into core if a second core caller wants
 // them.
-import { importLorebook, type ImportedBook } from '../../modules/lorebooks/importLorebook'
+import { importLorebook, type ImportedBook } from '../cards/importLorebook'
 import { useWorldInfo } from './worldInfoStore'
 
 export function newBook(name = ''): Lorebook {

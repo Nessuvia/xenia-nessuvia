@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Chat } from '../../core/storage/types'
 import PromptToggles from '../prompts/PromptToggles'
-import { stackKind } from '../prompts/stackKinds'
+import { stackKind } from '../../core/prompt/stackKinds'
 import { stackAuthorNoteDepth } from '../../core/prompt/buildPrompt'
 import { useChats } from '../../core/stores/chatStore'
 import { useCharacters } from '../../core/stores/charactersStore'

@@ -1,6 +1,6 @@
 // Character export: a Tavern v2/v3 card. Our own fields ride along in `data.extensions`. Readers
 // that don't know them ignore them, and importCard() reads them back.
-import type { Character, Lorebook, WorldInfoEntry } from '../../core/storage/types'
+import type { Character, Lorebook, WorldInfoEntry } from '../storage/types'
 import { bookOf, cardData } from './importCard.ts' // explicit extension: checkImportCard.ts imports this file under node
 
 type Loose = Record<string, unknown>

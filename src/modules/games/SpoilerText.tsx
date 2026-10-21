@@ -4,7 +4,7 @@ import { sentences } from '../../core/quality/sentences'
 import type { Rank } from '../../core/games/deck'
 import { useGames } from './gamesStore'
 import { usePalette } from '../../core/stores/palettesStore'
-import { renderText } from '../chat/renderText'
+import { renderText } from '../../core/chat/renderText'
 
 /**
  * A character's line with every sentence that names a secret rank covered until clicked. Used by

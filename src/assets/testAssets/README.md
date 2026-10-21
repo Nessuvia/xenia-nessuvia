@@ -13,7 +13,7 @@ mock. Nothing here is imported by the app, so none of it reaches the bundle.
   `core/sillytavern/checkSillyTavern.ts`.
 - `nessuvia.png`: a Tavern PNG with the card JSON in a tEXt chunk. Read by
   `core/connectors/checkPngCard.ts`. This is a copy. The live one is
-  `modules/characters/bundled/nessuvia.png`, which the app seeds on a fresh install, and editing
+  `core/cards/bundled/nessuvia.png`, which the app seeds on a fresh install, and editing
   that one does not update this one.
 
 Adding one: drop the file here, name it after what it is, and add a line above saying which check

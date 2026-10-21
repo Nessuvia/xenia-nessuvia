@@ -3,7 +3,7 @@
 // textOffset turns a DOM position into an offset in the body's rendered text. sourceMap.ts's
 // storedSpan turns rendered offsets into a stored span, and the helpers below edit that span.
 // Extension-ful imports on purpose: checkSelectionEdit loads this under node.
-import type { Span } from './sourceMap.ts'
+import type { Span } from '../../core/chat/sourceMap.ts'
 
 export type { Span }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RiCloseLine } from '@remixicon/react'
 import { fetchCard } from '../../core/connectors/fetchCard'
-import { importCard } from '../characters/importCard'
+import { importCard } from '../../core/cards/importCard'
 import { Avatar } from '../../app/Avatar'
 
 /** Import a character card from a URL. Generic URLs must return raw JSON; characterhub.org /

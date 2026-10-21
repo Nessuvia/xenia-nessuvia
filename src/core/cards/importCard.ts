@@ -5,12 +5,12 @@ import type {
   Character,
   CharacterColors,
   ParamOverrides,
-} from '../../core/storage/types'
+} from '../storage/types'
 // Explicit extension: this file runs under node in checkImportCard.ts. The entry mapper is shared
 // with the standalone-file import so the two paths can never read the same book differently.
-import { mapBook, type ImportedBook } from '../lorebooks/importLorebook.ts'
-import { readTrackers } from '../../core/trackers/trackerState.ts'
-import { isFontId, trackerCssProblem } from '../../core/trackers/trackerCss.ts'
+import { mapBook, type ImportedBook } from './importLorebook.ts'
+import { readTrackers } from '../trackers/trackerState.ts'
+import { isFontId, trackerCssProblem } from '../trackers/trackerCss.ts'
 
 type Loose = Record<string, unknown>
 

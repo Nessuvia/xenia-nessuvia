@@ -3,7 +3,7 @@ import { storage } from '../storage/db'
 import { currentOwnerId } from '../storage/storageInterface'
 import type { StoredRecord } from '../storage/storageInterface'
 import type { WorldInfoEntry } from '../storage/types'
-import type { ImportedEntry } from '../../modules/lorebooks/importLorebook'
+import type { ImportedEntry } from '../cards/importLorebook'
 
 /** A blank hand-authored entry. Ordered after everything imported so it lands at the bottom. */
 export function newEntry(bookId: number, order: number): WorldInfoEntry {

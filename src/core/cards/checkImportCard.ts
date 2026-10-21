@@ -1,8 +1,8 @@
 // Round-trip fidelity: a card imported and re-exported must not lose anything it arrived with.
-// Run: node --experimental-strip-types src/modules/characters/checkImportCard.ts
+// Run: node --experimental-strip-types src/core/cards/checkImportCard.ts
 import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
-import type { Character, Lorebook, WorldInfoEntry } from '../../core/storage/types.ts'
+import type { Character, Lorebook, WorldInfoEntry } from '../storage/types.ts'
 import { buildCard } from './exportCard.ts'
 import { importBook, importCard } from './importCard.ts'
 

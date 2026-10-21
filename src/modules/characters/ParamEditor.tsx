@@ -1,7 +1,7 @@
 import type { Character, ParamOverrides } from '../../core/storage/types'
 import type { Connection } from '../../core/stores/settingsStore'
-import type { OverridableField } from '../../core/settings/resolveParams'
-import { overridableFields, paramSource, paramSourceFor, resolveParams } from '../../core/settings/resolveParams'
+import type { OverridableField } from '../../core/params/resolveParams'
+import { overridableFields, paramSource, paramSourceFor, resolveParams } from '../../core/params/resolveParams'
 import { useParamDefs } from '../../core/stores/paramDefsStore'
 import ParamInput, { asText } from '../settings/ParamInput'
 

@@ -4,7 +4,7 @@ import type { Connection } from '../stores/settingsStore'
 import type { Character, Chat } from '../storage/types'
 import type { ParamDef } from '../params/paramDef.ts'
 import { builtinParamDefs } from '../params/builtins.ts'
-import { resolveParams } from '../settings/resolveParams.ts'
+import { resolveParams } from '../params/resolveParams.ts'
 import { buildRequestBody, redact, completionUrl } from './buildRequestBody.ts'
 
 const key = 'sk-super-secret-key'

@@ -91,7 +91,7 @@ const branched = stack(
 // The bundled Story stack renders for every action with no tag or slot left in it, empty plan or
 // full. A leftover `{{ name }}` is what the model sees when a slot goes unfilled.
 {
-  const file = JSON.parse(readFileSync(new URL('../../modules/prompts/defaultStoryStack.json', import.meta.url), 'utf8'))
+  const file = JSON.parse(readFileSync(new URL('./defaultStoryStack.json', import.meta.url), 'utf8'))
   const bundled = stack(file.template)
   const full = { before: 'Text.', after: 'More.', selection: 'Old.', instruction: 'Darker.', premise: 'P', ending: 'E', beat: 'B', nextBeats: ['N'], doneBeats: ['D'], note: 'Note', cast: 'Name: Mara', castNames: ['Mara'] }
   for (const action of ['continue', 'rewrite', 'expand', 'shorten'] as const) {
@@ -110,7 +110,7 @@ const branched = stack(
 // FF Xenia Edition: clean for every action and every setting of its dropdowns, and the POV falls
 // back to the first cast member.
 {
-  const template = readFileSync(new URL('../../modules/prompts/ffXeniaStory.txt', import.meta.url), 'utf8')
+  const template = readFileSync(new URL('./ffXeniaStory.txt', import.meta.url), 'utf8')
   assert.deepStrictEqual(templateProblems(template, 'story'), [])
   const full = { before: 'Text.', after: 'More.', selection: 'Old.', instruction: 'Darker.', premise: 'P', beat: 'B', note: 'N', cast: 'Name: Mara', castNames: ['Mara', 'Dom'] }
   const settings = [

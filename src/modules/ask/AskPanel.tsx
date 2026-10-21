@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { RiArrowLeftLine, RiCloseLine, RiDeleteBinLine, RiSendPlaneFill, RiStopFill } from '@remixicon/react'
 import { useAsk } from '../../core/stores/askStore'
 import { activeConnection, useSettings } from '../../core/stores/settingsStore'
-import { textRulesFor } from '../../core/stores/textRules'
-import { renderText } from '../chat/renderText'
+import { textRulesFor } from '../../core/stores/useTextRules'
+import { renderText } from '../../core/chat/renderText'
 import './ask.css'
 
 /** Ask in the left sidebar: replaces the sidebar body while open. What a send does depends on the

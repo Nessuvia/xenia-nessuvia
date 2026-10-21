@@ -1,9 +1,9 @@
 // Prompt stack files: the stack's own fields, without the row id or ownerId. Those belong to the
 // browser that stores it, not to the file.
-import type { PromptStack, StackLook, StackValue, TextRules } from '../../core/storage/types'
-import { currentOwnerId } from '../../core/storage/storageInterface'
+import type { PromptStack, StackLook, StackValue, TextRules } from '../storage/types'
+import { currentOwnerId } from '../storage/storageInterface'
 import { stackKind } from './stackKinds'
-import { coerceMiscPrompts } from '../../core/prompt/miscPrompts'
+import { coerceMiscPrompts } from './miscPrompts'
 
 interface StackFile {
   format: 'nessu-prompt-stack'

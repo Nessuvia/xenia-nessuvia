@@ -1,5 +1,5 @@
 import { useChats } from '../../core/stores/chatStore'
-import { useChatSetIds } from '../../core/stores/textRules'
+import { useChatSetIds } from '../../core/stores/useTextRules'
 import RuleSetPicker from '../../app/RuleSetPicker'
 
 /**

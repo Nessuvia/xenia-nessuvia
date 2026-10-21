@@ -1,4 +1,4 @@
-// Run: node --experimental-strip-types src/core/settings/checkResolveParams.ts
+// Run: node --experimental-strip-types src/core/params/checkResolveParams.ts
 import assert from 'node:assert'
 import type { Connection } from '../stores/settingsStore'
 import type { Character, Chat, Story } from '../storage/types'

@@ -1,6 +1,6 @@
 import type { PromptStack } from '../../core/storage/types'
 import { defsForKind } from '../../core/prompt/miscPrompts'
-import { stackKind } from './stackKinds'
+import { stackKind } from '../../core/prompt/stackKinds'
 
 interface Props {
   stack: PromptStack

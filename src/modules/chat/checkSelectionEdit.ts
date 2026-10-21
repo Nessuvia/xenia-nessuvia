@@ -2,9 +2,9 @@ import assert from 'node:assert'
 import { createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReplaceRule, TagRule } from '../../core/stores/settingsStore'
-import { renderText, type RenderOpts } from './renderText.ts'
+import { renderText, type RenderOpts } from '../../core/chat/renderText.ts'
 import { cutSpan, replaceSpan } from './selectionEdit.ts'
-import { replaceMapped, identity, storedSpan, type SourceMap } from './sourceMap.ts'
+import { replaceMapped, identity, storedSpan, type SourceMap } from '../../core/chat/sourceMap.ts'
 
 // What the DOM's textContent would be: markup rendered, tags dropped, entities undone.
 function domText(input: string, opts: RenderOpts): string {

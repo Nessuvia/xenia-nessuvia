@@ -136,7 +136,7 @@ assert.ok(!usesSlot('{# {{ worldInfoAfter }} #}', 'worldInfoAfter'))
 
 // --- the bundled stacks parse clean ----------------------------------------
 for (const file of ['xeniaChatStack.json', 'defaultStoryStack.json']) {
-  const stack = JSON.parse(readFileSync(`src/modules/prompts/${file}`, 'utf8'))
+  const stack = JSON.parse(readFileSync(`src/core/prompt/${file}`, 'utf8'))
   assert.deepStrictEqual(templateProblems(stack.template, stack.kind), [], file)
 }
 

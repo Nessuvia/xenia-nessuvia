@@ -7,7 +7,7 @@ import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/
 import { autocompletion, type CompletionContext } from '@codemirror/autocomplete'
 import { tags } from '@lezer/highlight'
 import { templateProblems, templateVariables } from '../../core/prompt/stackTemplate'
-import type { StackKind } from './stackKinds'
+import type { StackKind } from '../../core/prompt/stackKinds'
 import '../../app/codeEditor.css'
 
 // Slots and tokens a template can paste, per kind. The completion list and nothing else reads these.

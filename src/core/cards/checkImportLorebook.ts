@@ -1,5 +1,5 @@
 // The standalone world-info reader, against the reference export in src/assets/testAssets.
-// Run: node --experimental-strip-types src/modules/lorebooks/checkImportLorebook.ts
+// Run: node --experimental-strip-types src/core/cards/checkImportLorebook.ts
 import assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 import { importLorebook, mapEntry } from './importLorebook.ts'

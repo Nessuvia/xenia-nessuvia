@@ -1,7 +1,7 @@
 // Per-kind helpers for the stack editor. A Chat stack and a Story stack share one template language;
 // `templateProblems` holds what each kind requires.
-import type { PromptStack } from '../../core/storage/types'
-import { templateProblems } from '../../core/prompt/stackTemplate.ts'
+import type { PromptStack } from '../storage/types'
+import { templateProblems } from './stackTemplate.ts'
 
 export type StackKind = 'chat' | 'story'
 

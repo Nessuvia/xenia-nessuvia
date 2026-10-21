@@ -10,7 +10,7 @@ an API key and talks to the model. The relay is a Centrifugo instance the user r
   240 KB event cap.
 - `hostSession.ts`, `turnOrder.ts`, `rosterAvatar.ts` sit on top.
 - Guests enter through `/join/:sessionId`, which `App.tsx` mounts outside the app shell. A guest
-  never loads the sidebar. `modules/join` isn't a registered module.
+  never loads the sidebar. `JoinView.tsx` lives in `modules/multiplayer` but is routed from `App.tsx`, not the module registry.
 
 ## Narrator
 

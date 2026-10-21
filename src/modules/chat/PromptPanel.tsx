@@ -1,4 +1,4 @@
-import { useChatTextRules } from '../../core/stores/textRules'
+import { useChatTextRules } from '../../core/stores/useTextRules'
 import { useEffect, useState } from 'react'
 import type { Message } from '../../core/storage/types'
 import { buildRequestBody, redact } from '../../core/connectors/buildRequestBody'
