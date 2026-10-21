@@ -65,7 +65,7 @@ if (-not $centrifugo -or -not $cloudflared) {
 
 if (-not (Test-Path -LiteralPath $Config -PathType Leaf)) {
     Write-Host "config.json not found at $Config" -ForegroundColor Yellow
-    Write-Host 'Copy it from src/resources/centrifugo/ in the repo, or pass -Config <path>.'
+    Write-Host 'Copy it from relay/centrifugo/ in the repo, or pass -Config <path>.'
     exit 1
 }
 

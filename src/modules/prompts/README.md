@@ -5,7 +5,7 @@ values, an optional custom look, misc prompt overrides and text rules. Chat and 
 the table and the language; `kind` keeps them apart. The old block model (cards, block tree,
 `VariablesPanel`) is gone. Don't bring it back.
 
-Read the root `CLAUDE.md` first for the house rules (no Dexie in components, sanitizer route, copy
+Read the root `CLAUDE.md` first for the house rules (no Dexie in components, copy
 style, `check*` scripts). This file only covers what's specific to stacks.
 
 ## Where things live

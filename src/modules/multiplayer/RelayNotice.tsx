@@ -2,7 +2,7 @@
  * The relay disclaimer, shown once to a host and every time to a guest.
  *
  * Multiplayer is the one feature that sends anything outside the browser other than model requests.
- * Frames go through a relay the host runs (`resources/self-hosted-relay.md`). The relay carries
+ * Frames go through a relay the host runs (`relay/self-hosted-relay.md`). The relay carries
  * plaintext. That's a fact the user should accept, not discover: this notice gates the feature,
  * it doesn't sit tucked away on a settings page.
  *

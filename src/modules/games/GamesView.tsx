@@ -1,4 +1,4 @@
-import { personaById } from '../../core/stores/personaLinks'
+import { personaById } from '../../core/chat/personaLinks'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import EntityPicker from '../../app/EntityPicker'

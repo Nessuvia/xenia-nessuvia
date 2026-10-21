@@ -3,7 +3,7 @@ import type { Character, Chat } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
 import { useDragReorder } from '../../app/useDragReorder'
 import '../../app/dragReorder.css'
-import { nextSpeakerIndex, participants } from '../../core/stores/roster'
+import { nextSpeakerIndex, participants } from '../../core/chat/roster'
 import { displayName } from '../../core/stores/charactersStore'
 
 /**

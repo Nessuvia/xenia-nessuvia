@@ -3,7 +3,7 @@ import { useCloseOnOutside } from '../../app/useCloseOnOutside'
 import { RiCheckboxBlankCircleLine, RiRobot2Line } from '@remixicon/react'
 import type { Character, Chat } from '../../core/storage/types'
 import { Avatar } from '../../app/Avatar'
-import { participants } from '../../core/stores/roster'
+import { participants } from '../../core/chat/roster'
 import { displayName } from '../../core/stores/charactersStore'
 import { isNarrator, narratorId, narratorName } from '../../core/multiplayer/narrator'
 // Reuses the persona switcher's avatar-menu look, same layout, different source.

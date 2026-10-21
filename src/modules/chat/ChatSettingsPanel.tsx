@@ -9,7 +9,7 @@ import { useSettings, useAppearance, useActiveConnection } from '../../core/stor
 import ConnectionPicker from '../../app/ConnectionPicker'
 import { usePalette } from '../../core/stores/palettesStore'
 import { useStacks } from '../../core/stores/stacksStore'
-import { participants } from '../../core/stores/roster'
+import { participants } from '../../core/chat/roster'
 import { chatPanels } from '../../app/moduleRegistry'
 import ConnectionParams from './ConnectionParams'
 import AppearancePanel from '../appearance/AppearancePanel'

@@ -70,7 +70,7 @@ export default function RelayPanel() {
       <section className="settingsCard">
         <h3>Your relay</h3>
         <p className="debugHint">
-          A Centrifugo server you run. Setup is in resources/self-hosted-relay.md.
+          A Centrifugo server you run. Setup is in relay/self-hosted-relay.md.
         </p>
         <label className="relayUrlField">
           Websocket URL

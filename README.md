@@ -61,7 +61,7 @@ Role-tag formatting for local backends (Llama-3 headers, `[INST]`, `<|im_start|>
 
 Everything stays in your browser, with one exception. Multiplayer messages pass through a Centrifugo relay the host runs. They're not stored there, and they're carried in plaintext. API keys are never sent to the relay.
 
-A host can point a session at a Centrifugo relay on their own machine instead, set up in Settings under Multiplayer. [Click here for more information.](src/resources/self-hosted-relay.md)
+A host can point a session at a Centrifugo relay on their own machine instead, set up in Settings under Multiplayer. [Click here for more information.](relay/self-hosted-relay.md)
 
 ## Stack
 

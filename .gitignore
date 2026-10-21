@@ -14,7 +14,6 @@ dist-ssr
 .wrangler
 
 # Editor directories and files
-!.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
@@ -24,6 +23,6 @@ dist-ssr
 *.sw?
 
 # Centrifugo
-src/resources/centrifugo/centrifugo.exe
-# NRC VAD Lexicon source files. Input to scripts/buildVad.mjs; only the generated data ships.
+relay/centrifugo/centrifugo.exe
+# Local NRC VAD Lexicon files from the removed sensors feature. Nothing reads them.
 scripts/data/

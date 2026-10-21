@@ -21,21 +21,21 @@ import { resolveParams } from '../settings/resolveParams'
 import { displayName, useCharacters } from './charactersStore'
 import { usePersonas } from './personasStore'
 import { useStacks } from './stacksStore'
-import { chatTitle } from './chatTitle'
+import { chatTitle } from '../chat/chatTitle'
 import {
   continued,
   deletedSwipes,
   regenerated,
   selectSwipe,
   swipeIndex,
-} from './swipes'
-import { forgetSwipes, rememberSnapshot } from './snapshots'
+} from '../chat/swipes'
+import { forgetSwipes, rememberSnapshot } from '../chat/snapshots'
 import { ideaInstruction } from '../prompt/ideasPrompt'
 import { miscPrompt, withPlaceholder } from '../prompt/miscPrompts'
 import { useIdeas } from './ideasStore'
 import type { ChatMessage } from '../connectors/connectorInterface'
-import { autoTurns, nextSpeakerIndex, participants } from './roster'
-import { parseCommand, stripEscape } from './slashCommands'
+import { autoTurns, nextSpeakerIndex, participants } from '../chat/roster'
+import { parseCommand, stripEscape } from '../chat/slashCommands'
 import { continuePrompt, oldMessageInstruction, rewritePrompt } from '../prompt/rewrite'
 import { isEnabled, modules } from '../../app/moduleRegistry'
 import { chatTokens, swapTokens } from '../prompt/swapTokens'
@@ -44,7 +44,7 @@ import { useWorldInfo } from './worldInfoStore'
 import { bookIdsFor, useLorebooks } from './lorebooksStore'
 import { useBlips } from './blipStore'
 import { isNarrator, narratorCharacter, narratorId } from '../multiplayer/narrator'
-import { narratorBookIds } from './narratorBooks'
+import { narratorBookIds } from '../chat/narratorBooks'
 import { budgetOf, maxTokensOf } from '../params/connectionParams'
 
 /**

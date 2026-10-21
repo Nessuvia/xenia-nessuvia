@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { usePersonas } from '../../core/stores/personasStore'
-import type { DeletedPersona } from '../../core/stores/personaLinks'
+import type { DeletedPersona } from '../../core/chat/personaLinks'
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 

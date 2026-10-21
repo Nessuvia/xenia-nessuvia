@@ -1,5 +1,5 @@
 import { Avatar } from '../../app/Avatar'
-import type { CommandMenu as Menu } from '../../core/stores/slashCommands'
+import type { CommandMenu as Menu } from '../../core/chat/slashCommands'
 
 /**
  * The slash-command list, floated above the composer. Purely a list: the composer owns the draft

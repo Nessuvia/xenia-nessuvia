@@ -19,8 +19,8 @@ import {
   reasoningFor,
   swipeCount,
   swipeIndex,
-} from '../../core/stores/swipes'
-import { snapshotFor } from '../../core/stores/snapshots'
+} from '../../core/chat/swipes'
+import { snapshotFor } from '../../core/chat/snapshots'
 import { useActiveConnection, useAppearance } from '../../core/stores/settingsStore'
 import { reasoningSpan } from '../../core/prompt/reasoning'
 import { stripState } from '../../core/trackers/trackerState'

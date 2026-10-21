@@ -1,6 +1,6 @@
 /**
  * The only file that touches Centrifugo, the relay the user runs themselves. See
- * `resources/self-hosted-relay.md` for the server side.
+ * `relay/self-hosted-relay.md` for the server side.
  *
  * A transport and nothing more: events are opaque typed payloads here. No decision belongs in this
  * file.

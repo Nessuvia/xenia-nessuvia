@@ -3,7 +3,7 @@
  *
  * Everything above this (`hostSession.ts`, `JoinView`, the store, the room) holds a `Channel` and
  * never talks to the relay directly. `centrifugoChannel.ts` talks to a relay the user runs
- * (`resources/self-hosted-relay.md`).
+ * (`relay/self-hosted-relay.md`).
  */
 import type { MultiplayerEvent } from './protocol'
 import type { RelayConfig } from './relayConfig'

@@ -1,7 +1,7 @@
 // Run: node --experimental-strip-types src/core/prompt/checkGroupPrompt.ts
 import assert from 'node:assert'
 import type { Character, Chat, Message, Persona, PromptStack } from '../storage/types'
-import { autoTurns, isGroup, nextSpeakerId, nextSpeakerIndex, participants } from '../stores/roster.ts'
+import { autoTurns, isGroup, nextSpeakerId, nextSpeakerIndex, participants } from '../chat/roster.ts'
 import { buildPrompt, nextSpeakerHint } from './buildPrompt.ts'
 
 function stack(template: string): PromptStack {

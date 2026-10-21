@@ -1,214 +1,108 @@
 # CLAUDE.md: Xenia Nessuvia
 
+This file holds the house rules. Feature details live next to the code (see Feature docs).
+
 ## What this is
 
-A local-first character app that runs in the browser: chat with character cards, a Write mode for longer-form stories, an Ask side conversation in the sidebar, and a multiplayer mode where guests join a host's chat from a link. All data lives in the user's browser. There are no accounts.
+A local-first character chat app that runs in the browser. All data lives in the user's browser.
+There are no accounts and no backend of ours.
 
-Four paths leave the tab:
+Every path that leaves the tab is deliberate, and each outward-facing file says why in its header:
 
 - The model endpoint. OpenAI-compatible, hosted or localhost, with the user's own key.
-- The multiplayer relay, a Centrifugo instance the user runs. Broadcast and presence only. Nothing
-  is stored there. API keys stay out of it.
-- The user's own Dropbox app folder, when sync is on. No server of ours sits in the path.
-- jsDelivr, for a tokenizer vocabulary, on the download button in a connection. Two public JSON
-  files, no key, no user text. See `core/prompt/tokenizerCache.ts`.
+- The multiplayer relay, a Centrifugo instance the user runs (`relay/`). Broadcast and presence
+  only. Nothing is stored there and API keys stay out of it.
+- The user's own Dropbox app folder, when sync is on.
+- jsDelivr, for a tokenizer vocabulary on a button press. Public files, no key, no user text.
 
-`xenia.nessuvia.com` is a sentinel string. A connection pointing at it's answered in the browser with one canned line. Every outward call site checks `isSentinel` first, and that host never resolves. See `core/connectors/sentinel.ts`.
+`xenia.nessuvia.com` as a connection URL is a sentinel answered in the browser
+(`core/connectors/sentinel.ts`). Every outward call site checks `isSentinel` first.
 
-The build ships as static assets behind a Cloudflare Worker (`src/index.js`, `wrangler.jsonc`) that serves `dist` and declares no routes of its own. It installs as a PWA.
+The build ships as static assets behind a Cloudflare Worker (`src/index.js`, `wrangler.jsonc`) and
+installs as a PWA.
 
-Every record carries an `ownerId`, hardcoded to `"local"`. It reserves room for a multi-user backend later. Build nothing around it now.
+Every record carries an `ownerId`, hardcoded to `"local"`. It reserves room for a multi-user
+backend later. Build nothing around it now.
 
-This codebase is a WIP. Treat imported data and existing IndexedDB contents as disposable. Skip migrations and back-compat shims for old records. Clearing site data is a fine answer.
+This codebase is a WIP. Imported data and existing IndexedDB contents are disposable. Skip
+migrations and back-compat shims for old records. Clearing site data is a fine answer.
 
 ## Stack
 
-Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (IndexedDB) · pnpm
+Vite · React 19 + TypeScript · plain CSS · React Router · Zustand · Dexie (IndexedDB) · pnpm.
+`package.json` is the dependency list. Icons come from `@remixicon/react`.
 
-Runtime deps worth knowing: `@remixicon/react` (icons), `gpt-tokenizer` (bundled GPT token tables), `@lenml/tokenizers` (runs a downloaded `tokenizer.json` for other model families), `centrifuge` (multiplayer relay client), `react-image-crop` (avatar cropping), `react-colorful` (the swatch picker in `app/ColorInput.tsx`). Dev side adds `vite-plugin-pwa` and `wrangler`.
+## Layout
 
-There's no drag-and-drop library. Reordering is hand-rolled in `app/useDragReorder.ts`. Use it.
-`itemProps` makes the whole row draggable and suits a row of plain content. A row holding an `input`
-or a `textarea` uses `handleProps` on a drag handle and `dropProps` on the row. `draggable` on an
-ancestor stops Chrome placing the caret in the field: the caret sticks at the start and clicking
-between words does nothing. `modules/lorebooks/EntryRows.tsx` and the beat rows in
-`modules/write/StoryRail.tsx` are the pattern.
+```
+/src
+  /app       shell: sidebar, routing, module registry, shared components and hooks
+  /core      logic with no screen of its own, one folder per concern
+    /storage   Dexie and the storage interface; the only importer of Dexie
+    /stores    Zustand stores
+    /...       prompt, connectors, multiplayer, sync, palette, params, ...
+  /modules   one folder per screen or feature: index.ts registers it, plus its components and .css
+  /assets    testAssets/ holds fixtures for check scripts; nothing there ships
+/relay       self-hosted Centrifugo relay config, scripts and setup guide
+/scripts     agent-test.sh and other dev tools
+/public      static files served as-is
+```
 
-Plain CSS means plain CSS: one global stylesheet plus a `.css` file per module, imported directly. No utility framework, no CSS-in-JS.
+New logic goes in `core`, UI in `modules`. A few stores still import parsers and bundled files
+from their module (`charactersStore`, `stacksStore`, `lorebooksStore`). Don't add more.
 
-## Structure
+Modules self-register by calling `registerModule` from their `index.ts`, and the sidebar and router
+both derive from that registry. Adding a feature means adding a folder and importing it in
+`main.tsx`. Never edit a central list of screens. `app/moduleRegistry.ts` documents what a module
+can declare.
 
-``` /src
-  /app          sidebar, module registry, routing, shared components and hooks
-    /skins      the structural half of a palette; see Style
-  /core
-    /storage    Dexie + the storage interface; the ONLY place that touches Dexie
-    /connectors the model endpoint: request bodies, SSE streaming, model lists
-    /stores     Zustand stores
-    /prompt     prompt assembly: buildPrompt, buildStoryPrompt, budget, worldInfo, template
-    /palette    appearance: palettes, webfonts, background HTML/CSS sanitizing
-    /params     the sampler library: params as data, not code
-    /quality    sentence splitter and word count
-    /multiplayer  relay channels, session protocol, turn order, narrator
-    /sync       Dropbox push/pull, per-file layout, and dirty-table tracking
-    /settings   settings resolution helpers
-  /modules
-    /<name>     one folder per feature: index.ts self-registers it, plus its components and .css```
+Before building a component or hook, check `/app`. A second copy of a pattern is a nudge. The third
+is the cue to hoist it there.
 
-Modules self-register by calling `registerModule` from their `index.ts`. The sidebar and the router both derive from that registry. Adding a feature means adding a folder and importing it in `main.tsx`. Never edit a central list of screens. Beyond `{ id, label, icon, route, component }` a module may declare:
+## Feature docs
 
-- `tabs`: `[hashId, label]` pairs shown as sidebar sub-items. The view reads the hash
-  (`app/useHashTab.ts`).
-- `plugin: true`: listed in Settings › Miscellaneous, off until enabled there.
-- `chatPanels`: sections contributed to the chat sidebar, ordered by registration order in
-  `main.tsx`. A panel that should stay hidden renders null. There's no visibility API.
-- `decorateMessage(ctx)`: text appended to the outgoing user message before token substitution.
+A feature that needs more explanation than its code and header comments gives has a `README.md` in
+its folder (`core/prompt/README.md`, `modules/prompts/README.md`, ...). Before working in a folder,
+read its README if it has one.
 
-`component` is `lazy()` for route views. `chatPanels` stay eager and render inside the chat rather than behind a route.
+When you change how a feature works, update its README in the same change. When you add a feature
+or seam with rules a newcomer would trip on, give it a README. Keep a README to what isn't obvious
+from the code: where things live, the non-obvious rules, how to extend it. Don't list every file;
+that goes stale.
 
-Registered today: `chat`, `write`, `notes`, `multiplayer`, `characters`, `personas`, `lorebooks`, `prompts`, `appearance`, `settings`, plus three special cases:
+Feature details don't go in this file. This file is for rules that hold everywhere.
 
-- `learn` is registered in every build. The sidebar shows its button on dev only
-  (`import.meta.env.DEV` in `Sidebar.tsx`), and `/learn` resolves on live with no way in.
-- `sync` is registered and live. It sits under Import/Export in the rail rather than the main nav.
-  `Sidebar.tsx` guards its entries with `syncModule &&`, and commenting the import out of
-  `main.tsx` is the whole off switch.
-- `join` isn't a module. `App.tsx` mounts `/join/:sessionId` outside the app shell, and a guest
-  never loads the sidebar.
+## Rules
 
-## Seams: reuse these, don't reinvent
-
-- **Prompt assembly** lives in `core/prompt`. `buildPrompt` (chat), `buildStoryPrompt` (Write: the
-  app supplies `{{before}}`/`{{after}}`/`{{selection}}`, `{{action}}`, the plan and the note, and the
-  template owns every word; `{{before}}` is trimmed from the top to fit),
-  `budget` (token counting and history trimming; `loadTokenizer` is async, `countTokens` is sync,
-  and both have to stay that way; `tokenizers`/`autoTokenizer`/`tokenizerCache` pick and fetch which
-  one counts), `flattenPrompt` (text-completion connections), `swapTokens`, `worldInfo`,
-  `stackTemplate` (a stack is one template, `PromptStack.template`: `{% var %}` declarations,
-  `{% message %}` and `{% depth %}` tags, `{{ history }}`, `templateProblems` for the editor),
-  `template` (Jinja-style `{% if %}` tags and a stack's `{{variables}}`; `{# #}` comments, plus ST's `{{// }}`, go first via `stripComments`), `dice` (inline `{{roll::1d20}}`, fresh per occurrence, and the `dice` variable kind, rolled once per send in `variableValues`), `rewrite`. Anything changing what the model receives goes through
-  one of these.
-- **Text completion format** is `InstructTemplate` on the connection (`params/paramDef.ts`).
-  `flattenPrompt` is the only reader: role sequences, first/last turn overrides, newline wrapping,
-  speaker names, `{{char}}`/`{{user}}` in the sequences themselves, and the prefill.
-  `templatePresets` ships the formats (ChatML, Llama 3, Mistral, Alpaca, Gemma, Command R), a
-  deliberate exception to "nothing ships": an instruct format is a fact about a model rather than
-  the user's taste. `params/templateFile.ts` is the standalone export, carrying no endpoint and no
-  key by construction. The special-token flags (`add_bos_token`, `ban_eos_token`,
-  `skip_special_tokens`) are ordinary `ParamDef` rows rather than template fields.
-  `prompt/reasoning.ts` finds a think block's offsets. Nothing splits the stored reply: the text is
-  kept whole, `Message.reasoningEnd` records where the block ends, and `MessageBubble` splits at
-  render. Only a block at the very front counts. An unclosed one runs to the end.
-- **Model calls** live in `core/connectors`. `openaiCompatible` (streaming), `dummy` (local
-  generator for debugging), `buildRequestBody` + `completionUrl`, `listModels` + `modelsUrl`,
-  `snapshot`.
-- **Multiplayer**: `core/multiplayer/channel.ts` is the interface and `centrifugoChannel` is the
-  implementation. Nothing above it touches the relay client. `protocol.ts` holds the event shapes,
-  `protocolVersion` (guests reject a mismatch) and the 240 KB event cap. `hostSession`,
-  `turnOrder`, `narrator`, `rosterAvatar` sit on top.
-- **Narrator** is `core/multiplayer/narrator.ts` and isn't multiplayer-only: it sits there by
-  origin. `narratorId` is -1, `narratorCharacter()` is a synthetic card, and `isNarrator` is how
-  you test for it. It answers in an ordinary chat two ways: pinned in `ResponderPicker`
-  (`Chat.respondWith = -1`) for a sustained stretch, or `/narrate <text>` for one turn.
-  `chatStore.retry` branches on it before the round-robin maths and never moves
-  `lastSpeakerIndex`: narrating costs nobody their turn. Its instructions come from the stack's
-  template first, the stack's `narrator` misc prompt second. A stack with an `{% if narrator %}` branch
-  owns the Narrator outright; only a stack without one gets `miscPrompt('narrator', stack.miscPrompts)`,
-  passed to `narratorCharacter()` as the card's `systemPrompt`. `mentionsCondition` in `prompt/template.ts` decides which.
-  The Narrator has no lorebooks of its own, so `worldInfoFor` borrows every participant's
-  (`narratorBookIds`, pure and checked): it narrates the world the characters can see.
-- **Trackers** live in `core/trackers`. Defs ride on the card (`Character.trackers`,
-  `extensions.nessu.trackers`). `parseState` reads a reply's `<state>` tag; each swipe's parse sits
-  in `Message.trackerUpdates`. `trackerValues` folds them down the history with player overrides,
-  so swiping rolls back. `buildPrompt` injects visible values and hands every value to
-  `template.ts` for `{% if affection > 50 %}`. `stripState` hides the tag at render only.
-- **Stack variables** are declared in the template (`{% var length slider 10 400 10 = 110 %}`).
-  `stackVariables` parses them and lays the player's `PromptStack.values` over the defaults;
-  `withValue` writes one back. Players only see variables (`PromptToggles`). The editor is
-  `modules/prompts/TemplateEditor.tsx` (CodeMirror) beside the live preview.
-- **Stack looks**: `PromptStack.look` is maker HTML and CSS laying out those variables in the chat and
-  Story panels. `modules/prompts/stackLook.ts` holds the rules: `lookPolicy` in the palette
-  sanitizer, `@scope` CSS, `data-var` slots filled by portals (`StackLookView`), values mirrored as
-  `data-*` attributes on the root, fallback to the standard list on any error. Outside addresses
-  (`core/palette/remoteRefs.ts`, checked on parsed CSS and the sanitized DOM) need
-  `PromptStack.allowRemote`, which `stackFile.ts` never exports or imports.
-- **SillyTavern import** lives in `core/sillytavern`. `stMacros.ts` rewrites ST's runtime macros into
-  stack features: leading comments become a prompt's `info`, setvar/getvar pairs become checkbox
-  variables and `{% if %}` branches. `{{roll}}` needs no rewrite. The passes work on a list of
-  pieces (`stBlock.ts`) and `stTemplate` writes it out as one template.
-- **Sync** goes through `core/sync/dropboxClient.ts`, the only outward-facing file. `syncFiles.ts`
-  lays the library out as files (a folder per character holding its card, chats and images; whole
-  files for the other tables), and a file is the unit compared and moved. `dirtyTables.ts` decides
-  which groups get rebuilt and hashed.
-- **Appearance** uses `core/palette` for palettes, webfonts and the sanitizers, plus `app/skins` for
-  the structural layer.
-- **Sampler params** live in `core/params`. A param def is a row rather than code, and a new sampler
-  needs no release.
-
-## Data
-
-Everything durable is in Dexie (`core/storage/db.ts`), currently `db.version(23)`: `characters`, `personas`, `worldInfo`, `lorebooks`, `chats`, `messages`, `promptStacks`, `stories`, `palettes`, `backgroundImages`, `paramDefs`, `games`, `notes`.
-
-- One `db.version(N).stores({...})` block, currently 23, holding the **complete** schema. The old
-  chain was deleted. No block ever carried an `upgrade()` callback, and an older local DB upgrades
-  straight to the current schema. Adding a table or index means editing that block and raising the
-  number, then adding the name to `TableName` in `storageInterface.ts`. The number only goes up:
-  IndexedDB refuses to open a database whose stored version is higher than the one requested.
-  Adding an `upgrade()` callback would bring the chain back, and this codebase doesn't migrate.
-- Adding a plain field needs no version bump: put it in `types.ts` and default it in the store's
-  `newX()` factory. Indexes are only for fields you query with `find()`.
-- `storage.put/remove/clear/putAll` call `markDirty` before the write, and that's how sync knows
-  what changed. A whole-table replacement (restore, pull) runs inside `withDirtySuppressed`.
-
-Three Zustand stores persist to localStorage rather than Dexie, via `zustand/middleware` `persist`: `settingsStore` (`nessuTavern.settings`, holding connections and the API keys with them), `askStore` (`nessuTavern.ask`), `blipStore` (`nessuTavern.blips`).
-
-`core/storage/backup.ts` is the only code that reads or writes those keys for export/import. It carries `nessuTavern.settings` only. The Ask thread (the sidebar's side conversation) is a preference of this browser, and blips are unseen-reply markers. Both stay out. `stripApiKeys.ts` blanks `apiKey`, `accessKeyId` and `secretAccessKey` by name before a backup file leaves the browser. A backup gets emailed around, and a missed secret is the failure that matters.
-
-**Non-portable preferences.** Small view state belonging to this browser rather than to the user's
-data: whether a panel is collapsed, which rail is open, an example section dismissed. Write it
-straight to `localStorage` under a `nessuTavern.*` key, with no store and no Dexie table, and leave
-it out of the export. `backup.ts` reads only the key it names, and a new key stays out of a
-backup by construction. `nessuTavern.sidebarCollapsed` (`app/Sidebar.tsx`) and
-`nessuTavern.lorebooksExample` (`modules/lorebooks/EntryExample.tsx`) are the pattern. The test is
-whether restoring a backup on another machine should carry it. If it shouldn't, it's a preference.
-
-## Conventions
-
-- camelCase everywhere: variables, functions, filenames. Exceptions only where the platform forces
-  otherwise (CSS class names, HTML attributes).
+- camelCase everywhere: variables, functions, filenames. Components are PascalCase. Exceptions only
+  where the platform forces otherwise (CSS class names, HTML attributes, route-named files like
+  `core/tour/tours/`).
 - Plain functions rather than classes. State lives in Zustand stores. Avoid inheritance, factories,
   and any abstraction layer with one implementation.
 - Write TypeScript like JavaScript. Interfaces for data shapes and for function signatures where
-  they prevent real mistakes. Avoid generics gymnastics and decorators.
-- Components read from and call into stores. **A component must never touch Dexie.** `core/storage`
-  is the only importer of Dexie and that rule has no exceptions.
-- The send path never calls `fetch` from a component: it goes store → connector. Five files outside
-  `core/connectors` talk outward on purpose, each saying why in its header. `sync/dropboxClient.ts`
-  (every request carries a bearer token the auth module owns),
-  `multiplayer/centrifugoChannel.ts` (the relay client), the two Settings probes,
-  `ConnectionEditor.tsx`'s connection test and `readContextLimit.ts`, one-shot diagnostics built
-  from the connectors' own `completionUrl`/`modelsUrl`/`buildRequestBody`, and
-  `prompt/tokenizerCache.ts`, which fetches a static vocabulary from a CDN on a button press. Don't
-  add a sixth without the same kind of comment.
-- Model output and imported character cards are untrusted input. Render them as React elements,
-  never via `dangerouslySetInnerHTML`. This origin holds API keys in localStorage. User markup has
-  exactly one vetted route: `palette/sanitizeHtml.ts` (a `<template>` parse against a structural
-  allowlist, rejecting the whole input rather than scrubbing it) attached with `replaceChildren` in
-  `PageBackground.tsx`, and `palette/scopeCss.ts` for user CSS, which wraps it in `@scope` and
-  refuses it whole if a stray `}` escapes the block.
-- Store what the model said. Formatting is a display concern. Never rewrite stored content.
-- A field shows exactly what the user typed. Two things break that and put the caret at the end:
-  a value that comes back from a store after an `await` (update state first, then write, as
-  `palettesStore.update` does), and a value rebuilt from a different shape on every keystroke. A
-  field that stores a list uses `app/ListInput.tsx`, which holds the raw text. Any other converted
-  value keeps its own raw-text draft the same way.
+  they prevent real mistakes. No generics gymnastics, no decorators.
+- **A component never touches Dexie.** `core/storage` is the only importer of Dexie, no exceptions.
+- **The send path never calls `fetch` from a component.** It goes store → connector. The few files
+  outside `core/connectors` that talk outward each say why in their header. Don't add one without
+  the same kind of comment.
+- **Model output and imported cards are untrusted input.** Render them as React elements, never via
+  `dangerouslySetInnerHTML`. This origin holds API keys in localStorage. User markup has exactly one
+  vetted route, described in `core/palette/README.md`.
+- **Store what the model said.** Formatting is a display concern. Never rewrite stored content.
+- **A field shows exactly what the user typed.** Two things break that and put the caret at the end:
+  a value that comes back from a store after an `await` (update state first, then write), and a
+  value rebuilt from a different shape on every keystroke. A field that stores a list uses
+  `app/ListInput.tsx`. Any other converted value keeps its own raw-text draft the same way.
 - A file that a `check*` script imports uses explicit `.ts` extensions in its own imports. Node
-  strips types rather than resolving like Vite. `core/params/paramDef.ts` and
-  `core/multiplayer/relayConfig.ts` are the pattern.
+  strips types rather than resolving like Vite.
+- Data rules (schema version, dirty tracking, what goes in a backup, where preferences go) are in
+  `core/storage/README.md`. Read it before adding a table, a field, or a localStorage key.
 
 ## Specificity
 
-Before wiring up any edit, ask what scope it should change. The same control can sensibly write to any of these levels, and the right one is a design decision rather than an accident of which record was closest to hand:
+Before wiring up any edit, ask what scope it should change. The same control can sensibly write to
+any of these levels, and the right one is a design decision rather than an accident of which record
+was closest to hand:
 
 - a single message
 - a single chat
@@ -216,58 +110,74 @@ Before wiring up any edit, ask what scope it should change. The same control can
 - all chats using a prompt stack / connection / persona
 - everything (a global default)
 
-Write to the narrowest level that matches what the user meant, and make the level obvious in the UI. A knob that silently edits a wider scope than it appears to is the failure mode to watch for: picking a prompt option inside a chat writes back to the shared stack, and the next new chat inherits it. Fine when intended, surprising otherwise. When a level is chosen for expedience rather than intent, leave a comment naming the level and the upgrade path (e.g. per-chat override).
+Write to the narrowest level that matches what the user meant, and make the level obvious in the
+UI. A knob that silently edits a wider scope than it appears to is the failure mode to watch for.
+When a level is chosen for expedience rather than intent, leave a comment naming the level and the
+upgrade path (e.g. per-chat override).
 
 ## Style
 
-Keep styling light until the polishing phase. A screen that works and looks plain is done, and pixel work waits. Build the pieces so polish is cheap later.
+Keep styling light until the polishing phase. A screen that works and looks plain is done.
 
-**Before writing or editing any `.css` file or any `className`, read [`.claude/cssConventions.md`](.claude/cssConventions.md).** It's the full rulebook and the rules live there alone: the color vars, the spacing and type scales, the `z-index` ladder, the selector and class-naming rules, the breakpoint, the bans, and the skin contract. Its last section is a checklist to run against any diff that touches CSS.
+**Before writing or editing any `.css` file or any `className`, read
+[`.claude/cssConventions.md`](.claude/cssConventions.md).** It's the full rulebook, and its last
+section is a checklist to run against any diff that touches CSS. The headline: no hardcoded colors,
+no invented spacing values, no invented `z-index` numbers, a class on every element you style, and
+nothing shared between two tabs living in a module stylesheet.
 
-The headline, to carry the shape in before you open it: no hardcoded colors, no invented spacing values, no invented `z-index` numbers, a class on every element you style, and nothing shared between two tabs living in a module stylesheet.
+Three layout rules hold on every page. Nothing scrolls sideways. Every top-level page starts with
+`<PageHeader>`. Every field and button takes its size from the `--field*`, `--buttonPad` and
+`--numberWidth` vars in `index.css`.
 
-Three layout rules hold on every page. Nothing scrolls sideways. Every top-level page starts with `<PageHeader>`. Every field and button takes its size from the `--field*`, `--buttonPad` and `--numberWidth` vars in `index.css`, so fields read as sunken wells and line up on a row.
-
-Icons come from `@remixicon/react`. Never stand in an emoji or a unicode glyph for an icon. Typography characters (`...`, `·`, `→`) are fine.
-
-Shared UI patterns live in `/app` with their own `.css`, and modules import them: `PageHeader`, `PageTabs`, `ListInput`, `CodeEditor` (HTML/CSS in CodeMirror, plus the `codePanel` toolbar and `CodeReference` popover around it), `CollapseButton` (chevron and rail), `TrackerWidgets` (tracker widgets and creator CSS), `Avatar`, `ColorInput`, `ColorStack`, `EntityPicker`, `TwoColumn`, `PageLoader`, `PromptPreviewPanel`, and the hooks `useCloseOnOutside` (every button dropdown uses it), `useDragReorder`, `useHashTab`, `useMediaQuery`. Second copy of a pattern is a nudge. Third is the cue to hoist it: small component, obvious props, room to grow.
+Never stand in an emoji or a unicode glyph for an icon. Typography characters (`...`, `·`, `→`) are
+fine.
 
 ## UI copy
 
-Every string a user reads (labels, buttons, placeholders, hints, empty states, errors) is plain and boring. State what the thing does and stop. Leave out the pitch, the personality and the reassurance.
+Every string a user reads (labels, buttons, placeholders, hints, empty states, errors) is plain and
+boring. State what the thing does and stop. Leave out the pitch, the personality and the
+reassurance.
 
 Write the shortest sentence that carries the fact. Then check it against these tells:
 
 - The rhetorical triple and its shorter cousin, the negated pair: "no requests, no spend", "not a
-  warning, not a block", "faster, simpler, cheaper". Never use either. State the positive fact:
-  "Requests aren't sent."
+  warning, not a block", "faster, simpler, cheaper". State the positive fact: "Requests aren't
+  sent."
 - The em-dash aside that adds a flourish rather than information.
 - Words that praise the feature: seamlessly, simply, just, effortlessly, powerful, robust, smart.
 - Explaining why a design is good, or what it saves the user, in copy that should only say what it
   does.
 
-`"Replies come from a local generator. Requests are not sent."` is good. `"Replies come from a local lorem ipsum generator instead of the connection — streamed as real SSE, so nothing else changes. No requests, no spend."` is an actual string this codebase shipped, and the thing to avoid: three clauses of salesmanship for one fact.
+`"Replies come from a local generator. Requests are not sent."` is good. `"Replies come from a local
+lorem ipsum generator instead of the connection — streamed as real SSE, so nothing else changes. No
+requests, no spend."` is the thing to avoid.
 
 This covers user-visible text. Code comments explain reasoning and can breathe.
 
 ## Builds
 
-`wrangler.jsonc` deploys the built `dist`. It holds no binding beyond `ASSETS`.
+`main` is what's live. Workers Builds deploys every commit that lands there. Never commit to `main`
+directly: work on a branch and merge it in. There's no version number; the sidebar shows the date
+and short hash of the commit a build came from.
 
-`main` is what's live. Workers Builds watches it and deploys every commit that lands there. Never commit to `main` directly: work on a branch and merge it in. There's no version number. The sidebar shows the date and short hash of the commit a build came from, read from git in `vite.config.ts`.
-
-`pnpm-workspace.yaml` pins which install scripts may run and explains the `packageManager` pin in `package.json`. pnpm 10 rejects that file outright.
+`pnpm-workspace.yaml` pins which install scripts may run and explains the `packageManager` pin in
+`package.json`.
 
 ## Verifying work
 
-`npx pnpm build` (runs `tsc -b` then the Vite build) and the `check*` scripts must both pass. The checks are plain `node --experimental-strip-types` scripts with `assert`. `tsconfig.check.json` puts them in the `tsc -b` chain, and the build typechecks them without running their assertions. Run those separately:
+Run `scripts/agent-test.sh` to typecheck and run every `check*` script. It prints one line when
+clean. Pass a substring to run a subset (`scripts/agent-test.sh turnOrder`), `-v` for untruncated
+failures, `--build` for the full Vite build before handing off.
 
-Run `scripts/agent-test.sh` to typecheck and run every check* script. It prints one line when clean. Pass a substring to run a subset (`scripts/agent-test.sh turnOrder`), `-v` for untruncated failures, `--build` before handing off.
+The checks are plain `node --experimental-strip-types` scripts with `assert`. There's no test
+framework. Don't add one unasked. When you add non-trivial logic (a branch, a loop, a parser, a
+security path), add one `check*.ts` next to it: the smallest thing that fails if the logic breaks.
+Trivial one-liners need no check.
 
-One is `.mjs` (`core/multiplayer/checkTurnOrder.mjs`). The glob above catches it. There's no test framework. Don't add one unasked.
+**Then stop and hand off.** The user tests in the browser personally. Don't launch a browser, don't
+drive the Chrome tools, and don't leave `npx pnpm dev` running unless asked. Report that the build
+and checks are clean and say what's ready to look at. Don't close with a question or an offer of
+next steps.
 
-When you add non-trivial logic (a branch, a loop, a parser, a security path), add one `check*.ts` next to it: the smallest thing that fails if the logic breaks. No frameworks, no fixtures, no per-function suites unless asked. Trivial one-liners need no check.
-
-**Then stop and hand off.** User drives Chrome and tests in the browser personally. Don't launch a browser, don't drive the Chrome tools, and don't leave `npx pnpm dev` running in the background unless asked. Report that the build and checks are clean and say what's ready to look at. End there: don't close a message with a question or an offer of next steps. The user says what comes next.
-
-`npx pnpm lint` (oxlint) exists from the Vite template and isn't enforced. Don't run it or add lint gates unless asked.
+`npx pnpm lint` (oxlint) exists from the Vite template and isn't enforced. Don't run it or add lint
+gates unless asked.

@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { parseState, type TrackerDef } from './parseState.ts'
 import { readTrackers, stripState, trackerPrompt, trackerValues, withTrackerUpdate, type TrackedMessage } from './trackerState.ts'
-import { deletedSwipes } from '../stores/swipes.ts'
+import { deletedSwipes } from '../chat/swipes.ts'
 
 const defs: TrackerDef[] = [
   { key: 'affection', type: 'number', min: 0, max: 100, initial: 50 },

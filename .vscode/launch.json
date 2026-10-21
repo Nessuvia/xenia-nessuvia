@@ -4,16 +4,15 @@
     {
       "name": "Vite Dev Server",
       "type": "node-terminal",
-      "command": "npm run dev",
+      "command": "npx pnpm dev",
       "request": "launch"
     },
     {
-      "name": "Attach to Firefox Tab",
+      "name": "Chrome",
       "type": "chrome",
-      "request": "attach",
-      "url": "http://localhost",
-      "port": 5173,
-      "webRoot": "${workspaceFolder}",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}"
     }
   ],
   "compounds": [
@@ -21,7 +20,7 @@
       "name": "Debug React App",
       "configurations": [
         "Vite Dev Server",
-        "Attach to Firefox Tab"
+        "Chrome"
       ]
     }
   ]

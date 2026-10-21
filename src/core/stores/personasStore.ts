@@ -6,7 +6,7 @@ import type { Persona } from '../storage/types'
 import { emptyColors } from '../storage/types'
 import { useSettings } from './settingsStore'
 import { isNarrator, narratorPersona, realPersonas } from '../multiplayer/narrator'
-import { deletedPersonas, type DeletedPersona } from './personaLinks'
+import { deletedPersonas, type DeletedPersona } from '../chat/personaLinks'
 
 export function newPersona(name = ''): Persona {
   return { ownerId: currentOwnerId(), name, avatar: '', description: '', createdAt: 0, updatedAt: 0, colors: emptyColors() }

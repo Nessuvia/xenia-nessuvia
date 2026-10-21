@@ -1,4 +1,4 @@
-import { personaById } from '../../core/stores/personaLinks'
+import { personaById } from '../../core/chat/personaLinks'
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, JSX } from 'react'
 import { useMultiplayer, isMyTurn, currentHolder } from '../../core/stores/multiplayerStore'
