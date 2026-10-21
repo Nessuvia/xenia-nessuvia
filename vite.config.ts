@@ -6,9 +6,9 @@ import { execSync } from 'node:child_process'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Shown in the sidebar credit line: the date and short hash of the commit this build came from.
+  // Shown in the sidebar credit line: the short hash of the commit this build came from.
   define: {
-    __APP_UPDATED__: JSON.stringify(execSync('git log -1 --format="%cd (%h)" --date=format:%m/%d/%Y').toString().trim()),
+    __APP_UPDATED__: JSON.stringify(execSync('git log -1 --format="%h"').toString().trim()),
   },
   plugins: [
     react(),
